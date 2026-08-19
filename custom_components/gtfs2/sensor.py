@@ -444,7 +444,10 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
       
         self._attributes["gtfs_updated_at"] = self.coordinator.data[
             "gtfs_updated_at"]
-        
+
+        if self.coordinator.data.get("vehicle_positions_file", None):
+            self._attributes["vehicle_positions_file"] = self.coordinator.data["vehicle_positions_file"]
+
         self._attributes["origin_stop_alert"] = self.coordinator.data[
             "alert"].get("origin_stop_alert", "no info")
         self._attributes["destination_stop_alert"] = self.coordinator.data[

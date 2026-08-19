@@ -187,6 +187,9 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 except Exception as ex:  # pylint: disable=broad-except
                   _LOGGER.error("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
                   return self._data
+                if self._vehicle_position_url:
+                    # let map cards locate the geojson written by get_rt_vehicle_positions
+                    self._data["vehicle_positions_file"] = str(self._route_id) + "_" + str(self._direction) + ".json"
             else:
                 _LOGGER.debug("GTFS RT: RealTime = false, selected in entity options")            
         else:
