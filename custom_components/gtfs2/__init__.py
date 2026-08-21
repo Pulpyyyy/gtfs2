@@ -12,7 +12,7 @@ from .const import DOMAIN, PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_REF
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
-from .gtfs_helper import get_gtfs, update_gtfs_local_stops, get_route_departures, get_trip_stops
+from .gtfs_helper import get_gtfs, update_gtfs_local_stops, get_route_departures, get_trip_stops, prune_gtfs_datasource, intern_gtfs_datasource
 from .gtfs_rt_helper import get_gtfs_rt
 
 _LOGGER = logging.getLogger(__name__)
@@ -78,6 +78,87 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
 
     return True
 
+def _routes_in_use(hass: HomeAssistant, filename: str):
+    """Collect the route_ids configured against a datasource.
+
+    Returns (routes, unrestricted). A datasource is unrestricted when at least
+    one entry queries it without a route: local stop entries walk every route
+    around a position, so their datasource must keep the full feed.
+    """
+    routes: set[str] = set()
+    unrestricted = False
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.data.get("file") != filename:
+            continue
+        if entry.data.get("device_tracker_id"):
+            unrestricted = True
+            continue
+        if route := entry.data.get("route"):
+            routes.add(route.split(": ")[0])
+        else:
+            unrestricted = True
+    return routes, unrestricted
+
+
+async def async_prune_datasources(hass: HomeAssistant, data):
+    """Prune the picked datasources, or every one, down to the routes in use."""
+    dry_run = data.get("dry_run", False)
+    gtfs_dir = hass.config.path(DEFAULT_PATH)
+    # the field takes one name or several; a lone string still comes in as a
+    # string when the service is called from yaml or an old automation
+    wanted = data.get("file")
+    if isinstance(wanted, str):
+        wanted = [wanted] if wanted else []
+    files = {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN) if e.data.get("file")}
+    if wanted:
+        unknown = sorted(set(wanted) - files)
+        if unknown:
+            _LOGGER.error("No configured entry uses datasource(s): %s", ", ".join(unknown))
+        files &= set(wanted)
+        if not files:
+            return {"pruned": [], "unknown": unknown}
+
+    pruned = []
+    for filename in sorted(files):
+        routes, unrestricted = _routes_in_use(hass, filename)
+        if unrestricted:
+            _LOGGER.warning(
+                "Skipping datasource %s: an entry uses it without a route (local stops), "
+                "pruning would remove data it needs", filename)
+            continue
+        stats = await hass.async_add_executor_job(
+            prune_gtfs_datasource, gtfs_dir, filename, routes, dry_run)
+        if stats:
+            pruned.append(stats)
+    return {"pruned": pruned}
+
+
+async def async_intern_datasources(hass: HomeAssistant, data):
+    """Intern the identifiers of the picked datasources, or every one."""
+    dry_run = data.get("dry_run", False)
+    gtfs_dir = hass.config.path(DEFAULT_PATH)
+    # same contract as async_prune_datasources: one name, several, or none
+    wanted = data.get("file")
+    if isinstance(wanted, str):
+        wanted = [wanted] if wanted else []
+    files = {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN) if e.data.get("file")}
+    if wanted:
+        unknown = sorted(set(wanted) - files)
+        if unknown:
+            _LOGGER.error("No configured entry uses datasource(s): %s", ", ".join(unknown))
+        files &= set(wanted)
+        if not files:
+            return {"interned": [], "unknown": unknown}
+
+    interned = []
+    for filename in sorted(files):
+        stats = await hass.async_add_executor_job(
+            intern_gtfs_datasource, gtfs_dir, filename, dry_run)
+        if stats:
+            interned.append(stats)
+    return {"interned": interned}
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GTFS from a config entry."""
     hass.data.setdefault(DOMAIN, {})
@@ -142,6 +223,16 @@ def setup(hass, config):
         stops = await get_trip_stops(hass, call.data)
         return stops       
 
+    async def prune_datasource(call):
+        """My GTFS Prune Datasource service."""
+        _LOGGER.debug("Pruning GTFS datasource with: %s", call.data)
+        return await async_prune_datasources(hass, call.data)
+
+    async def intern_datasource(call):
+        """My GTFS Intern Datasource service."""
+        _LOGGER.debug("Interning GTFS datasource with: %s", call.data)
+        return await async_intern_datasources(hass, call.data)
+
     hass.services.register(
         DOMAIN, "update_gtfs", update_gtfs)
     hass.services.register(
@@ -152,6 +243,10 @@ def setup(hass, config):
         DOMAIN, "extract_departures", extract_departures,supports_response=SupportsResponse.OPTIONAL)
     hass.services.register(
         DOMAIN, "extract_trip_stops", extract_trip_stops,supports_response=SupportsResponse.OPTIONAL)     
+    hass.services.register(
+        DOMAIN, "prune_datasource", prune_datasource,supports_response=SupportsResponse.OPTIONAL)
+    hass.services.register(
+        DOMAIN, "intern_datasource", intern_datasource,supports_response=SupportsResponse.OPTIONAL)
     return True
 
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
