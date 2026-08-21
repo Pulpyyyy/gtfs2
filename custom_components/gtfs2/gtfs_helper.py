@@ -5,6 +5,7 @@ import datetime
 import logging
 import os
 import glob
+import sqlite3
 import json
 import requests
 import pygtfs
@@ -855,13 +856,19 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
     SELECT count(*) as checkidx
     FROM sqlite_master
     WHERE
-    type= 'index' and tbl_name = 'stop_times' and name like '%trip_id%';
+    (type= 'index' and tbl_name = 'stop_times' and name like '%trip_id%')
+    -- an interned datasource exposes stop_times as a view: its indexes
+    -- live on gtfs2_stop_times and must not be recreated here
+    or (type = 'view' and name = 'stop_times');
     """
     sql_index_2 = f"""
     SELECT count(*) as checkidx
     FROM sqlite_master
     WHERE
-    type= 'index' and tbl_name = 'stop_times' and name like '%stop_id%';
+    (type= 'index' and tbl_name = 'stop_times' and name like '%stop_id%')
+    -- an interned datasource exposes stop_times as a view: its indexes
+    -- live on gtfs2_stop_times and must not be recreated here
+    or (type = 'view' and name = 'stop_times');
     """
     sql_index_3 = f"""
     SELECT count(*) as checkidx
@@ -1612,3 +1619,223 @@ async def get_trip_stops(hass, data):
     _LOGGER.debug("Tripstops returned: %s", _tripstops)
     schedule.engine.dispose()
     return _tripstops       
+
+
+# Tables carrying a trip_id that must follow trips when pruning, with the
+# column naming their feed: pygtfs' own join tables do not use "feed_id".
+PRUNE_TRIP_DEPENDENTS = (
+    ("stop_times", "feed_id"),
+    ("frequencies", "feed_id"),
+    ("_trip_shapes", "trip_feed_id"),
+)
+
+
+def prune_gtfs_datasource(gtfs_dir, filename, keep_routes, dry_run=False):
+    """Trim a datasource down to the routes actually in use.
+
+    pygtfs loads the complete feed, so a datasource holds every route of the
+    network even when only a handful are configured. Dropping the unused trips
+    and their stop_times reclaims most of the file: on a mid-size network this
+    is typically a 4x reduction, and it compounds with the fact that stop_times
+    is by far the largest table.
+
+    Only rows are removed: schema, primary keys and indexes are left untouched,
+    so the datasource stays a valid pygtfs database and routes remains complete
+    for the config flow selector.
+    """
+    sqlite_file = os.path.join(gtfs_dir, filename + ".sqlite")
+    if not os.path.exists(sqlite_file):
+        _LOGGER.error("Cannot prune, no such datasource: %s", sqlite_file)
+        return None
+    if not keep_routes:
+        _LOGGER.error("Cannot prune %s: no routes to keep, this would empty the datasource", filename)
+        return None
+
+    size_before = os.path.getsize(sqlite_file)
+    conn = sqlite3.connect(sqlite_file, timeout=300)
+    try:
+        cur = conn.cursor()
+        placeholders = ",".join("?" * len(keep_routes))
+        known = {r[0] for r in cur.execute(
+            f"select route_id from routes where route_id in ({placeholders})",  # noqa: S608
+            tuple(keep_routes))}
+        if unknown := set(keep_routes) - known:
+            _LOGGER.warning("Pruning %s: these routes are not in the datasource: %s", filename, unknown)
+
+        cur.execute("create temp table gtfs2_keep(feed_id integer, trip_id varchar, "
+                    "primary key(feed_id, trip_id)) without rowid")
+        cur.execute(f"insert into gtfs2_keep select feed_id, trip_id from trips "  # noqa: S608
+                    f"where route_id in ({placeholders})", tuple(keep_routes))
+        kept_trips = cur.execute("select count(*) from gtfs2_keep").fetchone()[0]
+        total_trips = cur.execute("select count(*) from trips").fetchone()[0]
+        if not kept_trips:
+            _LOGGER.error("Cannot prune %s: routes %s match no trips, aborting to avoid data loss",
+                          filename, keep_routes)
+            return None
+
+        stats = {"file": filename, "routes": sorted(keep_routes), "dry_run": dry_run,
+                 "trips_before": total_trips, "trips_after": kept_trips,
+                 "size_before_mb": round(size_before / 1048576, 1)}
+
+        for table, feed_col in PRUNE_TRIP_DEPENDENTS:
+            if not _table_has_columns(cur, table, feed_col, "trip_id"):
+                _LOGGER.debug("Pruning %s: skipping absent or unexpected table %s", filename, table)
+                continue
+            before = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
+            if dry_run:
+                after = cur.execute(
+                    f"select count(*) from {table} t inner join gtfs2_keep k "  # noqa: S608
+                    f"on k.feed_id = t.{feed_col} and k.trip_id = t.trip_id").fetchone()[0]
+            else:
+                cur.execute(f"delete from {table} where not exists (select 1 from gtfs2_keep k "  # noqa: S608
+                            f"where k.feed_id = {table}.{feed_col} and k.trip_id = {table}.trip_id)")
+                after = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
+            stats[f"{table}_before"], stats[f"{table}_after"] = before, after
+
+        if dry_run:
+            conn.rollback()
+            _LOGGER.info("Pruning %s (dry run): %s", filename, stats)
+            return stats
+
+        cur.execute("delete from trips where not exists (select 1 from gtfs2_keep k "
+                    "where k.feed_id = trips.feed_id and k.trip_id = trips.trip_id)")
+        conn.commit()
+        # VACUUM cannot run inside a transaction and is what actually shrinks the file
+        conn.isolation_level = None
+        cur.execute("vacuum")
+    except sqlite3.Error as ex:
+        _LOGGER.error("Failed to prune datasource %s: %s", filename, ex)
+        conn.rollback()
+        return None
+    finally:
+        conn.close()
+
+    stats["size_after_mb"] = round(os.path.getsize(sqlite_file) / 1048576, 1)
+    _LOGGER.info("Pruned datasource %s: %s MB -> %s MB, %s of %s trips kept",
+                 filename, stats["size_before_mb"], stats["size_after_mb"],
+                 stats["trips_after"], stats["trips_before"])
+    return stats
+
+
+def _table_has_columns(cur, table, *columns):
+    """Return True when table exists and carries every one of columns."""
+    try:
+        present = {row[1] for row in cur.execute(f"pragma table_info({table})")}
+    except sqlite3.Error:
+        return False
+    return bool(present) and set(columns) <= present
+
+
+def intern_gtfs_datasource(gtfs_dir, filename, dry_run=False):
+    """Replace the repeated trip_id/stop_id strings of stop_times by integer keys.
+
+    GTFS sources routinely emit very long identifiers - 75 characters is common
+    for NeTEx-derived feeds - and SQLite stores each of them three times per
+    stop_times row: in the table, in the primary key index and in the trip_id
+    index. Interning them into two lookup tables removes the bulk of the file.
+
+    stop_times is then re-exposed as a view with its original columns, so every
+    query in this integration keeps working unchanged.
+
+    Two details matter for performance, both measured:
+      - the primary key is (tk, stop_sequence), NOT (feed_id, tk, ...): feed_id
+        holds a single value in practice and leading with it forces a skip-scan
+        that misleads the planner by an order of magnitude;
+      - no ANALYZE. Stale or partial statistics push the planner into scanning
+        stops first and building a temporary index. pygtfs does not analyze
+        either, so the natural state is the fast one.
+    """
+    sqlite_file = os.path.join(gtfs_dir, filename + ".sqlite")
+    if not os.path.exists(sqlite_file):
+        _LOGGER.error("Cannot intern, no such datasource: %s", sqlite_file)
+        return None
+
+    size_before = os.path.getsize(sqlite_file)
+    conn = sqlite3.connect(sqlite_file, timeout=300)
+    try:
+        cur = conn.cursor()
+        if cur.execute("select count(*) from sqlite_master where type = 'view' "
+                       "and name = 'stop_times'").fetchone()[0]:
+            _LOGGER.info("Datasource %s is already interned, nothing to do", filename)
+            return None
+
+        columns = [row[1] for row in cur.execute("pragma table_info(stop_times)")]
+        if not columns:
+            _LOGGER.error("Cannot intern %s: no stop_times table", filename)
+            return None
+        missing = {"trip_id", "stop_id", "stop_sequence"} - set(columns)
+        if missing:
+            _LOGGER.error("Cannot intern %s: stop_times lacks %s", filename, missing)
+            return None
+
+        rows = cur.execute("select count(*) from stop_times").fetchone()[0]
+        unique = cur.execute("select count(*) from (select 1 from stop_times "
+                             "group by trip_id, stop_sequence)").fetchone()[0]
+        if unique != rows:
+            _LOGGER.error("Cannot intern %s: (trip_id, stop_sequence) is not unique "
+                          "(%s rows for %s combinations), the datasource likely holds "
+                          "several feeds", filename, rows, unique)
+            return None
+
+        stats = {"file": filename, "dry_run": dry_run, "rows": rows,
+                 "size_before_mb": round(size_before / 1048576, 1),
+                 "trip_ids": cur.execute("select count(distinct trip_id) from stop_times").fetchone()[0],
+                 "stop_ids": cur.execute("select count(distinct stop_id) from stop_times").fetchone()[0]}
+        if dry_run:
+            _LOGGER.info("Interning %s (dry run): %s", filename, stats)
+            return stats
+
+        # columns carried over as-is, in their original order minus the interned pair
+        carried = [c for c in columns if c not in ("trip_id", "stop_id", "stop_sequence")]
+        carried_ddl = ", ".join(f"{c} {_column_type(cur, 'stop_times', c)}" for c in carried)
+
+        cur.execute("create table gtfs2_trip_key (tk integer primary key, "
+                    "trip_id varchar not null unique)")
+        cur.execute("insert into gtfs2_trip_key(trip_id) select distinct trip_id from stop_times")
+        cur.execute("create table gtfs2_stop_key (sk integer primary key, "
+                    "stop_id varchar not null unique)")
+        cur.execute("insert into gtfs2_stop_key(stop_id) select distinct stop_id from stop_times")
+
+        cur.execute(f"create table gtfs2_stop_times (tk integer not null, "  # noqa: S608
+                    f"stop_sequence integer not null, sk integer not null, {carried_ddl}, "
+                    f"primary key (tk, stop_sequence)) without rowid")
+        cur.execute(f"insert into gtfs2_stop_times select k.tk, st.stop_sequence, s.sk, "  # noqa: S608
+                    f"{', '.join('st.' + c for c in carried)} from stop_times st "
+                    f"join gtfs2_trip_key k on k.trip_id = st.trip_id "
+                    f"join gtfs2_stop_key s on s.stop_id = st.stop_id")
+
+        cur.execute("drop table stop_times")
+        cur.execute("create index gtfs2_stop_times_sk on gtfs2_stop_times(sk)")
+        view_columns = ", ".join(
+            "k.trip_id as trip_id" if c == "trip_id" else
+            "s.stop_id as stop_id" if c == "stop_id" else
+            f"st.{c} as {c}" for c in columns)
+        cur.execute(f"create view stop_times as select {view_columns} "  # noqa: S608
+                    f"from gtfs2_stop_times st "
+                    f"join gtfs2_trip_key k on k.tk = st.tk "
+                    f"join gtfs2_stop_key s on s.sk = st.sk")
+        conn.commit()
+        conn.isolation_level = None
+        cur.execute("drop table if exists sqlite_stat1")
+        cur.execute("vacuum")
+    except sqlite3.Error as ex:
+        _LOGGER.error("Failed to intern datasource %s: %s", filename, ex)
+        conn.rollback()
+        return None
+    finally:
+        conn.close()
+
+    stats["size_after_mb"] = round(os.path.getsize(sqlite_file) / 1048576, 1)
+    _LOGGER.info("Interned datasource %s: %s MB -> %s MB, %s rows, %s trip_ids and %s stop_ids "
+                 "stored once instead of three times per row", filename,
+                 stats["size_before_mb"], stats["size_after_mb"], stats["rows"],
+                 stats["trip_ids"], stats["stop_ids"])
+    return stats
+
+
+def _column_type(cur, table, column):
+    """Return the declared type of a column, defaulting to no affinity."""
+    for row in cur.execute(f"pragma table_info({table})"):
+        if row[1] == column:
+            return row[2] or ""
+    return ""
