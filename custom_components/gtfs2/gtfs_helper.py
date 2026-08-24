@@ -1001,6 +1001,52 @@ def _fmt_gtfs_time(value):
         return str(value) if value is not None else None
 
 
+def get_representative_trip(schedule, route_id, direction):
+    """The fullest trip of a route and direction, to stand in for a real one.
+
+    Used to draw a line that has no departure to point at: which trip is
+    picked matters little for a shape, as long as it is not a short turn, so
+    the one with a shape and the most stops wins. Deterministic on ties, so a
+    restart does not silently swap the drawn path.
+    """
+    if not route_id:
+        return None
+    where = "t.route_id = :route_id"
+    params = {"route_id": str(route_id)}
+    # direction_id is optional in GTFS and gtfs2 stringifies a missing one
+    if direction not in (None, "", "None"):
+        where += " AND CAST(t.direction_id AS TEXT) = :direction"
+        params["direction"] = str(direction)
+    # ONE pass over stop_times, filtered by a subquery on trips, and never a
+    # join. pygtfs creates no index on stop_times at all, so joining it to a
+    # filtered trips set makes SQLite scan the whole table once per candidate
+    # trip: measured on a mid-sized city feed (680k stop_times, 1818 trips on
+    # the line) that was 17.3 SECONDS against 45 ms this way, for the same
+    # answer. Preferring a trip that has a shape is a separate, indexed
+    # question, asked first and dropped if it excludes everything.
+    sql = """
+    SELECT st.trip_id, COUNT(*) AS stops
+    FROM stop_times st
+    WHERE st.trip_id IN (SELECT t.trip_id FROM trips t WHERE {where}{shaped})
+    GROUP BY st.trip_id
+    ORDER BY stops DESC, st.trip_id
+    LIMIT 1
+    """
+    try:
+        with schedule.engine.connect() as conn:
+            row = conn.execute(text(sql.format(where=where, shaped=" AND t.shape_id IS NOT NULL")), params).fetchone()
+            if not row:
+                row = conn.execute(text(sql.format(where=where, shaped="")), params).fetchone()
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.warning("Could not find a trip to draw route %s direction %s: %s", route_id, direction, ex)
+        return None
+    if not row:
+        _LOGGER.debug("No trip at all for route %s direction %s", route_id, direction)
+        return None
+    _LOGGER.debug("Drawing route %s direction %s from trip: %s", route_id, direction, row[0])
+    return row[0]
+
+
 def update_route_geojson(self):
     """Write the journey's ordered stops to www/gtfs2/<route>_<direction>_route.json.
 
@@ -1013,11 +1059,13 @@ def update_route_geojson(self):
     Rewritten only when the drawn trip changes (see coordinator).
     """
     schedule = self._data["schedule"]
-    departure = self._data.get("next_departure") or {}
-    trip_id = departure.get("trip_id", None)
-    route_id = departure.get("route_id", None)
-    direction = str(departure.get("trip_direction_id", ""))
-    if not trip_id or not route_id:
+    trip_id = (self._data.get("next_departure") or {}).get("trip_id", None)
+    if not trip_id:
+        # No departure left today is not the same as no line: a weekday route
+        # read on a Sunday, or a seasonal one out of season, still has a path
+        # worth drawing. Take the fullest trip of this route and direction.
+        trip_id = get_representative_trip(schedule, self._route_id, self._direction)
+    if not trip_id:
         return
     sql_stops = """
     SELECT st.stop_id, s.stop_name, s.stop_lat, s.stop_lon, st.stop_sequence, st.departure_time
@@ -1037,7 +1085,9 @@ def update_route_geojson(self):
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": [row[3], row[2]]},
             "properties": {
-                "id": str(route_id) + "_" + direction + "_" + str(row[4]),
+                "id": str(self._route_id) + "_" + str(self._direction) + "_" + str(row[4]),
+                # the _stop suffix is what a customize_glob rule matches on to
+                # give the stop entity a picture, see upstream c666cb7
                 "title": row[1] + "_stop",
                 "trip_id": trip_id,
                 "stop_id": row[0],
@@ -1050,19 +1100,19 @@ def update_route_geojson(self):
     os.makedirs(geojson_dir, exist_ok=True)
     # the ids come out of the datasource, so they are not file names until
     # they are made ones: see safe_file_part
-    file = os.path.join(geojson_dir, f"{safe_file_part(route_id)}_{safe_file_part(direction)}_route.json")
+    file = os.path.join(geojson_dir, f"{safe_file_part(self._route_id)}_{safe_file_part(self._direction)}_route.json")
     _LOGGER.debug("Creating route geojson file: %s", file)
     with open(file, "w") as outfile:
         json.dump({
             "type": "FeatureCollection",
             "properties": {
                 "trip_id": trip_id,
-                "route_id": str(route_id),
-                "direction_id": direction,
+                "route_id": str(self._route_id),
+                "direction_id": str(self._direction),
             },
             "features": features,
         }, outfile)
-    
+
 def get_local_stop_list(hass, schedule, data):
     _LOGGER.debug("Getting local stops list with data: %s", data)
     device_tracker = hass.states.get(data['device_tracker_id'])

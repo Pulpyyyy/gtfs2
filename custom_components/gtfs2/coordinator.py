@@ -125,17 +125,12 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             except Exception as ex:  # pylint: disable=broad-except
                 raise UpdateFailed(f"Error in getting gtfs data: {ex}") from ex
             _LOGGER.debug("GTFS coordinator data from helper: %s", self._data["next_departure"])
-            # The planned side of the map: the journey's ordered stops, written
-            # next to the vehicle positions. It follows the static data, needs
-            # no realtime at all, and only changes with the drawn trip, so it
-            # is keyed on the trip rather than rewritten every refresh.
-            trip_for_export = self._data.get("next_departure", {}).get("trip_id", None)
-            if trip_for_export and trip_for_export != self._route_export_trip:
-                try:
-                    await self.hass.async_add_executor_job(update_route_geojson, self)
-                    self._route_export_trip = trip_for_export
-                except Exception as ex:  # pylint: disable=broad-except
-                    _LOGGER.error("Error writing route geojson: %s", ex)
+
+            # The route shape comes from the schedule alone: export it here,
+            # outside the realtime block, so a map card can draw the journey
+            # of an entry that has no vehicle feed at all.
+            await self._export_route_shape(data)
+
         
         # collect and return rt attributes
         # STILL REQUIRES A SOLUTION IF CONNECTION TIMING OUT
@@ -193,6 +188,41 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("GTFS RT: RealTime not selected in entity options")
         
         return self._data
+
+    async def _export_route_shape(self, data) -> None:
+        """Write the geojson of the journey the sensor is following.
+
+        Shape and stops are read from the schedule, so this owes nothing to
+        realtime: an entry without a vehicle feed, or with realtime switched
+        off entirely, still gets its line drawn on a map card. Nor does it owe
+        anything to there being a departure today. Rewritten only when the
+        drawn trip changes, which is what makes it cheap enough to sit on
+        every static refresh.
+        """
+        departure = self._data.get("next_departure") or {}
+        route_id = departure.get("route_id", None) or (data.get("route") or "").split(": ")[0]
+        direction = str(departure.get("trip_direction_id", data.get("direction")))
+        # the file is named from the route and the direction, both known even
+        # once the last departure of the day is behind us: the attribute stays
+        # put so a card keeps its route through the evening, and it is named
+        # before the first write rather than a refresh later
+        if route_id and direction not in ("None", ""):
+            self._data["route_geojson_file"] = f"{route_id}_{direction}_route.json"
+        # No departure to point at (last one of the day gone, or a line resting
+        # for days) is not a reason to leave the map empty: the export then
+        # picks a representative trip of the same route and direction. Keyed
+        # so it is written once, and rewritten as soon as a real trip is back.
+        trip_id = departure.get("trip_id", None)
+        export_key = trip_id or f"resting:{route_id}_{direction}"
+        if not route_id or export_key == self._route_export_trip:
+            return
+        self._route_id = route_id
+        self._direction = direction
+        try:
+            await self.hass.async_add_executor_job(update_route_geojson, self)
+            self._route_export_trip = export_key
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Error writing route geojson: %s", ex)
 
 class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
     """Data update coordinator for getting local stops."""

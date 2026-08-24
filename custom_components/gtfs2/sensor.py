@@ -444,12 +444,16 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
       
         self._attributes["gtfs_updated_at"] = self.coordinator.data[
             "gtfs_updated_at"]
-        
+
+        # the drawn journey, exported with or without realtime
+        if self.coordinator.data.get("route_geojson_file", None):
+            self._attributes["route_geojson_file"] = self.coordinator.data["route_geojson_file"]
+
         self._attributes["origin_stop_alert"] = self.coordinator.data[
             "alert"].get("origin_stop_alert", "no info")
         self._attributes["destination_stop_alert"] = self.coordinator.data[
-            "alert"].get("destination_stop_alert", "no info")            
-        
+            "alert"].get("destination_stop_alert", "no info")
+
         if self._departure_rt:
             _LOGGER.debug("next dep realtime attr: %s", self._departure_rt)
             # Add next departure realtime to the right level, only if populated
