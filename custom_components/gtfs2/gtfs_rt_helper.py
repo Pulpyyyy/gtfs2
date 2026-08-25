@@ -317,21 +317,31 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                             delay = stop["arrival"].get("delay",0)
                             
                         # Ignore arrival times in the past
-                        departure_dt = dt_util.utc_from_timestamp(stop_time)  # aware UTC, epoch is always UTC                       
+                        departure_dt = dt_util.utc_from_timestamp(stop_time)  # aware UTC, epoch is always UTC
                         if due_in_minutes(departure_dt) >= 0:
                             departure_times[self._route_id][direction_id][stop_id]["departures"].append(departure_dt)
+                            # the delay belongs to this departure: appending it
+                            # outside this branch kept the delays of departures
+                            # that were dropped, so delays[n] described some
+                            # other departure than departures[n]
                             departure_times[self._route_id][direction_id][stop_id]["delays"].append(delay)
                             _LOGGER.debug("RT stoptime: %s, in utcfromtimestamp: %s", stop_time, departure_dt)
                         else:
                             _LOGGER.debug("Not using realtime stop data for old due-in-minutes: %s", due_in_minutes(departure_dt))
-                            
-                       
-    # Sort by time
+
+    # Sort by time, carrying each delay with its own departure: sorting the two
+    # lists independently, or only one of them, breaks the pairing again
     for route in departure_times:
-        for direction in departure_times[self._route_id]:
-            for stop in departure_times[self._route_id][direction]:
-                for t in departure_times[self._route_id][direction][stop]["departures"]:
-                    departure_times[self._route_id][direction][stop]["departures"].sort()
+        for direction in departure_times[route]:
+            for stop in departure_times[route][direction]:
+                slot = departure_times[route][direction][stop]
+                if len(slot["delays"]) == len(slot["departures"]):
+                    paired = sorted(zip(slot["departures"], slot["delays"]),
+                                    key=lambda p: p[0])
+                    slot["departures"] = [p[0] for p in paired]
+                    slot["delays"] = [p[1] for p in paired]
+                else:
+                    slot["departures"].sort()
 
     self.info = departure_times
     _LOGGER.debug("Departure times Route Trip: %s", departure_times)
