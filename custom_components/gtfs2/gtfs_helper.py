@@ -621,7 +621,11 @@ def get_gtfs(hass, path, data, update=False):
     if data["extract_from"] == "url":
         if update or not os.path.exists(os.path.join(gtfs_dir, file)):
             try:
-                r = requests.get(url,headers=_headers, allow_redirects=True,timeout=15)
+                # some providers answer 403 to the default requests user agent;
+                # _headers is None unless an api key is used in a header
+                _get_headers = dict(_headers or {})
+                _get_headers.setdefault("User-Agent", "home-assistant-gtfs2")
+                r = requests.get(url,headers=_get_headers, allow_redirects=True,timeout=15)
                 r.raise_for_status()
                 if _pending_remove:
                     remove_datasource(hass, path, filename, True)
