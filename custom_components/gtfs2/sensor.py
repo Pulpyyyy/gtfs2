@@ -272,6 +272,8 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
             self._attributes[ATTR_ARRIVAL] = dt_util.as_utc(
                 self._departure.get("arrival_time")
             ).isoformat()
+            # theoretical journey time in minutes, arrival minus departure
+            self._attributes["duration"] = self._departure.get("duration")
 
             self._attributes[ATTR_DAY] = self._departure["day"]
 
@@ -444,7 +446,14 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         self._attributes["next_departures_destination_arrival_times"] = []
         if self._next_departures:
             self._attributes["next_departures_destination_arrival_times"] = self._departure[
-                "next_departures_destination_arrival_times"][:10] 
+                "next_departures_destination_arrival_times"][:10]
+
+        # Add next departures durations, in minutes
+        prefix = "next_departures_durations"
+        self._attributes["next_departures_durations"] = []
+        if self._next_departures:
+            self._attributes["next_departures_durations"] = self._departure[
+                "next_departures_durations"][:10]
 
         # Add the stop each next departure leaves from: a place can be served
         # from two of its records in turn (a terminus's quays)
