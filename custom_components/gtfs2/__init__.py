@@ -13,8 +13,8 @@ from .const import DOMAIN, PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PAT
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
-from .gtfs_helper import get_gtfs, update_gtfs_local_stops, get_route_departures, get_trip_stops
-from .gtfs_rt_helper import get_gtfs_rt, safe_file_part
+from .gtfs_helper import get_gtfs, update_gtfs_local_stops, get_route_departures, get_trip_stops, route_geojson_name, vehicle_positions_name
+from .gtfs_rt_helper import get_gtfs_rt
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -189,11 +189,10 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         return
     # www/gtfs2, where the export writes them, not the datasource folder
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
-    base = f"{safe_file_part(route)}_{safe_file_part(direction)}"
-    names = [base + ".json", base + "_route.json"]
+    names = [vehicle_positions_name(route, direction), route_geojson_name(route, direction)]
     # the files written before the ids were sanitised carry the raw name and
-    # nothing else would ever remove them; an id that is not a plain file
-    # name never wrote in this directory, so it is not looked for there
+    # nothing else would ever remove them; an id that is not a plain file name
+    # never wrote in this directory, so it is not looked for there
     legacy = f"{route}_{direction}"
     if os.path.basename(legacy) == legacy and ".." not in legacy:
         names += [legacy + ".json", legacy + "_route.json"]

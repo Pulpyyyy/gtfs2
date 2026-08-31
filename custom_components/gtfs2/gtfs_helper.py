@@ -1001,6 +1001,18 @@ def _fmt_gtfs_time(value):
         return str(value) if value is not None else None
 
 
+def route_geojson_name(route_id, direction):
+    """File name of the route export, in one place because three callers need
+    the same answer: the writer, the sensor attribute and the removal on entry
+    deletion. A file nobody can name again is a file nobody can delete."""
+    return f"{safe_file_part(route_id)}_{safe_file_part(direction)}_route.json"
+
+
+def vehicle_positions_name(route_id, direction):
+    """Same, for the realtime positions file written by get_rt_vehicle_positions."""
+    return f"{safe_file_part(route_id)}_{safe_file_part(direction)}.json"
+
+
 def get_representative_trip(schedule, route_id, direction):
     """The fullest trip of a route and direction, to stand in for a real one.
 
@@ -1100,7 +1112,7 @@ def update_route_geojson(self):
     os.makedirs(geojson_dir, exist_ok=True)
     # the ids come out of the datasource, so they are not file names until
     # they are made ones: see safe_file_part
-    file = os.path.join(geojson_dir, f"{safe_file_part(self._route_id)}_{safe_file_part(self._direction)}_route.json")
+    file = os.path.join(geojson_dir, route_geojson_name(self._route_id, self._direction))
     _LOGGER.debug("Creating route geojson file: %s", file)
     with open(file, "w") as outfile:
         json.dump({
