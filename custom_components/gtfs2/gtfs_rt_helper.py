@@ -398,36 +398,91 @@ def get_rt_vehicle_positions(self):
     update_geojson(self)
     return geojson_body
     
+def _alert_kind(alert):
+    """The GTFS-RT cause and effect of an alert, as their spec names.
+
+    The feed carries far more than the sentence gtfs2 keeps: a cause out of
+    twelve (STRIKE, ACCIDENT, WEATHER, CONSTRUCTION...) and an effect out of
+    eleven (NO_SERVICE, DETOUR, SIGNIFICANT_DELAYS...). A card cannot draw
+    "roadworks" from a free sentence, but it can from these.
+
+    UNKNOWN_CAUSE and UNKNOWN_EFFECT are dropped: they are the proto's default
+    for a field the feed never set, so publishing them would put a value on an
+    attribute that has nothing to say. Absent means "the feed did not say".
+    """
+    out = {}
+    for field in ("cause", "effect"):
+        value = getattr(alert, field, None)
+        if value is None:
+            continue
+        try:
+            name = alert.DESCRIPTOR.fields_by_name[field].enum_type.values_by_number[value].name
+        except Exception:  # pylint: disable=broad-except
+            # an enum value this binding does not know: the spec grows, and a
+            # number nobody can name is not worth failing an update over
+            _LOGGER.debug("Unknown alert %s value: %s", field, value)
+            continue
+        if name and not name.startswith("UNKNOWN"):
+            out[field] = name
+    return out
+
+
+def _alert_scope(alert, origin_id, destination_id, route_id):
+    """Which end of this journey an alert names, over ALL its informed entities.
+
+    The loop used to reassign stop_id and route_id on every turn and compare
+    only once it had ended, so an alert naming ten stops was matched on the
+    tenth alone: yours had to be last in the list, or the alert was dropped in
+    silence. An alert for a whole network names many stops.
+    """
+    hits = {"origin": False, "destination": False, "route": False}
+    for x in alert.informed_entity:
+        e_stop = x.stop_id if x.HasField("stop_id") else None
+        e_route = x.route_id if x.HasField("route_id") else None
+        if e_route is not None and e_route != str(route_id):
+            continue                      # an alert about another line
+        if e_stop is not None and e_stop == str(origin_id):
+            hits["origin"] = True
+        elif e_stop is not None and e_stop == str(destination_id):
+            hits["destination"] = True
+        elif e_stop is None and e_route == str(route_id):
+            hits["route"] = True
+    return hits
+
+
 def get_rt_alerts(self):
     rt_alerts = {}
-    if (self._alerts_url)[:4] == "http":
+    # an entry created before this option existed has no alerts_url at all, and
+    # subscripting None raised, which cost that entry its whole realtime block
+    if str(self._alerts_url or "")[:4] == "http":
         feed_entities = get_gtfs_feed_entities(
             url=self._alerts_url,
             headers=self._headers,
             label="alerts",
         )
         for entity in feed_entities:
-            if entity.HasField("alert"):
-                for x in entity.alert.informed_entity:
-                    if x.HasField("stop_id"):
-                        stop_id = x.stop_id 
-                    else:
-                        stop_id = "unknown"
-                    if x.HasField("stop_id"):
-                        route_id = x.route_id  
-                    else:
-                        route_id = "unknown"
-                if stop_id == self._stop_id and (route_id == "unknown" or route_id == self._route_id): 
-                    _LOGGER.debug("RT Alert for route: %s, stop: %s, alert: %s", route_id, stop_id, entity.alert.header_text)
-                    rt_alerts["origin_stop_alert"] = (str(entity.alert.header_text).split('text: "')[1]).split('"',1)[0].replace(':','').replace('\n','')
-                if stop_id == self._destination_id and (route_id == "unknown" or route_id == self._route_id): 
-                    _LOGGER.debug("RT Alert for route: %s, stop: %s, alert: %s", route_id, stop_id, entity.alert.header_text)
-                    rt_alerts["destination_stop_alert"] = (str(entity.alert.header_text).split('text: "')[1]).split('"',1)[0].replace(':','').replace('\n','')
-                if stop_id == "unknown" and route_id == self._route_id: 
-                    _LOGGER.debug("RT Alert for route: %s, stop: %s, alert: %s", route_id, stop_id, entity.alert.header_text)
-                    rt_alerts["origin_stop_alert"] = (str(entity.alert.header_text).split('text: "')[1]).split('"',1)[0].replace(':','').replace('\n','')
-                    rt_alerts["destination_stop_alert"] = (str(entity.alert.header_text).split('text: "')[1]).split('"',1)[0].replace(':','').replace('\n','')    
-                        
+            if not entity.HasField("alert"):
+                continue
+            alert = entity.alert
+            hits = _alert_scope(alert, self._stop_id, self._destination_id, self._route_id)
+            if not any(hits.values()):
+                continue
+            try:
+                text = (str(alert.header_text).split('text: "')[1]).split('"', 1)[0].replace(':', '').replace('\n', '')
+            except IndexError:
+                # an alert with no readable header: its cause and effect are
+                # still worth having, and a sentence is not required to say
+                # that something is going on
+                text = ""
+            _LOGGER.debug("RT Alert for route: %s, scope: %s, alert: %s", self._route_id, hits, alert.header_text)
+            if hits["origin"] or hits["route"]:
+                rt_alerts["origin_stop_alert"] = text
+            if hits["destination"] or hits["route"]:
+                rt_alerts["destination_stop_alert"] = text
+            # what kind of alert, which the sentence alone cannot be asked for
+            for field, name in _alert_kind(alert).items():
+                rt_alerts.setdefault("alert_" + field, name)
+
     return rt_alerts
     
 def get_rt_alerts_json(self):
