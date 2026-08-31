@@ -13,6 +13,8 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import ATTR_LATITUDE, ATTR_LONGITUDE, CONF_NAME
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import Entity
+import threading
+import time
 from homeassistant.util import Throttle
 import binascii
 import base64
@@ -86,7 +88,49 @@ def due_in_minutes(timestamp):
     _LOGGER.debug(f"GTFS RT due in minutes, timestamp: %s, now_utc: %s", timestamp, dt_util.utcnow())
     return int(diff.total_seconds() / 60)
 
+# One GTFS-RT feed covers a whole network, so every sensor reading the same
+# provider asks for the same bytes. Each coordinator used to download and parse
+# it for itself, once a minute: on a 1.6 MiB feed with six entries that is
+# about 13.8 GiB a day, and the protobuf to json conversion dominates the CPU.
+#
+# The feed publishes neither ETag nor Last-Modified, so conditional requests
+# are impossible and a local cache is the only way to avoid the repeat.
+_FEED_CACHE: dict[tuple[str, str], tuple[float, object]] = {}
+_FEED_CACHE_LOCKS: dict[tuple[str, str], threading.Lock] = {}
+_FEED_CACHE_GUARD = threading.Lock()
+# short enough that a delay stays fresh, long enough to cover a wave of
+# coordinators: they were measured starting 12 ms apart
+FEED_CACHE_TTL = 30
+
+
 def get_gtfs_feed_entities(url: str, headers, label: str):
+    """Return the feed entities, fetching at most once per TTL and per feed.
+
+    Holds a per-feed lock across the fetch: without it the coordinators, which
+    wake within milliseconds of each other, would all miss the cache and
+    download in parallel before the first one filled it.
+    """
+    key = (url, label)
+    with _FEED_CACHE_GUARD:
+        lock = _FEED_CACHE_LOCKS.setdefault(key, threading.Lock())
+
+    with lock:
+        cached = _FEED_CACHE.get(key)
+        if cached is not None:
+            age = time.time() - cached[0]
+            if age < FEED_CACHE_TTL:
+                _LOGGER.debug("GTFS RT cache hit for %s (%s), age %.1fs", label, url, age)
+                return cached[1]
+
+        entities = _fetch_gtfs_feed_entities(url, headers, label)
+        # a failed fetch returns None: do not cache it, the next caller should
+        # get a real attempt rather than a stale failure
+        if entities is not None:
+            _FEED_CACHE[key] = (time.time(), entities)
+        return entities
+
+
+def _fetch_gtfs_feed_entities(url: str, headers, label: str):
     _LOGGER.debug(f"GTFS RT get_feed_entities for url: {url} , headers: {headers}, label: {label}")
     feed = gtfs_realtime_pb2.FeedMessage()  # type: ignore
 
@@ -345,6 +389,12 @@ def get_rt_vehicle_positions(self):
     )
     geojson_body = []
     geojson_element = {"geometry": {"coordinates":[],"type": "Point"}, "properties": {"id": "", "title": "", "trip_id": "", "route_id": "", "direction_id": "", "vehicle_id": "", "vehicle_label": ""}, "type": "Feature"}
+    if not feed_entities:
+        # a failed fetch returns None: iterating it raises, and the caller's
+        # broad except then abandons the whole realtime block, so a hiccup on
+        # vehicle-positions used to take the departure times down with it
+        _LOGGER.debug("No proper RT feed entities for vehicle positions")
+        return geojson_body
     for entity in feed_entities:
         vehicle = entity["vehicle"]
         
@@ -406,6 +456,9 @@ def get_rt_alerts(self):
             headers=self._headers,
             label="alerts",
         )
+        if not feed_entities:
+            _LOGGER.debug("No proper RT feed entities for alerts")
+            return rt_alerts
         for entity in feed_entities:
             if entity.HasField("alert"):
                 for x in entity.alert.informed_entity:
@@ -483,6 +536,11 @@ def get_gtfs_rt(hass, path, data):
     if data.get(CONF_API_KEY_LOCATION, None) == "query_string":
       if data.get(CONF_API_KEY, None):
         url = url + "?" + data[CONF_API_KEY_NAME] + "=" + data[CONF_API_KEY]
+    # NOTE: Accept asks the server for a response format and the api key
+    # authenticates, so they are unrelated, yet the header is only sent when
+    # the key travels in a header. A feed that needs the header and takes its
+    # key in the url, or one that needs it with no key at all, never gets it.
+    # Left as is for now: changing it changes behaviour for existing setups.
     if data.get(CONF_API_KEY_LOCATION, None) == "header":
         _headers = {data[CONF_API_KEY_NAME]: data[CONF_API_KEY]}
         if data.get(CONF_ACCEPT_HEADER_PB, False):
