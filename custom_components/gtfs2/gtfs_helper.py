@@ -43,7 +43,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
-                           now, now_date, yesterday, tomorrow, tomorrow_date, schedule):
+                           now, now_date, yesterday, tomorrow, tomorrow_date, schedule,
+                           direction=None, route=None, line=None):
     """Run the static-GTFS SQL query and return matching rows as plain dicts.
                                                                                                             
                  
@@ -60,6 +61,13 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         end_station_id = str(destination)+'%'
         start_station_where = f"AND start_station.stop_id in (select stop_id from stops where stop_name like :origin_station_id)"
         end_station_where = f"AND end_station.stop_id in (select stop_id from stops where stop_name like :end_station_id)"
+        # the train flow does not ask for a direction, it stores 0 as a placeholder
+        direction_where = ""
+        direction = None
+        route = None
+        route_where = ""
+        # the train flow stores the picked line's code instead of a route id
+        line_where = "AND route.route_short_name = :line" if line else ""
         _LOGGER.debug("Setting up TRAIN Route for start/end : %s / %s ", start_station_id, end_station_id)
     else:
         route_type_where = "1=1"
@@ -67,7 +75,22 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         end_station_id = destination.split(': ')[0]
         start_station_where = f"AND start_station.stop_id = :origin_station_id"
         end_station_where = f"AND end_station.stop_id = :end_station_id"
-        _LOGGER.debug("Setting up Route for start/end : %s / %s ", start_station_id, end_station_id)
+        # A circular line runs both directions through the same stops in the
+        # same order, so the stop pair alone does not tell them apart: also
+        # hold the direction the entry was set up with. Trips without a
+        # direction_id keep matching, as in get_stop_list.
+        if direction in (0, 1):
+            direction_where = "AND (trip.direction_id = :direction OR trip.direction_id IS NULL)"
+        else:
+            direction = None
+            direction_where = ""
+        # The same goes for the line: the flow picked one route, so the
+        # sensor holds it, and stops shared by several lines no longer mix
+        # their departures. Entries without a stored route stay as they were.
+        route_where = "AND trip.route_id = :route" if route else ""
+        line = None
+        line_where = ""
+        _LOGGER.debug("Setting up Route for start/end : %s / %s, direction: %s, route: %s", start_station_id, end_station_id, direction, route)
                             
                                                 
                                                                                  
@@ -149,6 +172,9 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
 		WHERE {route_type_where}
         {start_station_where}
         {end_station_where}
+        {direction_where}
+        {route_where}
+        {line_where}
         AND origin_stop_sequence < dest_stop_sequence
         AND calendar.start_date <= date('{now_date}')
         AND calendar.end_date >= date('{now_date}')
@@ -204,6 +230,9 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
 		WHERE {route_type_where}
         {start_station_where}
         {end_station_where}
+        {direction_where}
+        {route_where}
+        {line_where}
 		AND origin_stop_sequence < dest_stop_sequence
         AND today_cd = 1
 		{tomorrow_calendar_date_where}
@@ -217,10 +246,16 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         "route_type_where": route_type_where,
         "start_station_where": start_station_where,
         "end_station_where": end_station_where,
+        "direction_where": direction_where,
+        "route_where": route_where,
+        "line_where": line_where,
         "tomorrow_select2": tomorrow_select2,
         "tomorrow_calendar_date_where": tomorrow_calendar_date_where,
         "origin_station_id": start_station_id,
         "end_station_id": end_station_id,
+        "direction": direction,
+        "route": route,
+        "line": line,
         "limit": limit,
         "route_type": route_type,
         "now_date": now_date,
@@ -241,6 +276,9 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
             {
                 "origin_station_id": start_station_id,
                 "end_station_id": end_station_id,
+                "direction": direction,
+                "route": route,
+                "line": line,
                 "limit": limit,
                 "route_type": route_type,
             },
@@ -559,6 +597,15 @@ def get_next_departure(hass, _data):
     schedule = _data["schedule"]
     route_type = _data["route_type"]
 
+    # What the entry was set up with, beyond the stop pair: the direction it
+    # runs in, the route it was picked on, and, for trains, the line code.
+    # Read here so the query stays a pure function of its arguments.
+    direction = str(_data.get("direction", "") or "")
+    direction = int(direction) if direction in ("0", "1") else None
+    route = str(_data.get("route", "") or "").split(": ")[0].strip()
+    route = route if route and route != "train" else None
+    line = str(_data.get("line", "") or "").strip() or None
+
     offset = _data["offset"]
     include_tomorrow = _data["include_tomorrow"]
     now = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset)
@@ -579,6 +626,7 @@ def get_next_departure(hass, _data):
     rows, start_station_id = _fetch_departure_rows(
         route_type, _data["origin"], _data["destination"], include_tomorrow,
         now, now_date, yesterday, tomorrow, tomorrow_date, schedule,
+        direction=direction, route=route, line=line,
     )
 
     return _interpret_departure_rows(
