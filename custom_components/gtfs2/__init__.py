@@ -139,7 +139,33 @@ def setup(hass, config):
         """My GTFS Trip Stops service."""
         _LOGGER.debug("Retrieving trip stops with: %s", call.data)
         stops = await get_trip_stops(hass, call.data)
-        return stops       
+        return stops
+
+    async def set_include_tomorrow(call: ServiceCall):
+        """Flip include_tomorrow on config entries without recreating them.
+
+        The field lives in entry.data and is not exposed by the options
+        flow; this service updates it via async_update_entry and reloads
+        the affected entries. Without entry_id it applies to every entry
+        that carries the field (start/end sensors).
+        """
+        enabled = bool(call.data.get("enabled", True))
+        target = call.data.get("entry_id", None)
+        changed = 0
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            if target and entry.entry_id != target:
+                continue
+            if "include_tomorrow" not in entry.data:
+                continue
+            if bool(entry.data.get("include_tomorrow")) == enabled:
+                continue
+            new_data = dict(entry.data)
+            new_data["include_tomorrow"] = enabled
+            hass.config_entries.async_update_entry(entry, data=new_data)
+            await hass.config_entries.async_reload(entry.entry_id)
+            changed += 1
+            _LOGGER.info("Set include_tomorrow=%s on entry: %s", enabled, entry.title)
+        return {"changed": changed}
 
     hass.services.register(
         DOMAIN, "update_gtfs", update_gtfs)
@@ -150,7 +176,9 @@ def setup(hass, config):
     hass.services.register(
         DOMAIN, "extract_departures", extract_departures,supports_response=SupportsResponse.OPTIONAL)
     hass.services.register(
-        DOMAIN, "extract_trip_stops", extract_trip_stops,supports_response=SupportsResponse.OPTIONAL)     
+        DOMAIN, "extract_trip_stops", extract_trip_stops,supports_response=SupportsResponse.OPTIONAL)
+    hass.services.register(
+        DOMAIN, "set_include_tomorrow", set_include_tomorrow, supports_response=SupportsResponse.OPTIONAL)
     return True
 
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
