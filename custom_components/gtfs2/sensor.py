@@ -450,6 +450,18 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         self._attributes["destination_stop_alert"] = self.coordinator.data[
             "alert"].get("destination_stop_alert", "no info")
 
+        # The whole stack behind those two sentences, worst first: a journey can
+        # be under a cancellation and a works notice at the same time, and the
+        # strings can only say one of them. Each item carries its text and, when
+        # the feed states them, its cause and effect. Written only when there is
+        # something to say, and removed when there is not.
+        for key in ("origin_stop_alerts", "destination_stop_alerts"):
+            value = self.coordinator.data["alert"].get(key, None)
+            if value:
+                self._attributes[key] = value
+            elif key in self._attributes:
+                del self._attributes[key]
+
         # What kind of alert, in the feed's own vocabulary: a cause out of
         # twelve and an effect out of eleven. A card can draw roadworks from
         # CONSTRUCTION; it cannot draw them from a free sentence. Written only
