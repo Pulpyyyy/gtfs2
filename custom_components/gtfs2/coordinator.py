@@ -29,7 +29,7 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson
+from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson, route_geojson_name, vehicle_positions_name
 from .gtfs_rt_helper import get_next_services, get_rt_alerts
 
 _LOGGER = logging.getLogger(__name__)
@@ -187,7 +187,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                   return self._data
                 if self._vehicle_position_url:
                     # let map cards locate the geojson written by get_rt_vehicle_positions
-                    self._data["vehicle_positions_file"] = str(self._route_id) + "_" + str(self._direction) + ".json"
+                    self._data["vehicle_positions_file"] = vehicle_positions_name(self._route_id, self._direction)
                 if self._vehicle_position_url and not self._stale_markers_cleaned:
                     self._cleanup_stale_vehicle_markers()
                     self._stale_markers_cleaned = True
@@ -216,7 +216,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         # put so a card keeps its route through the evening, and it is named
         # before the first write rather than a refresh later
         if route_id and direction not in ("None", ""):
-            self._data["route_geojson_file"] = f"{route_id}_{direction}_route.json"
+            self._data["route_geojson_file"] = route_geojson_name(route_id, direction)
         # No departure to point at (last one of the day gone, or a line resting
         # for days) is not a reason to leave the map empty: the export then
         # picks a representative trip of the same route and direction. Keyed
