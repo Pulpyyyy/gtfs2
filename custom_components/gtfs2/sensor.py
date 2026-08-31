@@ -448,8 +448,21 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         self._attributes["origin_stop_alert"] = self.coordinator.data[
             "alert"].get("origin_stop_alert", "no info")
         self._attributes["destination_stop_alert"] = self.coordinator.data[
-            "alert"].get("destination_stop_alert", "no info")            
-        
+            "alert"].get("destination_stop_alert", "no info")
+
+        # What kind of alert, in the feed's own vocabulary: a cause out of
+        # twelve and an effect out of eleven. A card can draw roadworks from
+        # CONSTRUCTION; it cannot draw them from a free sentence. Written only
+        # when the feed says so, and removed when it stops saying so, so the
+        # attribute's presence is itself the answer to "is there one".
+        for key in ("alert_cause", "alert_effect"):
+            value = self.coordinator.data["alert"].get(key, None)
+            if value:
+                self._attributes[key] = value
+            elif key in self._attributes:
+                del self._attributes[key]
+
+
         if self._departure_rt:
             _LOGGER.debug("next dep realtime attr: %s", self._departure_rt)
             # Add next departure realtime to the right level, only if populated
