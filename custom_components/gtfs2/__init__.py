@@ -12,7 +12,7 @@ from .const import DOMAIN, PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_REF
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
-from .gtfs_helper import get_gtfs, update_gtfs_local_stops, get_route_departures, get_trip_stops
+from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops
 from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource
 from .gtfs_rt_helper import get_gtfs_rt
 
@@ -195,10 +195,17 @@ def setup(hass, config):
     """Setup the service component."""
 
     def update_gtfs(call):
-        """My GTFS Update service."""
+        """My GTFS Update service.
+
+        Refreshes the datasource through the scratch database: the fresh
+        feed is filtered down to the routes actually followed, rebuilt
+        beside the live file and swapped in, so the sensors never read a
+        half-built database. Falls back to the legacy full extract when
+        the datasource has no routes to refresh.
+        """
         _LOGGER.debug("Updating GTFS with: %s", call.data)
-        get_gtfs(hass, DEFAULT_PATH, call.data, True)
-        return True     
+        refresh_datasource(hass, DEFAULT_PATH, call.data)
+        return True
 
     def update_gtfs_rt_local(call):
         """My GTFS RT service."""

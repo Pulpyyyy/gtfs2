@@ -47,10 +47,12 @@ from .const import (
     TIME_STR_FORMAT
     )
 from .gtfs_rt_helper import get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities
+from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in
 from .gtfs_filter import (
     filter_gtfs_zip,
     read_zip_agencies,
     read_zip_routes,
+    zip_only_future_dates,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -751,9 +753,9 @@ def _source_request(data):
     headers = {"User-Agent": "home-assistant-gtfs2"}
     key = data.get(CONF_API_KEY)
     if key and data.get(CONF_API_KEY_LOCATION) == "query_string":
-        url = url + "?" + data[CONF_API_KEY_NAME] + "=" + key
+        url = url + "?" + (data.get(CONF_API_KEY_NAME) or "api_key") + "=" + key
     if key and data.get(CONF_API_KEY_LOCATION) == "header":
-        headers[data[CONF_API_KEY_NAME]] = key
+        headers[(data.get(CONF_API_KEY_NAME) or "api_key")] = key
     return url, headers
 
 
@@ -809,6 +811,96 @@ def open_datasource(gtfs_dir, filename):
         _LOGGER.error("No datasource to open: %s", sqlite_file)
         return None
     return pygtfs.Schedule(f"{sqlite_file}?check_same_thread=False&timeout=60")
+
+
+def refresh_datasource(hass, path, data):
+    """Refresh a datasource from its source, keeping the sensors served.
+
+    The legacy update rebuilt the real database in place: on a large feed
+    the sensors read a half-built file for as long as the import took. Here
+    the fresh feed is filtered down to the routes the database actually
+    follows, unpacked into the scratch database, copied into a new real
+    file built beside the old one, and the two are swapped in one rename.
+    The coordinators reopen the file on their next cycle, so they only ever
+    see the old complete data or the new complete data.
+
+    Falls back to the legacy full extract when there is nothing to refresh
+    from: no database yet, or one that follows no route.
+
+    Returns {route_id: stop_times} on success, False on failure, and
+    whatever get_gtfs returns when it falls back.
+    """
+    gtfs_dir = hass.config.path(path)
+    filename = data["file"]
+    real = real_path(gtfs_dir, filename)
+    routes = sorted(routes_in(real))
+    if not routes:
+        _LOGGER.info("Datasource %s follows no route yet, extracting it whole",
+                     filename)
+        return get_gtfs(hass, path, data, True)
+
+    zip_name = filename + ".zip"
+    zip_path = os.path.join(gtfs_dir, zip_name)
+    if data.get("extract_from", "url") == "url":
+        # download beside the current zip and swap only once complete: the
+        # zip is the only full record of the feed and must survive a failed
+        # download
+        fresh = zip_path + ".new"
+        try:
+            url, headers = _source_request(data)
+            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15)
+            r.raise_for_status()
+            with open(fresh, "wb") as out:
+                out.write(r.content)
+            os.replace(fresh, zip_path)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Could not download %s: %s", data.get("url"), ex)
+            if os.path.exists(fresh):
+                try:
+                    os.remove(fresh)
+                except OSError:
+                    pass
+            return False
+    if not os.path.exists(zip_path):
+        _LOGGER.error("No source zip to refresh %s from", filename)
+        return False
+    if data.get("check_source_dates", False) and zip_only_future_dates(zip_path):
+        _LOGGER.info("New file contains only dates in the future, "
+                     "keeping the current data")
+        return False
+
+    # the new real database is built under its own datasource name, so every
+    # existing helper works on it unchanged and nothing it does can touch the
+    # file the sensors are reading
+    staging = filename + ".refresh"
+    new_real = real_path(gtfs_dir, staging)
+
+    def _build(scratch_file):
+        return build_scratch_database(
+            gtfs_dir, zip_name, scratch_file,
+            data.get("clean_feed_info", False), only_routes=routes)
+
+    try:
+        if os.path.exists(new_real):
+            os.remove(new_real)
+        added = import_routes(gtfs_dir, staging, routes, _build)
+        if added is None or len(added) < len(routes):
+            _LOGGER.error("Refresh of %s aborted, the current data stays: %s",
+                          filename, added)
+            return False
+        # intern only: everything in this file was just copied on purpose
+        optimise_datasource(gtfs_dir, staging)
+        os.replace(new_real, real)
+    finally:
+        for leftover in (new_real, new_real + "-journal"):
+            if os.path.exists(leftover):
+                try:
+                    os.remove(leftover)
+                except OSError as ex:
+                    _LOGGER.warning("Could not remove %s: %s", leftover, ex)
+    _LOGGER.info("Refreshed datasource %s from its source: %s stop_times "
+                 "per route", filename, added)
+    return added
 
 
 def check_calendar_dates_from_zip(gtfs_dir,file):
