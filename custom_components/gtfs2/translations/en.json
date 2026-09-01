@@ -181,6 +181,36 @@
       "optimise": {
         "title": "Free up disk space",
         "description": "The source **{file}** takes **{size}**. Most of it is timetables for lines no sensor reads.\n\n**{kept}** line(s) kept, **{dropped}** removed.\n\nRemoving them and compacting what remains often divides the size by ten or more. A removed line can always be added back later.\n\nThis takes a few seconds.\n\n[documentation]({docu_extracting})"
+      },
+      "source_rt": {
+        "description": "Realtime is set up once per source: every sensor reading this source shares these feeds. Enter only the ones you want, **departures** is the only one that switches realtime on. You can also leave everything empty and add the feeds later, from this source's entry in the integration page.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "trip_update_url": "Departures feed address",
+          "vehicle_position_url": "Vehicle positions feed address (optional)",
+          "alerts_url": "Service alerts feed address (optional)",
+          "needs_api_key": "This requires an API key"
+        },
+        "data_description": {
+          "trip_update_url": "The real delay on your sensor, instead of the timetable.\n`https://example.org/gtfs/`**`trip-updates`**",
+          "vehicle_position_url": "Where the vehicles are, for a map card. Leave empty if you do not want it.\n`https://example.org/gtfs/`**`vehicle-positions`**",
+          "alerts_url": "Disruption messages from the operator. Leave empty if you do not want it.\n`https://example.org/gtfs/`**`service-alerts`**",
+          "needs_api_key": "Tick this if the provider gave you a key to read these feeds."
+        }
+      },
+      "source_rt_key": {
+        "description": "The provider states these in its documentation.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "api_key": "API key",
+          "api_key_name": "Name the provider expects",
+          "api_key_location": "Where the key goes",
+          "accept": "Also send Accept: application/x-protobuf (only applies when the key goes in the header)"
+        },
+        "data_description": {
+          "api_key": "The key itself, copied from the provider.",
+          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_location": "In the web address, or in the request header.",
+          "accept": "Only applies when the key goes in the header."
+        }
       }
     },
     "error": {
@@ -229,7 +259,6 @@
           "offset": "Offset in minutes",
           "max_local_stops": "Limit #stops to avoid possible performance impact. \nIncrease at your own risk",
           "source_timezone_correction": "Correct source gtfs timezone (in hours)",
-          "real_time": "Setup Realtime integration? \n (needs data from the same source)",
           "local_stop_refresh_interval": "Data refresh interval (in minutes)",
           "timerange": "Checking for departures in future from 'now' (in minutes: between 15 and 120)",
           "check_source_dates": "experimental: avoid using new zip/source contain having no current information",
@@ -242,13 +271,12 @@
           "timerange": "How far ahead to look for departures, in minutes.",
           "radius": "How far around the person or zone to look for stops, in metres.",
           "max_local_stops": "Above this many stops the sensor gets slow. Raise it at your own risk.",
-          "real_time": "Read live delays from the provider, on top of the timetable.",
           "source_timezone_correction": "Only if the source publishes times in another timezone, in hours.",
           "check_source_dates": "Experimental: refuse a new file whose dates are all in the future."
         }
       },
       "real_time": {
-        "description": "Three kinds of realtime data exist. Enter only the ones you want: **departures** is the only one required. Endings vary between providers, the bold part is the telling one.\n\n[documentation]({docu_configuring_options})",
+        "description": "These feeds belong to the whole source: every sensor reading it uses them, within a minute, no restart needed. **departures** is the only one that switches realtime on. Empty a field to drop that feed, empty them all to remove realtime from this source.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Departures feed address",
           "vehicle_position_url": "Vehicle positions feed address (optional)",

@@ -181,6 +181,36 @@
       "optimise": {
         "title": "Libertar espaço em disco",
         "description": "A fonte **{file}** ocupa **{size}**. A maior parte são horários de linhas que nenhum sensor lê.\n\n**{kept}** linha(s) mantida(s), **{dropped}** removida(s).\n\nRemovê-las e compactar o resto costuma dividir o tamanho por dez ou mais. Uma linha removida pode sempre voltar a ser adicionada.\n\nIsto demora alguns segundos.\n\n[documentação]({docu_extracting})"
+      },
+      "source_rt": {
+        "description": "O tempo real configura-se uma vez por fonte: todos os sensores que a leem partilham estes feeds. Introduza apenas os que quiser, só **departures** ativa o tempo real. Também pode deixar tudo vazio e acrescentar os feeds mais tarde, a partir da entrada da fonte na página da integração.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "trip_update_url": "Endereço do fluxo de partidas",
+          "vehicle_position_url": "Endereço do fluxo de posições dos veículos (opcional)",
+          "alerts_url": "Endereço do fluxo de alertas de serviço (opcional)",
+          "needs_api_key": "É necessária uma chave API"
+        },
+        "data_description": {
+          "trip_update_url": "O atraso real no seu sensor, em vez do horário previsto.\n`https://exemplo.pt/gtfs/`**`trip-updates`**",
+          "vehicle_position_url": "Onde estão os veículos, para um mapa. Deixe vazio se não o quiser.\n`https://exemplo.pt/gtfs/`**`vehicle-positions`**",
+          "alerts_url": "Mensagens de perturbação do operador. Deixe vazio se não o quiser.\n`https://exemplo.pt/gtfs/`**`service-alerts`**",
+          "needs_api_key": "Marque se o fornecedor lhe deu uma chave para ler estes fluxos."
+        }
+      },
+      "source_rt_key": {
+        "description": "O fornecedor indica-os na sua documentação.\n\n[documentação]({docu_configuring_options})",
+        "data": {
+          "api_key": "Chave API",
+          "api_key_name": "Nome esperado pelo fornecedor",
+          "api_key_location": "Onde colocar a chave",
+          "accept": "Enviar também Accept: application/x-protobuf (só se aplica se a chave for no cabeçalho)"
+        },
+        "data_description": {
+          "api_key": "A chave em si, tal como o fornecedor a deu.",
+          "api_key_name": "A palavra colocada antes da sua chave. No endereço: `?`**`apikey`**`=A_SUA_CHAVE`. Num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`. Varia consoante o fornecedor (`apikey`, `api_key`, `app_key`, `Authorization`) e maiúsculas contam.",
+          "api_key_location": "No endereço web, ou no cabeçalho do pedido.",
+          "accept": "Só se aplica se a chave for no cabeçalho."
+        }
       }
     },
     "error": {
@@ -228,7 +258,6 @@
           "refresh_interval": "Intervalo de atualização de dados (em minutos)",
           "offset": "Desvio em minutos",
           "max_local_stops": "Limite #stops para evitar possíveis impactos no desempenho. \nAumente por sua conta e risco",
-          "real_time": "Configurar integração em tempo real? \n (necessita de dados da mesma fonte)",
           "local_stop_refresh_interval": "Intervalo de atualização de dados (em minutos)",
           "timerange": "Verificação de partidas no futuro a partir de 'agora' (em minutos: entre 15 e 120)",
           "check_source_dates": "experimental: evitar usar uma nova zip/fonte contendo informações desatualizadas",
@@ -242,13 +271,12 @@
           "timerange": "Até onde procurar as próximas partidas, em minutos.",
           "radius": "Distância de procura de paragens em redor da pessoa ou zona, em metros.",
           "max_local_stops": "Acima deste número de paragens o sensor fica lento. Aumente por sua conta e risco.",
-          "real_time": "Ler os atrasos em direto do fornecedor, além dos horários.",
           "check_source_dates": "Experimental: recusar um ficheiro novo cujas datas estejam todas no futuro.",
           "source_timezone_correction": "Só se a fonte publicar as horas noutro fuso, em horas."
         }
       },
       "real_time": {
-        "description": "Existem três tipos de dados em tempo real. Introduza apenas os que quiser: só **partidas** é obrigatório. As terminações variam consoante o fornecedor, a parte a negrito é a que conta.\n\n[documentação]({docu_configuring_options})",
+        "description": "Estes feeds pertencem à fonte inteira: todos os sensores que a leem usam-nos, em menos de um minuto, sem reiniciar. Só **departures** ativa o tempo real. Esvazie um campo para retirar esse feed, esvazie todos para retirar o tempo real desta fonte.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Endereço do fluxo de partidas",
           "vehicle_position_url": "Endereço do fluxo de posições dos veículos (opcional)",

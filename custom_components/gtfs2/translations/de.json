@@ -181,6 +181,36 @@
       "optimise": {
         "title": "Speicherplatz freigeben",
         "description": "Die Quelle **{file}** belegt **{size}**. Das meiste davon sind Fahrpläne von Linien, die kein Sensor liest.\n\n**{kept}** Linie(n) behalten, **{dropped}** entfernt.\n\nSie zu entfernen und den Rest zu verdichten teilt die Größe oft durch zehn oder mehr. Eine entfernte Linie lässt sich später wieder hinzufügen.\n\nDas dauert einige Sekunden.\n\n[Dokumentation]({docu_extracting})"
+      },
+      "source_rt": {
+        "description": "Echtzeit wird einmal pro Quelle eingerichtet: alle Sensoren dieser Quelle teilen sich diese Feeds. Nur eintragen, was gewünscht ist, allein **departures** schaltet Echtzeit ein. Alles leer lassen geht auch: die Feeds lassen sich später über den Eintrag der Quelle auf der Integrationsseite hinzufügen.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "trip_update_url": "Adresse des Abfahrten-Feeds",
+          "vehicle_position_url": "Adresse des Fahrzeugpositions-Feeds (optional)",
+          "alerts_url": "Adresse des Störungsmeldungs-Feeds (optional)",
+          "needs_api_key": "Ein API-Schlüssel ist erforderlich"
+        },
+        "data_description": {
+          "trip_update_url": "Die tatsächliche Verspätung an Ihrem Sensor statt des Fahrplans.\n`https://beispiel.de/gtfs/`**`trip-updates`**",
+          "vehicle_position_url": "Wo die Fahrzeuge sind, für eine Karte. Leer lassen, wenn nicht gewünscht.\n`https://beispiel.de/gtfs/`**`vehicle-positions`**",
+          "alerts_url": "Meldungen des Betreibers. Leer lassen, wenn nicht gewünscht.\n`https://beispiel.de/gtfs/`**`service-alerts`**",
+          "needs_api_key": "Ankreuzen, wenn der Anbieter Ihnen einen Schlüssel für diese Feeds gegeben hat."
+        }
+      },
+      "source_rt_key": {
+        "description": "Der Anbieter nennt diese in seiner Dokumentation.\n\n[Dokumentation]({docu_configuring_options})",
+        "data": {
+          "api_key": "API-Schlüssel",
+          "api_key_name": "Vom Anbieter erwarteter Name",
+          "api_key_location": "Wohin der Schlüssel gehört",
+          "accept": "Zusätzlich Accept: application/x-protobuf senden (nur wirksam, wenn der Schlüssel im Header steht)"
+        },
+        "data_description": {
+          "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
+          "api_key_name": "Das Wort vor Ihrem Schlüssel. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. Im Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Er unterscheidet sich je nach Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`), Groß- und Kleinschreibung zählt.",
+          "api_key_location": "In der Web-Adresse oder im Anfrage-Header.",
+          "accept": "Nur wirksam, wenn der Schlüssel im Header steht."
+        }
       }
     },
     "error": {
@@ -228,7 +258,6 @@
           "refresh_interval": "Datenaktualisierungsintervall (in Minuten)",
           "offset": "Offset in Minuten",
           "max_local_stops": "Limite der #Stopps, um mögliche Auswirkungen auf die Leistung zu vermeiden. \nErhöhung auf eigenes Risiko",
-          "real_time": "Echtzeitintegration einrichten? \n (benötigt Daten aus derselben Quelle)",
           "local_stop_refresh_interval": "Datenaktualisierungsintervall (in Minuten)",
           "timerange": "Prüfung auf zukünftige Abfahrten ab ‚jetzt‘ (in Minuten: zwischen 15 und 120)",
           "radius": "Radius für die Suche nach Haltestellen (in Metern zwischen 50 und 500)",
@@ -242,13 +271,12 @@
           "timerange": "Wie weit voraus nach Abfahrten gesucht wird, in Minuten.",
           "radius": "Suchradius für Haltestellen um die Person oder Zone, in Metern.",
           "max_local_stops": "Ab dieser Anzahl Haltestellen wird der Sensor langsam. Erhöhung auf eigenes Risiko.",
-          "real_time": "Live-Verspätungen beim Anbieter lesen, zusätzlich zum Fahrplan.",
           "source_timezone_correction": "Nur wenn die Quelle ihre Zeiten in einer anderen Zeitzone angibt, in Stunden.",
           "check_source_dates": "Experimentell: eine neue Datei ablehnen, deren Daten alle in der Zukunft liegen."
         }
       },
       "real_time": {
-        "description": "Es gibt drei Arten von Echtzeitdaten. Tragen Sie nur die ein, die Sie möchten: nur **Abfahrten** ist erforderlich. Die Endungen unterscheiden sich je nach Anbieter, der fett gesetzte Teil ist der entscheidende.\n\n[Dokumentation]({docu_configuring_options})",
+        "description": "Diese Feeds gehören zur ganzen Quelle: alle Sensoren, die sie lesen, nutzen sie, innerhalb einer Minute, ohne Neustart. Allein **departures** schaltet Echtzeit ein. Ein geleertes Feld entfernt diesen Feed, alles leeren entfernt die Echtzeit dieser Quelle.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Adresse des Abfahrten-Feeds",
           "vehicle_position_url": "Adresse des Fahrzeugpositions-Feeds (optional)",
