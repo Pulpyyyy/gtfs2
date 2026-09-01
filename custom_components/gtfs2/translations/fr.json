@@ -145,18 +145,27 @@
         },
         "description": "Le capteur affichera les prochains départs pour **{trip}**.\n\n[documentation]({docu_new_route})"
       },
+      "sensor_train": {
+        "data": {
+          "name": "Nom du capteur",
+          "add_return": "Créer aussi le trajet retour"
+        },
+        "description": "Le capteur affichera les prochains trains pour **{trip}**.",
+        "data_description": {
+          "name": "Proposé d'après la ligne et les gares, modifiez-le librement.",
+          "add_return": "Un second capteur pour **{return_trip}**, le même trajet dans l'autre sens."
+        }
+      },
       "stops_train": {
         "data": {
           "origin": "Gare de départ",
           "destination": "Gare d'arrivée",
-          "name": "Nom du capteur",
           "include_tomorrow": "Afficher aussi les départs de demain à la fin du service de la journée"
         },
         "description": "Le capteur affichera les prochains trains entre deux gares.\n\n[documentation]({docu_setup_train})",
         "data_description": {
           "origin": "Les gares desservies par cette ligne. Une gare n'apparaît qu'une fois, même quand la source la découpe en plusieurs arrêts.",
           "destination": "La même liste. Choisissez celle où vous allez.",
-          "name": "Affiché sur votre tableau de bord, par exemple `Train vers Lille`.",
           "include_tomorrow": "Sans cela, le capteur reste vide entre le dernier départ de la journée et le premier du lendemain."
         }
       },
