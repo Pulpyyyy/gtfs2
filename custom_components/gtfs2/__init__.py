@@ -9,7 +9,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 
 from datetime import timedelta
 
-from .const import DOMAIN, PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE
+from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
@@ -196,10 +196,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # realtime feeds, which the sensors' coordinators resolve each cycle.
         # Every edit is mirrored back onto the journey entries, so a
         # downgrade to upstream falls back on current values rather than the
-        # ones frozen at bootstrap. Its one entity is the diagnostic saying
-        # whether realtime runs, and why not.
+        # ones frozen at bootstrap. Its entities are the diagnostic saying
+        # whether realtime runs, and why not, and the switch that silences
+        # it without losing the config.
         entry.async_on_unload(entry.add_update_listener(async_mirror_rt_to_entries))
-        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+        await hass.config_entries.async_forward_entry_setups(entry, DATASOURCE_PLATFORMS)
         return True
 
     if entry.data.get('device_tracker_id',None):
@@ -224,9 +225,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
-        # only the diagnostic entity to take down; the update listener
-        # unloads itself
-        return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+        # only the diagnostic and the switch to take down; the update
+        # listener unloads itself
+        return await hass.config_entries.async_unload_platforms(entry, DATASOURCE_PLATFORMS)
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
 
