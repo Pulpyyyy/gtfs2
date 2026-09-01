@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 from functools import partial
 from typing import Any
 
@@ -67,6 +68,8 @@ from .gtfs_helper import (
     get_towards,
     get_station_list,
     has_trip_between,
+    has_train_trip_between,
+    get_direction_labels,
     get_datasources,
     get_zipfiles,
     check_extracting,
@@ -103,6 +106,15 @@ def _stop_name(entry):
     Ids carry colons of their own, so cut from the right.
     """
     return entry.rsplit(": ", 1)[-1].rsplit(" (", 1)[0].strip()
+
+
+def _base_name(entry):
+    """_stop_name without the flow's own " #n" disambiguation suffix.
+
+    The suffixed name is what the pickers and the by-name matching need;
+    a sensor name is for reading, so the suffix goes.
+    """
+    return re.sub(r" #\d+$", "", _stop_name(entry))
 
 
 def _database_size(gtfs_dir, filename):
@@ -895,7 +907,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         origin = self._user_inputs.get(CONF_ORIGIN, "")
         destination = self._user_inputs.get(CONF_DESTINATION, "")
         line = self._route_label
-        trip = f"{_stop_name(origin)} → {_stop_name(destination)}"
+        trip = f"{_base_name(origin)} → {_base_name(destination)}"
+        if _base_name(origin) == _base_name(destination):
+            # circular line: both ends read the same, so name the journey by
+            # where its rotation heads first, exactly like the return offer
+            labels = await self.hass.async_add_executor_job(
+                get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE]
+            )
+            trip = labels.get(str(self._user_inputs.get(CONF_LOOP_DIRECTION)), "") or trip
         suggested = f"{line} {trip}".strip() if line else trip
         if self._return_trip is None:
             await self._find_return_trip(origin, destination)
@@ -1100,6 +1119,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._user_inputs.update(user_input)
         self._user_inputs[CONF_DIRECTION] = 0
         self._user_inputs[CONF_ROUTE] = "train"
+        # the picked line's code: the departures hold to that line
+        self._user_inputs["line"] = self._route_label
         _LOGGER.debug(f"UserInputs Stops Train: {self._user_inputs}")
         check_config = await self._check_config(self._user_inputs)
         if check_config:
@@ -1109,9 +1130,74 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = check_config
             return _show(errors, user_input)
         else:
-            return self.async_create_entry(
-                title=user_input[CONF_NAME], data=self._user_inputs
-            )            
+            return await self.async_step_sensor_train()
+
+    async def async_step_sensor_train(self, user_input: dict | None = None) -> FlowResult:
+        """Name the train sensor, suggested from the line and both stations."""
+        errors: dict[str, str] = {}
+        origin = self._user_inputs.get(CONF_ORIGIN, "")
+        destination = self._user_inputs.get(CONF_DESTINATION, "")
+        # the outward keeps the line picked in the flow; the return may run
+        # under its own code (SNCF: K8+ out, P8 back), so its line is read
+        # from the schedule for that very direction
+        line = self._route_label
+        trip = f"{origin} → {destination}"
+        suggested = f"{line} {trip}".strip() if line else trip
+        if self._return_trip is None:
+            # trains rarely run one way only, but check before offering.
+            # A train sensor covers the station pair, not one line, so the
+            # return wears the same label as the outward.
+            back = f"{destination} → {origin}"
+            self._return_name = f"{line} {back}".strip() if line else back
+            exists = await self.hass.async_add_executor_job(
+                has_train_trip_between, self._pygtfs, destination, origin,
+                self._route_label or None,
+            )
+            self._return_trip = {
+                CONF_ORIGIN: destination,
+                CONF_DESTINATION: origin,
+                CONF_NAME: self._return_name,
+            } if exists else {}
+
+        def _show(errors, previous=None):
+            previous = previous or {}
+            return self.async_show_form(
+                step_id="sensor_train",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_NAME, default=previous.get(CONF_NAME, suggested)
+                        ): str,
+                        **({vol.Optional(
+                            CONF_ADD_RETURN, default=False
+                        ): selector.BooleanSelector()} if self._return_trip else {}),
+                    },
+                ),
+                description_placeholders={
+                    **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                    "trip": trip,
+                    "return_trip": self._return_name or "",
+                },
+                errors=errors,
+            )
+
+        if user_input is None:
+            return _show(errors)
+        # only used to branch, it must not end up in the entry
+        add_return = user_input.pop(CONF_ADD_RETURN, False)
+        # a name already taken would create an entry the sensor platform then
+        # drops as a duplicate unique_id: say so here instead
+        if any(e.data.get(CONF_NAME) == user_input[CONF_NAME]
+               for e in self.hass.config_entries.async_entries(DOMAIN)):
+            errors["base"] = "name_taken"
+            return _show(errors, user_input)
+        if add_return:
+            # spawned as its own flow, before this one closes on the entry
+            await self._create_return_trip()
+        self._user_inputs.update(user_input)
+        return self.async_create_entry(
+            title=user_input[CONF_NAME], data=self._user_inputs
+        )
 
     async def async_step_import(self, import_data: dict) -> FlowResult:
         """Create an entry from data built by the flow, with no screens.
@@ -1227,7 +1313,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not exists:
             _LOGGER.debug("Return journey: no trip runs it")
             return
-        trip = f"{_stop_name(destination)} → {_stop_name(origin)}"
+        trip = f"{_base_name(destination)} → {_base_name(origin)}"
+        if _base_name(origin) == _base_name(destination) and loop_direction is not None:
+            # circular line: the plain ends would collide with the outward
+            # sensor's name, so tell the rotations apart by where each heads
+            labels = await self.hass.async_add_executor_job(
+                get_direction_labels, self._pygtfs, route)
+            trip = labels.get(str(loop_direction), "") or trip
         line = self._route_label
         self._return_name = f"{line} {trip}".strip() if line else trip
         # only what differs: this runs when the screen opens, before the
@@ -1310,10 +1402,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "destination": data["destination"],
             "offset": 0,
             "gtfs_dir": DEFAULT_PATH,
-            "name": data["name"],
+            "name": data.get(CONF_NAME, ""),
             "next_departure": None,
             "file": data["file"],
-            "route_type": data["route_type"]
+            "route_type": data["route_type"],
+            "line": data.get("line", "")
         }
         # check and/or add indexes
         check_index = await self.hass.async_add_executor_job(

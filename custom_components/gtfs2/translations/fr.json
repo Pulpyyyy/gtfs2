@@ -141,6 +141,17 @@
         },
         "description": "Le capteur affichera les prochains départs pour **{trip}**.\n\n[documentation]({docu_new_route})"
       },
+      "sensor_train": {
+        "data": {
+          "name": "Nom du capteur",
+          "add_return": "Créer aussi le trajet retour"
+        },
+        "description": "Le capteur affichera les prochains trains pour **{trip}**.",
+        "data_description": {
+          "name": "Proposé d'après la ligne et les gares, modifiez-le librement.",
+          "add_return": "Un second capteur pour **{return_trip}**, le même trajet dans l'autre sens."
+        }
+      },
       "stops_train": {
         "data": {
           "origin": "Gare de départ",

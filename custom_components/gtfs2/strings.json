@@ -141,6 +141,17 @@
         },
         "description": "The sensor will show the next departures for **{trip}**.\n\n[documentation]({docu_new_route})"
       },
+      "sensor_train": {
+        "data": {
+          "name": "Sensor name",
+          "add_return": "Also create the return journey"
+        },
+        "description": "The sensor will show the next trains for **{trip}**.",
+        "data_description": {
+          "name": "Suggested from the line and the stations, change it freely.",
+          "add_return": "A second sensor for **{return_trip}**, the same journey the other way."
+        }
+      },
       "stops_train": {
         "data": {
           "origin": "Departure station",
