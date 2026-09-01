@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import gc
+import time
 import logging
 import os
 import glob
@@ -45,6 +47,11 @@ from .const import (
     TIME_STR_FORMAT
     )
 from .gtfs_rt_helper import get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities
+from .gtfs_filter import (
+    filter_gtfs_zip,
+    read_zip_agencies,
+    read_zip_routes,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -671,35 +678,137 @@ def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file):
     pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file))
     check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
     
-def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False):
+def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
+                           only_routes=None):
     """Unpack a zip into the scratch database, synchronously.
 
     The counterpart of extract_from_zip, minus the fork: the caller is already
     off the event loop, and an import has to be finished before its routes can
     be copied out. Nothing here touches the real database.
 
+    only_routes cuts the feed down to those routes before pygtfs sees it.
+    pygtfs pays per row, so this is what makes a national feed usable:
+    measured on gtfs-nl.zip, 15.1 M stop_times filtered in 40 s down to a
+    feed pygtfs imports in half a second, where the full import built a
+    2.6 GB scratch file. When the filter cannot run, the whole feed is
+    imported as before: only slower, never wrong. The filtered path also
+    leaves the source zip untouched, where the historic path strips tables
+    out of it in place.
+
     Returns True when the scratch file holds a feed.
     """
-    drop = ['shapes.txt', 'transfers.txt', 'fare_attributes.txt',
-            'levels.txt', 'pathways.txt', 'translations.txt']
-    if clean_feed_info:
-        drop.append('feed_info.txt')
-    remove_from_zip(drop, gtfs_dir, file[:-4])
+    feed_file = os.path.join(gtfs_dir, file)
+    filtered = None
+    if only_routes:
+        candidate = scratch_file + ".zip"
+        if filter_gtfs_zip(feed_file, candidate, only_routes,
+                           drop_feed_info=clean_feed_info) is not None:
+            filtered = candidate
+            feed_file = candidate
+        else:
+            _LOGGER.warning(
+                "Could not filter %s, importing the whole feed instead", file)
+    if filtered is None:
+        drop = ['shapes.txt', 'transfers.txt', 'fare_attributes.txt',
+                'levels.txt', 'pathways.txt', 'translations.txt']
+        if clean_feed_info:
+            drop.append('feed_info.txt')
+        remove_from_zip(drop, gtfs_dir, file[:-4])
 
     # same connection arguments as the real database, so the scratch one
     # behaves identically under a timeout
     conn = f"{scratch_file}?check_same_thread=False&timeout=60"
     try:
         scratch = pygtfs.Schedule(conn)
-        pygtfs.append_feed(scratch, os.path.join(gtfs_dir, file))
+        pygtfs.append_feed(scratch, feed_file)
         ok = bool(scratch.feeds)
+        # the session holds a connection the pool does not know about, so
+        # closing only the engine leaves the file open until garbage
+        # collection - long enough for the cleanup below to fail on Windows
+        scratch.session.close()
         scratch.engine.dispose()
+        del scratch
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.error("Could not unpack %s into the import database: %s", file, ex)
         return False
+    finally:
+        if filtered and os.path.exists(filtered):
+            # pygtfs read the filtered zip through a handle it only drops on
+            # collection, and Windows refuses to delete a file still open
+            gc.collect()
+            try:
+                os.remove(filtered)
+            except OSError as ex:
+                _LOGGER.warning("Could not remove %s: %s", filtered, ex)
     if not ok:
         _LOGGER.error("The import database holds no feed after unpacking %s", file)
     return ok
+
+
+def _source_request(data):
+    """The url and headers a source's zip is fetched with, api key included."""
+    url = data["url"]
+    headers = {"User-Agent": "home-assistant-gtfs2"}
+    key = data.get(CONF_API_KEY)
+    if key and data.get(CONF_API_KEY_LOCATION) == "query_string":
+        url = url + "?" + data[CONF_API_KEY_NAME] + "=" + key
+    if key and data.get(CONF_API_KEY_LOCATION) == "header":
+        headers[data[CONF_API_KEY_NAME]] = key
+    return url, headers
+
+
+def ensure_source_zip(hass, path, data):
+    """Make sure the source zip is in place, without starting any import.
+
+    The front half of get_gtfs: same checks, same download, same error codes,
+    minus the part that unpacks the feed into a database. The config flow
+    calls this when a source is submitted, so the lines can be chosen from
+    the zip alone and the import can wait until it knows which routes to
+    keep - on a national feed, the difference between a flow that continues
+    and one that ends on a progress notification.
+
+    Returns None when the zip is ready, else the code the flow already
+    words: "extracting", "no_zip_file", "no_data_file".
+    """
+    gtfs_dir = hass.config.path(path)
+    os.makedirs(gtfs_dir, exist_ok=True)
+    filename = data["file"]
+    zip_path = os.path.join(gtfs_dir, filename + ".zip")
+    if check_extracting(hass, path, filename):
+        return "extracting"
+    if data["extract_from"] == "zip":
+        return None if os.path.exists(zip_path) else "no_zip_file"
+    if not os.path.exists(zip_path):
+        try:
+            url, headers = _source_request(data)
+            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15)
+            r.raise_for_status()
+            with open(zip_path, "wb") as out:
+                out.write(r.content)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("The given URL or GTFS data file/folder was not found: %s", ex)
+            return "no_data_file"
+    return None
+
+
+def open_datasource(gtfs_dir, filename):
+    """Open a datasource that is known to exist, with no extracting gate.
+
+    get_gtfs refuses to answer while anything writes to the file, because a
+    journal used to mean the legacy fork was still building it in place. In
+    the two database model the real file receives short legitimate writes
+    while the sensors live - an index being added, an intern - so a journal
+    can exist for milliseconds and means nothing. Callers that just proved
+    the datasource exists, like the step after a finished import, open it
+    here instead of walking into that gate.
+
+    Returns the schedule, or None when the file is not there.
+    """
+    sqlite_file = os.path.join(gtfs_dir, filename + ".sqlite")
+    if not os.path.exists(sqlite_file):
+        _LOGGER.error("No datasource to open: %s", sqlite_file)
+        return None
+    return pygtfs.Schedule(f"{sqlite_file}?check_same_thread=False&timeout=60")
 
 
 def check_calendar_dates_from_zip(gtfs_dir,file):
@@ -807,6 +916,67 @@ def get_routes_in_zip(gtfs_dir, filename):
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not read routes from %s: %s", path, ex)
         return set()
+
+
+def get_agencies_in_zip(gtfs_dir, filename):
+    """The agencies of the source zip, shaped like get_agency_list's rows.
+
+    What the agency step shows when no database exists yet: the feed is the
+    only thing there is to read, and nothing may start importing before the
+    lines are chosen.
+    """
+    rows = read_zip_agencies(os.path.join(gtfs_dir, filename + ".zip"))
+    rows.sort(key=lambda row: str(row.get("agency_name")))
+    return [f"{row.get('agency_id') or '0'}: {row['agency_name']}"
+            for row in rows]
+
+
+def get_route_options_from_zip(gtfs_dir, filename, agency=None):
+    """The route selector options, read from the source zip.
+
+    Same "route_type##route_id##label" values get_route_list builds from the
+    database, and every one carries the "##pruned" flag: no timetable is
+    loaded yet, and that flag is exactly what routes the flow through the
+    screen that imports one. agency narrows to one agency_id; "0" and None
+    mean the whole feed.
+    """
+    rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    if agency and agency != "0":
+        rows = [row for row in rows if (row.get("agency_id") or "0") == agency]
+    options = []
+    for row in rows:
+        label = _route_label(row.get("route_short_name"),
+                             row.get("route_long_name"),
+                             route_id=row["route_id"])
+        options.append(
+            f"{row.get('route_type') or '99'}##{row['route_id']}##{label}##pruned")
+    return sorted(options, key=lambda value: _natural(value.split("##")[2]))
+
+
+def get_route_labels_from_zip(gtfs_dir, filename, route_ids):
+    """get_route_labels when there is no database to ask: names from the zip."""
+    rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    known = {row["route_id"]: _route_label(row.get("route_short_name"),
+                                           row.get("route_long_name"),
+                                           route_id=row["route_id"])
+             for row in rows}
+    return {r: known.get(r, r) for r in route_ids}
+
+
+def routes_in_zip_for_agency(gtfs_dir, filename, route_ids, agency=None):
+    """Cut a list of route_ids down to one agency's, as routes.txt records it.
+
+    The also-import list offers what the feed declares minus what is loaded;
+    on a national feed that is thousands of lines from dozens of operators,
+    when the operator was already named on the agency screen. "0" and None
+    mean no cut.
+    """
+    if not agency or agency == "0":
+        return route_ids
+    rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    owned = {row["route_id"] for row in rows
+             if (row.get("agency_id") or "0") == agency}
+    return [r for r in route_ids if r in owned]
 
 
 def _says_something(part):

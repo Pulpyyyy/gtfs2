@@ -76,7 +76,13 @@ from .gtfs_helper import (
     get_agency_list,
     get_local_stop_list,
     get_route_labels,
+    get_route_labels_from_zip,
     get_routes_in_zip,
+    get_route_options_from_zip,
+    get_agencies_in_zip,
+    routes_in_zip_for_agency,
+    ensure_source_zip,
+    open_datasource,
     async_watch_extraction,
     async_notify_import,
     build_scratch_database
@@ -338,7 +344,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._user_inputs.update(user_input)
             return await self.async_step_source_key()
         user_input[CONF_API_KEY_LOCATION] = DEFAULT_API_KEY_LOCATION
-        check_data = await self._check_data(user_input)
+        # only the zip is fetched here: importing waits until the lines are
+        # chosen, so a national feed no longer means unpacking the whole
+        # network before the first screen that asks what to keep
+        check_data = await self.hass.async_add_executor_job(
+            ensure_source_zip, self.hass, DEFAULT_PATH, user_input)
         if check_data:
             # "extracting" is not a user error: the datasource is being unpacked,
             # there is nothing to correct, so it keeps its own abort message.
@@ -349,7 +359,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return _show(errors, user_input)
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Source url: {self._user_inputs}")
-        # the datasource was already there, so there is nothing to wait for
         return await self.async_step_agency()
 
     async def async_step_unpacking(self, user_input: dict | None = None) -> FlowResult:
@@ -411,7 +420,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return _show(errors)
         self._user_inputs.update(user_input)
-        check_data = await self._check_data(self._user_inputs)
+        check_data = await self.hass.async_add_executor_job(
+            ensure_source_zip, self.hass, DEFAULT_PATH, self._user_inputs)
         if check_data:
             if check_data == "extracting":
                 return await self.async_step_extracting()
@@ -453,7 +463,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # the url is unused here, but get_gtfs still reads the key
         user_input[CONF_EXTRACT_FROM] = "zip"
         user_input[CONF_URL] = "na"
-        check_data = await self._check_data(user_input)
+        check_data = await self.hass.async_add_executor_job(
+            ensure_source_zip, self.hass, DEFAULT_PATH, user_input)
         if check_data:
             if check_data == "extracting":
                 self._user_inputs.update(user_input)
@@ -462,7 +473,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await _show(errors)
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Source zip: {self._user_inputs}")
-        return await self.async_step_agency()            
+        return await self.async_step_agency()
 
     async def async_step_remove(self, user_input: dict | None = None) -> FlowResult:
         """Handle a flow initialized by the user."""
@@ -487,34 +498,54 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return "generic_failure"
         return self.async_abort(reason="files_deleted")
         
+    async def _fresh_source(self):
+        """Whether the source picked in this flow has no database yet.
+
+        A fresh source is served from its zip: operators and lines are read
+        from the feed, the user chooses, and only the chosen lines are ever
+        imported. The full network never has to be unpacked, which on a
+        national feed is what makes the difference between a flow that
+        continues and one that parks the user behind a progress screen.
+        """
+        gtfs_dir = self.hass.config.path(DEFAULT_PATH)
+        return not await self.hass.async_add_executor_job(
+            os.path.exists, real_path(gtfs_dir, self._user_inputs[CONF_FILE]))
+
     async def async_step_agency(self, user_input: dict | None = None) -> FlowResult:
         """Handle the agency."""
         errors: dict[str, str] = {}
-        if self._pygtfs and hasattr(self._pygtfs, 'session'):
-            try:
-                self._pygtfs.session.close()
-                self._pygtfs.engine.dispose()
-            except Exception:
-                pass
-        self._pygtfs = await self.hass.async_add_executor_job(
-            get_gtfs,
-            self.hass,
-            DEFAULT_PATH,
-            self._user_inputs,
-            False,
-        )
-        check_data = await self._check_data(self._user_inputs)
-        if check_data :
-            # nothing to re-type on this step: the problem is the datasource picked
-            # earlier, so send the user back there with the message instead of
-            # closing the flow. "extracting" keeps its own abort message.
-            if check_data == "extracting":
-                self._user_inputs.update(user_input)
-                return await self.async_step_extracting()
-            return await self._back_to_source(check_data)
-            
-        agencies = await self.hass.async_add_executor_job(
-            get_agency_list, self._pygtfs, self._user_inputs)
+        if await self._fresh_source():
+            # no database yet: the feed is the only thing there is to read,
+            # and nothing starts importing before the lines are chosen
+            agencies = await self.hass.async_add_executor_job(
+                get_agencies_in_zip, self.hass.config.path(DEFAULT_PATH),
+                self._user_inputs[CONF_FILE])
+        else:
+            if self._pygtfs and hasattr(self._pygtfs, 'session'):
+                try:
+                    self._pygtfs.session.close()
+                    self._pygtfs.engine.dispose()
+                except Exception:
+                    pass
+            self._pygtfs = await self.hass.async_add_executor_job(
+                get_gtfs,
+                self.hass,
+                DEFAULT_PATH,
+                self._user_inputs,
+                False,
+            )
+            check_data = await self._check_data(self._user_inputs)
+            if check_data :
+                # nothing to re-type on this step: the problem is the datasource picked
+                # earlier, so send the user back there with the message instead of
+                # closing the flow. "extracting" keeps its own abort message.
+                if check_data == "extracting":
+                    self._user_inputs.update(user_input)
+                    return await self.async_step_extracting()
+                return await self._back_to_source(check_data)
+
+            agencies = await self.hass.async_add_executor_job(
+                get_agency_list, self._pygtfs, self._user_inputs)
         if len(agencies) > 1:
             agencies[:0] = ["0: ALL"]
             errors: dict[str, str] = {}
@@ -548,50 +579,63 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = self._pending_error
             self._pending_error = None
             user_input = None
-        check_data = await self._check_data(self._user_inputs)
-        _LOGGER.debug("Source check data: %s", check_data)
-        if check_data :
-            # same as in async_step_agency: the datasource is the problem, not
-            # anything typed on this step.
-            if check_data == "extracting":
-                self._user_inputs.update(user_input)
-                return await self.async_step_extracting()
-            return await self._back_to_source(check_data)
-            
-        if self._pygtfs and hasattr(self._pygtfs, 'session'):
-            try:
-                self._pygtfs.session.close()
-                self._pygtfs.engine.dispose()
-            except Exception:
-                pass            
-        self._pygtfs = await self.hass.async_add_executor_job(
-            get_gtfs,
-            self.hass,
-            DEFAULT_PATH,
-            self._user_inputs,
-            False,
-        )
-        # a datasource imported before the indexes existed never crosses the
-        # import path again, so make sure of them here: costs a handful of
-        # sqlite_master lookups when they are already in place
-        await self.hass.async_add_executor_job(
-            check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH,
-            self._user_inputs[CONF_FILE])
+        fresh = await self._fresh_source()
+        if not fresh:
+            check_data = await self._check_data(self._user_inputs)
+            _LOGGER.debug("Source check data: %s", check_data)
+            if check_data :
+                # same as in async_step_agency: the datasource is the problem, not
+                # anything typed on this step.
+                if check_data == "extracting":
+                    self._user_inputs.update(user_input)
+                    return await self.async_step_extracting()
+                return await self._back_to_source(check_data)
+
+            if self._pygtfs and hasattr(self._pygtfs, 'session'):
+                try:
+                    self._pygtfs.session.close()
+                    self._pygtfs.engine.dispose()
+                except Exception:
+                    pass
+            self._pygtfs = await self.hass.async_add_executor_job(
+                get_gtfs,
+                self.hass,
+                DEFAULT_PATH,
+                self._user_inputs,
+                False,
+            )
+            # a datasource imported before the indexes existed never crosses the
+            # import path again, so make sure of them here: costs a handful of
+            # sqlite_master lookups when they are already in place
+            await self.hass.async_add_executor_job(
+                check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH,
+                self._user_inputs[CONF_FILE])
         if user_input is None:
-            # only offer routes that actually carry trips: a datasource keeps its
-            # full routes table even when the trips of a route are not loaded, and
-            # picking one of those leads to an empty stop list and "no_stops".
             gtfs_dir = self.hass.config.path(DEFAULT_PATH)
-            usable = await self.hass.async_add_executor_job(
-                partial(get_route_list, self._pygtfs, self._user_inputs,
-                        with_trips_only=True, gtfs_dir=gtfs_dir))
+            if fresh:
+                # nothing is imported yet, so the feed itself is the list.
+                # Every option carries the "pruned" flag: no timetable is
+                # loaded, and that flag is exactly what sends the submission
+                # through the screen that imports the line.
+                agency = self._user_inputs.get(CONF_AGENCY, "0: ALL").split(': ')[0]
+                usable = await self.hass.async_add_executor_job(
+                    get_route_options_from_zip, gtfs_dir,
+                    self._user_inputs[CONF_FILE], agency)
+            else:
+                # only offer routes that actually carry trips: a datasource keeps its
+                # full routes table even when the trips of a route are not loaded, and
+                # picking one of those leads to an empty stop list and "no_stops".
+                usable = await self.hass.async_add_executor_job(
+                    partial(get_route_list, self._pygtfs, self._user_inputs,
+                            with_trips_only=True, gtfs_dir=gtfs_dir))
             if not usable:
                 return self.async_abort(
                     reason="no_routes_with_trips",
                     description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                 )
-            total = len(await self.hass.async_add_executor_job(
-                get_route_list, self._pygtfs, self._user_inputs))
+            total = len(usable) if fresh else len(
+                await self.hass.async_add_executor_job(
+                    get_route_list, self._pygtfs, self._user_inputs))
             route_list = [
                 # value carries route_type##route_id, label is the readable part
                 selector.SelectOptionDict(value=r, label=r.split('##')[2])
@@ -654,15 +698,31 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 get_routes_in_zip, gtfs_dir, filename)
             loaded = await self.hass.async_add_executor_job(
                 routes_in, real_path(gtfs_dir, filename))
-            labels = await self.hass.async_add_executor_job(
-                get_route_labels, self._pygtfs, sorted(in_zip - loaded - {route_id}))
+            missing = sorted(in_zip - loaded - {route_id})
+            # the operator was named on the agency screen: offer that
+            # operator's missing lines, not the whole feed's
+            agency = self._user_inputs.get(CONF_AGENCY, "0: ALL").split(': ')[0]
+            missing = await self.hass.async_add_executor_job(
+                routes_in_zip_for_agency, gtfs_dir, filename, missing, agency)
+            if self._pygtfs and hasattr(self._pygtfs, 'session'):
+                labels = await self.hass.async_add_executor_job(
+                    get_route_labels, self._pygtfs, missing)
+            else:
+                # a fresh source has no database to ask yet
+                labels = await self.hass.async_add_executor_job(
+                    get_route_labels_from_zip, gtfs_dir, filename, missing)
             schema = {}
             if labels:
+                # checkboxes read well for a handful of missing lines; a
+                # national feed leaves thousands, which only a searchable
+                # dropdown survives
+                mode = (selector.SelectSelectorMode.LIST if len(labels) <= 25
+                        else selector.SelectSelectorMode.DROPDOWN)
                 schema[vol.Optional(CONF_ALSO_RELOAD, default=[])] = selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=[selector.SelectOptionDict(value=r, label=l)
                                  for r, l in labels.items()],
-                        multiple=True, mode=selector.SelectSelectorMode.LIST,
+                        multiple=True, mode=mode,
                     ))
             # with nothing else missing, the paragraph about other lines would
             # read "0 other lines": use the wording that does not mention them
@@ -698,8 +758,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             routes = list(self._import_routes)
 
             def _build(scratch_file):
+                # the feed is filtered down to the wanted lines before pygtfs
+                # sees it: on a national feed this is what turns the import
+                # from an hour into a minute
                 return build_scratch_database(
-                    gtfs_dir, filename + ".zip", scratch_file, clean)
+                    gtfs_dir, filename + ".zip", scratch_file, clean,
+                    only_routes=routes)
 
             # The work runs in the executor and finishes whatever happens to
             # this window, but nobody would hear about it once the flow is
@@ -760,9 +824,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reload_done(self, user_input: dict | None = None) -> FlowResult:
         """Carry on picking the journey, with the lines now loaded."""
-        # reopen: the schedule in hand predates the rows just written
+        # reopen directly, without get_gtfs's extracting gate: the import
+        # just succeeded so the file exists, and a coordinator adding an
+        # index at this very moment leaves a journal that the gate mistakes
+        # for an unpacking still running. Measured in the field: get_gtfs
+        # answered "extracting" and the direction screen crashed on a string.
         self._pygtfs = await self.hass.async_add_executor_job(
-            get_gtfs, self.hass, DEFAULT_PATH, self._user_inputs, False)
+            open_datasource, self.hass.config.path(DEFAULT_PATH),
+            self._user_inputs[CONF_FILE])
+        if not self._pygtfs:
+            return await self.async_step_reload_failed()
+        # a fresh source was just created by this very import and never went
+        # through the step that checks the indexes, so check them here
+        await self.hass.async_add_executor_job(
+            check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH,
+            self._user_inputs[CONF_FILE])
         return await self.async_step_direction()
 
     async def async_step_direction(self, user_input: dict | None = None) -> FlowResult:
