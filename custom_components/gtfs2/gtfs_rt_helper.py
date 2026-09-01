@@ -98,22 +98,27 @@ def due_in_minutes(timestamp):
 #
 # The feed publishes neither ETag nor Last-Modified, so conditional requests
 # are impossible and a local cache is the only way to avoid the repeat.
-_FEED_CACHE: dict[tuple[str, str], tuple[float, object]] = {}
-_FEED_CACHE_LOCKS: dict[tuple[str, str], threading.Lock] = {}
+_FEED_CACHE: dict[tuple[str, str, str], tuple[float, object]] = {}
+_FEED_CACHE_LOCKS: dict[tuple[str, str, str], threading.Lock] = {}
 _FEED_CACHE_GUARD = threading.Lock()
 # short enough that a delay stays fresh, long enough to cover a wave of
 # coordinators: they were measured starting 12 ms apart
 FEED_CACHE_TTL = 30
 
 
-def get_gtfs_feed_entities(url: str, headers, label: str):
+def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
     """Return the feed entities, fetching at most once per TTL and per feed.
 
     Holds a per-feed lock across the fetch: without it the coordinators, which
     wake within milliseconds of each other, would all miss the cache and
     download in parallel before the first one filled it.
+
+    owner is the datasource file name: with the feeds configured per source,
+    a source's headers can never differ under one url, but two sources could
+    share a url with different keys - keying on the owner keeps their
+    responses apart.
     """
-    key = (url, label)
+    key = (owner, url, label)
     with _FEED_CACHE_GUARD:
         lock = _FEED_CACHE_LOCKS.setdefault(key, threading.Lock())
 
@@ -287,7 +292,8 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
     # the same feed), avoiding a re-fetch + re-parse per call.
     if feed_entities is None:
         feed_entities = get_gtfs_feed_entities(
-            url=self._trip_update_url, headers=self._headers, label="trip_data"
+            url=self._trip_update_url, headers=self._headers, label="trip_data",
+            owner=self._data.get("file", ""),
         )
     self._feed_entities = feed_entities
     
@@ -430,6 +436,7 @@ def get_rt_vehicle_positions(self):
         url=self._vehicle_position_url,
         headers=self._headers,
         label="vehicle_positions",
+        owner=self._data.get("file", ""),
     )
     geojson_body = []
     geojson_element = {"geometry": {"coordinates":[],"type": "Point"}, "properties": {"id": "", "title": "", "trip_id": "", "route_id": "", "direction_id": "", "vehicle_id": "", "vehicle_label": ""}, "type": "Feature"}
@@ -755,6 +762,7 @@ def get_rt_alerts(self):
             url=self._alerts_url,
             headers=self._headers,
             label="alerts",
+            owner=self._data.get("file", ""),
         )
         if not feed_entities:
             _LOGGER.debug("No proper RT feed entities for alerts")
@@ -884,7 +892,8 @@ def get_gtfs_rt(hass, path, data):
                 url=data.get("url", None),
                 headers=_headers,
                 label=data.get("rt_type", "-"),
-            )  
+                owner=data.get("file", ""),
+            )
             file_all = data["file"] + "_converted.txt"
             # check if content is json else write without format            
             try:

@@ -9,13 +9,14 @@ from homeassistant.exceptions import ConfigEntryNotReady
 
 from datetime import timedelta
 
-from .const import DOMAIN, PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL
+from .const import DOMAIN, PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
 from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops, route_geojson_name, vehicle_positions_name, async_notify_line_orphaned
 from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
+from .rt_source import async_bootstrap_datasource_entries, async_mirror_rt_to_entries
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -97,6 +98,10 @@ def _routes_in_use(hass: HomeAssistant, filename: str, exclude=None):
             continue
         if entry.data.get("file") != filename:
             continue
+        # the datasource entry names the file but reads nothing from it, and
+        # counting it as a reader would make every source look unrestricted
+        if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
+            continue
         if entry.data.get("device_tracker_id"):
             unrestricted = True
             continue
@@ -116,7 +121,11 @@ async def async_prune_datasources(hass: HomeAssistant, data):
     wanted = data.get("file")
     if isinstance(wanted, str):
         wanted = [wanted] if wanted else []
-    files = {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN) if e.data.get("file")}
+    # only sources some sensor actually reads: a datasource entry names its
+    # file without reading it, and sweeping a source nothing reads would
+    # prune it down to nothing
+    files = {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN)
+             if e.data.get("file") and e.data.get(CONF_KIND) != ENTRY_KIND_DATASOURCE}
     if wanted:
         unknown = sorted(set(wanted) - files)
         if unknown:
@@ -144,11 +153,13 @@ async def async_intern_datasources(hass: HomeAssistant, data):
     """Intern the identifiers of the picked datasources, or every one."""
     dry_run = data.get("dry_run", False)
     gtfs_dir = hass.config.path(DEFAULT_PATH)
-    # same contract as async_prune_datasources: one name, several, or none
+    # same contract as async_prune_datasources: one name, several, or none,
+    # and the same reader-entries-only sweep
     wanted = data.get("file")
     if isinstance(wanted, str):
         wanted = [wanted] if wanted else []
-    files = {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN) if e.data.get("file")}
+    files = {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN)
+             if e.data.get("file") and e.data.get(CONF_KIND) != ENTRY_KIND_DATASOURCE}
     if wanted:
         unknown = sorted(set(wanted) - files)
         if unknown:
@@ -169,7 +180,26 @@ async def async_intern_datasources(hass: HomeAssistant, data):
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GTFS from a config entry."""
     hass.data.setdefault(DOMAIN, {})
-   
+
+    # every start walks the known sources once, in the background, and gives
+    # each its datasource entry; guarded so the entries this creates do not
+    # schedule further walks of their own
+    if not hass.data[DOMAIN].get("rt_bootstrap_started"):
+        hass.data[DOMAIN]["rt_bootstrap_started"] = True
+        hass.async_create_background_task(
+            async_bootstrap_datasource_entries(hass),
+            name="gtfs2 datasource bootstrap",
+        )
+
+    if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
+        # a datasource entry runs no coordinator: it carries the source's
+        # realtime feeds, which the sensors' coordinators resolve each cycle.
+        # Every edit is mirrored back onto the journey entries, so a
+        # downgrade to upstream falls back on current values rather than the
+        # ones frozen at bootstrap.
+        entry.async_on_unload(entry.add_update_listener(async_mirror_rt_to_entries))
+        return True
+
     if entry.data.get('device_tracker_id',None):
         coordinator = GTFSLocalStopUpdateCoordinator(hass, entry)
     else:
@@ -191,6 +221,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
+    if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
+        # nothing was set up beyond the update listener, which unloads itself
+        return True
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
 
@@ -206,6 +239,10 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     them silently never ran. This is their combination, and the place to
     extend when another lot needs the removal moment.
     """
+    if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
+        # the datasource entry only carries config: removing it deletes no
+        # file and no journey entry, they fall back on their own options
+        return
     await _remove_entry_geojson(hass, entry)
     await _notify_orphaned_line(hass, entry)
 
