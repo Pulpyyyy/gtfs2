@@ -12,8 +12,8 @@ from .const import DOMAIN, PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_REF
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
-from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops
-from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource
+from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops, async_notify_line_orphaned
+from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
 
 _LOGGER = logging.getLogger(__name__)
@@ -79,16 +79,21 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
 
     return True
 
-def _routes_in_use(hass: HomeAssistant, filename: str):
+def _routes_in_use(hass: HomeAssistant, filename: str, exclude=None):
     """Collect the route_ids configured against a datasource.
 
     Returns (routes, unrestricted). A datasource is unrestricted when at least
     one entry queries it without a route: local stop entries walk every route
     around a position, so their datasource must keep the full feed.
+
+    exclude leaves one entry_id out of the count: whether or not an entry
+    still lists while its removal hook runs, it must not count as a reader.
     """
     routes: set[str] = set()
     unrestricted = False
     for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.entry_id == exclude:
+            continue
         if entry.data.get("file") != filename:
             continue
         if entry.data.get("device_tracker_id"):
@@ -189,6 +194,34 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Say when a removed sensor leaves a line nobody reads.
+
+    There is no flow where a line is removed: it happens here, when its last
+    sensor is deleted. Nothing is pruned on its own - the timetable may be
+    wanted again tomorrow - but silence would leave dead weight nobody knows
+    about. So a notification names the line and the service that drops it,
+    and the choice stays with the user.
+    """
+    filename = entry.data.get("file")
+    route = (entry.data.get("route") or "").split(": ")[0]
+    if not filename or not route or entry.data.get("device_tracker_id"):
+        return
+    routes, unrestricted = _routes_in_use(hass, filename, exclude=entry.entry_id)
+    if unrestricted or route in routes:
+        # the line is still read (a return sensor, often), or the datasource
+        # must stay whole for a local stops entry
+        return
+    gtfs_dir = hass.config.path(DEFAULT_PATH)
+    loaded = await hass.async_add_executor_job(
+        routes_in, real_path(gtfs_dir, filename))
+    if route not in loaded:
+        # the timetable is already gone, nothing worth saying
+        return
+    label = (entry.data.get("route") or "").split(": ", 1)[-1]
+    await async_notify_line_orphaned(hass, filename, label or route)
      
 
 def setup(hass, config):
