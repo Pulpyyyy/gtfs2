@@ -109,6 +109,12 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._name = coordinator.data["name"]
         self._attributes: dict[str, Any] = {}
+        # _update_attrs returns early when the source is extracting or broken,
+        # before it reaches the line that sets the icon: everything a property
+        # serves must already exist here, or adding the entity raises and the
+        # sensor never appears at all
+        self._icon = ICON
+        self._state: datetime.datetime | None = None
 
         self._attr_unique_id = f"gtfs-{self._name}"
         self._attr_device_info = DeviceInfo(
