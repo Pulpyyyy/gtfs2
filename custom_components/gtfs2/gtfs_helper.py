@@ -21,6 +21,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import entity_registry as er
 
+from .direction_repair import repair_trip_directions
 from .const import (
     DEFAULT_PATH_GEOJSON,
     CONF_API_KEY,
@@ -663,7 +664,8 @@ def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file):
         return
     pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file))
     check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
-    
+    repair_trip_directions(gtfs)
+
 def check_calendar_dates_from_zip(gtfs_dir,file):
     _LOGGER.debug("Checking if file contains only future data: %s ", file)
     filename = os.path.join(gtfs_dir, file)
