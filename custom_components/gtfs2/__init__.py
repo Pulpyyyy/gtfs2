@@ -12,7 +12,8 @@ from .const import DOMAIN, PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_REF
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
-from .gtfs_helper import get_gtfs, update_gtfs_local_stops, get_route_departures, get_trip_stops, prune_gtfs_datasource, intern_gtfs_datasource
+from .gtfs_helper import get_gtfs, update_gtfs_local_stops, get_route_departures, get_trip_stops
+from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource
 from .gtfs_rt_helper import get_gtfs_rt
 
 _LOGGER = logging.getLogger(__name__)
