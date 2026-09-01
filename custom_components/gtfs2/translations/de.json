@@ -463,7 +463,7 @@
       "fields": {
         "file": {
           "name": "Datenquelle",
-          "description": "Leer lassen, um alle eingerichteten Quellen zu kürzen"
+          "description": "Die zu bereinigenden Quellen, als Geräte gewählt; per yaml gehen weiterhin Quellennamen. Leer = alle bekannten Quellen; eine Quelle, die ein Zug- oder Umgebungssensor ganz braucht, wird übersprungen und sagt es in der Antwort."
         },
         "dry_run": {
           "name": "Testlauf",
@@ -477,7 +477,7 @@
       "fields": {
         "file": {
           "name": "Datenquelle",
-          "description": "Leer lassen, um alle eingerichteten Quellen zu verkleinern"
+          "description": "Die zu verkleinernden Quellen, als Geräte gewählt; per yaml gehen weiterhin Quellennamen. Leer = alle bekannten Quellen."
         },
         "dry_run": {
           "name": "Testlauf",
