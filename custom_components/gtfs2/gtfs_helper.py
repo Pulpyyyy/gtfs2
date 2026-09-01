@@ -791,6 +791,87 @@ def get_routes_in_zip(gtfs_dir, filename):
         return set()
 
 
+def _says_something(part):
+    """Whether a name part carries anything a reader can use.
+
+    A line number is often nothing but digits, so digits count. What does not
+    count is punctuation on its own: SNCF publishes 54 lines whose long name is
+    the string " -", the two ends of a route it did not fill in, and showing
+    that to the user is worse than showing nothing.
+    """
+    return any(character.isalnum() for character in str(part or ""))
+
+
+def _route_endpoints(schedule, route_ids):
+    """Where each of these lines starts and ends, as "A > B".
+
+    Read from one trip per line, which is what the direction step already does
+    on the screen after this one. It is only asked for the lines whose name is
+    unusable, so the query stays small even on a national feed.
+    """
+    if not route_ids:
+        return {}
+    route_ids = sorted(route_ids)
+    placeholders = ", ".join(f":e{i}" for i in range(len(route_ids)))
+    sql = f"""
+    with picked as (
+        select route_id, min(trip_id) as trip_id
+        from trips where route_id in ({placeholders}) group by route_id
+    )
+    select p.route_id, st.stop_sequence, s.stop_name
+    from picked p
+    inner join stop_times st on st.trip_id = p.trip_id
+    inner join stops s on s.stop_id = st.stop_id
+    """  # noqa: S608
+    ends = {}
+    try:
+        with schedule.engine.connect() as conn:
+            rows = conn.execute(
+                text(sql), {f"e{i}": r for i, r in enumerate(route_ids)}).fetchall()
+    except Exception as ex:  # pylint: disable=broad-except
+        # without this the label falls back to the route_id, which is what it
+        # did before: ugly, but never empty
+        _LOGGER.warning("Could not read the ends of %s routes: %s", len(route_ids), ex)
+        return {}
+    for route_id, sequence, name in rows:
+        if not name:
+            continue
+        first, last = ends.get(route_id, (None, None))
+        if first is None or sequence < first[0]:
+            first = (sequence, name)
+        if last is None or sequence > last[0]:
+            last = (sequence, name)
+        ends[route_id] = (first, last)
+    return {route_id: f"{first[1]} > {last[1]}"
+            for route_id, (first, last) in ends.items()
+            if first and last and first[1] != last[1]}
+
+
+def _route_label(short, long_name, endpoints=None, route_id=None):
+    """What the user reads for one line: its number, then where it goes.
+
+    The two parts are kept only if they say something, so a line named
+    "INCONNU" against a long name of " -" no longer reads "INCONNU :  -". When
+    the long name is the one missing, the two ends of the route take its place,
+    which is the thing the user was looking for in the first place.
+    """
+    parts = [str(p) for p in (short, long_name)
+             if p and str(p) != "None" and _says_something(p)]
+    if len(parts) < 2 and endpoints:
+        parts = parts[:1] + [endpoints]
+    if parts:
+        return " : ".join(parts)
+    return str(route_id or "")
+
+
+def _natural(label):
+    """Sort key that reads 2 before 10, the way a line number is read."""
+    out = []
+    for chunk in re.split(r"(\d+)", str(label)):
+        out.append((1, int(chunk)) if chunk.isdigit() else (0, chunk.lower()))
+    return out
+
+
 def get_route_labels(schedule, route_ids):
     """Readable names for route_ids, as {route_id: "41 : GARE - ESAT RODIN"}.
 
@@ -811,9 +892,11 @@ def get_route_labels(schedule, route_ids):
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not read route names: %s", ex)
         return {r: r for r in route_ids}
+    rows = list(rows)
+    needs_ends = [r[0] for r in rows if not _says_something(r[2])]
+    endpoints = _route_endpoints(schedule, needs_ends)
     for route_id, short, long in rows:
-        parts = [str(p) for p in (short, long) if p and str(p) != "None"]
-        out[route_id] = " : ".join(parts) if parts else route_id
+        out[route_id] = _route_label(short, long, endpoints.get(route_id), route_id)
     # a route the feed declares but routes does not: keep it selectable
     for r in route_ids:
         out.setdefault(r, r)
@@ -870,7 +953,7 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     {route_type_where}
     {agency_where}
     {trips_where}
-    order by agency_name, cast(route_id as decimal)
+    order by agency_name
     """  # noqa: S608
     routes_list = []
     routes = []
@@ -881,6 +964,10 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     for row_cursor in rows:
         row = row_cursor._asdict()
         routes_list.append(list(row_cursor))
+    # the lines whose long name says nothing get the two ends of the route
+    # instead, read in one go rather than one query per line
+    endpoints = _route_endpoints(
+        schedule, [str(x[1]) for x in routes_list if not _says_something(x[3])])
     for x in routes_list:
         # the value keeps route_type and route_id, which the flow parses back;
         # what follows the second ## is only ever shown to the user, so it
@@ -888,10 +975,7 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
         route_type, route_id, short, long, agency = (str(v) for v in x)
         # route_long_name names the two ends of the line, in no particular
         # order: the direction is picked on the same screen, so no arrow here
-        parts = [p for p in (short, long) if p and p != "None"]
-        shown = " : ".join(parts) if len(parts) > 1 else (parts[0] if parts else "")
-        if not shown:
-            shown = route_id
+        shown = _route_label(short, long, endpoints.get(route_id), route_id)
         if route_id in pruned:
             # a fourth field the flow reads to know the timetable is missing;
             # the label itself stays clean, the flow explains it in words
@@ -899,6 +983,10 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
         else:
             val = f"{route_type}##{route_id}##{shown}"
         routes.append(val)
+    # sorted on what the user reads, and read the way a line number is: the
+    # cast on route_id this used to order by is 0 for every id that is not a
+    # number, which is most of them outside a small network
+    routes.sort(key=lambda value: _natural(value.split("##")[2]))
     _LOGGER.debug(f"routes: {routes}")
     return routes
 
@@ -906,8 +994,15 @@ def get_direction_labels(schedule, route_id):
     """First and last stop of each direction, to label 0 and 1.
 
     direction_id says nothing on its own, and trip_headsign is often empty,
-    so read where the vehicle actually starts and ends. Returns {"0": "A > B"}
+    so read where the vehicle actually starts and ends. A circular line ends
+    where it starts, so both directions would read the same: a rotation is
+    told by where it heads first out of the terminus
+    ("Zénith → Zénith via Plissay, Horloge Fleurie"). Returns {"0": "A → B"}
     with only the directions that have trips.
+
+    The label trip is the longest one of its direction: an arbitrary trip
+    would as easily be a short turn, naming the line after a partial run
+    (GVB tram 1 read "Surinameplein → Azartplein" for a Matterhorn line).
     """
     _LOGGER.debug("Getting direction labels for route: %s", route_id)
     sql = """
@@ -916,31 +1011,62 @@ def get_direction_labels(schedule, route_id):
     inner join stop_times st on st.trip_id = t.trip_id
     inner join stops s on s.stop_id = st.stop_id
     where t.trip_id in (
-        select min(trip_id) from trips where route_id = :route_id
-        group by direction_id
+        select trip_id from (
+            select st2.trip_id as trip_id, t2.direction_id as d,
+                   count(*) as n
+            from trips t2
+            inner join stop_times st2 on st2.trip_id = t2.trip_id
+            where t2.route_id = :route_id
+            group by st2.trip_id
+        )
+        group by d
+        having n = max(n)
     )
     order by t.direction_id, st.stop_sequence
     """
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql), {"route_id": route_id}).fetchall()
-    ends = {}
+    stops = {}
     for direction, name, _seq in rows:
         key = str(direction if direction is not None else 0)
-        first, _last = ends.get(key, (name, name))
-        ends[key] = (first, name)
-    labels = {k: f"{a} → {b}" for k, (a, b) in ends.items() if a and b and a != b}
+        stops.setdefault(key, []).append(name)
+    labels = {}
+    for key, names in stops.items():
+        if not names or not names[0] or not names[-1]:
+            continue
+        label = f"{names[0]} → {names[-1]}"
+        if names[0] == names[-1]:
+            # circular: the two rotations serve the same stops (opposite
+            # platforms share a name), so comparing stop sets says nothing;
+            # what tells them apart is where each heads first
+            via = [n for n in names[1:-1] if n != names[0]][:2]
+            if via:
+                label += " via " + ", ".join(via)
+        labels[key] = label
     _LOGGER.debug("Direction labels: %s", labels)
     return labels
 
 
-def has_trip_between(schedule, route_id, origin_id, destination_id):
+def has_trip_between(schedule, route_id, origin_id, destination_id, direction=None):
     """Whether any trip of a route calls at both stops, in this order.
 
     This asks whether the journey exists at all, not whether a bus is due:
     a sensor set up in the evening, or on a day the line does not run, is
-    still a valid sensor. Times are the coordinator's business.
+    still a valid sensor. Times are the coordinator's business. The stop
+    pair usually implies the direction, except on a circular line where
+    both rotations run it in the same order: pass direction to tell them
+    apart, trips without a direction_id still matching.
     """
-    sql = """
+    direction_where = ""
+    params = {
+        "route_id": route_id,
+        "origin_id": origin_id,
+        "destination_id": destination_id,
+    }
+    if direction is not None:
+        direction_where = "and (t.direction_id = :direction or t.direction_id is null)"
+        params["direction"] = int(direction)
+    sql = f"""
     SELECT 1
     from trips t
     inner join stop_times o on o.trip_id = t.trip_id
@@ -949,16 +1075,48 @@ def has_trip_between(schedule, route_id, origin_id, destination_id):
       and o.stop_id = :origin_id
       and d.stop_id = :destination_id
       and o.stop_sequence < d.stop_sequence
+      {direction_where}
+    limit 1
+    """
+    with schedule.engine.connect() as conn:
+        row = conn.execute(text(sql), params).fetchone()
+    _LOGGER.debug("Trip between %s and %s on %s (direction %s): %s",
+                  origin_id, destination_id, route_id, direction, bool(row))
+    return bool(row)
+
+
+def has_train_trip_between(schedule, origin_name, destination_name, line=None):
+    """Whether any rail trip serves both stations, in this order.
+
+    The train path works with station names rather than stop ids, matched
+    the way get_next_departure does: on the name's prefix, since a feed
+    splits a station into several platform stops sharing it. Held to one
+    line when the flow picked one, like the departures themselves.
+    """
+    line_where = "and r.route_short_name = :line" if line else ""
+    sql = f"""
+    SELECT 1
+    from trips t
+    inner join routes r on r.route_id = t.route_id
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stops so on so.stop_id = o.stop_id
+    inner join stop_times d on d.trip_id = t.trip_id
+    inner join stops sd on sd.stop_id = d.stop_id
+    where r.route_type in (2,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117)
+      and so.stop_name like :origin_name
+      and sd.stop_name like :destination_name
+      and o.stop_sequence < d.stop_sequence
+      {line_where}
     limit 1
     """
     with schedule.engine.connect() as conn:
         row = conn.execute(text(sql), {
-            "route_id": route_id,
-            "origin_id": origin_id,
-            "destination_id": destination_id,
+            "origin_name": origin_name + "%",
+            "destination_name": destination_name + "%",
+            "line": line,
         }).fetchone()
-    _LOGGER.debug("Trip between %s and %s on %s: %s",
-                  origin_id, destination_id, route_id, bool(row))
+    _LOGGER.debug("Train trip between %s and %s (line %s): %s",
+                  origin_name, destination_name, line, bool(row))
     return bool(row)
 
 
