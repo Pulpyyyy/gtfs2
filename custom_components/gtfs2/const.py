@@ -22,6 +22,12 @@ CONF_DATA = "data"
 CONF_DESTINATION = "destination"
 CONF_ORIGIN = "origin"
 
+# the entry kind separates the datasource entries (one per source, carrying
+# its realtime feeds) from the journey and local-stop entries; an entry
+# without the key is a journey entry from before the kind existed
+CONF_KIND = "kind"
+ENTRY_KIND_DATASOURCE = "datasource"
+
 PLATFORMS = [Platform.SENSOR]
 
 # constants used in helpers
