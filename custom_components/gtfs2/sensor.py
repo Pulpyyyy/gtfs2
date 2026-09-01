@@ -5,9 +5,9 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
@@ -66,6 +66,7 @@ from .const import (
     ENTRY_KIND_DATASOURCE,
     CONF_TRIP_UPDATE_URL,
     CONF_FILE,
+    CONF_RT_ENABLED,
 )
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 from .rt_window import window_state
@@ -138,6 +139,9 @@ class GTFSDatasourceRTSensor(SensorEntity):
     def native_value(self):
         if not self._entry.options.get(CONF_TRIP_UPDATE_URL):
             return "off"
+        if not self._entry.options.get(CONF_RT_ENABLED, True):
+            # silenced by its switch: the config is there, nobody reads it
+            return "disabled"
         state = window_state(self._file)
         if state is None:
             # no sensor of this source has run its gate yet this session

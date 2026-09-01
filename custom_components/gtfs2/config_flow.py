@@ -55,6 +55,7 @@ from .const import (
     CONF_REAL_TIME,
     CONF_KIND,
     ENTRY_KIND_DATASOURCE,
+    CONF_RT_ENABLED,
     ATTR_API_KEY_LOCATIONS,
     DEFAULT_MAX_LOCAL_STOPS,
     CONF_MAX_LOCAL_STOPS
@@ -194,13 +195,14 @@ def _source_rt_key_schema(opts):
     }
 
 
-def _collect_source_rt_options(url_fields, key_fields):
+def _collect_source_rt_options(url_fields, key_fields, previous=None):
     """The options a datasource entry stores: what was typed, nothing empty.
 
     An emptied field means removal, so blanks and stray spaces never make it
     into the options - the coordinators and the mirror both read absence as
     "this source does not have that feed". Without a key, none of the key
-    fields survive either.
+    fields survive either. The rt_enabled switch is not on these screens,
+    so its position rides through an edit untouched.
     """
     options = {}
     for key in (CONF_TRIP_UPDATE_URL, CONF_VEHICLE_POSITION_URL, CONF_ALERTS_URL):
@@ -212,6 +214,8 @@ def _collect_source_rt_options(url_fields, key_fields):
         options[CONF_API_KEY_NAME] = key_fields.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME)
         options[CONF_API_KEY_LOCATION] = key_fields.get(CONF_API_KEY_LOCATION, "query_string")
         options[CONF_ACCEPT_HEADER_PB] = bool(key_fields.get(CONF_ACCEPT_HEADER_PB, False))
+    if previous is not None and CONF_RT_ENABLED in previous:
+        options[CONF_RT_ENABLED] = previous[CONF_RT_ENABLED]
     return options
 
 
@@ -550,7 +554,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                           inputs.get(CONF_FILE))
             return
         self.hass.config_entries.async_update_entry(
-            source, options=_collect_source_rt_options(url_fields, key_fields))
+            source, options=_collect_source_rt_options(
+                url_fields, key_fields, previous=source.options))
 
     async def async_step_source_zip(self, user_input: dict | None = None) -> FlowResult:
         """Use a zip the user already dropped in the gtfs2 folder."""
@@ -1784,7 +1789,8 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInput Source realtime: {self._user_inputs}")
         return self.async_create_entry(
-            title="", data=_collect_source_rt_options(self._user_inputs, {}))
+            title="", data=_collect_source_rt_options(
+                self._user_inputs, {}, previous=self.config_entry.options))
 
     async def async_step_real_time_key(
            self, user_input: dict[str, Any] | None = None
@@ -1801,7 +1807,8 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
             )
         _LOGGER.debug("UserInput Source realtime key received")
         return self.async_create_entry(
-            title="", data=_collect_source_rt_options(self._user_inputs, user_input))
+            title="", data=_collect_source_rt_options(
+                self._user_inputs, user_input, previous=self.config_entry.options))
 
 
 async def _check_stop_list(self, data):
