@@ -457,6 +457,8 @@
     "import_done": "In {file} wiederhergestellt: {lines}.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
     "import_failed_title": "GTFS: {file} wurde nicht geändert",
     "import_failed": "Die Linien konnten nicht in {file} wiederhergestellt werden.\n\nEs wurde nichts geändert. Einstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, um es erneut zu versuchen.",
+    "line_orphaned_title": "GTFS: {file} enthält eine Linie, die niemand liest",
+    "line_orphaned": "Der letzte Sensor der Linie **{line}** wurde entfernt, ihr Fahrplan liegt aber weiterhin in {file}.\n\nDer Dienst gtfs2.prune_datasource entfernt alle Linien, die kein Sensor liest; mit dry_run zeigt er zuerst, was wegfallen würde. Die Linie zu behalten kostet nur Speicherplatz, und ein neuer Sensor auf dieser Linie nutzt sie wieder.",
     "reason_no_database": "es wurde keine Datenbank erzeugt",
     "reason_cannot_open": "die Datenbank lässt sich nicht öffnen",
     "reason_tables_missing": "das Entpacken brach ab, bevor alle Tabellen geschrieben waren",

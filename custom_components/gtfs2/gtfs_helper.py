@@ -1692,6 +1692,19 @@ async def async_notify_import(hass, filename, routes, added):
                         file=filename, lines=lines)
 
 
+async def async_notify_line_orphaned(hass, filename, line):
+    """Say that a line's last sensor is gone while its timetable remains.
+
+    Raised by the entry removal hook. Deliberately not a prune: the user may
+    be reshuffling sensors and want the line right back, so the notification
+    names what is now dead weight and the service that drops it, and the
+    choice stays theirs.
+    """
+    _LOGGER.info("No sensor reads line %s of %s any more", line, filename)
+    await _async_notify(hass, "line_orphaned", f"gtfs2_prune_{filename}",
+                        file=filename, line=line)
+
+
 async def _async_notify(hass, key, notification_id, **values):
     """Raise a notification in the user's language.
 
