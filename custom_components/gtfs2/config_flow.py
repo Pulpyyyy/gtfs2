@@ -1260,6 +1260,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         keep.update(self._import_routes)
         unrestricted = any(
             e.data.get("device_tracker_id") or not e.data.get("route")
+            # "train" is a marker, not a route_id: a train sensor matches
+            # city pairs across the whole feed, so nothing may be dropped
+            or e.data.get("route") == "train"
             for e in self.hass.config_entries.async_entries(DOMAIN)
             if e.data.get("file") == filename
             # the datasource entry reads nothing: it must not make its own

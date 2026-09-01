@@ -6,6 +6,8 @@ import os
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 
 from datetime import timedelta
 
@@ -105,76 +107,137 @@ def _routes_in_use(hass: HomeAssistant, filename: str, exclude=None):
         if entry.data.get("device_tracker_id"):
             unrestricted = True
             continue
-        if route := entry.data.get("route"):
+        route = entry.data.get("route")
+        if route == "train":
+            # a train sensor stores this marker, not a route_id: it matches
+            # city pairs across the whole feed, so its datasource must stay
+            # whole, exactly like a local stops entry
+            unrestricted = True
+            continue
+        if route:
             routes.add(route.split(": ")[0])
         else:
             unrestricted = True
     return routes, unrestricted
 
 
+def _wanted_files(hass: HomeAssistant, raw):
+    """The datasource names a service call designates.
+
+    The field is a device picker in the UI, so it usually carries the
+    sources' device ids; yaml calls and old automations keep passing plain
+    datasource names, or one bare string, and an entity id resolves too.
+    A mix of the three still works.
+    """
+    if isinstance(raw, str):
+        raw = [raw] if raw else []
+    devices = dr.async_get(hass)
+    entities = er.async_get(hass)
+    files = []
+    for item in raw or []:
+        entry_ids = []
+        if device := devices.async_get(item):
+            entry_ids = list(device.config_entries)
+        elif (entity := entities.async_get(item)) and entity.config_entry_id:
+            entry_ids = [entity.config_entry_id]
+        for entry_id in entry_ids:
+            entry = hass.config_entries.async_get_entry(entry_id)
+            if entry and entry.domain == DOMAIN and entry.data.get("file"):
+                files.append(entry.data["file"])
+                break
+        else:
+            # not a device nor an entity of ours: a plain datasource name
+            files.append(item)
+    return files
+
+
+def _known_sources(hass: HomeAssistant):
+    """Every datasource name the integration knows.
+
+    The datasource entries are the authoritative list - the bootstrap gives
+    one to every source on disk, sensors or not - and the journey entries
+    still count as a safety net for the short pre-bootstrap window.
+    """
+    return {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN)
+            if e.data.get("file")}
+
+
 async def async_prune_datasources(hass: HomeAssistant, data):
-    """Prune the picked datasources, or every one, down to the routes in use."""
+    """Prune the picked datasources, or every one, down to the routes in use.
+
+    A source nothing reads, or one a train or local stops sensor needs whole,
+    is never attempted: it lands in the skipped list with its reason instead
+    of an error per source, so sweeping every known source stays quiet.
+    """
     dry_run = data.get("dry_run", False)
     gtfs_dir = hass.config.path(DEFAULT_PATH)
-    # the field takes one name or several; a lone string still comes in as a
-    # string when the service is called from yaml or an old automation
-    wanted = data.get("file")
-    if isinstance(wanted, str):
-        wanted = [wanted] if wanted else []
-    # only sources some sensor actually reads: a datasource entry names its
-    # file without reading it, and sweeping a source nothing reads would
-    # prune it down to nothing
-    files = {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN)
-             if e.data.get("file") and e.data.get(CONF_KIND) != ENTRY_KIND_DATASOURCE}
+    wanted = _wanted_files(hass, data.get("file"))
+    known = _known_sources(hass)
+    unknown = []
     if wanted:
-        unknown = sorted(set(wanted) - files)
+        unknown = sorted(set(wanted) - known)
         if unknown:
-            _LOGGER.error("No configured entry uses datasource(s): %s", ", ".join(unknown))
-        files &= set(wanted)
-        if not files:
-            return {"pruned": [], "unknown": unknown}
+            _LOGGER.error("Unknown datasource(s): %s", ", ".join(unknown))
+        targets = set(wanted) & known
+        if not targets:
+            return {"pruned": [], "skipped": [], "unknown": unknown}
+    else:
+        targets = known
 
-    pruned = []
-    for filename in sorted(files):
+    pruned, skipped = [], []
+    for filename in sorted(targets):
         routes, unrestricted = _routes_in_use(hass, filename)
         if unrestricted:
             _LOGGER.warning(
-                "Skipping datasource %s: an entry uses it without a route (local stops), "
-                "pruning would remove data it needs", filename)
+                "Skipping datasource %s: a train or local stops sensor reads "
+                "the whole feed, pruning would remove data it needs", filename)
+            skipped.append({"file": filename, "reason": "whole_feed_in_use"})
+            continue
+        if not routes:
+            # no sensor reads it: pruning would empty the datasource
+            skipped.append({"file": filename, "reason": "no_sensor_reads_it"})
             continue
         stats = await hass.async_add_executor_job(
             prune_gtfs_datasource, gtfs_dir, filename, routes, dry_run)
         if stats:
             pruned.append(stats)
-    return {"pruned": pruned}
+    result = {"pruned": pruned, "skipped": skipped}
+    if unknown:
+        result["unknown"] = unknown
+    return result
 
 
 async def async_intern_datasources(hass: HomeAssistant, data):
-    """Intern the identifiers of the picked datasources, or every one."""
+    """Intern the identifiers of the picked datasources, or every one.
+
+    Same field contract as async_prune_datasources; interning has no route
+    semantics, so every known source qualifies, sensors or not.
+    """
     dry_run = data.get("dry_run", False)
     gtfs_dir = hass.config.path(DEFAULT_PATH)
-    # same contract as async_prune_datasources: one name, several, or none,
-    # and the same reader-entries-only sweep
-    wanted = data.get("file")
-    if isinstance(wanted, str):
-        wanted = [wanted] if wanted else []
-    files = {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN)
-             if e.data.get("file") and e.data.get(CONF_KIND) != ENTRY_KIND_DATASOURCE}
+    wanted = _wanted_files(hass, data.get("file"))
+    known = _known_sources(hass)
+    unknown = []
     if wanted:
-        unknown = sorted(set(wanted) - files)
+        unknown = sorted(set(wanted) - known)
         if unknown:
-            _LOGGER.error("No configured entry uses datasource(s): %s", ", ".join(unknown))
-        files &= set(wanted)
-        if not files:
+            _LOGGER.error("Unknown datasource(s): %s", ", ".join(unknown))
+        targets = set(wanted) & known
+        if not targets:
             return {"interned": [], "unknown": unknown}
+    else:
+        targets = known
 
     interned = []
-    for filename in sorted(files):
+    for filename in sorted(targets):
         stats = await hass.async_add_executor_job(
             intern_gtfs_datasource, gtfs_dir, filename, dry_run)
         if stats:
             interned.append(stats)
-    return {"interned": interned}
+    result = {"interned": interned}
+    if unknown:
+        result["unknown"] = unknown
+    return result
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
