@@ -37,6 +37,7 @@ from .const import (
     CONF_API_KEY_NAME,
     CONF_API_KEY_LOCATION,
     CONF_ACCEPT_HEADER_PB,
+    CONF_RT_ENABLED,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,10 +87,14 @@ def rt_feed_config(hass: HomeAssistant, entry: ConfigEntry):
 
     Read on every coordinator cycle, so an edit on the datasource entry
     reaches every sensor of the source within a minute, with no reload.
+    The rt_enabled switch silences the source without touching the urls:
+    off means no sensor reads the feeds, config kept for when it returns.
     """
     source = datasource_entry(hass, entry.data.get(CONF_FILE))
     if source is not None:
-        return source.options, bool(source.options.get(CONF_TRIP_UPDATE_URL))
+        cfg = source.options
+        return cfg, (bool(cfg.get(CONF_TRIP_UPDATE_URL))
+                     and cfg.get(CONF_RT_ENABLED, True))
     return entry.options, bool(entry.options.get(CONF_REAL_TIME, False))
 
 
@@ -219,7 +224,9 @@ async def async_mirror_rt_to_entries(hass: HomeAssistant, source_entry: ConfigEn
     on wherever the source has a trip updates url.
     """
     cfg = source_entry.options
-    active = bool(cfg.get(CONF_TRIP_UPDATE_URL))
+    # a source silenced by its switch mirrors as realtime off: the urls stay
+    # in place, here and on the journey entries alike
+    active = bool(cfg.get(CONF_TRIP_UPDATE_URL)) and cfg.get(CONF_RT_ENABLED, True)
     for entry in journey_entries(hass, source_entry.data.get(CONF_FILE)):
         new_options = {**entry.options}
         for key in RT_OPTION_KEYS:
