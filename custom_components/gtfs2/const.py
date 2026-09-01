@@ -28,8 +28,13 @@ CONF_TOMORROW = "include_tomorrow"
 # without the key is a journey entry from before the kind existed
 CONF_KIND = "kind"
 ENTRY_KIND_DATASOURCE = "datasource"
+# the switch that silences a source's realtime while keeping its config;
+# absent means enabled
+CONF_RT_ENABLED = "rt_enabled"
 
 PLATFORMS = [Platform.SENSOR]
+# the datasource entries also carry their realtime switch
+DATASOURCE_PLATFORMS = [Platform.SENSOR, Platform.SWITCH]
 
 # constants used in helpers
 ATTR_API_KEY_LOCATIONS = ["not_applicable","header","query_string"]
