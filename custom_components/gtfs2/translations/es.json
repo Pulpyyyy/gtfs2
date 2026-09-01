@@ -454,7 +454,7 @@
       "fields": {
         "file": {
           "name": "Fuente de datos",
-          "description": "Déjelo vacío para reducir todas las fuentes configuradas"
+          "description": "Las fuentes a podar, elegidas como dispositivos; desde yaml siguen valiendo los nombres de fuente. Vacío = todas las fuentes conocidas; una fuente que un sensor de tren o de paradas cercanas necesita entera se omite y lo dice en la respuesta."
         },
         "dry_run": {
           "name": "Simulación",
@@ -468,7 +468,7 @@
       "fields": {
         "file": {
           "name": "Fuente de datos",
-          "description": "Déjelo vacío para compactar todas las fuentes configuradas"
+          "description": "Las fuentes a compactar, elegidas como dispositivos; desde yaml siguen valiendo los nombres de fuente. Vacío = todas las fuentes conocidas."
         },
         "dry_run": {
           "name": "Simulación",

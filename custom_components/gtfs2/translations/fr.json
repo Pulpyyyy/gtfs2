@@ -463,7 +463,7 @@
       "fields": {
         "file": {
           "name": "Source de données",
-          "description": "Laissez vide pour réduire toutes les sources configurées"
+          "description": "Les sources à élaguer, choisies comme appareils ; en yaml, les noms de source restent acceptés. Vide = toutes les sources connues ; une source qu'un capteur train ou arrêts proches lit en entier est sautée et le dit dans la réponse."
         },
         "dry_run": {
           "name": "Simulation",
@@ -477,7 +477,7 @@
       "fields": {
         "file": {
           "name": "Source de données",
-          "description": "Laissez vide pour compacter toutes les sources configurées"
+          "description": "Les sources à compacter, choisies comme appareils ; en yaml, les noms de source restent acceptés. Vide = toutes les sources connues."
         },
         "dry_run": {
           "name": "Simulation",

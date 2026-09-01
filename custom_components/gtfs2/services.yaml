@@ -229,12 +229,21 @@ prune_datasource:
   fields:
     file:
       name: Datasources
-      description: Datasource names without extension, one or several. Leave empty to prune every configured datasource.
+      description: >-
+        The sources to prune, picked as devices. From yaml, plain datasource
+        names still work. Leave empty to prune every known datasource; sources
+        a train or local stops sensor needs whole are skipped and say so in
+        the response.
       required: false
-      example: nl_openov
+      example: tao
       selector:
-        text:
+        device:
           multiple: true
+          # only the datasource devices carry a gtfs2 switch: this is what
+          # keeps the journey sensors' devices out of the list
+          entity:
+            - integration: gtfs2
+              domain: switch
     dry_run:
       name: Dry run
       description: Report what would be removed without changing anything.
@@ -253,12 +262,19 @@ intern_datasource:
   fields:
     file:
       name: Datasources
-      description: Datasource names without extension, one or several. Leave empty to intern every configured datasource.
+      description: >-
+        The sources to shrink, picked as devices. From yaml, plain datasource
+        names still work. Leave empty to intern every known datasource.
       required: false
-      example: nl_openov
+      example: tao
       selector:
-        text:
+        device:
           multiple: true
+          # only the datasource devices carry a gtfs2 switch: this is what
+          # keeps the journey sensors' devices out of the list
+          entity:
+            - integration: gtfs2
+              domain: switch
     dry_run:
       name: Dry run
       description: Report what would be interned without changing anything.

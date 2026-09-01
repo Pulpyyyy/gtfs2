@@ -454,7 +454,7 @@
       "fields": {
         "file": {
           "name": "Data source",
-          "description": "Leave empty to trim every configured source"
+          "description": "The sources to prune, picked as devices; plain datasource names still work from yaml. Leave empty to prune every known source; one a train or local stops sensor needs whole is skipped and says so in the response."
         },
         "dry_run": {
           "name": "Dry run",
@@ -468,7 +468,7 @@
       "fields": {
         "file": {
           "name": "Data source",
-          "description": "Leave empty to shrink every configured source"
+          "description": "The sources to shrink, picked as devices; plain datasource names still work from yaml. Leave empty to shrink every known source."
         },
         "dry_run": {
           "name": "Dry run",
