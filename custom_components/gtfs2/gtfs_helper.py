@@ -56,10 +56,14 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
     """
     if route_type == "2":
         route_type_where = f"route_type in (2,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117)"
-        start_station_id = str(origin)+'%'
-        end_station_id = str(destination)+'%'
-        start_station_where = f"AND start_station.stop_id in (select stop_id from stops where stop_name like :origin_station_id)"
-        end_station_where = f"AND end_station.stop_id in (select stop_id from stops where stop_name like :end_station_id)"
+        # The station is matched on the exact name the flow offered. A prefix
+        # match also boarded the rider at any station whose name extends the
+        # asked one (Champagnole, Champagnole Paul-Emile Victor), whichever
+        # departed first.
+        start_station_id = str(origin)
+        end_station_id = str(destination)
+        start_station_where = f"AND start_station.stop_id in (select stop_id from stops where stop_name = :origin_station_id)"
+        end_station_where = f"AND end_station.stop_id in (select stop_id from stops where stop_name = :end_station_id)"
         _LOGGER.debug("Setting up TRAIN Route for start/end : %s / %s ", start_station_id, end_station_id)
     else:
         route_type_where = "1=1"
