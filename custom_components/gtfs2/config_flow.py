@@ -91,7 +91,7 @@ from .gtfs_helper import (
 )
 
 from .gtfs_db import import_routes, routes_in, real_path, optimise_datasource
-from .rt_source import async_ensure_datasource_entry, datasource_entry
+from .rt_source import RT_OPTION_KEYS, async_ensure_datasource_entry, datasource_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -153,6 +153,68 @@ def _scratch_size(gtfs_dir, filename):
         return "0 MB"
 
 
+def _source_rt_schema(opts):
+    """The realtime feeds screen of a source, prefilled with what it has.
+
+    Shared between the creation flow and the datasource entry's options so
+    the two places a source is edited can never drift apart. Every field is
+    optional: emptied means removed.
+    """
+    return {
+        vol.Optional(CONF_TRIP_UPDATE_URL, default=opts.get(CONF_TRIP_UPDATE_URL, "")): str,
+        vol.Optional(CONF_VEHICLE_POSITION_URL, default=opts.get(CONF_VEHICLE_POSITION_URL, "")): str,
+        vol.Optional(CONF_ALERTS_URL, default=opts.get(CONF_ALERTS_URL, "")): str,
+        # the three key fields only matter for the few feeds that need one
+        vol.Optional(CONF_NEEDS_API_KEY, default=bool(opts.get(CONF_API_KEY))): selector.BooleanSelector(),
+    }
+
+
+def _source_rt_key_schema(opts):
+    """The realtime api key screen, shown only when the source needs one."""
+    return {
+        vol.Required(CONF_API_KEY, default=opts.get(CONF_API_KEY, "")): cv.string,
+        vol.Required(
+            CONF_API_KEY_NAME,
+            default=opts.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME),
+        ): cv.string,
+        vol.Required(
+            CONF_API_KEY_LOCATION,
+            default=opts.get(CONF_API_KEY_LOCATION, "query_string"),
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[l for l in ATTR_API_KEY_LOCATIONS if l != "not_applicable"],
+                translation_key="api_key_location",
+            )
+        ),
+        # gtfs_rt_helper only sends this when the key is in a header
+        vol.Optional(
+            CONF_ACCEPT_HEADER_PB,
+            default=opts.get(CONF_ACCEPT_HEADER_PB, False),
+        ): selector.BooleanSelector(),
+    }
+
+
+def _collect_source_rt_options(url_fields, key_fields):
+    """The options a datasource entry stores: what was typed, nothing empty.
+
+    An emptied field means removal, so blanks and stray spaces never make it
+    into the options - the coordinators and the mirror both read absence as
+    "this source does not have that feed". Without a key, none of the key
+    fields survive either.
+    """
+    options = {}
+    for key in (CONF_TRIP_UPDATE_URL, CONF_VEHICLE_POSITION_URL, CONF_ALERTS_URL):
+        value = (url_fields.get(key) or "").strip()
+        if value:
+            options[key] = value
+    if (key_fields.get(CONF_API_KEY) or "").strip():
+        options[CONF_API_KEY] = key_fields[CONF_API_KEY].strip()
+        options[CONF_API_KEY_NAME] = key_fields.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME)
+        options[CONF_API_KEY_LOCATION] = key_fields.get(CONF_API_KEY_LOCATION, "query_string")
+        options[CONF_ACCEPT_HEADER_PB] = bool(key_fields.get(CONF_ACCEPT_HEADER_PB, False))
+    return options
+
+
 TRANSLATION_DESCRIPTION_PLACEHOLDERS = {
     "docu_extracting": "https://github.com/vingerha/gtfs2/wiki/01:-Initial-Setup-of-the-Static-GTFS-Data-Source#extraction-of-data-from-the-datasource",
     "docu_menu_options": "https://github.com/vingerha/gtfs2/wiki/00:-Installation-and-Main-Menu",
@@ -191,6 +253,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # the mirror journey, worked out once the stops are known
         self._return_trip: dict | None = None
         self._return_name: str = ""
+        # what the realtime screen collected, while its key screen runs
+        self._source_rt_inputs: dict = {}
 
     async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
         """Handle the source."""
@@ -362,9 +426,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = check_data
             return _show(errors, user_input)
         self._user_inputs.update(user_input)
-        self._ensure_datasource_entry()
         _LOGGER.debug(f"UserInputs Source url: {self._user_inputs}")
-        return await self.async_step_agency()
+        return await self.async_step_source_rt()
 
     async def async_step_unpacking(self, user_input: dict | None = None) -> FlowResult:
         """A brand new source is unpacking: end here, and notify when it is done.
@@ -433,9 +496,61 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return await self.async_step_extracting()
             errors["base"] = check_data
             return _show(errors, user_input)
-        self._ensure_datasource_entry()
         _LOGGER.debug(f"UserInputs Source key: {self._user_inputs}")
+        return await self.async_step_source_rt()
+
+    async def async_step_source_rt(self, user_input: dict | None = None) -> FlowResult:
+        """Offer the source's realtime feeds right after it is brought in.
+
+        Optional by design: submitting the screen empty just moves on, and
+        the feeds can be added or changed later from the datasource entry's
+        CONFIGURE button. A source picked again shows what it already has.
+        """
+        errors: dict[str, str] = {}
+        source = datasource_entry(self.hass, self._user_inputs.get(CONF_FILE))
+        opts = source.options if source else {}
+        if user_input is None:
+            return self.async_show_form(
+                step_id="source_rt",
+                data_schema=vol.Schema(_source_rt_schema(opts)),
+                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                errors=errors,
+            )
+        if user_input.pop(CONF_NEEDS_API_KEY, False):
+            self._source_rt_inputs = user_input
+            return await self.async_step_source_rt_key()
+        await self._store_source_rt(user_input, {})
         return await self.async_step_agency()
+
+    async def async_step_source_rt_key(self, user_input: dict | None = None) -> FlowResult:
+        """Ask for the realtime api key, only when the source needs one."""
+        errors: dict[str, str] = {}
+        source = datasource_entry(self.hass, self._user_inputs.get(CONF_FILE))
+        opts = source.options if source else {}
+        if user_input is None:
+            return self.async_show_form(
+                step_id="source_rt_key",
+                data_schema=vol.Schema(_source_rt_key_schema(opts)),
+                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                errors=errors,
+            )
+        await self._store_source_rt(self._source_rt_inputs, user_input)
+        return await self.async_step_agency()
+
+    async def _store_source_rt(self, url_fields, key_fields):
+        """Put what the realtime screens collected onto the datasource entry."""
+        inputs = self._user_inputs
+        await async_ensure_datasource_entry(
+            self.hass, inputs.get(CONF_FILE),
+            url=inputs.get(CONF_URL) or "na",
+            extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip")
+        source = datasource_entry(self.hass, inputs.get(CONF_FILE))
+        if source is None:
+            _LOGGER.error("No datasource entry to store the realtime config on: %s",
+                          inputs.get(CONF_FILE))
+            return
+        self.hass.config_entries.async_update_entry(
+            source, options=_collect_source_rt_options(url_fields, key_fields))
 
     async def async_step_source_zip(self, user_input: dict | None = None) -> FlowResult:
         """Use a zip the user already dropped in the gtfs2 folder."""
@@ -480,9 +595,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = check_data
             return await _show(errors)
         self._user_inputs.update(user_input)
-        self._ensure_datasource_entry()
         _LOGGER.debug(f"UserInputs Source zip: {self._user_inputs}")
-        return await self.async_step_agency()
+        return await self.async_step_source_rt()
 
     def _ensure_datasource_entry(self):
         """Give the source picked in this flow its datasource entry.
@@ -1583,7 +1697,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        self._pygtfs = ""                 
+        self._pygtfs = ""
         self._data: dict[str, str] = {}
         self._user_inputs: dict = {}
 
@@ -1592,6 +1706,11 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Manage the options."""
         errors: dict[str, str] = {}
+        if self.config_entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
+            # the datasource entry's CONFIGURE button is where the source's
+            # realtime feeds are added, changed and removed; the sensors
+            # pick the change up on their next cycle, without a reload
+            return await self.async_step_real_time()
         if user_input is not None:
             if self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None):
                 _data = user_input
@@ -1602,16 +1721,17 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
                 _data["radius"] = user_input["radius"]
                 stop_limit = await _check_stop_list(self, _data)
                 if stop_limit :
-                    return self.async_abort(reason=stop_limit) 
-            if user_input.get(CONF_REAL_TIME,None):
-                self._user_inputs.update(user_input)
-                _LOGGER.debug(f"UserInputs Options Init with realtime: {self._user_inputs}")
-                return await self.async_step_real_time()    
-            else: 
-                self._user_inputs.update(user_input)
-                _LOGGER.debug(f"UserInputs Options Init without realtime: {self._user_inputs}")
-                return self.async_create_entry(title="", data=self._user_inputs)
-        
+                    return self.async_abort(reason=stop_limit)
+            # the realtime fields mirrored from the datasource entry live in
+            # these options too, for a downgrade to fall back on: an edit of
+            # the sensor's own knobs must not wipe them
+            for key in (*RT_OPTION_KEYS, CONF_REAL_TIME):
+                if key in self.config_entry.options and key not in user_input:
+                    self._user_inputs[key] = self.config_entry.options[key]
+            self._user_inputs.update(user_input)
+            _LOGGER.debug(f"UserInputs Options Init: {self._user_inputs}")
+            return self.async_create_entry(title="", data=self._user_inputs)
+
         if self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None):
             opt1_schema = {
                     vol.Optional(CONF_LOCAL_STOP_REFRESH_INTERVAL, default=self.config_entry.options.get(CONF_LOCAL_STOP_REFRESH_INTERVAL, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL)): int,
@@ -1619,57 +1739,41 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
                     vol.Optional(CONF_TIMERANGE, default=self.config_entry.options.get(CONF_TIMERANGE, DEFAULT_LOCAL_STOP_TIMERANGE)): vol.All(vol.Coerce(int), vol.Range(min=15, max=120)),
                     vol.Optional(CONF_OFFSET, default=self.config_entry.options.get(CONF_OFFSET, DEFAULT_OFFSET)): int,
                     vol.Required(CONF_MAX_LOCAL_STOPS, default=self.config_entry.options.get(CONF_MAX_LOCAL_STOPS, DEFAULT_MAX_LOCAL_STOPS)): int,
-                    vol.Optional(CONF_REAL_TIME, default=self.config_entry.options.get(CONF_REAL_TIME)): selector.BooleanSelector()
                 }
             return self.async_show_form(
                 step_id="init",
                 data_schema=vol.Schema(opt1_schema),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                 errors = errors
-            )                
-        
+            )
+
         else:
             opt1_schema = {
                         vol.Optional(CONF_REFRESH_INTERVAL, default=self.config_entry.options.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)): int,
                         vol.Optional(CONF_OFFSET, default=self.config_entry.options.get(CONF_OFFSET, DEFAULT_OFFSET)): int,
-                        vol.Optional(CONF_REAL_TIME, default=self.config_entry.options.get(CONF_REAL_TIME)): selector.BooleanSelector()
                     }
             return self.async_show_form(
                 step_id="init",
                 data_schema=vol.Schema(opt1_schema),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             )
-        
+
     async def async_step_real_time(
            self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Ask for the realtime feeds, keeping the key fields out of the way."""
+        """The source's realtime feeds, shared by every sensor reading it.
+
+        Every field is optional: emptying them all removes realtime from the
+        source, which is the one gesture the old per-sensor screens never
+        offered. The key fields stay behind their toggle.
+        """
         errors: dict[str, str] = {}
         opts = self.config_entry.options
-        local_stops = bool(self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None))
 
         if user_input is None:
-            schema = {
-                vol.Required(
-                    CONF_TRIP_UPDATE_URL, default=opts.get(CONF_TRIP_UPDATE_URL)
-                ): str,
-            }
-            if not local_stops:
-                # local stop sensors do not draw vehicles nor read alerts
-                schema[vol.Optional(
-                    CONF_VEHICLE_POSITION_URL,
-                    default=opts.get(CONF_VEHICLE_POSITION_URL, ""),
-                )] = str
-                schema[vol.Optional(
-                    CONF_ALERTS_URL, default=opts.get(CONF_ALERTS_URL, "")
-                )] = cv.string
-            # the three key fields only matter for the few feeds that need one
-            schema[vol.Optional(
-                CONF_NEEDS_API_KEY, default=bool(opts.get(CONF_API_KEY))
-            )] = selector.BooleanSelector()
             return self.async_show_form(
                 step_id="real_time",
-                data_schema=vol.Schema(schema),
+                data_schema=vol.Schema(_source_rt_schema(opts)),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                 errors=errors,
             )
@@ -1677,51 +1781,27 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input.pop(CONF_NEEDS_API_KEY, False):
             self._user_inputs.update(user_input)
             return await self.async_step_real_time_key()
-        # no key: do not leave one from a previous run in the options
-        user_input[CONF_API_KEY] = ""
-        user_input[CONF_API_KEY_LOCATION] = DEFAULT_API_KEY_LOCATION
         self._user_inputs.update(user_input)
-        _LOGGER.debug(f"UserInput Realtime: {self._user_inputs}")
-        return self.async_create_entry(title="", data=self._user_inputs)
+        _LOGGER.debug(f"UserInput Source realtime: {self._user_inputs}")
+        return self.async_create_entry(
+            title="", data=_collect_source_rt_options(self._user_inputs, {}))
 
     async def async_step_real_time_key(
            self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Ask for the realtime api key, only when the feed needs one."""
+        """Ask for the realtime api key, only when the source needs one."""
         errors: dict[str, str] = {}
         opts = self.config_entry.options
         if user_input is None:
             return self.async_show_form(
                 step_id="real_time_key",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(CONF_API_KEY, default=opts.get(CONF_API_KEY, "")): cv.string,
-                        vol.Required(
-                            CONF_API_KEY_NAME,
-                            default=opts.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME),
-                        ): cv.string,
-                        vol.Required(
-                            CONF_API_KEY_LOCATION,
-                            default=opts.get(CONF_API_KEY_LOCATION, "query_string"),
-                        ): selector.SelectSelector(
-                            selector.SelectSelectorConfig(
-                                options=[l for l in ATTR_API_KEY_LOCATIONS if l != "not_applicable"],
-                                translation_key="api_key_location",
-                            )
-                        ),
-                        # gtfs_rt_helper only sends this when the key is in a header
-                        vol.Optional(
-                            CONF_ACCEPT_HEADER_PB,
-                            default=opts.get(CONF_ACCEPT_HEADER_PB, False),
-                        ): selector.BooleanSelector(),
-                    },
-                ),
+                data_schema=vol.Schema(_source_rt_key_schema(opts)),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                 errors=errors,
             )
-        self._user_inputs.update(user_input)
-        _LOGGER.debug(f"UserInput Realtime key: {self._user_inputs}")
-        return self.async_create_entry(title="", data=self._user_inputs)
+        _LOGGER.debug("UserInput Source realtime key received")
+        return self.async_create_entry(
+            title="", data=_collect_source_rt_options(self._user_inputs, user_input))
 
 
 async def _check_stop_list(self, data):

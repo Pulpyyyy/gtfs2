@@ -190,6 +190,36 @@
       "optimise": {
         "title": "Libérer de l'espace disque",
         "description": "La source **{file}** occupe **{size}**. L'essentiel est constitué d'horaires de lignes qu'aucun capteur ne lit.\n\n**{kept}** ligne(s) conservée(s), **{dropped}** retirée(s).\n\nLes retirer puis compacter le reste divise souvent la taille par dix ou plus. Une ligne retirée peut toujours être rajoutée plus tard.\n\nL'opération prend quelques secondes.\n\n[documentation]({docu_extracting})"
+      },
+      "source_rt": {
+        "description": "Le temps réel se configure une fois par source : tous les capteurs qui la lisent partagent ces flux. Ne renseignez que ceux que vous voulez, seul **departures** active le temps réel. Vous pouvez aussi tout laisser vide et ajouter les flux plus tard, depuis l'entrée de la source dans la page de l'intégration.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "trip_update_url": "Adresse du flux des départs",
+          "vehicle_position_url": "Adresse du flux de position des véhicules (facultatif)",
+          "alerts_url": "Adresse du flux d'alertes trafic (facultatif)",
+          "needs_api_key": "Une clé d'API est nécessaire"
+        },
+        "data_description": {
+          "trip_update_url": "Le retard réel sur votre capteur, au lieu de l'horaire théorique.\n`https://exemple.fr/gtfs/`**`trip-updates`**",
+          "vehicle_position_url": "Où se trouvent les véhicules, pour une carte. Laissez vide si vous n'en voulez pas.\n`https://exemple.fr/gtfs/`**`vehicle-positions`**",
+          "alerts_url": "Les messages de perturbation de l'exploitant. Laissez vide si vous n'en voulez pas.\n`https://exemple.fr/gtfs/`**`service-alerts`**",
+          "needs_api_key": "Cochez si le fournisseur vous a remis une clé pour lire ces flux."
+        }
+      },
+      "source_rt_key": {
+        "description": "Le fournisseur les indique dans sa documentation.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "api_key": "Clé d'API",
+          "api_key_name": "Nom attendu par le fournisseur",
+          "api_key_location": "Où placer la clé",
+          "accept": "Envoyer aussi Accept: application/x-protobuf (effectif seulement si la clé va dans l'en-tête)"
+        },
+        "data_description": {
+          "api_key": "La clé elle-même, telle que le fournisseur vous l'a donnée.",
+          "api_key_name": "Le mot placé devant votre clé. Dans l'adresse : `?`**`apikey`**`=VOTRE_CLE`. Dans un en-tête : **`x-api-key`**`: VOTRE_CLE`. Il varie selon les fournisseurs (`apikey`, `api_key`, `app_key`, `Authorization`) et la casse compte.",
+          "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête.",
+          "accept": "Effectif seulement si la clé va dans l'en-tête."
+        }
       }
     },
     "error": {
@@ -237,7 +267,6 @@
           "refresh_interval": "Intervalle d'actualisation en minutes",
           "offset": "Décalage en minutes",
           "max_local_stops": "Limite du nombre d'arrêts pour éviter un éventuel impact sur les performances. \nAugmentation à votre propre risque",
-          "real_time": "Ajoute intégration temps réel? \n (nécessite données de la même source)",
           "local_stop_refresh_interval": "Intervalle d'actualisation en minutes",
           "timerange": "Période dans la future pour départs depuis 'maintenant' (en minutes entre 15 et 120)",
           "radius": "Radius pour la recherche des stops (en metres entre 50 et 500)",
@@ -251,13 +280,12 @@
           "timerange": "Jusqu'où chercher les départs à venir, en minutes.",
           "radius": "Distance de recherche des arrêts autour de la personne ou de la zone, en mètres.",
           "max_local_stops": "Au-delà de ce nombre d'arrêts le capteur devient lent. À augmenter à vos risques.",
-          "real_time": "Lire les retards en direct chez le fournisseur, en plus des horaires.",
           "source_timezone_correction": "Seulement si la source publie ses heures dans un autre fuseau, en heures.",
           "check_source_dates": "Expérimental : refuse un nouveau fichier dont toutes les dates sont dans le futur."
         }
       },
       "real_time": {
-        "description": "Il existe trois types de données temps réel. Ne saisissez que ceux qui vous intéressent : seul le flux **départs** est obligatoire. Les terminaisons varient selon les fournisseurs, la partie en gras est celle qui compte.\n\n[documentation]({docu_configuring_options})",
+        "description": "Ces flux appartiennent à la source entière : tous les capteurs qui la lisent les utilisent, en moins d'une minute, sans redémarrage. Seul **departures** active le temps réel. Videz un champ pour retirer ce flux, videz tout pour retirer le temps réel de cette source.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Adresse du flux des départs",
           "vehicle_position_url": "Adresse du flux de position des véhicules (facultatif)",
