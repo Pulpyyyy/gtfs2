@@ -53,10 +53,12 @@ from .const import (
     CONF_REFRESH_INTERVAL,
     CONF_OFFSET,
     CONF_REAL_TIME,
+    CONF_KIND,
+    ENTRY_KIND_DATASOURCE,
     ATTR_API_KEY_LOCATIONS,
     DEFAULT_MAX_LOCAL_STOPS,
     CONF_MAX_LOCAL_STOPS
-)    
+)
 
 from .gtfs_helper import (
     get_gtfs,
@@ -89,6 +91,7 @@ from .gtfs_helper import (
 )
 
 from .gtfs_db import import_routes, routes_in, real_path, optimise_datasource
+from .rt_source import async_ensure_datasource_entry, datasource_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -354,10 +357,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # there is nothing to correct, so it keeps its own abort message.
             if check_data == "extracting":
                 self._user_inputs.update(user_input)
+                self._ensure_datasource_entry()
                 return await self.async_step_unpacking()
             errors["base"] = check_data
             return _show(errors, user_input)
         self._user_inputs.update(user_input)
+        self._ensure_datasource_entry()
         _LOGGER.debug(f"UserInputs Source url: {self._user_inputs}")
         return await self.async_step_agency()
 
@@ -424,9 +429,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ensure_source_zip, self.hass, DEFAULT_PATH, self._user_inputs)
         if check_data:
             if check_data == "extracting":
+                self._ensure_datasource_entry()
                 return await self.async_step_extracting()
             errors["base"] = check_data
             return _show(errors, user_input)
+        self._ensure_datasource_entry()
         _LOGGER.debug(f"UserInputs Source key: {self._user_inputs}")
         return await self.async_step_agency()
 
@@ -468,12 +475,30 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if check_data:
             if check_data == "extracting":
                 self._user_inputs.update(user_input)
+                self._ensure_datasource_entry()
                 return await self.async_step_extracting()
             errors["base"] = check_data
             return await _show(errors)
         self._user_inputs.update(user_input)
+        self._ensure_datasource_entry()
         _LOGGER.debug(f"UserInputs Source zip: {self._user_inputs}")
         return await self.async_step_agency()
+
+    def _ensure_datasource_entry(self):
+        """Give the source picked in this flow its datasource entry.
+
+        Scheduled, not awaited: the entry is bookkeeping this flow should
+        neither wait on nor fail over, and the creation aborts on its
+        unique_id when the entry already exists.
+        """
+        inputs = self._user_inputs
+        self.hass.async_create_background_task(
+            async_ensure_datasource_entry(
+                self.hass, inputs.get(CONF_FILE),
+                url=inputs.get(CONF_URL) or "na",
+                extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip"),
+            name=f"gtfs2 datasource entry {inputs.get(CONF_FILE)}",
+        )
 
     async def async_step_remove(self, user_input: dict | None = None) -> FlowResult:
         """Handle a flow initialized by the user."""
@@ -496,6 +521,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except Exception as ex:
             _LOGGER.error("Error while deleting : %s", {ex})
             return self.async_abort(reason="generic_failure")
+        # the datasource entry follows its files out; the journey entries
+        # stay, as they always have, and fail on the missing database
+        source = datasource_entry(self.hass, user_input[CONF_FILE])
+        if source is not None:
+            await self.hass.config_entries.async_remove(source.entry_id)
         return self.async_abort(reason="files_deleted")
         
     async def _fresh_source(self):
@@ -1112,7 +1142,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         unrestricted = any(
             e.data.get("device_tracker_id") or not e.data.get("route")
             for e in self.hass.config_entries.async_entries(DOMAIN)
-            if e.data.get("file") == filename)
+            if e.data.get("file") == filename
+            # the datasource entry reads nothing: it must not make its own
+            # source look unrestricted
+            and e.data.get(CONF_KIND) != ENTRY_KIND_DATASOURCE)
 
         if user_input is None:
             size = await self.hass.async_add_executor_job(
@@ -1269,9 +1302,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_import(self, import_data: dict) -> FlowResult:
         """Create an entry from data built by the flow, with no screens.
 
-        Used for the journeys the main flow hands over: the outward one, its
-        return, and any further one added from the closing screen.
+        Used for the journeys the main flow hands over - the outward one, its
+        return, any further one added from the closing screen - and for the
+        datasource entries the bootstrap and the source steps create.
         """
+        if import_data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
+            # one datasource entry per source: the file name is the identity,
+            # so a second creation aborts here instead of duplicating
+            await self.async_set_unique_id(import_data[CONF_FILE])
+            self._abort_if_unique_id_configured()
+            options = import_data.pop("options", None) or {}
+            return self.async_create_entry(
+                title=import_data[CONF_FILE], data=import_data, options=options
+            )
         # the sensor derives its unique_id from the name, so a second entry
         # under the same name would be created and then silently dropped by the
         # sensor platform. Refuse it here, where the flow can still say so.
