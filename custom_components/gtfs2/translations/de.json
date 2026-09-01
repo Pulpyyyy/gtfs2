@@ -3,169 +3,290 @@
     "step": {
       "user": {
         "menu_options": {
-          "start_end": "Fahrplan für Start-/Endstopps erstellen",
-          "local_stops": "Geplante Abfahrt an Haltestellen in Ihrer Nähe",
-          "source": "Eine neue Datenquelle einrichten",
-          "remove": "Eine vorhandene Datenquelle entfernen, z. B. um Speicherplatz freizugeben"
+          "source": "Eine Datenquelle hinzufügen: die GTFS-Datei eines Verkehrsnetzes",
+          "start_end": "Eine Fahrt zwischen zwei bestimmten Haltestellen hinzufügen",
+          "local_stops": "Alle Abfahrten rund um einen Standort hinzufügen, alle Linien",
+          "remove": "Eine Datenquelle entfernen und Speicherplatz freigeben"
         },
-        "description": "Wählen Sie Ihre Option [(docu)]({docu_menu_options})"
+        "description": "Eine **Datenquelle** enthält den Fahrplan eines Verkehrsnetzes. **Sensoren** lesen daraus: beliebig viele, aus derselben Quelle.\n\n[Dokumentation]({docu_menu_options})"
+      },
+      "user_empty": {
+        "menu_options": {
+          "source": "Eine Datenquelle hinzufügen: die GTFS-Datei eines Verkehrsnetzes"
+        },
+        "description": "Sie haben noch keine Datenquelle. Fügen Sie zuerst eine hinzu: sie enthält den Fahrplan eines Verkehrsnetzes, und jeder Sensor liest daraus.\n\n[Dokumentation]({docu_menu_options})"
       },
       "start_end": {
         "data": {
-          "file": "Quelle auswählen"
+          "file": "Datenquelle"
         },
-        "description": "Aus vorhandenen Quellen in Ihrem GTFS2-Ordner auswählen [(docu)]({docu_select_source})"
+        "description": "Welches Verkehrsnetz soll dieser Sensor lesen?\n\n[Dokumentation]({docu_select_source})",
+        "data_description": {
+          "file": "Quellen, die bereits in Ihrem `gtfs2`-Ordner liegen. Fügen Sie zuerst eine hinzu, wenn die Liste leer ist."
+        }
       },
       "local_stops": {
         "data": {
-          "file": "Quelle auswählen",
-          "device_tracker_id": "Objekt/Person zur Verwendung für Lat/Lon",
+          "file": "Datenquelle",
+          "device_tracker_id": "Person oder Zone",
           "name": "Name des Sensors"
         },
-        "description": "Wählen Sie aus vorhandenen Quellen in Ihrem GTFS2-Ordner [(docu)]({docu_local_stops})"
+        "description": "Alle Abfahrten, alle Linien, rund um einen Standort.\n\n[Dokumentation]({docu_local_stops})",
+        "data_description": {
+          "file": "Quellen, die bereits in Ihrem `gtfs2`-Ordner liegen.",
+          "device_tracker_id": "Die Haltestellen werden rund um diese Person oder Zone gesucht und folgen ihr bei Bewegung.",
+          "name": "Auf Ihrem Dashboard angezeigt, zum Beispiel `Abfahrten in der Nähe`."
+        }
       },
       "source": {
-        "data": {
-          "file": "Neuer Name der Datenquellen",
-          "url": "Externe URL zur GTFS-Datendatei (zip)",
-          "api_key": "API-Schlüssel, falls erforderlich",
-          "api_key_name": "API Schlüssel Name, falls erforderlich",
-          "api_key_location": "der Ort, an dem der Schlüssel angewendet wird",
-          "extract_from": "Daten extrahieren von:"
+        "menu_options": {
+          "source_url": "Von einer Web-Adresse herunterladen",
+          "source_zip": "Eine Datei aus dem gtfs2-Ordner verwenden"
         },
-        "description": "HINWEIS: Bei einer neuen URL/ZIP-Datei kann dies je \n nach Dateigröße und Systemleistung einige Zeit in Anspruch nehmen [(docu)]({docu_extracting})"
+        "description": "Woher sollen die Transportdaten kommen?\n\n[Dokumentation]({docu_extracting})"
+      },
+      "source_url": {
+        "data": {
+          "url": "Web-Adresse der GTFS-Datei",
+          "file": "Name zum Speichern",
+          "needs_api_key": "Ein API-Schlüssel ist erforderlich"
+        },
+        "description": "Home Assistant lädt die Datei herunter und entpackt sie in eine lokale Datenbank.\n\n[Dokumentation]({docu_extracting})",
+        "data_description": {
+          "url": "Die vom Verkehrsnetz veröffentlichte `.zip`.",
+          "file": "Ihr eigener Name für diese Quelle. Er identifiziert sie später und benennt die Datei auf der Festplatte. Buchstaben und Ziffern, keine Leerzeichen.",
+          "needs_api_key": "Ankreuzen, wenn der Anbieter Ihnen einen Schlüssel zum Herunterladen gegeben hat."
+        }
+      },
+      "source_key": {
+        "data": {
+          "api_key": "API-Schlüssel",
+          "api_key_name": "Vom Anbieter erwarteter Name",
+          "api_key_location": "Wohin der Schlüssel gehört"
+        },
+        "description": "Der Anbieter nennt diese in seiner Dokumentation.\n\n[Dokumentation]({docu_extracting})",
+        "data_description": {
+          "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
+          "api_key_name": "Das Wort vor Ihrem Schlüssel. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. Im Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Er unterscheidet sich je nach Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`), Groß- und Kleinschreibung zählt.",
+          "api_key_location": "In der Web-Adresse oder im Anfrage-Header."
+        }
+      },
+      "source_zip": {
+        "data": {
+          "file": "Zu verwendende Datei"
+        },
+        "description": "Die Datei wird in eine lokale Datenbank entpackt. Bei großen Netzen kann das mehrere Minuten dauern.\n\n[Dokumentation]({docu_extracting})",
+        "data_description": {
+          "file": "Die `.zip`-Dateien in Ihrem `gtfs2`-Ordner."
+        }
       },
       "agency": {
         "data": {
-          "agency": "Wählen Sie den Dienstanbieter (oder ALLE)"
+          "agency": "Betreiber"
         },
-        "description": "Wählen Sie aus den Optionen unten [(docu)]({docu_new_route})"
-      },
-      "route_type": {
-        "data": {
-          "route_type": "Transportart"
-        },
-        "description": "Wählen Sie aus den Optionen unten [(docu)]({docu_new_route})"
+        "description": "Diese Datenquelle enthält mehrere Betreiber.\n\n[Dokumentation]({docu_new_route})",
+        "data_description": {
+          "agency": "Wählen Sie einen, um die Linienliste im nächsten Schritt zu kürzen, oder **ALL** für alle Linien."
+        }
       },
       "route": {
         "data": {
-          "route": "Name der Route",
-          "direction": "Haupt-/Anfangsrichtung des Fahrzeugs"
+          "route": "Linie"
         },
-        "description": "Wählen Sie aus den Optionen unten [(docu)]({docu_new_route})"
+        "description": "Welcher Linie soll dieser Sensor folgen?\n\n[Dokumentation]({docu_new_route})",
+        "data_description": {
+          "route": "Bei **{routes}** der **{routes_total}** Linien dieser Quelle sind Fahrpläne geladen. Durch eine Bereinigung entfernte Linien werden weiterhin angeboten: Bei Auswahl wird die Linie wiederhergestellt, ohne die anderen anzutasten."
+        }
+      },
+      "route_reload": {
+        "title": "Für Linie {route} sind keine Fahrpläne geladen",
+        "description": "Die Fahrpläne dieser Linie wurden entfernt, um Platz zu sparen. Sie zurückzuholen erfordert das Entpacken der Netzdatei, was einige Minuten dauert.\n\nEs kostet gleich viel, ob eine Linie oder zehn zurückkommen: die **{missing}** anderen fehlenden Linien werden daher unten angeboten.\n\nIhre anderen Sensoren laufen weiter, und nichts Ungewähltes kommt zurück.\n\n[Dokumentation]({docu_new_route})",
+        "data": {
+          "also_reload": "Gleichzeitig wiederherstellen"
+        },
+        "data_description": {
+          "also_reload": "Leer lassen, um nur diese Linie wiederherzustellen."
+        }
+      },
+      "route_reload_only": {
+        "title": "Für Linie {route} sind keine Fahrpläne geladen",
+        "description": "Die Fahrpläne dieser Linie wurden entfernt, um Platz zu sparen. Sie zurückzuholen erfordert das Entpacken der Netzdatei, was einige Minuten dauert.\n\nIhre anderen Sensoren laufen währenddessen weiter, und keine andere Linie kommt zurück.\n\n[Dokumentation]({docu_new_route})"
+      },
+      "direction": {
+        "data": {
+          "direction": "Richtung"
+        },
+        "data_description": {
+          "direction": "Ein Sensor folgt einer Richtung. Für die Gegenrichtung können Sie einen zweiten Sensor anlegen."
+        },
+        "description": "In welche Richtung soll der Sensor dieser Linie folgen?\n\n[Dokumentation]({docu_new_route})"
       },
       "stops": {
         "data": {
-          "origin": "Origin Stop",
-          "destination": "Zielhaltestelle",
-          "name": "Name der Route",
-          "include_tomorrow": "Inklusive morgen"
+          "origin": "Starthaltestelle",
+          "destination": "Zielhaltestelle"
         },
-        "description": "Wählen Sie aus den Optionen unten [(docu)]({docu_new_route})"
+        "description": "Welchen Abschnitt der Linie soll der Sensor beobachten?\n\n[Dokumentation]({docu_new_route})",
+        "data_description": {
+          "origin": "Ab hier werden die Abfahrten gezählt. Die Liste folgt der Fahrtrichtung; eine Zahl unterscheidet zwei gleichnamige Bahnsteige.",
+          "destination": "Behält nur die Fahrten, die beide Haltestellen in dieser Reihenfolge bedienen. Auf der Endhaltestelle belassen, um alles zu sehen."
+        }
       },
-      "stops_retry": {
+      "sensor": {
         "data": {
-          "origin": "Origin Stop",
-          "destination": "Zielhaltestelle",
-          "name": "Name der Route",
-          "include_tomorrow": "Inklusive morgen"
+          "name": "Name des Sensors",
+          "include_tomorrow": "Am Betriebsschluss auch die Abfahrten von morgen anzeigen",
+          "add_return": "Auch die Gegenrichtung anlegen"
         },
-        "description": "Kein Trip gefunden, bitte Haltestelle(n) ändern [(docu)]({docu_new_route})"
-      },	  
+        "data_description": {
+          "name": "Aus der Linie und den beiden Haltestellen vorgeschlagen. Auf Ihrem Dashboard angezeigt.",
+          "include_tomorrow": "Ohne dies bleibt der Sensor zwischen der letzten Abfahrt des Tages und der ersten des nächsten leer.",
+          "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Linie in Gegenrichtung."
+        },
+        "description": "Der Sensor zeigt die nächsten Abfahrten für **{trip}**.\n\n[Dokumentation]({docu_new_route})"
+      },
       "stops_train": {
         "data": {
-          "origin": "Wählen sie die Stadt ihrer Abfahrt",
-          "destination": "Wählen sie die Stadt ihrer Ankunf",
-          "name": "Name der Route",
-          "refresh_interval": "Aktualisierungsintervall in Minuten",
-          "include_tomorrow": "Inklusive morgen"
+          "origin": "Abfahrtsbahnhof",
+          "destination": "Zielbahnhof",
+          "name": "Name des Sensors",
+          "include_tomorrow": "Am Betriebsschluss auch die Abfahrten von morgen anzeigen"
         },
-        "description": "Wählen Sie aus den Optionen unten [(docu)]({docu_setup_train})"
+        "description": "Der Sensor zeigt die nächsten Züge zwischen zwei Bahnhöfen.\n\n[Dokumentation]({docu_setup_train})",
+        "data_description": {
+          "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt.",
+          "destination": "Dieselbe Liste. Wählen Sie Ihr Ziel.",
+          "name": "Auf Ihrem Dashboard angezeigt, zum Beispiel `Zug nach Lille`.",
+          "include_tomorrow": "Ohne dies bleibt der Sensor zwischen der letzten Abfahrt des Tages und der ersten des nächsten leer."
+        }
       },
       "remove": {
         "data": {
-          "file": "Quelle zum Entfernen auswählen"
+          "file": "Zu entfernende Datenquelle"
         },
-        "description": "Wählen Sie aus vorhandenen Quellen in Ihrem GTFS2-Ordner [(docu)]({docu_menu_options})"
+        "description": "Löscht die Datenquelle **und ihre Datenbank**. Sensoren, die sie nutzen, funktionieren danach nicht mehr.\n\n[Dokumentation]({docu_menu_options})",
+        "data_description": {
+          "file": "Die `.zip` und die Datenbank werden beide aus `gtfs2` entfernt."
+        }
+      },
+      "finished": {
+        "title": "Sensor erstellt",
+        "description": "**{name}** ist bereit und erscheint auf Ihrem Dashboard.\n\nDie meisten Netze brauchen mehrere Fahrten: eine Linie je Richtung oder zwei bis drei Linien. Sie jetzt hinzuzufügen nutzt die eben gewählte Quelle weiter.\n\n[Dokumentation]({docu_new_route})",
+        "menu_options": {
+          "start_end": "Weitere Fahrt hinzufügen",
+          "optimise": "Speicherplatz freigeben",
+          "finish": "Das war es fürs Erste"
+        }
+      },
+      "optimise": {
+        "title": "Speicherplatz freigeben",
+        "description": "Die Quelle **{file}** belegt **{size}**. Das meiste davon sind Fahrpläne von Linien, die kein Sensor liest.\n\n**{kept}** Linie(n) behalten, **{dropped}** entfernt.\n\nSie zu entfernen und den Rest zu verdichten teilt die Größe oft durch zehn oder mehr. Eine entfernte Linie lässt sich später wieder hinzufügen.\n\nDas dauert einige Sekunden.\n\n[Dokumentation]({docu_extracting})"
       }
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
       "unknown": "[%key:common::config_flow::error::unknown%]",
-      "stop_incorrect": "Start- und/oder Endziel falsch, möglicherweise kein Transport ‚heute‘ oder nicht in die gleiche Richtung, Protokolle prüfen",
+      "stop_incorrect": "Keine Abfahrt zwischen diesen beiden Orten gefunden. Prüfen Sie die Schreibweise des Betreibers und ob sie auf derselben Linie liegen.",
       "generic_failure": "Gesamtfehler, Protokolle prüfen",
-      "no_data_file": "Problem bei der Datenerfassung: URL falsch oder Dateiname nicht im richtigen Ordner",
-      "no_zip_file": "Problem bei der Datenerfassung: ZIP-Datei nicht im richtigen Ordner"
+      "no_data_file": "Die Datei konnte nicht heruntergeladen werden. Prüfen Sie die Adresse und ob die Quelle von Home Assistant aus erreichbar ist. Manche Anbieter lehnen automatisierte Downloads ab.",
+      "no_zip_file": "Problem bei der Datenerfassung: ZIP-Datei nicht im richtigen Ordner",
+      "stops_out_of_order": "Die Zielhaltestelle liegt auf dieser Linie vor der Starthaltestelle. Die Liste folgt der Fahrtrichtung: wählen Sie ein Ziel weiter unten, oder gehen Sie zurück und nehmen Sie die Gegenrichtung.",
+      "no_trip_between": "Keine Fahrt dieser Linie bedient beide Haltestellen in dieser Reihenfolge. Wählen Sie ein anderes Paar oder die Gegenrichtung.",
+      "name_taken": "Ein Sensor trägt diesen Namen bereits. Wählen Sie einen anderen.",
+      "not_created": "Der Sensor konnte nicht erstellt werden. Prüfen Sie das Protokoll und versuchen Sie einen anderen Namen.",
+      "reload_failed": "Diese Linie konnte nicht wiederhergestellt werden. Die Quelle blieb unverändert; wählen Sie eine andere Linie oder versuchen Sie es erneut."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Datenquelle gelöscht, dies kann sich auf bestehende Routen auswirken",
       "stop_incorrect": "Start- und/oder Endziel falsch, möglicherweise kein Transport ‚heute‘ oder nicht in die gleiche Richtung, Protokolle prüfen",
-	  "no_stops": "Problem bei der Datenerfassung: wahrscheinlich keine Stops für die gewählte Route",
+      "no_stops": "Problem bei der Datenerfassung: wahrscheinlich keine Stops für die gewählte Route",
       "no_data_file": "Problem bei der Datenerfassung: URL falsch oder Dateiname nicht im richtigen Ordner",
       "no_zip_file": "Problem bei der Datenerfassung: ZIP-Datei ist nicht im richtigen Ordner vorhanden. Beachten Sie, dass Groß- und Kleinschreibung berücksichtigt werden muss",
-	  "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern",
-      "extracting": "Es werden (noch) Daten extrahiert, dies wird einige Zeit dauern [(docu)]({docu_extracting})"
+      "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern",
+      "extracting": "Es werden (noch) Daten extrahiert, dies wird einige Zeit dauern [Dokumentation]({docu_extracting})",
+      "no_zip_in_folder": "Keine .zip-Datei in {folder} gefunden. Legen Sie dort Ihre GTFS-Zip-Datei ab und beginnen Sie erneut.",
+      "no_routes_with_trips": "Keine Linie dieser Datenquelle hat einen Fahrplan geladen. Führen Sie den Dienst update_gtfs aus, um sie neu zu laden.",
+      "generic_failure": "Die Haltestellen dieser Linie konnten nicht gelesen werden. Prüfen Sie die Protokolle: die Datenquelle ist möglicherweise belegt oder wird neu aufgebaut.",
+      "reload_failed": "Die Linie konnte nicht wiederhergestellt werden. Die Netzdatei fehlt möglicherweise oder ist unlesbar; die Datenquelle selbst blieb unverändert.",
+      "optimised": "Speicherplatz freigegeben. Die Quelle belegt jetzt {size}.",
+      "finished": "Einrichtung abgeschlossen. Weitere Fahrten können Sie jederzeit auf der Integrationsseite hinzufügen.",
+      "unpacking": "{file} wird im Hintergrund entpackt. Das dauert mehrere Minuten, hier gibt es also nichts abzuwarten.\n\nEine Benachrichtigung meldet sich, sobald die Quelle bereit ist, und sagt, wo es weitergeht. Starten Sie Home Assistant bis dahin nicht neu, das würde den Vorgang abbrechen."
+    },
+    "progress": {
+      "extracting": "**Sie können dieses Fenster schließen.**\n\nEine Benachrichtigung meldet sich, sobald {file} bereit ist: Das Entpacken läuft im Hintergrund weiter.\n\nWer hier bleibt, kann direkt eine Linie auswählen. Bisher **{size}**; in einem großen Netz dauert das mehrere Minuten.\n\nStarten Sie Home Assistant bis dahin nicht neu, das würde den Vorgang abbrechen.",
+      "importing": "**Sie können dieses Fenster schließen.**\n\nEine Benachrichtigung meldet sich, sobald es fertig ist: Die {routes} Linie(n) aus {file} werden im Hintergrund weiter wiederhergestellt.\n\nWer hier bleibt, kann direkt die Haltestellen auswählen. Bisher **{size}** entpackt; Ihre anderen Sensoren laufen weiter.\n\nStarten Sie Home Assistant bis dahin nicht neu, das würde den Vorgang abbrechen."
     }
   },
   "options": {
     "step": {
       "init": {
-        "description": "Passen Sie die Funktionsweise der Integration an [(docu)]({docu_configuring_options})",
+        "description": "Stellen Sie ein, wie oft dieser Sensor aktualisiert und was er meldet.\n\n[Dokumentation]({docu_configuring_options})",
         "data": {
           "refresh_interval": "Datenaktualisierungsintervall (in Minuten)",
           "offset": "Offset in Minuten",
-		  "max_local_stops": "Limite der #Stopps, um mögliche Auswirkungen auf die Leistung zu vermeiden. \nErhöhung auf eigenes Risiko",
+          "max_local_stops": "Limite der #Stopps, um mögliche Auswirkungen auf die Leistung zu vermeiden. \nErhöhung auf eigenes Risiko",
           "real_time": "Echtzeitintegration einrichten? \n (benötigt Daten aus derselben Quelle)",
           "local_stop_refresh_interval": "Datenaktualisierungsintervall (in Minuten)",
           "timerange": "Prüfung auf zukünftige Abfahrten ab ‚jetzt‘ (in Minuten: zwischen 15 und 120)",
           "radius": "Radius für die Suche nach Haltestellen (in Metern zwischen 50 und 500)",
-          "source_timezone_correction": "Zeitzone der GTFS-Quelle korrigieren (in Stunden)",
-          "check_source_dates": "experimentell: vermeiden, ein neues ZIP bzw. eine Quelle ohne aktuelle Informationen zu verwenden"
+          "source_timezone_correction": "Zeitzone der Quelle korrigieren (in Stunden)",
+          "check_source_dates": "Experimentell: eine neue Datei ohne aktuelle Daten ablehnen"
+        },
+        "data_description": {
+          "refresh_interval": "Wie oft der Fahrplan neu gelesen wird, in Minuten.",
+          "local_stop_refresh_interval": "Wie oft die nahen Haltestellen neu gelesen werden, in Minuten.",
+          "offset": "Blendet Abfahrten aus, die Sie nicht erreichen: die Gehzeit zur Haltestelle, in Minuten.",
+          "timerange": "Wie weit voraus nach Abfahrten gesucht wird, in Minuten.",
+          "radius": "Suchradius für Haltestellen um die Person oder Zone, in Metern.",
+          "max_local_stops": "Ab dieser Anzahl Haltestellen wird der Sensor langsam. Erhöhung auf eigenes Risiko.",
+          "real_time": "Live-Verspätungen beim Anbieter lesen, zusätzlich zum Fahrplan.",
+          "source_timezone_correction": "Nur wenn die Quelle ihre Zeiten in einer anderen Zeitzone angibt, in Stunden.",
+          "check_source_dates": "Experimentell: eine neue Datei ablehnen, deren Daten alle in der Zukunft liegen."
         }
       },
       "real_time": {
-        "description": "URL zur Echtzeit-API bereitstellen [(docu)]({docu_configuring_options})",
+        "description": "Es gibt drei Arten von Echtzeitdaten. Tragen Sie nur die ein, die Sie möchten: nur **Abfahrten** ist erforderlich. Die Endungen unterscheiden sich je nach Anbieter, der fett gesetzte Teil ist der entscheidende.\n\n[Dokumentation]({docu_configuring_options})",
         "data": {
-          "trip_update_url": "URL zu Reisedaten",
-          "vehicle_position_url": "URL zur Fahrzeugposition",
-          "alerts_url": "URL zu Warnungen",
-          "api_key": "API-Schlüssel, falls erforderlich",
-          "api_key_name": "API Schlüssel Name, falls erforderlich",
-          "api_key_location": "der Ort, an dem der Schlüssel angewendet wird",
-		  "accept": "Zufügung am Header von Accept:application/x-protobuf "
+          "trip_update_url": "Adresse des Abfahrten-Feeds",
+          "vehicle_position_url": "Adresse des Fahrzeugpositions-Feeds (optional)",
+          "alerts_url": "Adresse des Störungsmeldungs-Feeds (optional)",
+          "needs_api_key": "Ein API-Schlüssel ist erforderlich"
+        },
+        "data_description": {
+          "trip_update_url": "Die tatsächliche Verspätung an Ihrem Sensor statt des Fahrplans.\n`https://beispiel.de/gtfs/`**`trip-updates`**",
+          "vehicle_position_url": "Wo die Fahrzeuge sind, für eine Karte. Leer lassen, wenn nicht gewünscht.\n`https://beispiel.de/gtfs/`**`vehicle-positions`**",
+          "alerts_url": "Meldungen des Betreibers. Leer lassen, wenn nicht gewünscht.\n`https://beispiel.de/gtfs/`**`service-alerts`**",
+          "needs_api_key": "Ankreuzen, wenn der Anbieter Ihnen einen Schlüssel für diese Feeds gegeben hat."
+        }
+      },
+      "real_time_key": {
+        "description": "Der Anbieter nennt diese in seiner Dokumentation.\n\n[Dokumentation]({docu_configuring_options})",
+        "data": {
+          "api_key": "API-Schlüssel",
+          "api_key_name": "Vom Anbieter erwarteter Name",
+          "api_key_location": "Wohin der Schlüssel gehört",
+          "accept": "Zusätzlich Accept: application/x-protobuf senden (nur wirksam, wenn der Schlüssel im Header steht)"
+        },
+        "data_description": {
+          "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
+          "api_key_name": "Das Wort vor Ihrem Schlüssel. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. Im Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Er unterscheidet sich je nach Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`), Groß- und Kleinschreibung zählt.",
+          "api_key_location": "In der Web-Adresse oder im Anfrage-Header.",
+          "accept": "Nur wirksam, wenn der Schlüssel im Header steht."
         }
       }
     },
-	"abort": {
-	  "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern"
+    "abort": {
+      "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern"
     }
   },
   "selector": {
-    "extract_from": {
-      "options": {
-        "zip": "ZIP: erwartet eine Datei im GTFS2-Ordner mit dem folgenden Namen, ohne Erweiterung .zip",
-        "url": "URL: verwendet Ihre URL unten, lassen Sie ‚na‘, wenn Sie zip verwenden"
-      }
-    },
-    "direction": {
-      "options": {
-        "0": "Ausgehend",
-        "1": "Zurück"
-      }
-    },
-    "route_type": {
-      "options": {
-        "2": "Züge, zwischen manuell eingegebene Städte (nächsten Bildschirm)",
-        "99": "Alle, außer Züge, zwischen ausgewählte Haltestellen (nächsten Bildschirm)"
-      }
-    },
     "api_key_location": {
       "options": {
-        "not_applicable": "kein Schlüssel verwendet (Standard)",
-        "header": "header: den Aufruf mit Header/Schlüssel aufbauen",
-        "query_string": "query-string: den Aufruf mit Query/Schlüssel aufbauen"
+        "not_applicable": "Kein Schlüssel nötig (die meisten Quellen)",
+        "header": "Im Anfrage-Header",
+        "query_string": "In der Web-Adresse"
       }
     }
   },
@@ -189,6 +310,22 @@
         "clean_feed_info": {
           "name": "Feed-Info entfernen",
           "description": "Entfernt „feed_info.txt“ aus der ZIP-Datei (verwenden Sie es, falls der Dateiinhalt falsch ist)"
+        },
+        "api_key": {
+          "name": "API-Schlüssel",
+          "description": "Nur wenn der Anbieter einen verlangt"
+        },
+        "api_key_name": {
+          "name": "Parametername",
+          "description": "Das vom Anbieter erwartete Wort vor dem Schlüssel, etwa apikey"
+        },
+        "api_key_location": {
+          "name": "Wohin der Schlüssel gehört",
+          "description": "In die Web-Adresse oder in den Anfrage-Header"
+        },
+        "check_source_dates": {
+          "name": "Datei ohne aktuelle Daten ablehnen",
+          "description": "Experimentell: lehnt eine neue Datei ab, deren Daten alle in der Zukunft liegen"
         }
       }
     },
@@ -196,41 +333,41 @@
       "name": "Sammelt GTFS-Echtzeitdaten",
       "description": "Kann für Fahrt, Fahrzeugstandort oder Warnungen verwendet werden",
       "fields": {
-        "name": {
-          "name": "Name des Anbieters",
-          "description": "Es wird dringend empfohlen, dasselbe wie für statische Daten zu verwenden."
+        "file": {
+          "name": "Datenquelle",
+          "description": "Der Name der statischen Quelle, zu der diese Echtzeit-Feeds gehören"
         },
         "url": {
-          "name": "URL",
-          "description": "Geben Sie den vollständigen Pfad zu den Echtzeitdaten an."
+          "name": "Feed-Adresse",
+          "description": "Vollständige Adresse des Echtzeit-Feeds"
         },
         "api_key": {
-          "name": "api_schlüssel",
-          "description": "API-Schlüssel angeben, falls erforderlich"
+          "name": "API-Schlüssel",
+          "description": "Nur wenn der Anbieter einen verlangt"
         },
         "api_key_name": {
-          "name": "api_schlüssel_name",
-          "description": "Name des API-Schlüssels, Standard ist api_key"
+          "name": "Parametername",
+          "description": "Das vom Anbieter erwartete Wort vor dem Schlüssel, etwa apikey oder x-api-key"
         },
         "api_key_location": {
-          "name": "api_schlüssel_ort",
-          "description": "Ort des Schlüssels auswählen"
+          "name": "Wohin der Schlüssel gehört",
+          "description": "In die Web-Adresse oder in den Anfrage-Header"
         },
         "accept": {
-          "name": "Accept",
-          "description": "application/protobuf zum Header hinzufügen"
+          "name": "Accept: application/x-protobuf senden",
+          "description": "Nur wenn der Anbieter es verlangt"
         },
         "rt_type": {
-          "name": "Art der Echtzeitdaten angeben",
-          "description": "Art der Echtzeitdaten der Quelle auswählen"
+          "name": "Art der Echtzeitdaten",
+          "description": "Abfahrten, Fahrzeugpositionen oder Störungsmeldungen"
         },
         "entity_for_siri": {
-          "name": "SIRI-RT-Linie",
-          "description": "Experimentell: nur Echtzeit im SIRI-Format (!) wählen Sie Ihre Konfiguration. siehe Dokumentation > Dienst"
+          "name": "SIRI-Linie",
+          "description": "Experimentell, nur SIRI-Feeds: wählen Sie den zu lesenden Eintrag"
         },
         "debug_output": {
-          "name": "debug_ausgabe",
-          "description": "In eine lesbare lokale Datei speichern"
+          "name": "Lesbare Kopie schreiben",
+          "description": "Speichert den dekodierten Feed in einer lokalen Datei, zur Fehlersuche"
         }
       }
     },
@@ -244,19 +381,87 @@
         }
       }
     },
-	"extract_departures": {
+    "extract_departures": {
       "name": "Abfahrten extrahieren",
       "description": "Extrahiert alle nächsten Abfahrten von Ihrer Entität bis zum morgigen Tagesende",
       "fields": {
         "config_entry": {
           "name": "Route, von der extrahiert werden soll",
-		  "description": "Wählen Sie Ihre Start-/Stopp-Konfiguration"
-		},
-		"from_time": {
+          "description": "Wählen Sie Ihre Start-/Stopp-Konfiguration"
+        },
+        "from_time": {
           "name": "Die Zeit, nach der Abfahrten extrahiert werden",
-		  "description": "Der Zeitpunkt, nach dem Sie die Slots erhalten möchten. \n Wenn leer, werden alle zukünftigen Slots für heute/morgen extrahiert. \n In Yaml muss dies das 24-Stunden-Format sein"
-		}
-	  }
-	}
+          "description": "Der Zeitpunkt, nach dem Sie die Slots erhalten möchten. \n Wenn leer, werden alle zukünftigen Slots für heute/morgen extrahiert. \n In Yaml muss dies das 24-Stunden-Format sein"
+        }
+      }
+    },
+    "extract_trip_stops": {
+      "name": "Haltestellen einer Fahrt auslesen",
+      "description": "Gibt die Haltestellen der Fahrt zurück, der ein Sensor gerade folgt, in der richtigen Reihenfolge.",
+      "fields": {
+        "entity_id": {
+          "name": "Sensor",
+          "description": "Der Start/Ziel-Sensor, dessen aktuelle Fahrt gelesen wird"
+        }
+      }
+    },
+    "set_include_tomorrow": {
+      "name": "Abfahrten von morgen anzeigen",
+      "description": "Schaltet die Abfahrten von morgen an bestehenden Sensoren ein oder aus, ohne sie neu anzulegen.",
+      "fields": {
+        "enabled": {
+          "name": "Aktiviert",
+          "description": "An, um nach Betriebsschluss weiter Abfahrten zu zeigen"
+        },
+        "entry_id": {
+          "name": "Nur ein Eintrag",
+          "description": "Leer lassen, um alle Start/Ziel-Sensoren zu erfassen"
+        }
+      }
+    },
+    "prune_datasource": {
+      "name": "Datenquelle auf die genutzten Linien kürzen",
+      "description": "Entfernt die Fahrpläne der Linien, die kein Sensor liest, und gibt den Platz frei. Die Linien bleiben gelistet, der Konfigurationsdialog zeigt weiterhin alle. update_gtfs stellt den vollen Feed wieder her.",
+      "fields": {
+        "file": {
+          "name": "Datenquelle",
+          "description": "Leer lassen, um alle eingerichteten Quellen zu kürzen"
+        },
+        "dry_run": {
+          "name": "Testlauf",
+          "description": "Meldet, was entfernt würde, ohne etwas zu ändern"
+        }
+      }
+    },
+    "intern_datasource": {
+      "name": "Datenquelle verkleinern",
+      "description": "Ersetzt die langen, in jeder Zeile wiederholten Kennungen durch kurze Schlüssel. Nach dem Kürzen ausführen. Nicht an Ort und Stelle umkehrbar: update_gtfs baut aus der lokalen Zip neu auf.",
+      "fields": {
+        "file": {
+          "name": "Datenquelle",
+          "description": "Leer lassen, um alle eingerichteten Quellen zu verkleinern"
+        },
+        "dry_run": {
+          "name": "Testlauf",
+          "description": "Meldet, was sich ändern würde, ohne etwas zu ändern"
+        }
+      }
+    }
+  },
+  "notification": {
+    "extract_ready_title": "GTFS: {file} ist bereit",
+    "extract_ready": "Die Quelle enthält **{routes}** Linien und **{stops}** Haltestellen.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
+    "extract_failed_title": "GTFS: {file} konnte nicht entpackt werden",
+    "extract_failed": "Die Datenquelle ist nicht nutzbar: {detail}.\n\nEs wurde nichts hinzugefügt. Einstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Datenquelle hinzufügen**, um es erneut zu versuchen.",
+    "import_done_title": "GTFS: {file} aktualisiert",
+    "import_done": "In {file} wiederhergestellt: {lines}.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
+    "import_failed_title": "GTFS: {file} wurde nicht geändert",
+    "import_failed": "Die Linien konnten nicht in {file} wiederhergestellt werden.\n\nEs wurde nichts geändert. Einstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, um es erneut zu versuchen.",
+    "reason_no_database": "es wurde keine Datenbank erzeugt",
+    "reason_cannot_open": "die Datenbank lässt sich nicht öffnen",
+    "reason_tables_missing": "das Entpacken brach ab, bevor alle Tabellen geschrieben waren",
+    "reason_unfinished": "das Entpacken wurde nicht abgeschlossen",
+    "reason_tables_empty": "einige Tabellen sind leer geblieben",
+    "reason_unreadable": "die Datenbank ist unlesbar"
   }
 }
