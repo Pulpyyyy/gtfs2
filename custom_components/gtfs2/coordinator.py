@@ -36,6 +36,7 @@ from .const import (
 from .gtfs_helper import get_gtfs, get_next_departure, get_next_service_date, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson, route_geojson_name, vehicle_positions_name
 from .gtfs_rt_helper import get_next_services, get_rt_alerts
 from .rt_source import rt_feed_config, rt_headers, with_query_key
+from .rt_window import rt_window_gate
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -174,6 +175,17 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         # from this entry's own options otherwise: one configuration per
         # source, every sensor of the source follows it
         rt_cfg, rt_active = rt_feed_config(self.hass, self.config_entry)
+        rt_paused = None
+        if rt_active:
+            # the polling window is derived from the timetable: outside it
+            # the feeds are left alone and the static screen carries on
+            rt_paused = await self.hass.async_add_executor_job(
+                rt_window_gate, self.hass, self._data["file"], self._pygtfs,
+                with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg))
+            if rt_paused:
+                _LOGGER.debug("GTFS RT: %s is outside its service window (%s), feeds not read",
+                              self._data["file"], rt_paused)
+                rt_active = False
         if rt_active:
             # No next_departure does NOT mean no bus: the last scheduled
             # departure of the day can still be on its way, late, and the
@@ -221,7 +233,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             if self._vehicle_position_url and not self._stale_markers_cleaned:
                 self._cleanup_stale_vehicle_markers()
                 self._stale_markers_cleaned = True
-        else:
+        elif rt_paused is None:
             _LOGGER.debug("GTFS RT: realtime not active for this entry, neither on its source nor in its options")
 
         return self._data
@@ -318,11 +330,10 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
                 self._pygtfs.engine.dispose()
             except Exception:
                 pass
-
+                
         self._pygtfs = get_gtfs(
             self.hass, DEFAULT_PATH, data, False
-        )
-
+        )        
         self._data = {
             "schedule": self._pygtfs,
             "include_tomorrow": True,
@@ -335,7 +346,8 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             "device_tracker_id": data["device_tracker_id"],
             "extracting": False,
         }           
-        self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat() 
+        self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat()
+
         
         if check_extracting(self.hass, self.hass.config.path(self._data['gtfs_dir']), self._data['file']):   
             _LOGGER.debug("Cannot update this sensor as still unpacking: %s", self._data["file"])
@@ -367,30 +379,17 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
                 self._headers[CONF_ACCEPT_HEADER_PB] = rt_cfg.get(CONF_ACCEPT_HEADER_PB, False)
             _LOGGER.debug("RT header: %s", self._headers)
                 
-        if self._pygtfs and hasattr(self._pygtfs, 'session'):
-            try:
-                self._pygtfs.session.close()
-                self._pygtfs.engine.dispose()
-            except Exception:
-                pass
-                
-        self._pygtfs = get_gtfs(
-            self.hass, DEFAULT_PATH, data, False
-        )        
-        self._data = {
-            "schedule": self._pygtfs,
-            "include_tomorrow": True,
-            "gtfs_dir": DEFAULT_PATH,
-            "name": data["name"],
-            "file": data["file"],
-            "offset": options["offset"] if "offset" in options else 0,
-            "timerange": options.get("timerange", DEFAULT_LOCAL_STOP_TIMERANGE),
-            "radius": options.get("radius", DEFAULT_LOCAL_STOP_RADIUS),
-            "device_tracker_id": data["device_tracker_id"],
-            "extracting": False,
-        }           
-        self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat()
 
+        if self._realtime:
+            # same automatic window as the generic coordinator; the url the
+            # fetches use is the one already carrying its query key
+            rt_paused = await self.hass.async_add_executor_job(
+                rt_window_gate, self.hass, data["file"], self._pygtfs,
+                self._trip_update_url)
+            if rt_paused:
+                _LOGGER.debug("GTFS RT: %s is outside its service window (%s), feeds not read",
+                              data["file"], rt_paused)
+                self._realtime = False
         try:
             self._data["local_stops_next_departures"] = await self.hass.async_add_executor_job(
                     get_local_stops_next_departures, self

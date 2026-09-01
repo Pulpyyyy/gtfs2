@@ -7,6 +7,7 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
@@ -61,8 +62,13 @@ from .const import (
     WHEELCHAIR_ACCESS_OPTIONS,
     WHEELCHAIR_BOARDING_DEFAULT,
     WHEELCHAIR_BOARDING_OPTIONS,
+    CONF_KIND,
+    ENTRY_KIND_DATASOURCE,
+    CONF_TRIP_UPDATE_URL,
+    CONF_FILE,
 )
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
+from .rt_window import window_state
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -72,7 +78,11 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
     ) -> None:
-    """Initialize the setup."""   
+    """Initialize the setup."""
+    if config_entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
+        # the source's diagnostic entity: whether realtime runs, and why not
+        async_add_entities([GTFSDatasourceRTSensor(config_entry)])
+        return
     if config_entry.data.get('device_tracker_id',None):
         sensors = []
         coordinator: GTFSLocalStopUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id][
@@ -96,7 +106,56 @@ async def async_setup_entry(
         ]
 
     async_add_entities(sensors, False)
-    
+
+
+class GTFSDatasourceRTSensor(SensorEntity):
+    """The realtime state of one source: active, paused, or off, and why.
+
+    An automatically silenced feed has to be visible, or a pause looks
+    exactly like a breakage - the map's stale-feed lesson. The state is what
+    the polling window gate last decided; the sensors' coordinators refresh
+    it every cycle, this entity only reads it back.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_has_entity_name = True
+    _attr_name = "Realtime"
+    _attr_icon = "mdi:signal-variant"
+
+    def __init__(self, entry: ConfigEntry) -> None:
+        self._entry = entry
+        self._file = entry.data.get(CONF_FILE)
+        self._attr_unique_id = f"gtfs2_datasource_rt_{self._file}"
+        self._attr_device_info = DeviceInfo(
+            name=f"GTFS - {self._file}",
+            entry_type=DeviceEntryType.SERVICE,
+            identifiers={(DOMAIN, f"GTFS datasource - {self._file}")},
+            manufacturer="GTFS",
+            model=self._file,
+        )
+
+    @property
+    def native_value(self):
+        if not self._entry.options.get(CONF_TRIP_UPDATE_URL):
+            return "off"
+        state = window_state(self._file)
+        if state is None:
+            # no sensor of this source has run its gate yet this session
+            return "unknown"
+        return "paused" if state.get("paused") else "active"
+
+    @property
+    def extra_state_attributes(self):
+        state = window_state(self._file) or {}
+        return {
+            "rt_paused": state.get("paused"),
+            "window_start": state.get("window_start"),
+            "window_end": state.get("window_end"),
+            "extended_until": state.get("extended_until"),
+            "checked_at": state.get("checked_at"),
+        }
+
+
 class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
     """Implementation of a GTFS departure sensor."""
 

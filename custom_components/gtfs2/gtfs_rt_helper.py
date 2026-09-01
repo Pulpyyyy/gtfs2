@@ -252,6 +252,40 @@ def get_next_services(self):
     _LOGGER.debug("Next services attributes: %s", attrs)
     return attrs
     
+def cached_feed_has_future_stop(owner, url, routes, now_epoch):
+    """Whether the last cached trip-updates fetch still announces a stop time
+    in the future for one of the routes (any route, when none are named).
+
+    Feeds the automatic polling window: at its theoretical close, a vehicle
+    still under way keeps the window open a little longer. The decision rests
+    on a future stop time and nothing else - not on a delay field, which some
+    feeds never fill, and not on the mere presence of a vehicle, because a
+    parked one republished all night is exactly what this must not mistake
+    for service (the map's stale-feed lesson).
+
+    Reads the cache only, never fetches: deciding whether to keep polling
+    must not itself poll. An empty cache answers no.
+    """
+    cached = _FEED_CACHE.get((owner, url, "trip_data"))
+    if not cached:
+        return False
+    for entity in cached[1] or []:
+        if not isinstance(entity, dict):
+            continue
+        trip_update = entity.get("trip_update")
+        if not trip_update:
+            continue
+        seen = (trip_update.get("trip") or {}).get("route_id")
+        if routes and not any(_same_route(route, seen) for route in routes):
+            continue
+        for stop in trip_update.get("stop_time_update") or []:
+            when = max((stop.get("arrival") or {}).get("time") or 0,
+                       (stop.get("departure") or {}).get("time") or 0)
+            if when > now_epoch:
+                return True
+    return False
+
+
 def _same_route(configured, seen):
     """Whether a realtime route_id designates the configured route.
 
