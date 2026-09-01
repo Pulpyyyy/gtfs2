@@ -457,6 +457,8 @@
     "import_done": "Reposto em {file}: {lines}.\n\nDefinições > Dispositivos e serviços > GTFS2 > Adicionar entrada, depois **Adicionar um trajeto entre duas paragens** para continuar.",
     "import_failed_title": "GTFS: {file} não foi alterada",
     "import_failed": "Não foi possível repor as linhas em {file}.\n\nNada foi alterado. Definições > Dispositivos e serviços > GTFS2 > Adicionar entrada para tentar novamente.",
+    "line_orphaned_title": "GTFS: {file} guarda uma linha que ninguém lê",
+    "line_orphaned": "O último sensor a ler a linha **{line}** foi removido, mas o seu horário continua em {file}.\n\nO serviço gtfs2.prune_datasource remove as linhas que nenhum sensor lê; chame-o primeiro com dry_run para ver o que sairia. Manter a linha só custa espaço em disco, e um novo sensor nessa linha volta a usá-la.",
     "reason_no_database": "não foi produzida nenhuma base de dados",
     "reason_cannot_open": "a base de dados não pode ser aberta",
     "reason_tables_missing": "a descompactação parou antes de escrever todas as tabelas",

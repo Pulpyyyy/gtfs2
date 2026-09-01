@@ -466,6 +466,8 @@
     "import_done": "Rétabli dans {file} : {lines}.\n\nParamètres > Appareils et services > GTFS2 > Ajouter une entrée, puis **Ajouter un trajet entre deux arrêts** pour continuer.",
     "import_failed_title": "GTFS : {file} n'a pas été modifiée",
     "import_failed": "Les lignes n'ont pas pu être rétablies dans {file}.\n\nRien n'a été modifié. Paramètres > Appareils et services > GTFS2 > Ajouter une entrée pour réessayer.",
+    "line_orphaned_title": "GTFS : {file} garde une ligne que personne ne lit",
+    "line_orphaned": "Le dernier capteur lisant la ligne **{line}** a été supprimé, mais son horaire est toujours dans {file}.\n\nLe service gtfs2.prune_datasource supprime les lignes qu'aucun capteur ne lit ; appelez-le d'abord avec dry_run pour voir ce qui partirait. Garder la ligne ne coûte que de l'espace disque, et un nouveau capteur sur cette ligne la réutilisera.",
     "reason_no_database": "aucune base n'a été produite",
     "reason_cannot_open": "la base ne peut pas être ouverte",
     "reason_tables_missing": "la décompression s'est arrêtée avant d'écrire toutes les tables",

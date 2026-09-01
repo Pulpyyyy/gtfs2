@@ -466,6 +466,8 @@
     "import_done": "Brought back into {file}: {lines}.\n\nSettings > Devices & services > GTFS2 > Add entry, then **Add a journey between two stops** to carry on.",
     "import_failed_title": "GTFS: {file} was not changed",
     "import_failed": "The lines could not be brought back into {file}.\n\nNothing was changed. Settings > Devices & services > GTFS2 > Add entry to try again.",
+    "line_orphaned_title": "GTFS: {file} keeps a line nobody reads",
+    "line_orphaned": "The last sensor reading line **{line}** was removed, but its timetable is still in {file}.\n\nThe service gtfs2.prune_datasource drops every line no sensor reads; call it with dry_run first to see what would go. Keeping the line only costs disk space, and adding a sensor on it uses it again.",
     "reason_no_database": "no database was produced",
     "reason_cannot_open": "the database cannot be opened",
     "reason_tables_missing": "unpacking stopped before it wrote every table",
