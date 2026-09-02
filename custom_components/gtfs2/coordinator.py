@@ -369,6 +369,12 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
             self._vehicle_position_url = rt_cfg.get(CONF_VEHICLE_POSITION_URL, None)
             self._alerts_url = rt_cfg.get(CONF_ALERTS_URL, None)
+            if not self._trip_update_url:
+                # local stops read nothing but trip updates: a source living on
+                # alerts or vehicle positions alone has nothing for them, and
+                # get_local_stops_next_departures would otherwise try to
+                # download the missing feed and drop every departure with it
+                self._realtime = False
             if rt_cfg.get(CONF_API_KEY_LOCATION, None) == "header":
                 # get_local_stops_next_departures reads the raw key fields
                 # back out of this dict, so they ride along with the header

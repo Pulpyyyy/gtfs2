@@ -7,7 +7,7 @@ makes the source a real Home Assistant object: entry.data is the identity
 the file name is the unique_id so a source can never have two.
 
 The model is all-source: a sensor follows its source, and realtime is on for
-every sensor of a source as soon as the source has a trip updates url. The
+every sensor of a source as soon as the source has any realtime feed url. The
 journey entries keep their old realtime options as a fallback, so an install
 that predates the datasource entries, or downgrades to upstream, keeps its
 realtime exactly as it was.
@@ -54,6 +54,20 @@ RT_OPTION_KEYS = (
     CONF_ACCEPT_HEADER_PB,
 )
 
+RT_FEED_URL_KEYS = (CONF_TRIP_UPDATE_URL, CONF_VEHICLE_POSITION_URL, CONF_ALERTS_URL)
+
+
+def has_rt_feed(cfg) -> bool:
+    """Whether a config carries at least one realtime feed url.
+
+    Trip updates are the usual case, but a feed can also publish alerts or
+    vehicle positions alone (the TTC subway is alerts-only): any of the three
+    urls makes the source a realtime source. What each reader does without a
+    trip updates url is its own affair; most consume nothing else and simply
+    keep to the static timetable.
+    """
+    return any(cfg.get(k) for k in RT_FEED_URL_KEYS)
+
 
 def datasource_entry(hass: HomeAssistant, file) -> ConfigEntry | None:
     """The datasource entry of a source, or None while it does not exist."""
@@ -80,7 +94,7 @@ def rt_feed_config(hass: HomeAssistant, entry: ConfigEntry):
 
     The source's datasource entry is authoritative when it exists: its
     options hold the feeds, shared by every sensor of the source, and
-    realtime is on as soon as a trip updates url is set - the per-sensor
+    realtime is on as soon as any feed url is set - the per-sensor
     boolean does not apply any more. Without a datasource entry the entry's
     own options apply unchanged, which is what keeps an install working
     before the bootstrap ran, and after a downgrade.
@@ -93,8 +107,7 @@ def rt_feed_config(hass: HomeAssistant, entry: ConfigEntry):
     source = datasource_entry(hass, entry.data.get(CONF_FILE))
     if source is not None:
         cfg = source.options
-        return cfg, (bool(cfg.get(CONF_TRIP_UPDATE_URL))
-                     and cfg.get(CONF_RT_ENABLED, True))
+        return cfg, bool(has_rt_feed(cfg) and cfg.get(CONF_RT_ENABLED, True))
     return entry.options, bool(entry.options.get(CONF_REAL_TIME, False))
 
 
@@ -130,7 +143,7 @@ def _rt_seed(entries: list[ConfigEntry]) -> dict:
     recently modified entry wins, and each loser whose config differed gets a
     log line naming what was left behind, so nothing disappears silently.
     """
-    donors = [e for e in entries if e.options.get(CONF_TRIP_UPDATE_URL)]
+    donors = [e for e in entries if has_rt_feed(e.options)]
     if not donors:
         return {}
     floor = dt_util.utc_from_timestamp(0)
@@ -225,7 +238,9 @@ async def async_mirror_rt_to_entries(hass: HomeAssistant, source_entry: ConfigEn
     """
     cfg = source_entry.options
     # a source silenced by its switch mirrors as realtime off: the urls stay
-    # in place, here and on the journey entries alike
+    # in place, here and on the journey entries alike. Deliberately stricter
+    # than has_rt_feed: upstream can only run realtime on trip updates, so an
+    # alerts-only source mirrors as off rather than erroring there every cycle
     active = bool(cfg.get(CONF_TRIP_UPDATE_URL)) and cfg.get(CONF_RT_ENABLED, True)
     for entry in journey_entries(hass, source_entry.data.get(CONF_FILE)):
         new_options = {**entry.options}
