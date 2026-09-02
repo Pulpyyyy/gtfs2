@@ -58,14 +58,17 @@ def _same_validator(sent, kept):
     return bool(sent) and bool(kept) and _comparable(sent) == _comparable(kept)
 
 
-def probe_source_freshness(data, zip_path):
+def probe_source(data, zip_path):
     """One cheap question to the host: has the feed changed since this zip?
 
-    Returns "unchanged", "changed", "unknown" when the host publishes no
-    validators (answering then costs a download, see fetch_if_new), or
-    "error" when the host could not be asked. Nothing is downloaded and
-    nothing on disk is touched: a "changed" answer is a fact about the
-    host, and what to do with it belongs to the caller.
+    Returns {"result", "etag", "last_modified"}. The result is "unchanged",
+    "changed", "unknown" when the host publishes no validators (answering
+    then costs a download, see fetch_if_new), or "error" when the host
+    could not be asked; the validators are the ones the host answered
+    with, when it sent any, so a caller can say what the new version is.
+    Nothing is downloaded and nothing on disk is touched: a "changed"
+    answer is a fact about the host, and what to do with it belongs to
+    the caller.
     """
     meta = source_meta(zip_path)
     conditions = {}
@@ -77,7 +80,8 @@ def probe_source_freshness(data, zip_path):
         # nothing recorded to compare with: either the sidecar is gone, and
         # one refresh will rewrite it, or the host sent no validators last
         # time and only the hash can tell
-        return PROBE_UNKNOWN if meta.get("sha256") else PROBE_CHANGED
+        result = PROBE_UNKNOWN if meta.get("sha256") else PROBE_CHANGED
+        return {"result": result, "etag": None, "last_modified": None}
 
     url, headers = _request_parts(data)
     headers.update(conditions)
@@ -92,23 +96,30 @@ def probe_source_freshness(data, zip_path):
                                     stream=True)
             response.close()
         if response.status_code == 304:
-            return PROBE_UNCHANGED
+            return {"result": PROBE_UNCHANGED, "etag": meta.get("etag"),
+                    "last_modified": meta.get("last_modified")}
         response.raise_for_status()
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not ask %s about freshness: %s",
                         data.get("url"), ex)
-        return PROBE_ERROR
+        return {"result": PROBE_ERROR, "etag": None, "last_modified": None}
 
     etag = response.headers.get("ETag")
     last_modified = response.headers.get("Last-Modified")
+    answer = {"etag": etag, "last_modified": last_modified}
     if not etag and not last_modified:
-        return PROBE_UNKNOWN
+        return {"result": PROBE_UNKNOWN, **answer}
     if (_same_validator(etag, meta.get("etag"))
             or _same_validator(last_modified, meta.get("last_modified"))):
         # some hosts answer 200 to a conditional request and leave the
         # comparing to the client; same validators mean same feed
-        return PROBE_UNCHANGED
-    return PROBE_CHANGED
+        return {"result": PROBE_UNCHANGED, **answer}
+    return {"result": PROBE_CHANGED, **answer}
+
+
+def probe_source_freshness(data, zip_path):
+    """The probe's verdict alone, for callers with no use for the details."""
+    return probe_source(data, zip_path)["result"]
 
 
 def fetch_if_new(data, zip_path):
