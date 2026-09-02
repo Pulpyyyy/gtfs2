@@ -96,7 +96,7 @@ from .gtfs_helper import (
 )
 
 from .gtfs_db import import_routes, routes_in, real_path, optimise_datasource
-from .rt_source import RT_OPTION_KEYS, async_ensure_datasource_entry, datasource_entry
+from .rt_source import RT_OPTION_KEYS, async_ensure_datasource_entry, datasource_entry, journey_entries
 from .source_refresh import default_check_time
 
 _LOGGER = logging.getLogger(__name__)
@@ -1833,23 +1833,46 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
         Off by default: nothing changes for anyone who does not come here.
         The check hour is prefilled with the source's own staggered slot,
         so sources spread out unless the user wants a precise hour.
+
+        The feed address lives here too: the file name is the source's
+        identity and never changes, but providers move and renumber their
+        download urls, so the url must be editable in place. A change is
+        mirrored onto the source's journey entries, the same way the
+        realtime options are, so a downgrade to upstream keeps working.
         """
+        errors: dict[str, str] = {}
         opts = self.config_entry.options
         if user_input is not None:
-            return self.async_create_entry(
-                title="", data={
-                    **opts,
-                    CONF_STATIC_REFRESH_MODE:
-                        user_input[CONF_STATIC_REFRESH_MODE],
-                    CONF_STATIC_CHECK_TIME:
-                        user_input[CONF_STATIC_CHECK_TIME],
-                })
+            new_url = (user_input.get(CONF_URL) or "").strip()
+            if new_url and not new_url.startswith(("http://", "https://")):
+                errors[CONF_URL] = "invalid_source_url"
+            else:
+                if new_url and new_url != self.config_entry.data.get(CONF_URL):
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry,
+                        data={**self.config_entry.data, CONF_URL: new_url})
+                    for journey in journey_entries(
+                            self.hass, self.config_entry.data.get(CONF_FILE)):
+                        self.hass.config_entries.async_update_entry(
+                            journey, data={**journey.data, CONF_URL: new_url})
+                return self.async_create_entry(
+                    title="", data={
+                        **opts,
+                        CONF_STATIC_REFRESH_MODE:
+                            user_input[CONF_STATIC_REFRESH_MODE],
+                        CONF_STATIC_CHECK_TIME:
+                            user_input[CONF_STATIC_CHECK_TIME],
+                    })
         default_time = opts.get(CONF_STATIC_CHECK_TIME) or (
             "%02d:%02d:%02d" % default_check_time(
                 self.config_entry.data.get(CONF_FILE)))
         return self.async_show_form(
             step_id="static_refresh",
             data_schema=vol.Schema({
+                vol.Optional(
+                    CONF_URL,
+                    default=self.config_entry.data.get(CONF_URL, ""),
+                ): str,
                 vol.Required(
                     CONF_STATIC_REFRESH_MODE,
                     default=opts.get(CONF_STATIC_REFRESH_MODE,
@@ -1864,6 +1887,7 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
                     selector.TimeSelector(),
             }),
             description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+            errors=errors,
         )
 
 
