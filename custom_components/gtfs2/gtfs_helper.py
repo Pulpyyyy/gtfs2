@@ -579,10 +579,10 @@ def get_gtfs(hass, path, data, update=False):
     url = data["url"]
     if data.get(CONF_API_KEY_LOCATION, None) == "query_string":
       if data.get(CONF_API_KEY, None):
-        url = url + "?" + data[CONF_API_KEY_NAME] + "=" + data[CONF_API_KEY]
+        url = url + "?" + data.get(CONF_API_KEY_NAME, "api_key") + "=" + data[CONF_API_KEY]
     if data.get(CONF_API_KEY_LOCATION, None) == "header":
       if data.get(CONF_API_KEY, None):
-        _headers = {data[CONF_API_KEY_NAME]: data[CONF_API_KEY]}
+        _headers = {data.get(CONF_API_KEY_NAME, "api_key"): data[CONF_API_KEY]}
     file = data["file"] + ".zip"
     sqlite = data["file"] + ".sqlite"
     check_source_dates = data.get("check_source_dates", False)
