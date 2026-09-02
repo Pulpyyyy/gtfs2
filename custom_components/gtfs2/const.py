@@ -31,10 +31,19 @@ ENTRY_KIND_DATASOURCE = "datasource"
 # the switch that silences a source's realtime while keeping its config;
 # absent means enabled
 CONF_RT_ENABLED = "rt_enabled"
+# what a source does about new versions of its static feed: nothing, say
+# so, or install them; and when to look. Absent means off.
+CONF_STATIC_REFRESH_MODE = "static_refresh_mode"
+CONF_STATIC_CHECK_TIME = "static_check_time"
+STATIC_REFRESH_OFF = "off"
+STATIC_REFRESH_NOTIFY = "notify"
+STATIC_REFRESH_AUTO = "auto"
+STATIC_REFRESH_MODES = [STATIC_REFRESH_OFF, STATIC_REFRESH_NOTIFY, STATIC_REFRESH_AUTO]
 
 PLATFORMS = [Platform.SENSOR]
-# the datasource entries also carry their realtime switch
-DATASOURCE_PLATFORMS = [Platform.SENSOR, Platform.SWITCH]
+# the datasource entries also carry their realtime switch and the update
+# entity of their static feed
+DATASOURCE_PLATFORMS = [Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
 
 # constants used in helpers
 ATTR_API_KEY_LOCATIONS = ["not_applicable","header","query_string"]

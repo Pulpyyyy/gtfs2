@@ -56,6 +56,10 @@ from .const import (
     CONF_KIND,
     ENTRY_KIND_DATASOURCE,
     CONF_RT_ENABLED,
+    CONF_STATIC_CHECK_TIME,
+    CONF_STATIC_REFRESH_MODE,
+    STATIC_REFRESH_MODES,
+    STATIC_REFRESH_OFF,
     ATTR_API_KEY_LOCATIONS,
     DEFAULT_MAX_LOCAL_STOPS,
     CONF_MAX_LOCAL_STOPS
@@ -93,6 +97,7 @@ from .gtfs_helper import (
 
 from .gtfs_db import import_routes, routes_in, real_path, optimise_datasource
 from .rt_source import RT_OPTION_KEYS, async_ensure_datasource_entry, datasource_entry
+from .source_refresh import default_check_time
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -214,8 +219,13 @@ def _collect_source_rt_options(url_fields, key_fields, previous=None):
         options[CONF_API_KEY_NAME] = key_fields.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME)
         options[CONF_API_KEY_LOCATION] = key_fields.get(CONF_API_KEY_LOCATION, "query_string")
         options[CONF_ACCEPT_HEADER_PB] = bool(key_fields.get(CONF_ACCEPT_HEADER_PB, False))
-    if previous is not None and CONF_RT_ENABLED in previous:
-        options[CONF_RT_ENABLED] = previous[CONF_RT_ENABLED]
+    if previous is not None:
+        # the switch and the static refresh settings are not on these
+        # screens: an edit of the feeds must ride them through untouched
+        for key in (CONF_RT_ENABLED, CONF_STATIC_REFRESH_MODE,
+                    CONF_STATIC_CHECK_TIME):
+            if key in previous:
+                options[key] = previous[key]
     return options
 
 
@@ -1715,10 +1725,12 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
         """Manage the options."""
         errors: dict[str, str] = {}
         if self.config_entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
-            # the datasource entry's CONFIGURE button is where the source's
-            # realtime feeds are added, changed and removed; the sensors
-            # pick the change up on their next cycle, without a reload
-            return await self.async_step_real_time()
+            # the datasource entry's CONFIGURE button carries everything a
+            # source owns: its realtime feeds, and what to do about new
+            # versions of its static feed
+            return self.async_show_menu(
+                step_id="init",
+                menu_options=["real_time", "static_refresh"])
         if user_input is not None:
             if self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None):
                 _data = user_input
@@ -1812,6 +1824,47 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_create_entry(
             title="", data=_collect_source_rt_options(
                 self._user_inputs, user_input, previous=self.config_entry.options))
+
+    async def async_step_static_refresh(
+           self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """What the source does about new versions of its static feed.
+
+        Off by default: nothing changes for anyone who does not come here.
+        The check hour is prefilled with the source's own staggered slot,
+        so sources spread out unless the user wants a precise hour.
+        """
+        opts = self.config_entry.options
+        if user_input is not None:
+            return self.async_create_entry(
+                title="", data={
+                    **opts,
+                    CONF_STATIC_REFRESH_MODE:
+                        user_input[CONF_STATIC_REFRESH_MODE],
+                    CONF_STATIC_CHECK_TIME:
+                        user_input[CONF_STATIC_CHECK_TIME],
+                })
+        default_time = opts.get(CONF_STATIC_CHECK_TIME) or (
+            "%02d:%02d:%02d" % default_check_time(
+                self.config_entry.data.get(CONF_FILE)))
+        return self.async_show_form(
+            step_id="static_refresh",
+            data_schema=vol.Schema({
+                vol.Required(
+                    CONF_STATIC_REFRESH_MODE,
+                    default=opts.get(CONF_STATIC_REFRESH_MODE,
+                                     STATIC_REFRESH_OFF),
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=STATIC_REFRESH_MODES,
+                        translation_key="static_refresh_mode",
+                    )
+                ),
+                vol.Required(CONF_STATIC_CHECK_TIME, default=default_time):
+                    selector.TimeSelector(),
+            }),
+            description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+        )
 
 
 async def _check_stop_list(self, data):
