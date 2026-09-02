@@ -1035,8 +1035,10 @@ def ensure_source_zip(hass, path, data):
             url, headers = _source_request(data)
             r = requests.get(url, headers=headers, allow_redirects=True, timeout=15)
             r.raise_for_status()
-            with open(zip_path, "wb") as out:
-                out.write(r.content)
+            staged = stage_zip(r, zip_path)
+            if staged is None:
+                return "no_data_file"
+            adopt_zip(r, staged, zip_path)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("The given URL or GTFS data file/folder was not found: %s", ex)
             return "no_data_file"
@@ -1092,19 +1094,20 @@ def refresh_datasource(hass, path, data):
     zip_name = filename + ".zip"
     zip_path = os.path.join(gtfs_dir, zip_name)
     if data.get("extract_from", "url") == "url":
-        # download beside the current zip and swap only once complete: the
-        # zip is the only full record of the feed and must survive a failed
-        # download
-        fresh = zip_path + ".new"
+        # download beside the current zip and swap only once complete and
+        # proven to be a zip: the zip is the only full record of the feed
+        # and must survive a failed or hijacked download
         try:
             url, headers = _source_request(data)
             r = requests.get(url, headers=headers, allow_redirects=True, timeout=15)
             r.raise_for_status()
-            with open(fresh, "wb") as out:
-                out.write(r.content)
-            os.replace(fresh, zip_path)
+            staged = stage_zip(r, zip_path)
+            if staged is None:
+                return False
+            adopt_zip(r, staged, zip_path)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Could not download %s: %s", data.get("url"), ex)
+            fresh = zip_path + ".new"
             if os.path.exists(fresh):
                 try:
                     os.remove(fresh)
