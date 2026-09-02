@@ -101,6 +101,7 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Source de données supprimée, cela peut affecter les itinéraires existants",
+      "generic_failure": "Échec global, vérifiez les logs d'érreur",
       "stop_incorrect": "Arrêt de départ et/ou de fin incorrecte, éventuellement pas de transport « aujourd'hui » ou pas dans la même direction, vérifiez logs d'érreur",
 	  "no_data_file": "Problème de collecte de données : URL incorrecte ou nom de fichier ne se trouve pas dans le bon dossier",
 	  "no_stops": "Problème de collecte de données : probablement pas des stops pour la route sélectionné",

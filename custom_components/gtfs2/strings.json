@@ -101,6 +101,7 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Datasource deleted, this may affect existing routes",
+      "generic_failure": "Overall failure, check logs",
       "stop_incorrect": "Start and/or End destination incorrect, \n possibly no transport 'today' or not in same direction, \n please check logs",
 	  "no_data_file": "Data collection issue: URL incorrect or filename not in the correct folder",
 	  "no_stops": "Data collection issue: probably no stops for the selected route",
