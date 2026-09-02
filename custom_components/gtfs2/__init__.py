@@ -13,12 +13,21 @@ from datetime import timedelta
 
 from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE
 from homeassistant.const import CONF_HOST
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
 from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops, route_geojson_name, vehicle_positions_name, async_notify_line_orphaned
 from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
 from .rt_source import async_bootstrap_datasource_entries, async_mirror_rt_to_entries
+from .source_refresh import (
+    SIGNAL_SOURCE_REFRESH,
+    async_arm_source_check,
+    async_disarm_source_check,
+    async_rearm_source_check,
+    refresh_source,
+    source_lock,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -263,6 +272,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # whether realtime runs, and why not, and the switch that silences
         # it without losing the config.
         entry.async_on_unload(entry.add_update_listener(async_mirror_rt_to_entries))
+        # the scheduled look at the source's host, armed per the entry's
+        # options and re-armed when they change
+        async_arm_source_check(hass, entry)
+        entry.async_on_unload(entry.add_update_listener(async_rearm_source_check))
+        entry.async_on_unload(lambda: async_disarm_source_check(hass, entry))
         await hass.config_entries.async_forward_entry_setups(entry, DATASOURCE_PLATFORMS)
         return True
 
@@ -355,7 +369,21 @@ def setup(hass, config):
         the datasource has no routes to refresh.
         """
         _LOGGER.debug("Updating GTFS with: %s", call.data)
-        refresh_datasource(hass, DEFAULT_PATH, call.data)
+        file = dict(call.data).get("file", "")
+        if source_lock(hass, file).locked():
+            # the scheduled check or the update entity is rebuilding this
+            # source right now; two rebuilds of one feed never overlap
+            _LOGGER.warning("A refresh of %s is already running, "
+                            "not starting another", file)
+            return False
+        # through the recording wrapper, so the update entity knows what the
+        # database was built from after a service-driven refresh too
+        refresh_source(hass, DEFAULT_PATH, dict(call.data))
+        # the handler runs in an executor thread, so the entity is told
+        # from the loop; without this a service-driven refresh would sit
+        # unread until the next restart or check
+        hass.loop.call_soon_threadsafe(
+            async_dispatcher_send, hass, SIGNAL_SOURCE_REFRESH.format(file))
         return True
 
     def update_gtfs_rt_local(call):

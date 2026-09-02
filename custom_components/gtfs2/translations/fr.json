@@ -282,6 +282,10 @@
           "max_local_stops": "Au-delà de ce nombre d'arrêts le capteur devient lent. À augmenter à vos risques.",
           "source_timezone_correction": "Seulement si la source publie ses heures dans un autre fuseau, en heures.",
           "check_source_dates": "Expérimental : refuse un nouveau fichier dont toutes les dates sont dans le futur."
+        },
+        "menu_options": {
+          "real_time": "Flux temps réel",
+          "static_refresh": "Mises à jour du fichier source"
         }
       },
       "real_time": {
@@ -313,6 +317,18 @@
           "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête.",
           "accept": "Effectif seulement si la clé va dans l'en-tête."
         }
+      },
+      "static_refresh": {
+        "title": "Mises à jour du fichier source",
+        "description": "Ce que cette source fait des nouvelles versions de son fichier horaire. **Notifier** interroge l'hébergeur à l'heure choisie, d'une seule petite requête, et signale les nouvelles versions : à vous ou à une automatisation de décider quand installer. **Installer automatiquement** installe dès qu'une version est trouvée. Les capteurs continuent de répondre pendant l'installation ; la bascule vers les nouvelles données se fait d'un coup.",
+        "data": {
+          "static_refresh_mode": "À la nouvelle version",
+          "static_check_time": "Heure de vérification"
+        },
+        "data_description": {
+          "static_refresh_mode": "Ne rien faire : rien ne change pour cette source.",
+          "static_check_time": "Une vérification par jour, à cette heure. Préremplie avec un créneau propre à la source, pour étaler les mises à jour."
+        }
       }
     },
     "abort": {
@@ -325,6 +341,13 @@
         "not_applicable": "Aucune clé nécessaire (la plupart des sources)",
         "header": "Dans l'en-tête de la requête",
         "query_string": "Dans l'adresse web"
+      }
+    },
+    "static_refresh_mode": {
+      "options": {
+        "off": "Ne rien faire",
+        "notify": "Notifier, installer à la demande",
+        "auto": "Installer automatiquement"
       }
     }
   },
@@ -502,6 +525,8 @@
     "reason_tables_missing": "la décompression s'est arrêtée avant d'écrire toutes les tables",
     "reason_unfinished": "la décompression n'est pas allée à son terme",
     "reason_tables_empty": "certaines tables sont vides",
-    "reason_unreadable": "la base est illisible"
+    "reason_unreadable": "la base est illisible",
+    "source_update_available_title": "GTFS : {file} a une nouvelle version",
+    "source_update_available": "La source a publié un nouveau fichier horaire ({version}).\n\nInstallez-le depuis l'entité de mise à jour **Static feed** de {file}, ou laissez faire votre automatisation. Les données actuelles continuent de servir jusqu'à la bascule, qui se fait d'un coup."
   }
 }
