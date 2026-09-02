@@ -539,6 +539,12 @@ def get_next_departure(hass, _data):
     """Get next departures from data."""
 
     schedule = _data["schedule"]
+    # get_gtfs hands back a sentinel string or None when the datasource is
+    # unusable (zip or sqlite missing, dates all in the future): querying
+    # that raises in SQLAlchemy, far from the cause, on every update
+    if not isinstance(schedule, pygtfs.Schedule):
+        _LOGGER.warning("Datasource %s has no usable schedule (%s), no departures", _data["file"], schedule or "empty")
+        return {}
     route_type = _data["route_type"]
 
     offset = _data["offset"]
@@ -832,6 +838,11 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
     _LOGGER.debug("Check datasource index for file: %s", file)
     if check_extracting(hass, gtfs_dir,file):
         _LOGGER.warning("Cannot check indexes on this datasource as still unpacking: %s", file)
+        return
+    # runs before get_next_departure on every refresh, so it meets the same
+    # sentinels get_gtfs leaves in place of a schedule
+    if not isinstance(schedule, pygtfs.Schedule):
+        _LOGGER.warning("Cannot check indexes: datasource %s has no usable schedule (%s)", file, schedule or "empty")
         return
     sql_index_1 = f"""
     SELECT count(*) as checkidx
@@ -1192,6 +1203,11 @@ def get_local_stops_next_departures(self):
         return {}
     """Get next departures from data."""
     schedule = self._data["schedule"]
+    # same contract as get_next_departure: a sentinel or None instead of a
+    # schedule means nothing to offer, not a traceback
+    if not isinstance(schedule, pygtfs.Schedule):
+        _LOGGER.warning("Datasource %s has no usable schedule (%s), no local stops", self._data["file"], schedule or "empty")
+        return {}
     offset = self._data["offset"]
     now = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset)
     now_hist_corrected = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset) - datetime.timedelta(minutes=DEFAULT_LOCAL_STOP_TIMERANGE)
