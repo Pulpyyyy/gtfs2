@@ -56,8 +56,11 @@ from .const import (
     CONF_KIND,
     ENTRY_KIND_DATASOURCE,
     CONF_RT_ENABLED,
-    CONF_STATIC_CHECK_TIME,
+    CONF_STATIC_CHECK_INTERVAL,
     CONF_STATIC_REFRESH_MODE,
+    DEFAULT_STATIC_CHECK_INTERVAL,
+    MAX_STATIC_CHECK_INTERVAL,
+    MIN_STATIC_CHECK_INTERVAL,
     STATIC_REFRESH_MODES,
     STATIC_REFRESH_OFF,
     ATTR_API_KEY_LOCATIONS,
@@ -97,7 +100,6 @@ from .gtfs_helper import (
 
 from .gtfs_db import import_routes, routes_in, real_path, optimise_datasource
 from .rt_source import RT_OPTION_KEYS, async_ensure_datasource_entry, datasource_entry, journey_entries
-from .source_refresh import default_check_time
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -223,7 +225,7 @@ def _collect_source_rt_options(url_fields, key_fields, previous=None):
         # the switch and the static refresh settings are not on these
         # screens: an edit of the feeds must ride them through untouched
         for key in (CONF_RT_ENABLED, CONF_STATIC_REFRESH_MODE,
-                    CONF_STATIC_CHECK_TIME):
+                    CONF_STATIC_CHECK_INTERVAL):
             if key in previous:
                 options[key] = previous[key]
     return options
@@ -1831,8 +1833,8 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
         """What the source does about new versions of its static feed.
 
         Off by default: nothing changes for anyone who does not come here.
-        The check hour is prefilled with the source's own staggered slot,
-        so sources spread out unless the user wants a precise hour.
+        The user picks a frequency, never a moment: the moment is derived
+        in source_refresh, at night and staggered per source.
 
         The feed address lives here too: the file name is the source's
         identity and never changes, but providers move and renumber their
@@ -1860,12 +1862,9 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
                         **opts,
                         CONF_STATIC_REFRESH_MODE:
                             user_input[CONF_STATIC_REFRESH_MODE],
-                        CONF_STATIC_CHECK_TIME:
-                            user_input[CONF_STATIC_CHECK_TIME],
+                        CONF_STATIC_CHECK_INTERVAL:
+                            int(user_input[CONF_STATIC_CHECK_INTERVAL]),
                     })
-        default_time = opts.get(CONF_STATIC_CHECK_TIME) or (
-            "%02d:%02d:%02d" % default_check_time(
-                self.config_entry.data.get(CONF_FILE)))
         return self.async_show_form(
             step_id="static_refresh",
             data_schema=vol.Schema({
@@ -1883,8 +1882,19 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
                         translation_key="static_refresh_mode",
                     )
                 ),
-                vol.Required(CONF_STATIC_CHECK_TIME, default=default_time):
-                    selector.TimeSelector(),
+                vol.Required(
+                    CONF_STATIC_CHECK_INTERVAL,
+                    default=opts.get(CONF_STATIC_CHECK_INTERVAL,
+                                     DEFAULT_STATIC_CHECK_INTERVAL),
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=MIN_STATIC_CHECK_INTERVAL,
+                        max=MAX_STATIC_CHECK_INTERVAL,
+                        step=1,
+                        unit_of_measurement="h",
+                        mode=selector.NumberSelectorMode.BOX,
+                    )
+                ),
             }),
             description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             errors=errors,

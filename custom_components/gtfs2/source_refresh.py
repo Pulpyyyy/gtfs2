@@ -11,10 +11,12 @@ The datasource entry carries the choice, per source:
 - auto: same check, and the install runs by itself at the first check that
   finds a change.
 
-The check hour is staggered per source by default so rebuilds spread out;
-the schedule decides when to look, the validators decide whether anything
-happens, so a week without a new version costs one request. Only sources
-fetched from a url can be checked: a zip source has no host to ask.
+The user chooses a frequency, never a moment: the moment is derived here,
+at night in the instance's own timezone for daily and slower rhythms, and
+staggered per source so rebuilds spread out. The schedule decides when to
+look, the validators decide whether anything happens, so a week without a
+new version costs one request. Only sources fetched from a url can be
+checked: a zip source has no host to ask.
 
 Two files carry the state, both disposable: the zip's sidecar records what
 was downloaded (written by the download path itself), and a matching
@@ -29,6 +31,7 @@ import hashlib
 import json
 import logging
 import os
+from datetime import timedelta
 
 import homeassistant.util.dt as dt_util
 from homeassistant.config_entries import ConfigEntry
@@ -45,8 +48,11 @@ from .const import (
     CONF_EXTRACT_FROM,
     CONF_FILE,
     CONF_URL,
-    CONF_STATIC_CHECK_TIME,
+    CONF_STATIC_CHECK_INTERVAL,
     CONF_STATIC_REFRESH_MODE,
+    DEFAULT_STATIC_CHECK_INTERVAL,
+    MAX_STATIC_CHECK_INTERVAL,
+    MIN_STATIC_CHECK_INTERVAL,
     STATIC_REFRESH_AUTO,
     STATIC_REFRESH_NOTIFY,
     STATIC_REFRESH_OFF,
@@ -102,7 +108,7 @@ def probe_state(hass: HomeAssistant, file) -> dict:
 
 
 def default_check_time(file) -> tuple[int, int, int]:
-    """A check hour of the source's own, between 03:00 and 05:59.
+    """A night slot of the source's own, between 03:00 and 05:59 local.
 
     Derived from the file name, so it is stable across restarts and spreads
     the sources out without anyone choosing anything: rebuilds follow the
@@ -112,17 +118,34 @@ def default_check_time(file) -> tuple[int, int, int]:
     return 3 + n % 3, (n // 3) % 60, (n // 180) % 60
 
 
-def parse_check_time(value, file) -> tuple[int, int, int]:
-    """The configured "HH:MM:SS" check time, or the staggered default."""
+def check_interval(entry: ConfigEntry) -> int:
+    """The configured check frequency in hours, held to its bounds."""
     try:
-        parts = [int(p) for p in str(value).split(":")]
-        if len(parts) in (2, 3) and 0 <= parts[0] < 24 and 0 <= parts[1] < 60:
-            second = parts[2] if len(parts) == 3 else 0
-            if 0 <= second < 60:
-                return parts[0], parts[1], second
+        value = int(entry.options.get(CONF_STATIC_CHECK_INTERVAL,
+                                      DEFAULT_STATIC_CHECK_INTERVAL))
     except (TypeError, ValueError):
-        pass
-    return default_check_time(file)
+        value = DEFAULT_STATIC_CHECK_INTERVAL
+    return max(MIN_STATIC_CHECK_INTERVAL,
+               min(MAX_STATIC_CHECK_INTERVAL, value))
+
+
+def check_hours(interval: int, file) -> tuple[list[int], int, int]:
+    """The local hours a source is looked at, for the frequency it asked.
+
+    The user picks a frequency, the moment is picked here. The anchor is
+    the source's own staggered night slot; a sub-daily frequency adds
+    passes through the day, spaced by the interval from that anchor, so
+    one look always lands at night. Daily and slower frequencies keep the
+    single night slot, and how many nights go by between two looks is the
+    elapsed-time gate's business, not the clock pattern's.
+    """
+    hour, minute, second = default_check_time(file)
+    if interval < 24:
+        hours = sorted({(hour + k * interval) % 24
+                        for k in range((23 // interval) + 1)})
+    else:
+        hours = [hour]
+    return hours, minute, second
 
 
 def _zip_path(hass: HomeAssistant, file) -> str:
@@ -243,6 +266,18 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
         return
     data = refresh_data_for(hass, entry)
     zip_path = _zip_path(hass, file)
+    interval = check_interval(entry)
+    if interval > 24:
+        # slower than daily: the tick still fires every night, this gate
+        # says which nights count. The 12 hour slack keeps a cadence from
+        # drifting past its own slot, and a lost record just means one
+        # extra conditional request, not a download
+        last = probe_state(hass, file).get("checked_at") or (
+            await hass.async_add_executor_job(source_meta, zip_path)
+        ).get("downloaded_at")
+        last_dt = dt_util.parse_datetime(last) if last else None
+        if last_dt and dt_util.utcnow() - last_dt < timedelta(hours=interval - 12):
+            return
     probe = await hass.async_add_executor_job(probe_source, data, zip_path)
     state = probe_state(hass, file)
     state["checked_at"] = dt_util.utcnow().isoformat()
@@ -304,16 +339,18 @@ def async_arm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
         _LOGGER.info("Source %s is fed from a zip, there is no host to ask "
                      "about new versions", entry.data.get(CONF_FILE))
         return
-    hour, minute, second = parse_check_time(
-        entry.options.get(CONF_STATIC_CHECK_TIME), entry.data.get(CONF_FILE))
+    interval = check_interval(entry)
+    hours, minute, second = check_hours(interval, entry.data.get(CONF_FILE))
 
     async def _tick(now):
         await async_check_source(hass, entry)
 
     unsubs[entry.entry_id] = async_track_time_change(
-        hass, _tick, hour=hour, minute=minute, second=second)
-    _LOGGER.debug("Source %s checks for new versions at %02d:%02d:%02d (%s)",
-                  entry.data.get(CONF_FILE), hour, minute, second, mode)
+        hass, _tick, hour=hours, minute=minute, second=second)
+    _LOGGER.debug(
+        "Source %s checks for new versions every %d h, at minute %02d:%02d "
+        "of hours %s (%s)",
+        entry.data.get(CONF_FILE), interval, minute, second, hours, mode)
 
 
 async def async_rearm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:

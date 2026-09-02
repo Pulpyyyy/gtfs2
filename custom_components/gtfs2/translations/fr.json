@@ -320,16 +320,16 @@
       },
       "static_refresh": {
         "title": "Mises à jour du fichier source",
-        "description": "Ce que cette source fait des nouvelles versions de son fichier horaire. **Notifier** interroge l'hébergeur à l'heure choisie, d'une seule petite requête, et signale les nouvelles versions : à vous ou à une automatisation de décider quand installer. **Installer automatiquement** installe dès qu'une version est trouvée. Les capteurs continuent de répondre pendant l'installation ; la bascule vers les nouvelles données se fait d'un coup.",
+        "description": "Ce que cette source fait des nouvelles versions de son fichier horaire. **Notifier** interroge l'hébergeur d'une seule petite requête, au rythme choisi, et signale les nouvelles versions : à vous ou à une automatisation de décider quand installer. **Installer automatiquement** installe dès qu'une version est trouvée. Les capteurs continuent de répondre pendant l'installation ; la bascule vers les nouvelles données se fait d'un coup.",
         "data": {
           "url": "Adresse du fichier source",
           "static_refresh_mode": "À la nouvelle version",
-          "static_check_time": "Heure de vérification"
+          "static_check_interval": "Fréquence de vérification"
         },
         "data_description": {
           "url": "D'où le zip est téléchargé. À changer quand l'hébergeur déménage ou renumérote ses adresses ; le nom et tout ce qui est construit depuis le fichier restent.",
           "static_refresh_mode": "Ne rien faire : rien ne change pour cette source.",
-          "static_check_time": "Une vérification par jour, à cette heure. Préremplie avec un créneau propre à la source, pour étaler les mises à jour."
+          "static_check_interval": "En heures : 24 pour tous les jours, 360 pour tous les 15 jours. Le moment exact est choisi pour vous, la nuit pour les rythmes quotidiens et plus lents, et étalé par source pour lisser les mises à jour."
         }
       }
     },
