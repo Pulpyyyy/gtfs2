@@ -19,6 +19,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
     DOMAIN,
@@ -55,7 +56,7 @@ async def async_setup_entry(
     async_add_entities([entity])
 
 
-class GTFSSourceUpdateEntity(UpdateEntity):
+class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
     """New versions of one source's static feed, and the button to install."""
 
     _attr_has_entity_name = True
@@ -89,6 +90,21 @@ class GTFSSourceUpdateEntity(UpdateEntity):
             await self.hass.async_add_executor_job(_read))
 
     async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        # what the last check learned lives in memory (probe_state) and
+        # would read unknown after every restart; the entity carries it in
+        # its own attributes, so it re-seeds the store from its saved state
+        # and a restart keeps the last verdict until a real check speaks.
+        # The sidecars stay the durable record of what is installed.
+        last = await self.async_get_last_state()
+        if last is not None:
+            probe = probe_state(self.hass, self._file)
+            for probe_key, attr in (("latest", "latest_version"),
+                                    ("checked_at", "last_check"),
+                                    ("result", "last_check_result")):
+                value = last.attributes.get(attr)
+                if value and probe_key not in probe:
+                    probe[probe_key] = value
         self.async_on_remove(async_dispatcher_connect(
             self.hass, SIGNAL_SOURCE_REFRESH.format(self._file),
             self._async_source_moved))
@@ -116,7 +132,10 @@ class GTFSSourceUpdateEntity(UpdateEntity):
             # the feed was fetched to know it was new; the zip is ahead of
             # the database until someone installs
             return self._zip_version
-        return None
+        # no check has spoken yet: claim the installed version, the same
+        # stance mode off takes, rather than reading "unknown" until the
+        # first night slot
+        return self._installed
 
     @property
     def in_progress(self) -> bool:
