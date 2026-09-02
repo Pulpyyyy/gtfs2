@@ -32,9 +32,14 @@ ENTRY_KIND_DATASOURCE = "datasource"
 # absent means enabled
 CONF_RT_ENABLED = "rt_enabled"
 # what a source does about new versions of its static feed: nothing, say
-# so, or install them; and when to look. Absent means off.
+# so, or install them; and how often to look. The moment itself is never
+# configured: it is derived, at night and staggered per source. Absent
+# means off.
 CONF_STATIC_REFRESH_MODE = "static_refresh_mode"
-CONF_STATIC_CHECK_TIME = "static_check_time"
+CONF_STATIC_CHECK_INTERVAL = "static_check_interval"
+DEFAULT_STATIC_CHECK_INTERVAL = 24
+MIN_STATIC_CHECK_INTERVAL = 1
+MAX_STATIC_CHECK_INTERVAL = 360
 STATIC_REFRESH_OFF = "off"
 STATIC_REFRESH_NOTIFY = "notify"
 STATIC_REFRESH_AUTO = "auto"

@@ -311,16 +311,16 @@
       },
       "static_refresh": {
         "title": "Static feed updates",
-        "description": "What this source does about new versions of its timetable feed. **Notify** asks the host at the check time with one tiny request and says when a new version exists, so you or an automation decide when to install. **Install automatically** installs it right away. Sensors keep answering during an install; the switch to the new data happens in one go.",
+        "description": "What this source does about new versions of its timetable feed. **Notify** asks the host with one tiny request, at the chosen rhythm, and says when a new version exists, so you or an automation decide when to install. **Install automatically** installs it right away. Sensors keep answering during an install; the switch to the new data happens in one go.",
         "data": {
           "url": "Feed address",
           "static_refresh_mode": "On a new version",
-          "static_check_time": "Check time"
+          "static_check_interval": "Check frequency"
         },
         "data_description": {
           "url": "Where the zip is downloaded from. Change it when the provider moves or renumbers its urls; the name and everything built from the feed stay.",
           "static_refresh_mode": "Off changes nothing for this source.",
-          "static_check_time": "One check per day, at this time. Prefilled with a slot of the source's own, so sources spread out."
+          "static_check_interval": "In hours: 24 is daily, 360 is every 15 days. The exact moment is chosen for you, at night for daily and slower rhythms, and staggered per source so updates spread out."
         }
       }
     },
