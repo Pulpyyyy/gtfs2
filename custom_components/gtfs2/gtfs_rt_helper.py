@@ -8,6 +8,7 @@ import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
 import requests
 import voluptuous as vol
+from google.protobuf.message import DecodeError
 from google.transit import gtfs_realtime_pb2
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import ATTR_LATITUDE, ATTR_LONGITUDE, CONF_NAME
@@ -97,7 +98,10 @@ def get_gtfs_feed_entities(url: str, headers, label: str):
     else:
         response = requests.get(url, headers=headers, timeout=20)
 
-    if response.status_code == 200 and "Bad Gateway" not in response.text and "Not Found" not in response.text :
+    # Success is the status code plus a body that parses below. Grepping the
+    # decoded body for error phrases rejected valid feeds whose own free text
+    # carried them, e.g. an alert quoting "Not Found".
+    if response.status_code == 200:
         _LOGGER.debug("Successfully updated %s", label)
     else:
         _LOGGER.error("Trying to update %s, and got RT response(code): %s with text: %s", label, response.status_code, response.text)
@@ -105,20 +109,26 @@ def get_gtfs_feed_entities(url: str, headers, label: str):
 
     if label == "alerts":
         _LOGGER.debug("Feed : %s", feed)
-        
+
     try:
-        json_object = json.loads(response.text)    
+        json_object = json.loads(response.text)
         feed = json.loads(response.text)
-    except ValueError as e:   
+    except ValueError as e:
         _LOGGER.debug("GTFS RT data is not providing format json")
-        if label == "vehicle_positions":
-            feed = convert_gtfs_realtime_positions_to_json(response.content)
-        elif label == "trip_data":
-            feed = convert_gtfs_realtime_to_json(response.content)
-        else: # not yet converted to json
-            feed.ParseFromString(response.content)
-            return feed.entity            
-    
+        # a maintenance or error page served with a 200 lands here and is not
+        # protobuf either: degrade to no data instead of an uncaught traceback
+        try:
+            if label == "vehicle_positions":
+                feed = convert_gtfs_realtime_positions_to_json(response.content)
+            elif label == "trip_data":
+                feed = convert_gtfs_realtime_to_json(response.content)
+            else: # not yet converted to json
+                feed.ParseFromString(response.content)
+                return feed.entity
+        except DecodeError:
+            _LOGGER.error("Trying to update %s, and got a 200 whose body is neither json nor GTFS-RT protobuf", label)
+            return None
+
     return feed.get('entity')
 
 def get_next_services(self):
