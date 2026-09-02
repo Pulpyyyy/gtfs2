@@ -77,11 +77,8 @@ SIGNAL_SOURCE_REFRESH = "gtfs2_source_refresh_{}"
 
 # the flags a refresh honours that live on the journey entries, kept there
 # for upstream compatibility; the identity keys come from the datasource
-# entry itself
+# entry itself, and the api trio is collected apart so it stays coherent
 _JOURNEY_REFRESH_KEYS = (
-    CONF_API_KEY,
-    CONF_API_KEY_LOCATION,
-    CONF_API_KEY_NAME,
     "check_source_dates",
     "clean_feed_info",
 )
@@ -267,6 +264,14 @@ def refresh_data_for(hass: HomeAssistant, entry: ConfigEntry) -> dict:
         CONF_EXTRACT_FROM: entry.data.get(CONF_EXTRACT_FROM, "url"),
     }
     for journey in journey_entries(hass, data[CONF_FILE]):
+        # the api trio travels together, from the first entry that actually
+        # carries a key: every flow stores api_key_location (usually
+        # "not_applicable"), so taking the fields one by one would let a
+        # keyless entry strip a later keyed entry's authentication
+        if CONF_API_KEY not in data and journey.data.get(CONF_API_KEY):
+            data[CONF_API_KEY] = journey.data[CONF_API_KEY]
+            data[CONF_API_KEY_LOCATION] = journey.data.get(CONF_API_KEY_LOCATION)
+            data[CONF_API_KEY_NAME] = journey.data.get(CONF_API_KEY_NAME)
         for key in _JOURNEY_REFRESH_KEYS:
             if key not in data and key in journey.data:
                 data[key] = journey.data[key]
