@@ -330,7 +330,13 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
     state = probe_state(hass, file)
     state["checked_at"] = dt_util.utcnow().isoformat()
     state["result"] = probe["result"]
-    state["latest"] = probe.get("last_modified") or probe.get("etag")
+    # through version_label, like the installed side: a raw W/"..." etag
+    # would never equal the installed label and read as a phantom update
+    # on the hosts that publish no Last-Modified
+    state["latest"] = version_label({
+        "last_modified": probe.get("last_modified"),
+        "etag": probe.get("etag"),
+    })
 
     changed = probe["result"] == PROBE_CHANGED
     use_zip = False
