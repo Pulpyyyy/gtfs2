@@ -185,8 +185,12 @@ async def async_ensure_datasource_entry(
         url = next((e.data.get(CONF_URL) for e in entries
                     if e.data.get(CONF_URL) not in (None, "", "na")), "na")
     if extract_from is None:
-        extract_from = next((e.data.get(CONF_EXTRACT_FROM) for e in entries
-                             if e.data.get(CONF_EXTRACT_FROM)), "zip")
+        # prefer "url" the moment any entry has it, like the url pick above:
+        # a zip-created first entry must not turn a hosted source into a zip
+        # source, which would silently keep its checks from ever arming
+        values = [e.data.get(CONF_EXTRACT_FROM) for e in entries]
+        extract_from = ("url" if "url" in values
+                        else next((v for v in values if v), "zip"))
     _LOGGER.info("Creating datasource entry for source: %s", file)
     await hass.config_entries.flow.async_init(
         DOMAIN,
@@ -219,6 +223,18 @@ async def async_bootstrap_datasource_entries(hass: HomeAssistant) -> None:
         if (entry.data.get(CONF_KIND) != ENTRY_KIND_DATASOURCE
                 and entry.data.get(CONF_FILE)):
             files.add(entry.data[CONF_FILE])
+            continue
+        # heal what the first-entry pick miscreated: a source that carries a
+        # real url is checkable, and an inherited extract_from "zip" was
+        # silently keeping notify/auto from ever arming. The update fires
+        # the entry's rearm listener, so the check arms right away.
+        if (entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE
+                and entry.data.get(CONF_EXTRACT_FROM) == "zip"
+                and entry.data.get(CONF_URL) not in (None, "", "na")):
+            _LOGGER.info("Datasource %s carries a url, extract_from zip -> url",
+                         entry.data.get(CONF_FILE))
+            hass.config_entries.async_update_entry(
+                entry, data={**entry.data, CONF_EXTRACT_FROM: "url"})
     for file in sorted(files):
         try:
             await async_ensure_datasource_entry(hass, file)
