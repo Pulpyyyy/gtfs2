@@ -322,10 +322,12 @@
         "title": "Mises à jour du fichier source",
         "description": "Ce que cette source fait des nouvelles versions de son fichier horaire. **Notifier** interroge l'hébergeur à l'heure choisie, d'une seule petite requête, et signale les nouvelles versions : à vous ou à une automatisation de décider quand installer. **Installer automatiquement** installe dès qu'une version est trouvée. Les capteurs continuent de répondre pendant l'installation ; la bascule vers les nouvelles données se fait d'un coup.",
         "data": {
+          "url": "Adresse du fichier source",
           "static_refresh_mode": "À la nouvelle version",
           "static_check_time": "Heure de vérification"
         },
         "data_description": {
+          "url": "D'où le zip est téléchargé. À changer quand l'hébergeur déménage ou renumérote ses adresses ; le nom et tout ce qui est construit depuis le fichier restent.",
           "static_refresh_mode": "Ne rien faire : rien ne change pour cette source.",
           "static_check_time": "Une vérification par jour, à cette heure. Préremplie avec un créneau propre à la source, pour étaler les mises à jour."
         }
@@ -333,6 +335,9 @@
     },
     "abort": {
       "stop_limit_reached": "Un nombre élevé d'arrêts a été détecté pour ce rayon, \nrisque d'impact sur les performances du système. \n Vous pouvez modifier la limite à votre propre risque avant de modifier le rayon"
+    },
+    "error": {
+      "invalid_source_url": "L'adresse doit commencer par http:// ou https://"
     }
   },
   "selector": {
