@@ -124,7 +124,10 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
             manufacturer="GTFS",
             model=self._name,
         )
-        self._attributes = self._update_attrs()
+        # _update_attrs fills self._attributes in place and returns None on
+        # its early paths: assigning its return here replaced the dict with
+        # None, and the next update crashed writing into it
+        self._update_attrs()
         self._attr_extra_state_attributes = self._attributes
 
     @callback
@@ -529,7 +532,9 @@ class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
             model=name,
         )
         self._stop = stop
-        self._attributes = self._update_attrs()
+        # same as the departures sensor: keep the dict when the first update
+        # returns early because the source is still extracting
+        self._update_attrs()
         self._attr_extra_state_attributes = self._attributes
 
     @property
