@@ -105,6 +105,22 @@ _FEED_CACHE_GUARD = threading.Lock()
 # coordinators: they were measured starting 12 ms apart
 FEED_CACHE_TTL = 30
 
+RT_USER_AGENT = "GTFS2-HomeAssistant/1.0 (+https://github.com/vingerha/gtfs2)"
+
+
+def _with_user_agent(headers):
+    """The request headers with a User-Agent naming the integration.
+
+    requests announces itself as python-requests, which some agency gateways
+    refuse outright: the Azure Application Gateway in front of the TTC feeds
+    answers 403 to it. Naming the client is enough to pass, and the address
+    lets an operator see who is calling.
+    """
+    merged = {"User-Agent": RT_USER_AGENT}
+    if headers:
+        merged.update(headers)
+    return merged
+
 
 def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
     """Return the feed entities, fetching at most once per TTL and per feed.
@@ -147,7 +163,7 @@ def _fetch_gtfs_feed_entities(url: str, headers, label: str):
         requests_session.mount('file://', LocalFileAdapter())
         response = requests_session.get(url)   
     else:
-        response = requests.get(url, headers=headers, timeout=20)
+        response = requests.get(url, headers=_with_user_agent(headers), timeout=20)
 
     # Success is the status code plus a body that parses below. Grepping the
     # decoded body for error phrases rejected valid feeds whose own free text
@@ -916,7 +932,7 @@ def get_gtfs_rt(hass, path, data):
             return "no_rt_data_file" 
         return "ok"                                
     try:
-        r = requests.get(url, headers = _headers , allow_redirects=True)
+        r = requests.get(url, headers=_with_user_agent(_headers), allow_redirects=True)
         open(os.path.join(gtfs_dir, file), "wb").write(r.content)
         if r.status_code != 200:
             _LOGGER.error("Ìssues with downloading GTFS RT data, error: %s, content: %s", r.status_code, r.content)
@@ -1089,7 +1105,7 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
     #url = "https://bustime.mta.info/api/siri/stop-monitoring.json?key=f4f9c18e-0550-4cc7-bc36-275715015673&OperatorRef=MTA"
     
     url = url + f"&MonitoringRef={stop_id}"
-    response = requests.get(url, headers=headers, timeout=20)
+    response = requests.get(url, headers=_with_user_agent(headers), timeout=20)
 
     json_object = json.loads(response.content)
     feed = json_object
