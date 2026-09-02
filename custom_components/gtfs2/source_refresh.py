@@ -148,6 +148,49 @@ def check_hours(interval: int, file) -> tuple[list[int], int, int]:
     return hours, minute, second
 
 
+def next_check_at(hass: HomeAssistant, entry: ConfigEntry,
+                  fallback_last=None):
+    """When the next scheduled look at this source is due, or None.
+
+    The tick pattern is check_hours'; for the cadences slower than daily the
+    elapsed-time gate of async_check_source decides which of those ticks
+    counts, so the same gate is replayed here rather than promising a look
+    that would be skipped. The caller passes the zip's downloaded_at as
+    fallback_last, exactly as the gate falls back on it, because this runs
+    on the loop and must not read a file to find out.
+
+    Indicative to the hour across a DST boundary: the real schedule is
+    async_track_time_change's, which handles the fold itself.
+    """
+    mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
+    if mode == STATIC_REFRESH_OFF:
+        return None
+    if entry.data.get(CONF_EXTRACT_FROM, "url") != "url":
+        # a zip source has no host to ask, so nothing is ever scheduled
+        return None
+    file = entry.data.get(CONF_FILE)
+    interval = check_interval(entry)
+    hours, minute, second = check_hours(interval, file)
+    now = dt_util.now()
+    earliest = now
+    if interval > 24:
+        last = probe_state(hass, file).get("checked_at") or fallback_last
+        last_dt = dt_util.parse_datetime(last) if last else None
+        if last_dt:
+            earliest = max(
+                now, dt_util.as_local(last_dt + timedelta(hours=interval - 12)))
+    # the pattern repeats daily, so the first eligible tick is days away at
+    # most as many days as the slowest interval allows
+    for day in range((MAX_STATIC_CHECK_INTERVAL // 24) + 2):
+        base = (now + timedelta(days=day)).replace(
+            minute=minute, second=second, microsecond=0)
+        for hour in hours:
+            tick = base.replace(hour=hour)
+            if tick > now and tick >= earliest:
+                return tick
+    return None
+
+
 def _zip_path(hass: HomeAssistant, file) -> str:
     return os.path.join(hass.config.path(DEFAULT_PATH), file + ".zip")
 
