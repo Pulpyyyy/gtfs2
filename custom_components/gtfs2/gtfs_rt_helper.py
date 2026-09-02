@@ -317,9 +317,16 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
     # in this case the trip still covers the direction
 
     departure_times = {}
-    
-    if self._vehicle_position_url:   
+
+    if self._vehicle_position_url:
         vehicle_positions = get_rt_vehicle_positions(self)
+
+    # a source can publish alerts or vehicle positions without trip updates
+    # (the TTC subway is alerts-only): no times to match then, the vehicles
+    # above still land on the map and the static timetable keeps the board
+    if not self._trip_update_url:
+        self._feed_entities = None
+        return {}
 
     # feed_entities may be passed in by a caller that already fetched/parsed
     # it once for the current refresh cycle (e.g. matching many stops against
