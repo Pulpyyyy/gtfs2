@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 
+import homeassistant.util.dt as dt_util
 from homeassistant.components.update import UpdateEntity, UpdateEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -32,7 +33,9 @@ from .const import (
 from .source_refresh import (
     SIGNAL_SOURCE_REFRESH,
     async_refresh_source,
+    check_interval,
     installed_meta,
+    next_check_at,
     probe_state,
     source_lock,
     source_meta,
@@ -41,6 +44,14 @@ from .source_refresh import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _when(stamp):
+    """An iso stamp as the local minute a human reads, or None."""
+    moment = dt_util.parse_datetime(stamp) if stamp else None
+    if not moment:
+        return None
+    return dt_util.as_local(moment).strftime("%Y-%m-%d %H:%M")
 
 
 async def async_setup_entry(
@@ -70,7 +81,12 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         self._file = entry.data.get(CONF_FILE)
         self._installed = None
         self._zip_version = None
+        # the sidecars themselves, not just their labels: the attributes
+        # answer from these, so a check costs the two reads it always did
+        self._installed_meta = {}
+        self._zip_meta = {}
         self._attr_unique_id = f"gtfs2_source_update_{self._file}"
+        self._attr_title = f"GTFS static feed - {self._file}"
         # same device as the realtime diagnostic and switch, so the source
         # reads as one
         self._attr_device_info = DeviceInfo(
@@ -84,10 +100,12 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
     async def async_load_versions(self) -> None:
         """Re-read the sidecars; they are files, so never on the loop."""
         def _read():
-            return (version_label(installed_meta(self.hass, self._file)),
-                    version_label(source_meta(_zip_path(self.hass, self._file))))
-        self._installed, self._zip_version = (
+            return (installed_meta(self.hass, self._file),
+                    source_meta(_zip_path(self.hass, self._file)))
+        self._installed_meta, self._zip_meta = (
             await self.hass.async_add_executor_job(_read))
+        self._installed = version_label(self._installed_meta)
+        self._zip_version = version_label(self._zip_meta)
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -142,13 +160,52 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         return source_lock(self.hass, self._file).locked()
 
     @property
+    def release_summary(self):
+        """What the database is, and whether that is known or assumed.
+
+        installed_meta falls back on the zip's sidecar when no build was
+        ever recorded, which asserts that database and zip are the same
+        version. True of the flow's initial import, not of a download whose
+        rebuild failed, so the dialog says which of the two it is looking at.
+        """
+        meta = self._installed_meta
+        if not meta:
+            return None
+        built = _when(meta.get("built_at"))
+        if built:
+            summary = f"Database built {built}"
+        else:
+            summary = ("Database version assumed from the kept zip: no build "
+                       "was ever recorded")
+        downloaded = _when(meta.get("downloaded_at"))
+        if downloaded:
+            summary += f", from a feed downloaded {downloaded}"
+        return summary[:255]
+
+    @property
     def extra_state_attributes(self):
         state = probe_state(self.hass, self._file)
+        meta = self._installed_meta
+        built_at = meta.get("built_at")
+        next_check = next_check_at(self.hass, self._entry,
+                                   fallback_last=meta.get("downloaded_at"))
         return {
             "file": self._file,
             "last_check": state.get("checked_at"),
             "last_check_result": state.get("result"),
             "zip_version": self._zip_version,
+            # what the database is made of, and how sure of it we are
+            "built_at": built_at,
+            "downloaded_at": meta.get("downloaded_at"),
+            "version_source": "recorded" if built_at else "assumed",
+            # the url the bytes actually came from, redirects followed
+            "source_url": meta.get("url"),
+            "source_size": meta.get("size"),
+            # the schedule, so the entity says when it will look next
+            "refresh_mode": self._entry.options.get(CONF_STATIC_REFRESH_MODE,
+                                                    STATIC_REFRESH_OFF),
+            "check_interval": check_interval(self._entry),
+            "next_check": next_check,
         }
 
     async def async_install(self, version, backup: bool, **kwargs) -> None:
