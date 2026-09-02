@@ -282,6 +282,10 @@
           "max_local_stops": "Above this many stops the sensor gets slow. Raise it at your own risk.",
           "source_timezone_correction": "Only if the source publishes times in another timezone, in hours.",
           "check_source_dates": "Experimental: refuse a new file whose dates are all in the future."
+        },
+        "menu_options": {
+          "real_time": "Realtime feeds",
+          "static_refresh": "Static feed updates"
         }
       },
       "real_time": {
@@ -313,6 +317,18 @@
           "api_key_location": "In the web address, or in the request header.",
           "accept": "Only applies when the key goes in the header."
         }
+      },
+      "static_refresh": {
+        "title": "Static feed updates",
+        "description": "What this source does about new versions of its timetable feed. **Notify** asks the host at the check time with one tiny request and says when a new version exists, so you or an automation decide when to install. **Install automatically** installs it right away. Sensors keep answering during an install; the switch to the new data happens in one go.",
+        "data": {
+          "static_refresh_mode": "On a new version",
+          "static_check_time": "Check time"
+        },
+        "data_description": {
+          "static_refresh_mode": "Off changes nothing for this source.",
+          "static_check_time": "One check per day, at this time. Prefilled with a slot of the source's own, so sources spread out."
+        }
       }
     },
     "abort": {
@@ -325,6 +341,13 @@
         "not_applicable": "No key needed (most sources)",
         "header": "In the request header",
         "query_string": "In the web address"
+      }
+    },
+    "static_refresh_mode": {
+      "options": {
+        "off": "Do nothing",
+        "notify": "Notify, install on demand",
+        "auto": "Install automatically"
       }
     }
   },
@@ -502,6 +525,8 @@
     "reason_tables_missing": "unpacking stopped before it wrote every table",
     "reason_unfinished": "unpacking did not finish",
     "reason_tables_empty": "some tables came out empty",
-    "reason_unreadable": "the database is unreadable"
+    "reason_unreadable": "the database is unreadable",
+    "source_update_available_title": "GTFS: {file} has a new version",
+    "source_update_available": "The source published a new timetable feed ({version}).\n\nInstall it from the **Static feed** update entity of {file}, or let your automation do it. The current data keeps serving until the install swaps it in, in one go."
   }
 }
