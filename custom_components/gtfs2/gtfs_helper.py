@@ -65,6 +65,11 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     Returns a plain 'YYYY-MM-DD' string, and None when no service is found
     within horizon: a route can legitimately have no trips left at all.
     """
+    # the coordinator calls this with whatever get_gtfs returned, which is a
+    # sentinel string or None when the datasource is unusable
+    if not isinstance(schedule, pygtfs.Schedule):
+        _LOGGER.warning("No usable schedule to look up the next service date (%s)", schedule or "empty")
+        return None
     if route_type == "2":
         # trains match on stop_name, like get_next_departure does
         origin_where = ("o.stop_id in (select stop_id from stops "
