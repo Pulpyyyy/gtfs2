@@ -64,11 +64,11 @@ from .const import (
     WHEELCHAIR_BOARDING_OPTIONS,
     CONF_KIND,
     ENTRY_KIND_DATASOURCE,
-    CONF_TRIP_UPDATE_URL,
     CONF_FILE,
     CONF_RT_ENABLED,
 )
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
+from .rt_source import has_rt_feed
 from .rt_window import window_state
 
 _LOGGER = logging.getLogger(__name__)
@@ -137,7 +137,7 @@ class GTFSDatasourceRTSensor(SensorEntity):
 
     @property
     def native_value(self):
-        if not self._entry.options.get(CONF_TRIP_UPDATE_URL):
+        if not has_rt_feed(self._entry.options):
             return "off"
         if not self._entry.options.get(CONF_RT_ENABLED, True):
             # silenced by its switch: the config is there, nobody reads it
