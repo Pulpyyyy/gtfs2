@@ -66,8 +66,9 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     within horizon: a route can legitimately have no trips left at all.
     """
     # the coordinator calls this with whatever get_gtfs returned, which is a
-    # sentinel string or None when the datasource is unusable
-    if not isinstance(schedule, pygtfs.Schedule):
+    # sentinel string or None when the datasource is unusable. Matched by
+    # shape, not by class: anything schedule-shaped may query
+    if schedule is None or isinstance(schedule, str):
         _LOGGER.warning("No usable schedule to look up the next service date (%s)", schedule or "empty")
         return None
     if route_type == "2":
