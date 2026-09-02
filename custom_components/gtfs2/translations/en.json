@@ -313,10 +313,12 @@
         "title": "Static feed updates",
         "description": "What this source does about new versions of its timetable feed. **Notify** asks the host at the check time with one tiny request and says when a new version exists, so you or an automation decide when to install. **Install automatically** installs it right away. Sensors keep answering during an install; the switch to the new data happens in one go.",
         "data": {
+          "url": "Feed address",
           "static_refresh_mode": "On a new version",
           "static_check_time": "Check time"
         },
         "data_description": {
+          "url": "Where the zip is downloaded from. Change it when the provider moves or renumbers its urls; the name and everything built from the feed stay.",
           "static_refresh_mode": "Off changes nothing for this source.",
           "static_check_time": "One check per day, at this time. Prefilled with a slot of the source's own, so sources spread out."
         }
@@ -324,6 +326,9 @@
     },
     "abort": {
       "stop_limit_reached": "Detected a high number of stops for this radius, \npossibly impacting system performance. \n You can change the limit at your own risk before changing the radius"
+    },
+    "error": {
+      "invalid_source_url": "The address must start with http:// or https://"
     }
   },
   "selector": {
