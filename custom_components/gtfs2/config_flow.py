@@ -31,6 +31,7 @@ from .const import (
     CONF_ALERTS_URL,
     CONF_URL,
     CONF_EXTRACT_FROM,
+    CONF_ONLY_ROUTES,
     CONF_FILE,
     CONF_DEVICE_TRACKER_ID,
     CONF_AGENCY,
@@ -52,6 +53,7 @@ from .const import (
     CONF_MAX_LOCAL_STOPS
 )    
 
+from .gtfs_filter import read_zip_routes
 from .gtfs_helper import (
     get_gtfs,
     get_next_departure,
@@ -185,14 +187,61 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                 errors=errors,
             )
-        check_data = await self._check_data(user_input)
-        if check_data :
-            errors["base"] = check_data
-            return self.async_abort(reason=check_data, description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS)
-        else:
-            self._user_inputs.update(user_input)
-            _LOGGER.debug(f"UserInputs Source: {self._user_inputs}")
-            return await self.async_step_agency()            
+        self._user_inputs.update(user_input)
+        _LOGGER.debug(f"UserInputs Source: {self._user_inputs}")
+        # the zip first and nothing else: with the feed on disk but not yet
+        # imported, the lines it carries can be offered, and a national feed
+        # does not have to be unpacked whole to find out what is in it
+        ensure = await self.hass.async_add_executor_job(
+            get_gtfs, self.hass, DEFAULT_PATH, self._user_inputs, False, True
+        )
+        if ensure != "downloaded":
+            # every other answer means the feed is not usable: the known codes
+            # are worded already, anything else is reported rather than walked past
+            reason = ensure if ensure in ("no_data_file", "no_zip_file", "extracting") else "generic_failure"
+            errors["base"] = reason
+            return self.async_abort(reason=reason, description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS)
+        return await self.async_step_source_routes()
+
+    async def async_step_source_routes(self, user_input: dict | None = None) -> FlowResult:
+        """Offer the lines of the feed, so the import can keep only some.
+
+        Optional by design: leaving it empty imports the feed whole, which is
+        what happened before this step existed. Picking lines cuts the feed
+        down before pygtfs sees it, which is the only moment where a national
+        feed can be made small: pygtfs pays per row, so an import of the whole
+        feed followed by a cleanup has already cost the time and the disk.
+        """
+        if user_input is not None:
+            # the option carries "id: label", like every other picker here;
+            # only the id means anything to the filter
+            picked = user_input.get(CONF_ONLY_ROUTES) or []
+            self._user_inputs[CONF_ONLY_ROUTES] = [
+                option.split(": ")[0] for option in picked] or None
+            _LOGGER.debug(f"UserInputs Source routes: {self._user_inputs}")
+            return await self.async_step_agency()
+        zip_path = self.hass.config.path(
+            DEFAULT_PATH, self._user_inputs[CONF_FILE] + ".zip")
+        routes = await self.hass.async_add_executor_job(read_zip_routes, zip_path)
+        if not routes:
+            # nothing readable to offer: import the feed whole, as before
+            return await self.async_step_agency()
+        options = sorted(
+            (f"{r['route_id']}: "
+             f"{r.get('route_short_name') or r.get('route_long_name') or ''}".strip()
+             for r in routes if r.get('route_id')),
+            key=lambda label: label.lower())
+        return self.async_show_form(
+            step_id="source_routes",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_ONLY_ROUTES): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=options, multiple=True)
+                    ),
+                }
+            ),
+            description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+        )
 
     async def async_step_remove(self, user_input: dict | None = None) -> FlowResult:
         """Handle a flow initialized by the user."""
