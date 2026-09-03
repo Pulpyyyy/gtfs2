@@ -313,10 +313,51 @@
           "api_key_location": "No endereço web, ou no cabeçalho do pedido.",
           "accept": "Só se aplica se a chave for no cabeçalho."
         }
+      },
+      "source_menu": {
+        "title": "Fonte de dados",
+        "description": "Tudo o que pertence a esta fonte e é partilhado por todos os sensores que a leem: os seus feeds em tempo real e o seu ficheiro de horários, com a sua origem e o que fazer com as novas versões.",
+        "menu_options": {
+          "real_time": "Feeds em tempo real",
+          "static_refresh": "Ficheiro de horários e atualizações"
+        }
+      },
+      "static_refresh": {
+        "title": "Ficheiro de horários e atualizações",
+        "description": "De onde vem o ficheiro de horários desta fonte e o que fazer com as novas versões. Cada atualização, seja daqui, da entidade de atualização ou do serviço update_gtfs, usa o endereço e a chave abaixo. **Notificar** pergunta ao fornecedor com um pedido mínimo, ao ritmo escolhido, e avisa quando existe uma nova versão, para que você ou uma automação decidam quando instalar. **Instalar automaticamente** instala-a de imediato. Os sensores continuam a responder durante a instalação; a mudança para os novos dados acontece de uma só vez.",
+        "data": {
+          "url": "Endereço do feed",
+          "needs_api_key": "Isto requer uma chave API",
+          "static_refresh_mode": "Perante uma nova versão",
+          "static_check_interval": "Frequência de verificação"
+        },
+        "data_description": {
+          "url": "De onde o zip é descarregado. Altere-o quando o fornecedor mudar ou renumerar os seus endereços; o nome e tudo o que foi construído a partir do feed mantêm-se.",
+          "needs_api_key": "Marque isto se o fornecedor lhe deu uma chave para descarregar o ficheiro. Desmarque para remover uma chave de que a fonte já não precisa.",
+          "static_refresh_mode": "Desligado não muda nada para esta fonte.",
+          "static_check_interval": "Em horas: 24 é diário, 360 é de 15 em 15 dias. O momento exato é escolhido por si, de noite para os ritmos diários e mais lentos, e escalonado por fonte para repartir as atualizações."
+        }
+      },
+      "static_refresh_key": {
+        "title": "Chave do ficheiro de horários",
+        "description": "O fornecedor indica-as na sua documentação. A chave já guardada é mostrada, pelo que uma chave rodada significa apenas escrever a nova.\n\n[documentação]({docu_extracting})",
+        "data": {
+          "api_key": "Chave API",
+          "api_key_name": "Nome esperado pelo fornecedor",
+          "api_key_location": "Onde vai a chave"
+        },
+        "data_description": {
+          "api_key": "A própria chave, copiada do fornecedor.",
+          "api_key_name": "A palavra colocada antes da sua chave. No endereço: `?`**`apikey`**`=A_SUA_CHAVE`. Num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`. Difere entre fornecedores (`apikey`, `api_key`, `app_key`, `Authorization`) e distingue maiúsculas de minúsculas.",
+          "api_key_location": "No endereço web, ou no cabeçalho do pedido."
+        }
       }
     },
     "abort": {
       "stop_limit_reached": "Foi detectado um grande número de paragens neste raio, \nrisco de impacto no desempenho do sistema. \n Pode alterar o limite por sua conta e risco antes de alterar o raio"
+    },
+    "error": {
+      "invalid_source_url": "O endereço deve começar por http:// ou https://"
     }
   },
   "selector": {
@@ -325,6 +366,13 @@
         "not_applicable": "Nenhuma chave necessária (a maioria das fontes)",
         "header": "No cabeçalho do pedido",
         "query_string": "No endereço web"
+      }
+    },
+    "static_refresh_mode": {
+      "options": {
+        "off": "Não fazer nada",
+        "notify": "Notificar, instalar a pedido",
+        "auto": "Instalar automaticamente"
       }
     }
   },
@@ -502,6 +550,8 @@
     "reason_tables_missing": "a descompactação parou antes de escrever todas as tabelas",
     "reason_unfinished": "a descompactação não chegou ao fim",
     "reason_tables_empty": "algumas tabelas ficaram vazias",
-    "reason_unreadable": "a base de dados está ilegível"
+    "reason_unreadable": "a base de dados está ilegível",
+    "source_update_available_title": "GTFS: {file} tem uma nova versão",
+    "source_update_available": "A fonte publicou um novo feed de horários ({version}).\n\nInstale-o a partir da entidade de atualização **Feed estático** de {file}, ou deixe a sua automação fazê-lo. Os dados atuais continuam a servir até que a instalação os substitua, de uma só vez."
   }
 }

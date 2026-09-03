@@ -313,10 +313,51 @@
           "api_key_location": "In der Web-Adresse oder im Anfrage-Header.",
           "accept": "Nur wirksam, wenn der Schlüssel im Header steht."
         }
+      },
+      "source_menu": {
+        "title": "Datenquelle",
+        "description": "Alles, was zu dieser Quelle gehört und von jedem Sensor geteilt wird, der sie liest: ihre Echtzeit-Feeds und ihre Fahrplandatei, mit ihrer Herkunft und dem Umgang mit neuen Versionen.",
+        "menu_options": {
+          "real_time": "Echtzeit-Feeds",
+          "static_refresh": "Fahrplandatei und Aktualisierungen"
+        }
+      },
+      "static_refresh": {
+        "title": "Fahrplandatei und Aktualisierungen",
+        "description": "Woher die Fahrplandatei dieser Quelle stammt und was mit neuen Versionen geschehen soll. Jede Aktualisierung, ob von hier, über die Update-Entität oder über den Dienst update_gtfs, verwendet die Adresse und den Schlüssel unten. **Benachrichtigen** fragt den Anbieter im gewählten Rhythmus mit einer winzigen Anfrage und meldet, wenn eine neue Version vorliegt, damit Sie oder eine Automatisierung über den Zeitpunkt entscheiden. **Automatisch installieren** installiert sie sofort. Die Sensoren antworten während einer Installation weiter; die Umschaltung auf die neuen Daten erfolgt in einem Zug.",
+        "data": {
+          "url": "Feed-Adresse",
+          "needs_api_key": "Dafür ist ein API-Schlüssel nötig",
+          "static_refresh_mode": "Bei einer neuen Version",
+          "static_check_interval": "Prüfintervall"
+        },
+        "data_description": {
+          "url": "Von wo die ZIP-Datei heruntergeladen wird. Ändern Sie sie, wenn der Anbieter seine Adressen verschiebt oder neu nummeriert; der Name und alles aus dem Feed Aufgebaute bleiben erhalten.",
+          "needs_api_key": "Aktivieren, wenn der Anbieter Ihnen einen Schlüssel zum Herunterladen der Datei gegeben hat. Deaktivieren, um einen Schlüssel zu entfernen, den die Quelle nicht mehr braucht.",
+          "static_refresh_mode": "Aus ändert für diese Quelle nichts.",
+          "static_check_interval": "In Stunden: 24 ist täglich, 360 alle 15 Tage. Der genaue Zeitpunkt wird für Sie gewählt, nachts bei täglichen und langsameren Rhythmen, und je Quelle versetzt, damit sich die Aktualisierungen verteilen."
+        }
+      },
+      "static_refresh_key": {
+        "title": "Schlüssel der Fahrplandatei",
+        "description": "Der Anbieter nennt diese in seiner Dokumentation. Der bereits gespeicherte Schlüssel wird angezeigt, sodass ein gewechselter Schlüssel nur bedeutet, den neuen einzugeben.\n\n[Dokumentation]({docu_extracting})",
+        "data": {
+          "api_key": "API-Schlüssel",
+          "api_key_name": "Vom Anbieter erwarteter Name",
+          "api_key_location": "Wohin der Schlüssel gehört"
+        },
+        "data_description": {
+          "api_key": "Der Schlüssel selbst, vom Anbieter kopiert.",
+          "api_key_name": "Das Wort, das vor Ihrem Schlüssel steht. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. In einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Es unterscheidet sich je Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`) und beachtet Groß- und Kleinschreibung.",
+          "api_key_location": "In der Webadresse oder im Anfrage-Header."
+        }
       }
     },
     "abort": {
       "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern"
+    },
+    "error": {
+      "invalid_source_url": "Die Adresse muss mit http:// oder https:// beginnen"
     }
   },
   "selector": {
@@ -325,6 +366,13 @@
         "not_applicable": "Kein Schlüssel nötig (die meisten Quellen)",
         "header": "Im Anfrage-Header",
         "query_string": "In der Web-Adresse"
+      }
+    },
+    "static_refresh_mode": {
+      "options": {
+        "off": "Nichts tun",
+        "notify": "Benachrichtigen, auf Wunsch installieren",
+        "auto": "Automatisch installieren"
       }
     }
   },
@@ -502,6 +550,8 @@
     "reason_tables_missing": "das Entpacken brach ab, bevor alle Tabellen geschrieben waren",
     "reason_unfinished": "das Entpacken wurde nicht abgeschlossen",
     "reason_tables_empty": "einige Tabellen sind leer geblieben",
-    "reason_unreadable": "die Datenbank ist unlesbar"
+    "reason_unreadable": "die Datenbank ist unlesbar",
+    "source_update_available_title": "GTFS: {file} hat eine neue Version",
+    "source_update_available": "Die Quelle hat einen neuen Fahrplan-Feed veröffentlicht ({version}).\n\nInstallieren Sie ihn über die Update-Entität **Statischer Feed** von {file}, oder lassen Sie es Ihre Automatisierung tun. Die aktuellen Daten liefern weiter, bis die Installation sie in einem Zug ersetzt."
   }
 }
