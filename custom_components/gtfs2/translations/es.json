@@ -239,7 +239,7 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Fuente de datos eliminada, esto puede afectar a las rutas existentes",
-      "generic_failure": "No se han podido leer las paradas de esta línea. Consulte los registros: la fuente puede estar ocupada o reconstruyéndose.",
+      "generic_failure": "Fallo general, compruebe los registros",
       "stop_incorrect": "Destino inicial y/o final incorrecto, posiblemente no hay transporte 'hoy' o no en la misma dirección, compruebe los registros",
       "no_data_file": "Problema de recopilación de datos: URL incorrecta o nombre de archivo que no está en la carpeta correcta",
       "no_stops": "Problema de recogida de datos: probablemente no hay paradas en la ruta seleccionada",
@@ -248,6 +248,7 @@
       "extracting": "(Todavía) extrayendo datos, esto llevará tiempo [documentación]({docu_extracting})",
       "no_zip_in_folder": "No se encontró ningún archivo .zip en {folder}. Coloque allí su archivo GTFS y vuelva a empezar.",
       "no_routes_with_trips": "Ninguna línea de esta fuente tiene horarios cargados. Ejecute el servicio update_gtfs para recargarla.",
+      "no_stops_read": "No se han podido leer las paradas de esta línea. Consulte los registros: la fuente puede estar ocupada o reconstruyéndose.",
       "reload_failed": "No se ha podido restaurar la línea. Puede que el archivo de red falte o no se pueda leer; la fuente de datos no se ha modificado.",
       "optimised": "Espacio liberado. La fuente ocupa ahora {size}.",
       "finished": "Configuración completada. Puede añadir más trayectos cuando quiera desde la página de la integración.",

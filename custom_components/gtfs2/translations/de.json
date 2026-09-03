@@ -239,7 +239,7 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Datenquelle gelöscht, dies kann sich auf bestehende Routen auswirken",
-      "generic_failure": "Die Haltestellen dieser Linie konnten nicht gelesen werden. Prüfen Sie die Protokolle: die Datenquelle ist möglicherweise belegt oder wird neu aufgebaut.",
+      "generic_failure": "Gesamtfehler, Protokolle prüfen",
       "stop_incorrect": "Start- und/oder Endziel falsch, möglicherweise kein Transport ‚heute‘ oder nicht in die gleiche Richtung, Protokolle prüfen",
       "no_stops": "Problem bei der Datenerfassung: wahrscheinlich keine Stops für die gewählte Route",
       "no_data_file": "Problem bei der Datenerfassung: URL falsch oder Dateiname nicht im richtigen Ordner",
@@ -248,6 +248,7 @@
       "extracting": "Es werden (noch) Daten extrahiert, dies wird einige Zeit dauern [Dokumentation]({docu_extracting})",
       "no_zip_in_folder": "Keine .zip-Datei in {folder} gefunden. Legen Sie dort Ihre GTFS-Zip-Datei ab und beginnen Sie erneut.",
       "no_routes_with_trips": "Keine Linie dieser Datenquelle hat einen Fahrplan geladen. Führen Sie den Dienst update_gtfs aus, um sie neu zu laden.",
+      "no_stops_read": "Die Haltestellen dieser Linie konnten nicht gelesen werden. Prüfen Sie die Protokolle: die Datenquelle ist möglicherweise belegt oder wird neu aufgebaut.",
       "reload_failed": "Die Linie konnte nicht wiederhergestellt werden. Die Netzdatei fehlt möglicherweise oder ist unlesbar; die Datenquelle selbst blieb unverändert.",
       "optimised": "Speicherplatz freigegeben. Die Quelle belegt jetzt {size}.",
       "finished": "Einrichtung abgeschlossen. Weitere Fahrten können Sie jederzeit auf der Integrationsseite hinzufügen.",
