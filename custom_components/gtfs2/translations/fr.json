@@ -218,7 +218,6 @@
       "extracting": "Extraction des données en cours, cela prend du temps [documentation]({docu_extracting})",
       "no_zip_in_folder": "Aucun fichier .zip trouvé dans {folder}. Déposez-y votre fichier GTFS, puis recommencez.",
       "no_routes_with_trips": "Aucune ligne de cette source n'a d'horaires chargés. Lancez le service update_gtfs pour la recharger depuis la source.",
-      "generic_failure": "Échec global, vérifiez les logs d'érreur",
       "no_stops_read": "Impossible de lire les arrêts de cette ligne. Consultez les journaux : la source est peut-être occupée ou en cours de reconstruction.",
       "reload_failed": "La ligne n'a pas pu être rétablie. Le fichier réseau est peut-être absent ou illisible ; la source de données, elle, n'a pas été modifiée.",
       "optimised": "Espace disque libéré. La source occupe maintenant {size}.",
