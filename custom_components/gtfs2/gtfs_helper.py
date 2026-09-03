@@ -90,13 +90,13 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
         _LOGGER.warning("No usable schedule to look up the next service date (%s)", schedule or "empty")
         return None
     if route_type == "2":
-        # trains match on stop_name, like get_next_departure does
+        # trains match on the exact stop_name, like get_next_departure does
         origin_where = ("o.stop_id in (select stop_id from stops "
-                        "where stop_name like :origin)")
+                        "where stop_name = :origin)")
         dest_where = ("x.stop_id in (select stop_id from stops "
-                      "where stop_name like :dest)")
-        origin_id = str(origin_id) + "%"
-        dest_id = str(dest_id) + "%"
+                      "where stop_name = :dest)")
+        origin_id = str(origin_id)
+        dest_id = str(dest_id)
     else:
         origin_where = "o.stop_id = :origin"
         dest_where = "x.stop_id = :dest"
