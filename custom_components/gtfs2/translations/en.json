@@ -149,15 +149,24 @@
         "data": {
           "origin": "Departure station",
           "destination": "Arrival station",
-          "name": "Sensor name",
           "include_tomorrow": "Also show tomorrow's departures at the end of the day's service"
         },
         "description": "The sensor will show the next trains between two stations.\n\n[documentation]({docu_setup_train})",
         "data_description": {
           "origin": "Stations served by this route. A station appears once here, even when the feed splits it into several stops.",
           "destination": "Same list. Pick the one you travel to.",
-          "name": "Shown on your dashboard, for example `Train to Lille`.",
           "include_tomorrow": "Without this, the sensor is empty between the last departure of the day and the first of the next."
+        }
+      },
+      "sensor_train": {
+        "data": {
+          "name": "Sensor name",
+          "add_return": "Also create the return journey"
+        },
+        "description": "The sensor will show the next trains for **{trip}**.",
+        "data_description": {
+          "name": "Suggested from the line and the stations, change it freely.",
+          "add_return": "A second sensor for **{return_trip}**, the same journey the other way."
         }
       },
       "remove": {
