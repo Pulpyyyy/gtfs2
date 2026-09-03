@@ -58,6 +58,101 @@ from .gtfs_filter import (
 _LOGGER = logging.getLogger(__name__)
 
 
+# How far ahead get_next_service_date is allowed to look. A route that has not
+# run for three months is not "resuming later", it is out of the feed, and an
+# unbounded scan would walk the whole calendar to say so.
+NEXT_SERVICE_HORIZON_DAYS = 90
+
+
+def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3",
+                          horizon=NEXT_SERVICE_HORIZON_DAYS):
+    """Return the first date on or after from_date that this trip runs, or None.
+
+    include_tomorrow only ever reaches J+1, so a line that rests over the
+    weekend or a holiday leaves the sensor blank with nothing to show. This
+    answers the question the user actually asks in that gap: not "is there a
+    bus today", but "when is the next one".
+
+    Both calendar shapes are read, because feeds use either: calendar holds
+    weekday flags over a validity window, calendar_dates holds explicit
+    additions and removals. TAO publishes everything through calendar_dates
+    with every weekday flag at 0, so reading calendar alone would find nothing.
+
+    Returns a plain 'YYYY-MM-DD' string, and None when no service is found
+    within horizon: a route can legitimately have no trips left at all.
+    """
+    # the coordinator calls this with whatever get_gtfs returned, which is a
+    # sentinel string or None when the datasource is unusable. Matched by
+    # shape, not by class: anything schedule-shaped may query
+    if schedule is None or isinstance(schedule, str):
+        _LOGGER.warning("No usable schedule to look up the next service date (%s)", schedule or "empty")
+        return None
+    if route_type == "2":
+        # trains match on stop_name, like get_next_departure does
+        origin_where = ("o.stop_id in (select stop_id from stops "
+                        "where stop_name like :origin)")
+        dest_where = ("x.stop_id in (select stop_id from stops "
+                      "where stop_name like :dest)")
+        origin_id = str(origin_id) + "%"
+        dest_id = str(dest_id) + "%"
+    else:
+        origin_where = "o.stop_id = :origin"
+        dest_where = "x.stop_id = :dest"
+
+    sql = f"""
+        with recursive dates(d) as (
+            select date(:from_date)
+            union all
+            select date(d, '+1 day') from dates
+            where d < date(:from_date, :horizon)
+        ),
+        serving as (
+            select distinct t.service_id
+            from trips t
+            inner join stop_times o on o.trip_id = t.trip_id
+            inner join stop_times x on x.trip_id = t.trip_id
+            where {origin_where} and {dest_where}
+              and o.stop_sequence < x.stop_sequence
+        )
+        select min(dates.d) from dates
+        where exists (
+            select 1 from serving s
+            inner join calendar cal on cal.service_id = s.service_id
+            where cal.start_date <= dates.d and cal.end_date >= dates.d
+              and (case cast(strftime('%w', dates.d) as int)
+                     when 0 then cal.sunday   when 1 then cal.monday
+                     when 2 then cal.tuesday  when 3 then cal.wednesday
+                     when 4 then cal.thursday when 5 then cal.friday
+                     else cal.saturday end) = 1
+              and not exists (
+                  select 1 from calendar_dates cx
+                  where cx.service_id = s.service_id
+                    and cx.date = dates.d and cx.exception_type = 2))
+        or exists (
+            select 1 from serving s
+            inner join calendar_dates cd on cd.service_id = s.service_id
+            where cd.date = dates.d and cd.exception_type = 1)
+    """  # noqa: S608
+
+    try:
+        with schedule.engine.connect() as conn:
+            row = conn.execute(text(sql), {
+                "origin": origin_id,
+                "dest": dest_id,
+                "from_date": from_date,
+                "horizon": f"+{int(horizon)} days",
+            }).fetchone()
+    except Exception as ex:  # pylint: disable=broad-except
+        # never let a lookup that only enriches an attribute break the update
+        _LOGGER.warning("Could not determine next service date: %s", ex)
+        return None
+
+    result = row[0] if row else None
+    _LOGGER.debug("Next service date for %s -> %s from %s: %s",
+                  origin_id, dest_id, from_date, result)
+    return str(result)[:10] if result else None
+
+
 def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
                            now, now_date, yesterday, tomorrow, tomorrow_date, schedule,
                            direction=None, route=None, line=None):
@@ -404,9 +499,11 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
     _LOGGER.debug("Item(s) from SQL: %s", item)
     
     if item == {}:
-        data_returned = {        
-        "gtfs_updated_at": dt_util.utcnow().isoformat(),
-        }
+        # No departure to show. Keep returning an empty dict: callers test this
+        # value for truth and then read the fields of a real departure, so a
+        # non-empty "there is nothing" would be read as a departure and crash.
+        # The date of the next service is published separately, by the
+        # coordinator, through get_next_service_date.
         _LOGGER.info("No items found in gtfs")
         return {}
 
@@ -453,9 +550,11 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
             timetable_remaining.append(dt_util.as_utc(upcoming).isoformat())   
     _LOGGER.debug("Timetable Remaining Departures on this Start/Stop: %s", timetable_remaining)
     if item == {}:
-        data_returned = {        
-        "gtfs_updated_at": dt_util.utcnow().isoformat(),
-        }
+        # No departure to show. Keep returning an empty dict: callers test this
+        # value for truth and then read the fields of a real departure, so a
+        # non-empty "there is nothing" would be read as a departure and crash.
+        # The date of the next service is published separately, by the
+        # coordinator, through get_next_service_date.
         _LOGGER.info("No items found in gtfs")
         return {}
     

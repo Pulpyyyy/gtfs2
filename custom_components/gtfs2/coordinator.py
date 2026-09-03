@@ -27,7 +27,7 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson
+from .gtfs_helper import get_gtfs, get_next_departure, get_next_service_date, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson
 from .gtfs_rt_helper import get_next_services, get_rt_alerts
 
 _LOGGER = logging.getLogger(__name__)
@@ -143,15 +143,43 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                     self._route_export_trip = trip_for_export
                 except Exception as ex:  # pylint: disable=broad-except
                     _LOGGER.error("Error writing route geojson: %s", ex)
+
+            if not self._data["next_departure"]:
+                # Nothing left to show. Look ahead for the next day this journey
+                # runs at all, in a key of its own: next_departure has to stay
+                # empty, the sensor reads its fields as a real departure.
+                #
+                # The search starts today, not tomorrow. A line can run today
+                # with every departure already behind us, and that is not the
+                # same thing as a line resting for days: the sensor tells the
+                # two apart by whether the date it gets back is today's.
+                try:
+                    self._data["next_service_date"] = await self.hass.async_add_executor_job(
+                        get_next_service_date, self._pygtfs,
+                        data["origin"].split(": ")[0], data["destination"].split(": ")[0],
+                        (dt_util.now() + timedelta(
+                            minutes=self._data.get("offset", 0) or 0)).strftime("%Y-%m-%d"),
+                        data["route_type"],
+                    )
+                except Exception as ex:  # pylint: disable=broad-except
+                    # only enriches an attribute: never fail the update over it
+                    _LOGGER.warning("Could not get next service date: %s", ex)
+                    self._data["next_service_date"] = None
         
         # collect and return rt attributes
         # STILL REQUIRES A SOLUTION IF CONNECTION TIMING OUT
         if "real_time" in options:
             if options["real_time"]:
+                # No next_departure does NOT mean no bus: the last scheduled
+                # departure of the day can still be on its way, late, and the
+                # realtime feed is the only one who knows. Skipping the whole
+                # block here (the first fix for the origin_stop_sequence
+                # KeyError) made that bus vanish from the board while the map
+                # still showed it rolling. The block now runs with fallbacks
+                # taken from the config entry instead; every read below is a
+                # .get, which is what the KeyError actually required.
                 if not self._data.get("next_departure"):
-                    # when there are no more departures, skip the realtime block
-                    _LOGGER.debug("GTFS RT: no next departure for this entry, skipping realtime update")
-                    return self._data
+                    _LOGGER.debug("GTFS RT: no scheduled departure left, realtime runs on config-entry fallbacks")
                 self._get_next_service = {}
                 """Initialize the info object."""
                 self._route_delimiter = None
@@ -177,10 +205,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 if self._route_id == None:
                     _LOGGER.debug("GTFS RT: no route_id in sensor data, using route_id from config_entry")
                     self._route_id = data["route"].split(": ")[0]
-                self._stop_id = self._data["next_departure"].get("origin_stop_id","no_origin_stop: no_origin_stop").split(": ")[0]
-                self._stop_sequence = self._data["next_departure"]["origin_stop_sequence"]
+                self._stop_id = self._data["next_departure"].get("origin_stop_id", data["origin"]).split(": ")[0]
+                self._stop_sequence = self._data["next_departure"].get("origin_stop_sequence", None)
                 self._destination_id = data["destination"].split(": ")[0]
-                self._trip_id = self._data.get('next_departure', {}).get('trip_id', None) 
+                self._trip_id = self._data.get('next_departure', {}).get('trip_id', None) or "no_trip_information"
                 self._trip_short_name = self._data.get('next_departure', {}).get('trip_short_name', None) 
                 self._direction = str(self._data.get('next_departure', {}).get('trip_direction_id', data["direction"]))
                 self._trip_list = self._data["next_departure"].get("next_departures_trip_id", [])[:10]
