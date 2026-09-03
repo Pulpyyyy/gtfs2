@@ -311,13 +311,17 @@ PRUNE_SERVICE_DEPENDENTS = (
     ("calendar", "feed_id"),
     ("calendar_dates", "feed_id"),
 )
-# a service no surviving trip runs on, expressed against the kept trips rather
-# than against the trips table, so it reads the same before and after those
-# rows are deleted
+# a service no surviving trip runs on. Asked of gtfs2_keep_services, which is
+# collected once from the kept trips, so it reads the same before and after the
+# trips rows are deleted - and so that the answer is one indexed probe.
+#
+# Reaching through trips here instead was measured to be the wrong shape: with
+# no index on trips(service_id), SQLite could only narrow on feed_id, so every
+# row of calendar_dates walked every trip of the feed. On the SNCF feed that is
+# 175557 x 40055 probes, and the prune did not come back within ten minutes.
 _ORPHAN_SERVICE = """not exists (
-    select 1 from trips t
-    inner join gtfs2_keep k on k.feed_id = t.feed_id and k.trip_id = t.trip_id
-    where t.feed_id = {table}.{feed_col} and t.service_id = {table}.service_id)"""
+    select 1 from gtfs2_keep_services s
+    where s.feed_id = {table}.{feed_col} and s.service_id = {table}.service_id)"""
 
 
 def optimise_datasource(gtfs_dir, filename, keep_routes=None):
@@ -403,6 +407,16 @@ def prune_gtfs_datasource(gtfs_dir, filename, keep_routes, dry_run=False):
             _LOGGER.error("Cannot prune %s: routes %s match no trips, aborting to avoid data loss",
                           filename, keep_routes)
             return None
+
+        # the services those trips run on, collected once and keyed, so the
+        # calendar rebuilds below probe an index instead of scanning trips
+        cur.execute("create temp table gtfs2_keep_services("
+                    "feed_id integer, service_id varchar, "
+                    "primary key(feed_id, service_id)) without rowid")
+        cur.execute("insert into gtfs2_keep_services "
+                    "select distinct t.feed_id, t.service_id from trips t "
+                    "inner join gtfs2_keep k "
+                    "on k.feed_id = t.feed_id and k.trip_id = t.trip_id")
 
         stats = {"file": filename, "routes": sorted(keep_routes), "dry_run": dry_run,
                  "trips_before": total_trips, "trips_after": kept_trips,
