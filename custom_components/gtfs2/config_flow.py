@@ -891,7 +891,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # a locked database and a bad route id included
             _LOGGER.error("Error reading the stops of route %s: %s",
                           self._user_inputs.get(CONF_ROUTE), ex)
-            return self.async_abort(reason="generic_failure")
+            return self.async_abort(reason="no_stops_read")
         if not stops:
             _LOGGER.debug("No stops for route: %s", self._user_inputs.get(CONF_ROUTE))
             return self.async_abort(reason="no_stops")
