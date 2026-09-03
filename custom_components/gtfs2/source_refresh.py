@@ -42,12 +42,8 @@ from homeassistant.helpers.event import async_track_time_change
 from .const import (
     DOMAIN,
     DEFAULT_PATH,
-    CONF_API_KEY,
-    CONF_API_KEY_LOCATION,
-    CONF_API_KEY_NAME,
     CONF_EXTRACT_FROM,
     CONF_FILE,
-    CONF_URL,
     CONF_STATIC_CHECK_INTERVAL,
     CONF_STATIC_REFRESH_MODE,
     DEFAULT_STATIC_CHECK_INTERVAL,
@@ -65,7 +61,7 @@ from .freshness import (
     probe_source,
 )
 from .gtfs_helper import _async_notify, refresh_datasource, source_meta
-from .rt_source import journey_entries
+from .rt_source import journey_entries, static_feed_config
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -253,52 +249,51 @@ def refresh_source(hass: HomeAssistant, path, data) -> bool:
 def refresh_data_for(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     """What refresh_datasource needs, assembled from the source's entries.
 
-    The datasource entry owns the identity; the per-config flags and the
-    static api key still live on the journey entries for upstream
-    compatibility, so the first journey entry that carries one speaks for
-    the source.
+    The datasource entry owns the identity and, once it has taken it over,
+    the static key; static_feed_config says which. The per-import flags
+    still live on the journey entries for upstream compatibility, so the
+    first journey entry that carries one speaks for the source.
     """
-    data = {
-        CONF_FILE: entry.data.get(CONF_FILE),
-        CONF_URL: entry.data.get(CONF_URL),
-        CONF_EXTRACT_FROM: entry.data.get(CONF_EXTRACT_FROM, "url"),
-    }
+    data = static_feed_config(hass, entry)
     for journey in journey_entries(hass, data[CONF_FILE]):
-        # the api trio travels together, from the first entry that actually
-        # carries a key: every flow stores api_key_location (usually
-        # "not_applicable"), so taking the fields one by one would let a
-        # keyless entry strip a later keyed entry's authentication
-        if CONF_API_KEY not in data and journey.data.get(CONF_API_KEY):
-            data[CONF_API_KEY] = journey.data[CONF_API_KEY]
-            data[CONF_API_KEY_LOCATION] = journey.data.get(CONF_API_KEY_LOCATION)
-            data[CONF_API_KEY_NAME] = journey.data.get(CONF_API_KEY_NAME)
         for key in _JOURNEY_REFRESH_KEYS:
             if key not in data and key in journey.data:
                 data[key] = journey.data[key]
     return data
 
 
-async def async_refresh_source(hass: HomeAssistant, entry: ConfigEntry,
-                               *, use_zip: bool = False) -> bool:
-    """Refresh one source, serialised per source, and tell its entities.
-
-    use_zip says the fresh feed already sits in the kept zip (a check that
-    had to download to know), so the rebuild reads it instead of
-    downloading the same bytes again.
-    """
-    file = entry.data.get(CONF_FILE)
+async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
+    """One rebuild of a source from an assembled data dict, serialised per
+    source, recorded, and told to its entities. The three triggers meet
+    here: the update entity, the scheduled check and the update service."""
     lock = source_lock(hass, file)
     if lock.locked():
         _LOGGER.info("A refresh of %s is already running", file)
         return False
-    data = refresh_data_for(hass, entry)
-    if use_zip:
-        data[CONF_EXTRACT_FROM] = "zip"
     async with lock:
         ok = await hass.async_add_executor_job(
             refresh_source, hass, DEFAULT_PATH, data)
     async_dispatcher_send(hass, SIGNAL_SOURCE_REFRESH.format(file))
     return ok
+
+
+async def async_refresh_source(hass: HomeAssistant, entry: ConfigEntry,
+                               *, use_zip: bool = False,
+                               flags: dict | None = None) -> bool:
+    """Refresh one source from what the source itself says.
+
+    use_zip says the fresh feed already sits in the kept zip (a check that
+    had to download to know, or a service call asking for it), so the
+    rebuild reads it instead of downloading the same bytes again. flags
+    are the per-import switches a service call may set for this one run.
+    """
+    data = refresh_data_for(hass, entry)
+    if use_zip:
+        data[CONF_EXTRACT_FROM] = "zip"
+    for key in _JOURNEY_REFRESH_KEYS:
+        if flags and key in flags:
+            data[key] = flags[key]
+    return await async_refresh_source_data(hass, entry.data.get(CONF_FILE), data)
 
 
 async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:

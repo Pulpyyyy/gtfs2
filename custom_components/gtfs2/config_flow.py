@@ -99,7 +99,14 @@ from .gtfs_helper import (
 )
 
 from .gtfs_db import import_routes, routes_in, real_path, optimise_datasource
-from .rt_source import RT_OPTION_KEYS, async_ensure_datasource_entry, datasource_entry, journey_entries
+from .rt_source import (
+    RT_OPTION_KEYS,
+    STATIC_KEY_KEYS,
+    async_ensure_datasource_entry,
+    datasource_entry,
+    static_feed_config,
+    static_key_fields,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -177,23 +184,39 @@ def _source_rt_schema(opts):
     }
 
 
-def _source_rt_key_schema(opts):
-    """The realtime api key screen, shown only when the source needs one."""
+def _source_key_schema(previous):
+    """The api key trio, prefilled with what a feed already has.
+
+    One screen for every feed that needs a key: the static feed at creation
+    and on the source's screen, the realtime feeds with one more field. A
+    stored "not_applicable" is not offered back: on this screen a key exists,
+    so it goes somewhere.
+    """
+    location = previous.get(CONF_API_KEY_LOCATION)
+    if location not in ("header", "query_string"):
+        location = "query_string"
     return {
-        vol.Required(CONF_API_KEY, default=opts.get(CONF_API_KEY, "")): cv.string,
+        vol.Required(CONF_API_KEY, default=previous.get(CONF_API_KEY, "")): cv.string,
         vol.Required(
             CONF_API_KEY_NAME,
-            default=opts.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME),
+            default=previous.get(CONF_API_KEY_NAME) or DEFAULT_API_KEY_NAME,
         ): cv.string,
         vol.Required(
             CONF_API_KEY_LOCATION,
-            default=opts.get(CONF_API_KEY_LOCATION, "query_string"),
+            default=location,
         ): selector.SelectSelector(
             selector.SelectSelectorConfig(
                 options=[l for l in ATTR_API_KEY_LOCATIONS if l != "not_applicable"],
                 translation_key="api_key_location",
             )
         ),
+    }
+
+
+def _source_rt_key_schema(opts):
+    """The realtime api key screen, shown only when the source needs one."""
+    return {
+        **_source_key_schema(opts),
         # gtfs_rt_helper only sends this when the key is in a header
         vol.Optional(
             CONF_ACCEPT_HEADER_PB,
@@ -479,24 +502,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             previous = previous or {}
             return self.async_show_form(
                 step_id="source_key",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(CONF_API_KEY, default=previous.get(CONF_API_KEY, "")): str,
-                        vol.Required(
-                            CONF_API_KEY_NAME,
-                            default=previous.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME),
-                        ): str,
-                        vol.Required(
-                            CONF_API_KEY_LOCATION,
-                            default=previous.get(CONF_API_KEY_LOCATION, "query_string"),
-                        ): selector.SelectSelector(
-                            selector.SelectSelectorConfig(
-                                options=[l for l in ATTR_API_KEY_LOCATIONS if l != "not_applicable"],
-                                translation_key="api_key_location",
-                            )
-                        ),
-                    },
-                ),
+                data_schema=vol.Schema(_source_key_schema(previous)),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                 errors=errors,
             )
@@ -559,7 +565,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await async_ensure_datasource_entry(
             self.hass, inputs.get(CONF_FILE),
             url=inputs.get(CONF_URL) or "na",
-            extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip")
+            extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip",
+            api=inputs)
         source = datasource_entry(self.hass, inputs.get(CONF_FILE))
         if source is None:
             _LOGGER.error("No datasource entry to store the realtime config on: %s",
@@ -627,7 +634,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             async_ensure_datasource_entry(
                 self.hass, inputs.get(CONF_FILE),
                 url=inputs.get(CONF_URL) or "na",
-                extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip"),
+                extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip",
+                api=inputs),
             name=f"gtfs2 datasource entry {inputs.get(CONF_FILE)}",
         )
 
@@ -1727,12 +1735,7 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
         """Manage the options."""
         errors: dict[str, str] = {}
         if self.config_entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
-            # the datasource entry's CONFIGURE button carries everything a
-            # source owns: its realtime feeds, and what to do about new
-            # versions of its static feed
-            return self.async_show_menu(
-                step_id="init",
-                menu_options=["real_time", "static_refresh"])
+            return await self.async_step_source_menu()
         if user_input is not None:
             if self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None):
                 _data = user_input
@@ -1779,6 +1782,19 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=vol.Schema(opt1_schema),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             )
+
+    async def async_step_source_menu(
+           self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """The datasource entry's CONFIGURE button: everything a source owns.
+
+        Its realtime feeds, and its static feed with where it comes from
+        and what to do about new versions. A step of its own, so the menu
+        reads its own words and not the journey screen's.
+        """
+        return self.async_show_menu(
+            step_id="source_menu",
+            menu_options=["real_time", "static_refresh"])
 
     async def async_step_real_time(
            self, user_input: dict[str, Any] | None = None
@@ -1830,48 +1846,49 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_static_refresh(
            self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """What the source does about new versions of its static feed.
+        """The source's static feed: where it comes from, what to do about
+        new versions.
 
         Off by default: nothing changes for anyone who does not come here.
         The user picks a frequency, never a moment: the moment is derived
         in source_refresh, at night and staggered per source.
 
-        The feed address lives here too: the file name is the source's
-        identity and never changes, but providers move and renumber their
-        download urls, so the url must be editable in place. A change is
-        mirrored onto the source's journey entries, the same way the
-        realtime options are, so a downgrade to upstream keeps working.
+        The feed address and its key live here too: the file name is the
+        source's identity and never changes, but providers move and
+        renumber their download urls and rotate their keys, so both must be
+        editable in place, and this is the one place they are. What the
+        creation flow asked once is edited here with the same screens; the
+        refresh paths read the source, never a caller. The key stays
+        behind its toggle like everywhere else. The change lands on the
+        datasource entry's data and the mirror listener writes it through
+        to the journey entries, so a downgrade to upstream keeps working.
         """
         errors: dict[str, str] = {}
         opts = self.config_entry.options
+        current = static_feed_config(self.hass, self.config_entry)
         if user_input is not None:
             new_url = (user_input.get(CONF_URL) or "").strip()
             if new_url and not new_url.startswith(("http://", "https://")):
                 errors[CONF_URL] = "invalid_source_url"
             else:
-                if new_url and new_url != self.config_entry.data.get(CONF_URL):
-                    self.hass.config_entries.async_update_entry(
-                        self.config_entry,
-                        data={**self.config_entry.data, CONF_URL: new_url})
-                    for journey in journey_entries(
-                            self.hass, self.config_entry.data.get(CONF_FILE)):
-                        self.hass.config_entries.async_update_entry(
-                            journey, data={**journey.data, CONF_URL: new_url})
-                return self.async_create_entry(
-                    title="", data={
-                        **opts,
-                        CONF_STATIC_REFRESH_MODE:
-                            user_input[CONF_STATIC_REFRESH_MODE],
-                        CONF_STATIC_CHECK_INTERVAL:
-                            int(user_input[CONF_STATIC_CHECK_INTERVAL]),
-                    })
+                self._user_inputs = {**user_input, CONF_URL: new_url}
+                if self._user_inputs.pop(CONF_NEEDS_API_KEY, False):
+                    return await self.async_step_static_refresh_key()
+                return self._finish_static_refresh({})
+        url = current.get(CONF_URL)
         return self.async_show_form(
             step_id="static_refresh",
             data_schema=vol.Schema({
                 vol.Optional(
                     CONF_URL,
-                    default=self.config_entry.data.get(CONF_URL, ""),
+                    default="" if url in (None, "na") else url,
                 ): str,
+                # the three key fields only matter for the few sources that
+                # need one, so they live behind this toggle
+                vol.Optional(
+                    CONF_NEEDS_API_KEY,
+                    default=bool(current.get(CONF_API_KEY)),
+                ): selector.BooleanSelector(),
                 vol.Required(
                     CONF_STATIC_REFRESH_MODE,
                     default=opts.get(CONF_STATIC_REFRESH_MODE,
@@ -1899,6 +1916,49 @@ class GTFSOptionsFlowHandler(config_entries.OptionsFlow):
             description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             errors=errors,
         )
+
+    async def async_step_static_refresh_key(
+           self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Ask for the static feed's key, only when the source needs one."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="static_refresh_key",
+                data_schema=vol.Schema(_source_key_schema(
+                    static_feed_config(self.hass, self.config_entry))),
+                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                errors={},
+            )
+        _LOGGER.debug("UserInput Source static key received")
+        return self._finish_static_refresh(user_input)
+
+    def _finish_static_refresh(self, key_fields) -> FlowResult:
+        """Store what the static feed screens collected.
+
+        The address and the key go on the datasource entry's data, the
+        refresh policy in its options. Untoggling the key drops it: the
+        mirror listener takes it off the journey entries too. An address
+        given to a zip source makes it a hosted one, checkable from now on,
+        which is what the bootstrap would have done at the next start.
+        """
+        fields = self._user_inputs
+        entry = self.config_entry
+        new_data = {**entry.data}
+        for key in STATIC_KEY_KEYS:
+            new_data.pop(key, None)
+        new_data.update(static_key_fields(key_fields))
+        if fields.get(CONF_URL):
+            new_data[CONF_URL] = fields[CONF_URL]
+            if new_data.get(CONF_EXTRACT_FROM) == "zip":
+                new_data[CONF_EXTRACT_FROM] = "url"
+        if new_data != dict(entry.data):
+            self.hass.config_entries.async_update_entry(entry, data=new_data)
+        return self.async_create_entry(
+            title="", data={
+                **entry.options,
+                CONF_STATIC_REFRESH_MODE: fields[CONF_STATIC_REFRESH_MODE],
+                CONF_STATIC_CHECK_INTERVAL: int(fields[CONF_STATIC_CHECK_INTERVAL]),
+            })
 
 
 async def _check_stop_list(self, data):
