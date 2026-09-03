@@ -10,6 +10,7 @@ import os
 import glob
 import re
 import sqlite3
+import hashlib
 import json
 import csv
 import io
@@ -772,6 +773,73 @@ def get_next_departure(hass, _data):
     )
 
 
+def source_meta_path(zip_path):
+    """Where the sidecar of a source zip lives: right beside it."""
+    return zip_path + ".meta.json"
+
+
+def source_meta(zip_path):
+    """What the sidecar remembers of the last successful download, or {}.
+
+    The sidecar is a cache of derived facts, never primary data: deleting
+    it costs at most one refresh that could have been skipped, so a missing
+    or unreadable file is an empty answer, not an error.
+    """
+    try:
+        with open(source_meta_path(zip_path), encoding="utf-8") as meta_file:
+            meta = json.load(meta_file)
+        return meta if isinstance(meta, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def stage_zip(response, zip_path):
+    """Write a downloaded feed beside its target and verify it is a zip.
+
+    A moved or renumbered url often keeps answering HTTP 200 with whatever
+    now lives there: an error page, a stray protobuf, fifteen bytes of
+    nothing. The kept zip is the only full record of the feed, so nothing
+    replaces it before proving to be a zip. Returns the staged path, or
+    None when the payload is not one.
+    """
+    staged = zip_path + ".new"
+    with open(staged, "wb") as out:
+        out.write(response.content)
+    if not zipfile.is_zipfile(staged):
+        _LOGGER.error(
+            "The download from %s is not a zip file (%s bytes), "
+            "keeping the current data", response.url, len(response.content))
+        try:
+            os.remove(staged)
+        except OSError:
+            pass
+        return None
+    return staged
+
+
+def adopt_zip(response, staged, zip_path):
+    """Swap the verified download in and record what it was.
+
+    The sidecar keeps the validators the host sent, so the next check can
+    ask "did this change" for the price of one conditional request, and
+    the hash, for the hosts that send no validators at all.
+    """
+    os.replace(staged, zip_path)
+    meta = {
+        "url": str(response.url),
+        "etag": response.headers.get("ETag"),
+        "last_modified": response.headers.get("Last-Modified"),
+        "sha256": hashlib.sha256(response.content).hexdigest(),
+        "size": len(response.content),
+        "downloaded_at": dt_util.utcnow().isoformat(),
+    }
+    try:
+        with open(source_meta_path(zip_path), "w", encoding="utf-8") as out:
+            json.dump(meta, out, indent=1)
+    except OSError as ex:
+        _LOGGER.warning("Could not record the download of %s: %s", zip_path, ex)
+
+
 def get_gtfs(hass, path, data, update=False):
     _LOGGER.debug("Getting gtfs with data: %s", data)
     _headers = None
@@ -811,12 +879,17 @@ def get_gtfs(hass, path, data, update=False):
                 _get_headers.setdefault("User-Agent", "home-assistant-gtfs2")
                 r = requests.get(url,headers=_get_headers, allow_redirects=True,timeout=15)
                 r.raise_for_status()
+                # verify before removing anything: a download that turns out
+                # not to be a zip must leave the datasource as it was
+                staged = stage_zip(r, os.path.join(gtfs_dir, file))
+                if staged is None:
+                    return "no_data_file"
                 if _pending_remove:
                     remove_datasource(hass, path, filename, True)
-                open(os.path.join(gtfs_dir, file), "wb").write(r.content)
+                adopt_zip(r, staged, os.path.join(gtfs_dir, file))
             except Exception as ex:  # pylint: disable=broad-except
                 _LOGGER.error("The given URL or GTFS data file/folder was not found: %s", ex)
-                return "no_data_file"                
+                return "no_data_file"
     
     # if update (servicecall) then check if new file does not only have future dates
     if check_source_dates:
@@ -1732,8 +1805,11 @@ def remove_datasource(hass, path, filename, include_sqlite):
         os.remove(os.path.join(gtfs_dir, filename + "_temp_out.zip"))
     if os.path.exists(os.path.join(gtfs_dir, filename + ".sqlite-journal")):        
         os.remove(os.path.join(gtfs_dir, filename + ".sqlite-journal"))
-    if os.path.exists(os.path.join(gtfs_dir, filename + ".zip")):        
-        os.remove(os.path.join(gtfs_dir, filename + ".zip"))        
+    if os.path.exists(os.path.join(gtfs_dir, filename + ".zip")):
+        os.remove(os.path.join(gtfs_dir, filename + ".zip"))
+    # the sidecar follows the zip it describes
+    if os.path.exists(os.path.join(gtfs_dir, filename + ".zip.meta.json")):
+        os.remove(os.path.join(gtfs_dir, filename + ".zip.meta.json"))
     return "removed"
     
 def check_extracting(hass, gtfs_dir,file):
