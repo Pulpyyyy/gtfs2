@@ -149,15 +149,24 @@
         "data": {
           "origin": "Estação de partida",
           "destination": "Estação de chegada",
-          "name": "Nome do sensor",
           "include_tomorrow": "Mostrar também as partidas de amanhã no fim do serviço do dia"
         },
         "description": "O sensor mostrará os próximos comboios entre duas estações.\n\n[documentação]({docu_setup_train})",
         "data_description": {
           "origin": "Estações servidas por esta linha. Uma estação aparece uma só vez, mesmo quando a fonte a divide em várias paragens.",
           "destination": "A mesma lista. Escolha o seu destino.",
-          "name": "Mostrado no seu painel, por exemplo `Comboio para Lille`.",
           "include_tomorrow": "Sem isto, o sensor fica vazio entre a última partida do dia e a primeira do seguinte."
+        }
+      },
+      "sensor_train": {
+        "data": {
+          "name": "Nome do sensor",
+          "add_return": "Criar também a viagem de regresso"
+        },
+        "description": "O sensor mostrará os próximos comboios para **{trip}**.",
+        "data_description": {
+          "name": "Sugerido a partir da linha e das estações, pode alterá-lo livremente.",
+          "add_return": "Um segundo sensor para **{return_trip}**, a mesma viagem no sentido inverso."
         }
       },
       "remove": {
