@@ -837,13 +837,19 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
     SELECT count(*) as checkidx
     FROM sqlite_master
     WHERE
-    type= 'index' and tbl_name = 'stop_times' and name like '%trip_id%';
+    (type= 'index' and tbl_name = 'stop_times' and name like '%trip_id%')
+    -- an interned datasource exposes stop_times as a view: its indexes
+    -- live on gtfs2_stop_times and must not be recreated here
+    or (type = 'view' and name = 'stop_times');
     """
     sql_index_2 = f"""
     SELECT count(*) as checkidx
     FROM sqlite_master
     WHERE
-    type= 'index' and tbl_name = 'stop_times' and name like '%stop_id%';
+    (type= 'index' and tbl_name = 'stop_times' and name like '%stop_id%')
+    -- an interned datasource exposes stop_times as a view: its indexes
+    -- live on gtfs2_stop_times and must not be recreated here
+    or (type = 'view' and name = 'stop_times');
     """
     sql_index_3 = f"""
     SELECT count(*) as checkidx
