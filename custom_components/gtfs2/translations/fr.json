@@ -239,7 +239,7 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Source de données supprimée, cela peut affecter les itinéraires existants",
-      "generic_failure": "Échec global, vérifiez les logs d'érreur",
+      "generic_failure": "Impossible de lire les arrêts de cette ligne. Consultez les journaux : la source est peut-être occupée ou en cours de reconstruction.",
       "stop_incorrect": "Arrêt de départ et/ou de fin incorrecte, éventuellement pas de transport « aujourd'hui » ou pas dans la même direction, vérifiez logs d'érreur",
       "no_data_file": "Problème de collecte de données : URL incorrecte ou nom de fichier ne se trouve pas dans le bon dossier",
       "no_stops": "Problème de collecte de données : probablement pas des stops pour la route sélectionné",
@@ -248,7 +248,6 @@
       "extracting": "Extraction des données en cours, cela prend du temps [documentation]({docu_extracting})",
       "no_zip_in_folder": "Aucun fichier .zip trouvé dans {folder}. Déposez-y votre fichier GTFS, puis recommencez.",
       "no_routes_with_trips": "Aucune ligne de cette source n'a d'horaires chargés. Lancez le service update_gtfs pour la recharger depuis la source.",
-      "generic_failure": "Impossible de lire les arrêts de cette ligne. Consultez les journaux : la source est peut-être occupée ou en cours de reconstruction.",
       "reload_failed": "La ligne n'a pas pu être rétablie. Le fichier réseau est peut-être absent ou illisible ; la source de données, elle, n'a pas été modifiée.",
       "optimised": "Espace disque libéré. La source occupe maintenant {size}.",
       "finished": "Configuration terminée. Vous pouvez ajouter d'autres trajets à tout moment depuis la page de l'intégration.",

@@ -239,7 +239,7 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Fuente de datos eliminada, esto puede afectar a las rutas existentes",
-      "generic_failure": "Fallo general, compruebe los registros",
+      "generic_failure": "No se han podido leer las paradas de esta línea. Consulte los registros: la fuente puede estar ocupada o reconstruyéndose.",
       "stop_incorrect": "Destino inicial y/o final incorrecto, posiblemente no hay transporte 'hoy' o no en la misma dirección, compruebe los registros",
       "no_data_file": "Problema de recopilación de datos: URL incorrecta o nombre de archivo que no está en la carpeta correcta",
       "no_stops": "Problema de recogida de datos: probablemente no hay paradas en la ruta seleccionada",
@@ -248,7 +248,6 @@
       "extracting": "(Todavía) extrayendo datos, esto llevará tiempo [documentación]({docu_extracting})",
       "no_zip_in_folder": "No se encontró ningún archivo .zip en {folder}. Coloque allí su archivo GTFS y vuelva a empezar.",
       "no_routes_with_trips": "Ninguna línea de esta fuente tiene horarios cargados. Ejecute el servicio update_gtfs para recargarla.",
-      "generic_failure": "No se han podido leer las paradas de esta línea. Consulte los registros: la fuente puede estar ocupada o reconstruyéndose.",
       "reload_failed": "No se ha podido restaurar la línea. Puede que el archivo de red falte o no se pueda leer; la fuente de datos no se ha modificado.",
       "optimised": "Espacio liberado. La fuente ocupa ahora {size}.",
       "finished": "Configuración completada. Puede añadir más trayectos cuando quiera desde la página de la integración.",
@@ -313,10 +312,51 @@
           "api_key_location": "En la dirección web, o en la cabecera de la petición.",
           "accept": "Solo se aplica si la clave va en la cabecera."
         }
+      },
+      "source_menu": {
+        "title": "Fuente de datos",
+        "description": "Todo lo que pertenece a esta fuente y comparten todos los sensores que la leen: sus feeds en tiempo real y su archivo de horarios, con su procedencia y qué hacer con las nuevas versiones.",
+        "menu_options": {
+          "real_time": "Feeds en tiempo real",
+          "static_refresh": "Archivo de horarios y actualizaciones"
+        }
+      },
+      "static_refresh": {
+        "title": "Archivo de horarios y actualizaciones",
+        "description": "De dónde procede el archivo de horarios de esta fuente y qué hacer con las nuevas versiones. Cada actualización, ya sea desde aquí, desde la entidad de actualización o desde el servicio update_gtfs, usa la dirección y la clave de abajo. **Notificar** pregunta al proveedor con una petición mínima, al ritmo elegido, y avisa cuando existe una nueva versión, para que usted o una automatización decidan cuándo instalarla. **Instalar automáticamente** la instala de inmediato. Los sensores siguen respondiendo durante la instalación; el cambio a los nuevos datos ocurre de una sola vez.",
+        "data": {
+          "url": "Dirección del feed",
+          "needs_api_key": "Esto requiere una clave API",
+          "static_refresh_mode": "Ante una nueva versión",
+          "static_check_interval": "Frecuencia de comprobación"
+        },
+        "data_description": {
+          "url": "Desde dónde se descarga el zip. Cámbiela cuando el proveedor mueva o renumere sus direcciones; el nombre y todo lo construido a partir del feed se conservan.",
+          "needs_api_key": "Marque esto si el proveedor le dio una clave para descargar el archivo. Desmárquelo para eliminar una clave que la fuente ya no necesita.",
+          "static_refresh_mode": "Desactivado no cambia nada para esta fuente.",
+          "static_check_interval": "En horas: 24 es diario, 360 es cada 15 días. El momento exacto se elige por usted, de noche para los ritmos diarios y más lentos, y escalonado por fuente para repartir las actualizaciones."
+        }
+      },
+      "static_refresh_key": {
+        "title": "Clave del archivo de horarios",
+        "description": "El proveedor las indica en su documentación. Se muestra la clave ya guardada, de modo que una clave rotada solo implica escribir la nueva.\n\n[documentación]({docu_extracting})",
+        "data": {
+          "api_key": "Clave API",
+          "api_key_name": "Nombre que espera el proveedor",
+          "api_key_location": "Dónde va la clave"
+        },
+        "data_description": {
+          "api_key": "La clave en sí, copiada del proveedor.",
+          "api_key_name": "La palabra que precede a su clave. En la dirección: `?`**`apikey`**`=SU_CLAVE`. En una cabecera: **`x-api-key`**`: SU_CLAVE`. Cambia según el proveedor (`apikey`, `api_key`, `app_key`, `Authorization`) y distingue mayúsculas de minúsculas.",
+          "api_key_location": "En la dirección web, o en la cabecera de la petición."
+        }
       }
     },
     "abort": {
       "stop_limit_reached": "Se detectó una gran cantidad de paradas para este radio, \nlo que posiblemente afecte el rendimiento del sistema. \nPuedes cambiar el límite bajo tu propia responsabilidad antes de cambiar el radio"
+    },
+    "error": {
+      "invalid_source_url": "La dirección debe empezar por http:// o https://"
     }
   },
   "selector": {
@@ -325,6 +365,13 @@
         "not_applicable": "No se necesita clave (la mayoría de las fuentes)",
         "header": "En la cabecera de la peticion",
         "query_string": "En la dirección web"
+      }
+    },
+    "static_refresh_mode": {
+      "options": {
+        "off": "No hacer nada",
+        "notify": "Notificar, instalar cuando se pida",
+        "auto": "Instalar automáticamente"
       }
     }
   },
@@ -502,6 +549,8 @@
     "reason_tables_missing": "la descompresión se detuvo antes de escribir todas las tablas",
     "reason_unfinished": "la descompresión no llegó a terminar",
     "reason_tables_empty": "algunas tablas han quedado vacías",
-    "reason_unreadable": "la base de datos es ilegible"
+    "reason_unreadable": "la base de datos es ilegible",
+    "source_update_available_title": "GTFS: {file} tiene una nueva versión",
+    "source_update_available": "La fuente publicó un nuevo feed de horarios ({version}).\n\nInstálelo desde la entidad de actualización **Feed estático** de {file}, o deje que lo haga su automatización. Los datos actuales siguen sirviendo hasta que la instalación los sustituya, de una sola vez."
   }
 }
