@@ -198,6 +198,19 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Clean up after a removed entry, then say what its removal orphaned.
+
+    Two lots each brought a hook of this name - the geojson cleanup of
+    sanitize-geojson-filenames and the orphaned line notification of
+    prune-on-remove - and Python keeps only the last definition, so one of
+    them silently never ran. This is their combination, and the place to
+    extend when another lot needs the removal moment.
+    """
+    await _remove_entry_geojson(hass, entry)
+    await _notify_orphaned_line(hass, entry)
+
+
+async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Say when a removed sensor leaves a line nobody reads.
 
     There is no flow where a line is removed: it happens here, when its last
@@ -325,7 +338,7 @@ async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
     return True
 
 
-async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Remove the geojson files an entry leaves behind on disk.
 
     Home Assistant clears the entity registry of a removed entry by itself,
