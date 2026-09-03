@@ -765,10 +765,11 @@ def get_route_list(schedule, data):
 def get_stop_list(schedule, route_id, direction):
     _LOGGER.debug("Getting stops list for route: %s", route_id)
     sql_stops = f"""
-    SELECT distinct(s.stop_id), s.stop_name, st.stop_sequence
+    SELECT distinct(s.stop_id), s.stop_name, st.stop_sequence, station.stop_name
     from trips t
     inner join stop_times st on st.trip_id = t.trip_id
     inner join stops s on s.stop_id = st.stop_id
+    left join stops station on station.stop_id = s.parent_station
     where  t.route_id = '{route_id}'
     and (t.direction_id = {direction} or t.direction_id is null)
     order by st.stop_sequence
@@ -780,8 +781,22 @@ def get_stop_list(schedule, route_id, direction):
     for row_cursor in rows:
         row = row_cursor._asdict()
         stops_list.append(list(row_cursor))
+    # A line meets the same name twice more often than one would think, and
+    # two identical lines in the list leave the choice to chance. The feed
+    # usually knows what tells them apart: on line 1 in Amsterdam, of the two
+    # stops named "Amsterdam, Surinameplein" one belongs to the Surinameplein
+    # station and the other to the Hoofdweg station, two hundred metres away.
+    # So a repeated name carries its station when the station adds something,
+    # and stays plain when the station only repeats the name.
+    twice = {}
     for x in stops_list:
-        val = x[0] + ": " + x[1] + ' (' + str(x[2]) + ')'
+        twice[x[1]] = twice.get(x[1], 0) + 1
+    for x in stops_list:
+        shown = x[1]
+        station_name = x[3]
+        if twice[x[1]] > 1 and station_name and station_name not in x[1]:
+            shown = f"{shown} ({station_name})"
+        val = x[0] + ": " + shown + ' (' + str(x[2]) + ')'
         stops.append(val)
     _LOGGER.debug(f"Route stops: {stops}")
     return stops 
