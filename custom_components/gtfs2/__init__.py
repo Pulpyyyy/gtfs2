@@ -11,22 +11,26 @@ from homeassistant.helpers import entity_registry as er
 
 from datetime import timedelta
 
-from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE
+from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
 from homeassistant.const import CONF_HOST
-from homeassistant.helpers.dispatcher import async_dispatcher_send
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
 from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops, route_geojson_name, vehicle_positions_name, async_notify_line_orphaned
 from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
-from .rt_source import async_bootstrap_datasource_entries, async_mirror_rt_to_entries
+from .rt_source import (
+    async_bootstrap_datasource_entries,
+    async_ensure_datasource_entry,
+    async_mirror_rt_to_entries,
+    datasource_entry,
+)
 from .source_refresh import (
-    SIGNAL_SOURCE_REFRESH,
     async_arm_source_check,
     async_disarm_source_check,
     async_rearm_source_check,
-    refresh_source,
-    source_lock,
+    async_refresh_source,
+    async_refresh_source_data,
+    refresh_data_for,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -359,7 +363,7 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
 def setup(hass, config):
     """Setup the service component."""
 
-    def update_gtfs(call):
+    async def update_gtfs(call):
         """My GTFS Update service.
 
         Refreshes the datasource through the scratch database: the fresh
@@ -367,24 +371,44 @@ def setup(hass, config):
         beside the live file and swapped in, so the sensors never read a
         half-built database. Falls back to the legacy full extract when
         the datasource has no routes to refresh.
+
+        A source that exists is refreshed from what it knows about itself,
+        exactly like the update entity and the scheduled check: its own
+        address and key apply, the call only says whether to rebuild from
+        the kept zip and sets the per-import flags. The address and key in
+        the call are only read to create a source that does not exist yet,
+        and the new source keeps them from then on.
         """
         _LOGGER.debug("Updating GTFS with: %s", call.data)
-        file = dict(call.data).get("file", "")
-        if source_lock(hass, file).locked():
-            # the scheduled check or the update entity is rebuilding this
-            # source right now; two rebuilds of one feed never overlap
-            _LOGGER.warning("A refresh of %s is already running, "
-                            "not starting another", file)
-            return False
-        # through the recording wrapper, so the update entity knows what the
-        # database was built from after a service-driven refresh too
-        refresh_source(hass, DEFAULT_PATH, dict(call.data))
-        # the handler runs in an executor thread, so the entity is told
-        # from the loop; without this a service-driven refresh would sit
-        # unread until the next restart or check
-        hass.loop.call_soon_threadsafe(
-            async_dispatcher_send, hass, SIGNAL_SOURCE_REFRESH.format(file))
-        return True
+        data = dict(call.data)
+        file = data.get("file", "")
+        entry = datasource_entry(hass, file)
+        if entry is not None:
+            stored = refresh_data_for(hass, entry)
+            for key in (CONF_URL, CONF_API_KEY):
+                given = (data.get(key) or "").strip()
+                if given and given != "na" and given != (stored.get(key) or ""):
+                    _LOGGER.warning(
+                        "update_gtfs: the %s given for %s differs from the "
+                        "source's own, which applies; change it on the "
+                        "source's configuration screen", key, file)
+            return await async_refresh_source(
+                hass, entry,
+                use_zip=data.get(CONF_EXTRACT_FROM) == "zip",
+                flags={k: data[k] for k in ("clean_feed_info", "check_source_dates")
+                       if k in data})
+        # a source to create: the legacy fields apply, absent ones read as
+        # the service always defaulted them
+        data.setdefault(CONF_URL, "na")
+        data.setdefault(CONF_EXTRACT_FROM, "url")
+        ok = await async_refresh_source_data(hass, file, data)
+        if ok:
+            # the source is born with the address and key it was created
+            # from, so the next refresh needs nothing but its name
+            await async_ensure_datasource_entry(
+                hass, file, url=data.get(CONF_URL) or "na",
+                extract_from=data.get(CONF_EXTRACT_FROM) or "url", api=data)
+        return ok
 
     def update_gtfs_rt_local(call):
         """My GTFS RT service."""

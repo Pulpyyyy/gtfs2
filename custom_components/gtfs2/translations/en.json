@@ -273,10 +273,14 @@
           "max_local_stops": "Above this many stops the sensor gets slow. Raise it at your own risk.",
           "source_timezone_correction": "Only if the source publishes times in another timezone, in hours.",
           "check_source_dates": "Experimental: refuse a new file whose dates are all in the future."
-        },
+        }
+      },
+      "source_menu": {
+        "title": "Datasource",
+        "description": "Everything this source owns, shared by every sensor reading it: its realtime feeds, and its timetable file with where it comes from and what to do about new versions.",
         "menu_options": {
           "real_time": "Realtime feeds",
-          "static_refresh": "Static feed updates"
+          "static_refresh": "Timetable file and updates"
         }
       },
       "real_time": {
@@ -310,17 +314,33 @@
         }
       },
       "static_refresh": {
-        "title": "Static feed updates",
-        "description": "What this source does about new versions of its timetable feed. **Notify** asks the host with one tiny request, at the chosen rhythm, and says when a new version exists, so you or an automation decide when to install. **Install automatically** installs it right away. Sensors keep answering during an install; the switch to the new data happens in one go.",
+        "title": "Timetable file and updates",
+        "description": "Where this source's timetable file comes from, and what to do about new versions. Every refresh, whether from here, from the update entity or from the update_gtfs service, uses the address and key below. **Notify** asks the host with one tiny request, at the chosen rhythm, and says when a new version exists, so you or an automation decide when to install. **Install automatically** installs it right away. Sensors keep answering during an install; the switch to the new data happens in one go.",
         "data": {
           "url": "Feed address",
+          "needs_api_key": "This requires an API key",
           "static_refresh_mode": "On a new version",
           "static_check_interval": "Check frequency"
         },
         "data_description": {
           "url": "Where the zip is downloaded from. Change it when the provider moves or renumbers its urls; the name and everything built from the feed stay.",
+          "needs_api_key": "Tick this if the provider gave you a key to download the file. Untick it to drop a key the source no longer needs.",
           "static_refresh_mode": "Off changes nothing for this source.",
           "static_check_interval": "In hours: 24 is daily, 360 is every 15 days. The exact moment is chosen for you, at night for daily and slower rhythms, and staggered per source so updates spread out."
+        }
+      },
+      "static_refresh_key": {
+        "title": "Timetable file key",
+        "description": "The provider states these in its documentation. The key already stored is shown, so a rotated key only means typing the new one.\n\n[documentation]({docu_extracting})",
+        "data": {
+          "api_key": "API key",
+          "api_key_name": "Name the provider expects",
+          "api_key_location": "Where the key goes"
+        },
+        "data_description": {
+          "api_key": "The key itself, copied from the provider.",
+          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_location": "In the web address, or in the request header."
         }
       }
     },
@@ -350,19 +370,19 @@
   "services": {
     "update_gtfs": {
       "name": "Update/create a GTFS2 datasource",
-      "description": "Either via Link or by placing a Zip in gtfs2 folder",
+      "description": "Refreshes a datasource from its feed, or creates one. A datasource that exists is refreshed from its own address and key, the ones its configuration screen shows: only its name is needed here. The address and key fields are read to create a datasource that does not exist yet.",
       "fields": {
         "extract_from": {
           "name": "Indicate source to use zip or url",
-          "description": "zip (local) or url"
+          "description": "Download the feed again (url), or rebuild from the zip already in the gtfs2 folder (zip)"
         },
         "file": {
           "name": "Name of the transport service, without .zip",
-          "description": "If you use the same name as an existing one, the existing one will be overwitten"
+          "description": "The datasource to refresh. A name that exists is refreshed in place; a new name creates a datasource from the fields below"
         },
         "url": {
           "name": "URL",
-          "description": "provide the full path to the zip file itself"
+          "description": "The full path to the zip file itself. Only read when creating a datasource: an existing one keeps the address of its configuration screen, and a different one given here is ignored with a warning"
         },
         "clean_feed_info": {
           "name": "Remove feed-info",
@@ -370,7 +390,7 @@
         },
         "api_key": {
           "name": "API key",
-          "description": "Only if the provider requires one"
+          "description": "Only if the provider requires one, and only read when creating a datasource, like the address"
         },
         "api_key_name": {
           "name": "Parameter name",
