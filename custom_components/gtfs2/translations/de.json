@@ -149,15 +149,24 @@
         "data": {
           "origin": "Abfahrtsbahnhof",
           "destination": "Zielbahnhof",
-          "name": "Name des Sensors",
           "include_tomorrow": "Am Betriebsschluss auch die Abfahrten von morgen anzeigen"
         },
         "description": "Der Sensor zeigt die nächsten Züge zwischen zwei Bahnhöfen.\n\n[Dokumentation]({docu_setup_train})",
         "data_description": {
           "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt.",
           "destination": "Dieselbe Liste. Wählen Sie Ihr Ziel.",
-          "name": "Auf Ihrem Dashboard angezeigt, zum Beispiel `Zug nach Lille`.",
           "include_tomorrow": "Ohne dies bleibt der Sensor zwischen der letzten Abfahrt des Tages und der ersten des nächsten leer."
+        }
+      },
+      "sensor_train": {
+        "data": {
+          "name": "Sensorname",
+          "add_return": "Auch die Rückfahrt anlegen"
+        },
+        "description": "Der Sensor zeigt die nächsten Züge für **{trip}**.",
+        "data_description": {
+          "name": "Aus der Linie und den Bahnhöfen vorgeschlagen, frei änderbar.",
+          "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Fahrt in der Gegenrichtung."
         }
       },
       "remove": {
