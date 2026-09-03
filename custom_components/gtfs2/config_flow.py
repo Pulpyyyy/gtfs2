@@ -886,21 +886,25 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self._user_inputs[CONF_ROUTE],
                     None,
                 )
-                if not stops:
-                    raise ValueError("no stops")
-                return self.async_show_form(
-                    step_id="stops",
-                    data_schema=vol.Schema(
-                        {
-                            vol.Required(CONF_ORIGIN): vol.In(stops),
-                        },
-                    ),
-                    description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                    errors=errors,
-                )
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.debug(f"Likely no stops for this route: {[CONF_ROUTE]}")
+            except Exception as ex:  # pylint: disable=broad-except
+                # a bare except here reported every failure as "no stops",
+                # a locked database and a bad route id included
+                _LOGGER.error("Error reading the stops of route %s: %s",
+                              self._user_inputs.get(CONF_ROUTE), ex)
+                return self.async_abort(reason="no_stops_read")
+            if not stops:
+                _LOGGER.debug("No stops for route: %s", self._user_inputs.get(CONF_ROUTE))
                 return self.async_abort(reason="no_stops")
+            return self.async_show_form(
+                step_id="stops",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(CONF_ORIGIN): vol.In(stops),
+                    },
+                ),
+                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                errors=errors,
+            )
 
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Origin: {self._user_inputs}")
