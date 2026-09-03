@@ -154,6 +154,17 @@
           "name": "Auf Ihrem Dashboard angezeigt, zum Beispiel `Zug nach Lille`."
         }
       },
+      "sensor_train": {
+        "data": {
+          "name": "Sensorname",
+          "add_return": "Auch die Rückfahrt anlegen"
+        },
+        "description": "Der Sensor zeigt die nächsten Züge für **{trip}**.",
+        "data_description": {
+          "name": "Aus der Linie und den Bahnhöfen vorgeschlagen, frei änderbar.",
+          "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Fahrt in der Gegenrichtung."
+        }
+      },
       "remove": {
         "data": {
           "file": "Zu entfernende Datenquelle"

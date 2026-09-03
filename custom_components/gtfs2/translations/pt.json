@@ -154,6 +154,17 @@
           "name": "Mostrado no seu painel, por exemplo `Comboio para Lille`."
         }
       },
+      "sensor_train": {
+        "data": {
+          "name": "Nome do sensor",
+          "add_return": "Criar também a viagem de regresso"
+        },
+        "description": "O sensor mostrará os próximos comboios para **{trip}**.",
+        "data_description": {
+          "name": "Sugerido a partir da linha e das estações, pode alterá-lo livremente.",
+          "add_return": "Um segundo sensor para **{return_trip}**, a mesma viagem no sentido inverso."
+        }
+      },
       "remove": {
         "data": {
           "file": "Fonte de dados a remover"
