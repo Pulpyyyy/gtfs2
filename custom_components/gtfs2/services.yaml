@@ -1,11 +1,17 @@
 # Describes the format for available ADS services
 update_gtfs:
   name: Update/create GTFS Data
-  description: Unpacks source to gtfs-db
+  description: >-
+    Refreshes a datasource from its feed, or creates one. A datasource that
+    exists is refreshed from its own address and key, the ones its
+    configuration screen shows: only its name is needed here. The address
+    and key fields are read to create a datasource that does not exist yet.
   fields:
     extract_from:
-      name: Indicate source of the data 
-      description: Select if you update from url or zip
+      name: Indicate source of the data
+      description: >-
+        Download the feed again (url), or rebuild from the zip already in the
+        gtfs2 folder (zip)
       required: true
       example: "url"
       default: "url"
@@ -17,25 +23,31 @@ update_gtfs:
             - "zip"
     file:
       name: Name of the transport service, without .zip
-      description: If you use the same name as an existing one, the existing one will be overwitten
+      description: >-
+        The datasource to refresh. A name that exists is refreshed in place;
+        a new name creates a datasource from the fields below
       required: true
       example: "mytransportservice"
       selector:
-        text:            
+        text:
     url:
       name: URL
-      description: provide the full path to the zip file itself
-      required: true
-      default: "na"
+      description: >-
+        The full path to the zip file itself. Only read when creating a
+        datasource: an existing one keeps the address of its configuration
+        screen, and a different one given here is ignored with a warning
+      required: false
       example: "https://path-to-my-zip-file-location/filename.zip"
       selector:
-        text:            
+        text:
     api_key:
       name: api_key
-      description: provide API key, if required
+      description: >-
+        API key, if the provider requires one. Only read when creating a
+        datasource, like the address
       required: false
       selector:
-        text:        
+        text:
     api_key_name:
       name: api_key_name
       description: API key_name when using api_key
@@ -43,7 +55,7 @@ update_gtfs:
       default: "api_key"
       example: "api_key"
       selector:
-        text:         
+        text:
     api_key_location:
       name: Indicate location of the key
       description: Select location of the key
