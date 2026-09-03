@@ -272,6 +272,7 @@ WHEELCHAIR_BOARDING_OPTIONS = {1: True, 2: False}
 CONF_API_KEY_LOCATION = "api_key_location"
 CONF_URL = "url"
 CONF_EXTRACT_FROM = "extract_from"
+CONF_ONLY_ROUTES = "only_routes"
 CONF_FILE = "file"
 CONF_DEVICE_TRACKER_ID = "device_tracker_id"
 CONF_AGENCY = "agency"

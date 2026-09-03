@@ -35,6 +35,12 @@
         },
         "description": "NOTA: com um novo url/zip, isso pode demorar um pouco, \n dependendo do tamanho do ficheiro e do desempenho do sistema [(docu)]({docu_extracting})"
       },
+      "source_routes": {
+        "data": {
+          "only_routes": "Linhas a manter"
+        },
+        "description": "Deixe vazio para importar todo o conjunto de dados, como antes. Escolher linhas reduz o conjunto de dados antes da importação, que é o que mantém uma rede grande pequena em disco. Todas as linhas continuam a ser oferecidas depois: isto decide apenas o que é importado."
+      },
       "agency": {
         "data": {
           "agency": "Selecione o prestador de serviços (ou TODOS)"

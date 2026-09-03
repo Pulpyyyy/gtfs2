@@ -35,6 +35,12 @@
         },
         "description": "HINWEIS: Bei einer neuen URL/ZIP-Datei kann dies je \n nach Dateigröße und Systemleistung einige Zeit in Anspruch nehmen [(docu)]({docu_extracting})"
       },
+      "source_routes": {
+        "data": {
+          "only_routes": "Zu behaltende Linien"
+        },
+        "description": "Leer lassen, um den gesamten Datensatz zu importieren, wie bisher. Werden Linien gewählt, wird der Datensatz vor dem Import verkleinert, wodurch ein großes Netz auf der Festplatte klein bleibt. Alle Linien werden später weiterhin angeboten: dies bestimmt nur, was importiert wird."
+      },
       "agency": {
         "data": {
           "agency": "Wählen Sie den Dienstanbieter (oder ALLE)"

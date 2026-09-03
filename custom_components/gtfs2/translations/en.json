@@ -35,6 +35,12 @@
         },
         "description": "NOTE: with a new url/zip, this may take quite a bit of time, \n depending on file-size and system performance [(docu)]({docu_extracting})"
       },
+      "source_routes": {
+        "data": {
+          "only_routes": "Lines to keep"
+        },
+        "description": "Leave empty to import the whole feed, as before. Picking lines cuts the feed down before it is imported, which is what keeps a large network small on disk. Every line stays offered later on: this only decides what is imported."
+      },
       "agency": {
         "data": {
           "agency": "Select the service provider (or ALL)"

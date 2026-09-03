@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+import gc
 import logging
 import os
 import glob
@@ -38,6 +39,7 @@ from .const import (
     TIME_STR_FORMAT
     )
 from .gtfs_rt_helper import get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities
+from .gtfs_filter import filter_gtfs_zip
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -570,7 +572,7 @@ def get_next_departure(hass, _data):
     )
 
 
-def get_gtfs(hass, path, data, update=False):
+def get_gtfs(hass, path, data, update=False, download_only=False):
     _LOGGER.debug("Getting gtfs with data: %s", data)
     _headers = None
     gtfs_dir = hass.config.path(path)
@@ -618,6 +620,14 @@ def get_gtfs(hass, path, data, update=False):
             _LOGGER.info('New file contains only dates in the future, extracting terminated')
             return
     
+    # the zip is in place and nothing has been imported yet: the config flow
+    # stops here to read the lines the feed offers, so the user can pick the
+    # ones to keep before a national feed is unpacked whole. Said with a value
+    # of its own rather than with None, which this function already uses above
+    # to mean "rejected, the new file only has dates in the future"
+    if download_only:
+        return "downloaded"
+
     (gtfs_root, _) = os.path.splitext(file)    
     sqlite_file = f"{gtfs_root}.sqlite?check_same_thread=False"
     joined_path = os.path.join(gtfs_dir, sqlite_file)  
@@ -627,24 +637,50 @@ def get_gtfs(hass, path, data, update=False):
     if not gtfs.feeds: 
         if data.get("clean_feed_info", False):
             _fork_ctx = multiprocessing.get_context("fork")
-            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,['shapes.txt','transfers.txt','fare_attributes.txt','levels.txt','pathways.txt','translations.txt','feed_info.txt']))
+            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,['shapes.txt','transfers.txt','fare_attributes.txt','levels.txt','pathways.txt','translations.txt','feed_info.txt'],data.get("only_routes")))
         else: 
             _fork_ctx = multiprocessing.get_context("fork")
-            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,['shapes.txt','transfers.txt','fare_attributes.txt','levels.txt','pathways.txt','translations.txt']))
+            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,['shapes.txt','transfers.txt','fare_attributes.txt','levels.txt','pathways.txt','translations.txt'],data.get("only_routes")))
         extract.start()
         extract.join()
         _LOGGER.info("Exiting main after start subprocess for unpacking: %s", file)
         return "extracting"
     return gtfs
 
-def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file):
+def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file, only_routes=None):
     _LOGGER.debug("Extracting gtfs file: %s", file)
     # first remove shapes from zip to avoid possibly very large db 
     clean = remove_from_zip(remove_file,gtfs_dir, file[:-4])
     if os.fork() != 0:
         return
-    pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file))
-    check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
+    feed_file = os.path.join(gtfs_dir, file)
+    filtered = None
+    if only_routes:
+        # pygtfs pays per row, so the cheapest way to keep a datasource small
+        # is to hand it less: the feed is cut down to the chosen routes before
+        # it is imported, rather than imported whole and trimmed afterwards.
+        # Written to a separate file, never into the source zip, which stays
+        # the only complete record of the feed. When the filter cannot run the
+        # whole feed is imported as before: slower, never wrong.
+        candidate = os.path.join(gtfs_dir, file[:-4] + ".filtered.zip")
+        if filter_gtfs_zip(feed_file, candidate, only_routes,
+                           "feed_info.txt" in (remove_file or ())):
+            feed_file = filtered = candidate
+    try:
+        pygtfs.append_feed(gtfs, feed_file)
+        check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
+    finally:
+        if filtered and os.path.exists(filtered):
+            # pygtfs read the filtered zip through a handle it only drops
+            # on collection, and Windows refuses to delete a file still open
+            gc.collect()
+            try:
+                os.remove(filtered)
+            except OSError as ex:
+                # the feed is imported and correct by now: a copy left
+                # behind is worth a line in the log, never a failed
+                # extraction
+                _LOGGER.warning("Could not remove the filtered copy %s: %s", filtered, ex)
     
 def check_calendar_dates_from_zip(gtfs_dir,file):
     _LOGGER.debug("Checking if file contains only future data: %s ", file)

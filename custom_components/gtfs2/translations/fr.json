@@ -35,6 +35,12 @@
         },
         "description": "REMARQUE: avec une nouvelle URL/zip, cela peut prendre du temps après la soumission, selon la taille du fichier et performance du serveur [(docu)]({docu_extracting})"
       },
+      "source_routes": {
+        "data": {
+          "only_routes": "Lignes à conserver"
+        },
+        "description": "Laissez vide pour importer tout le jeu de données, comme avant. Choisir des lignes réduit le jeu de données avant son import, ce qui est le seul moment où un grand réseau peut rester petit sur le disque. Toutes les lignes restent proposées ensuite : ceci ne décide que de ce qui est importé."
+      },
       "agency": {
         "data": {
           "agency": "Selectionnez le prestataire de services (ou: ALL)"
