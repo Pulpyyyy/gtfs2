@@ -65,8 +65,32 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         route_type_where = "1=1"
         start_station_id = origin.split(': ')[0]
         end_station_id = destination.split(': ')[0]
-        start_station_where = f"AND start_station.stop_id = :origin_station_id"
-        end_station_where = f"AND end_station.stop_id = :end_station_id"
+        # A feed often writes one physical stop as several records, one per
+        # platform, and a run uses whichever of them its turn takes. On the
+        # Orleans tram, of the trips leaving the hospital for Jules Verne on
+        # one day, 40 end on Jules Verne's first record and 34 on its second,
+        # two metres apart under the same name; and 55 more leave from the
+        # hospital's own second record. Asked for one record at each end, the
+        # sensor showed 40 of those 129 runs, and following the line took
+        # four entries instead of one. Both ends are therefore matched on the
+        # whole stop: the record itself and the records the feed groups with
+        # it under the same parent station. Nothing rides backwards for it:
+        # the query still keeps the origin before the destination on the same
+        # trip, and the entry's direction still holds. Matching on the name
+        # rather than on the declared parent was tried and dropped, it
+        # answered on a different stop that happened to share a name.
+        stop_group = """(
+            SELECT sibling.stop_id
+            FROM stops chosen, stops sibling
+            WHERE chosen.stop_id = :%s
+              AND (sibling.stop_id = chosen.stop_id
+                   OR (chosen.parent_station IS NOT NULL
+                       AND chosen.parent_station <> ''
+                       AND sibling.parent_station = chosen.parent_station)))"""
+        start_station_where = ("AND start_station.stop_id IN "
+                               + stop_group % "origin_station_id")
+        end_station_where = ("AND end_station.stop_id IN "
+                             + stop_group % "end_station_id")
         _LOGGER.debug("Setting up Route for start/end : %s / %s ", start_station_id, end_station_id)
                             
                                                 
@@ -207,7 +231,9 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
 		AND origin_stop_sequence < dest_stop_sequence
         AND today_cd = 1
 		{tomorrow_calendar_date_where}
-        ORDER BY calendar_date,origin_depart_date, today_cd, origin_depart_time
+        -- a loop calls at one stop twice, so a trip can reach the asked
+        -- stop on two of its records: the earlier arrival is kept below
+        ORDER BY calendar_date,origin_depart_date, today_cd, origin_depart_time, dest_stop_sequence
         """  # noqa: S608
     # Create lookup timetable for today and possibly tomorrow, taking into
     # account any departures from yesterday scheduled after midnight,
@@ -765,7 +791,7 @@ def get_route_list(schedule, data):
 def get_stop_list(schedule, route_id, direction):
     _LOGGER.debug("Getting stops list for route: %s", route_id)
     sql_stops = f"""
-    SELECT distinct(s.stop_id), s.stop_name, st.stop_sequence
+    SELECT distinct(s.stop_id), s.stop_name, st.stop_sequence, s.parent_station
     from trips t
     inner join stop_times st on st.trip_id = t.trip_id
     inner join stops s on s.stop_id = st.stop_id
@@ -773,6 +799,17 @@ def get_stop_list(schedule, route_id, direction):
     and (t.direction_id = {direction} or t.direction_id is null)
     order by st.stop_sequence
     """  # noqa: S608
+    # A stop the feed writes once per platform is one place to the rider, who
+    # cannot tell which platform a given run will use and should not have to:
+    # offering both leaves two lines reading the same name, and picking either
+    # one hides the runs that use the other. A station is therefore offered
+    # once, by the first of its records the line calls at, and the departures
+    # of the others are reached through it.
+    # Only records the line calls at one after the other are folded together,
+    # because that is what two platforms of one place look like along a ride.
+    # Records of one station far apart in the list are not platforms of a
+    # stop, they are the two sides of a line that passes twice, a loop or a
+    # direction the feed fills with both ways round, and they stay apart.
     stops_list = []
     stops = []
     with schedule.engine.connect() as conn:
@@ -780,7 +817,12 @@ def get_stop_list(schedule, route_id, direction):
     for row_cursor in rows:
         row = row_cursor._asdict()
         stops_list.append(list(row_cursor))
+    previous_station = None
     for x in stops_list:
+        station = x[3]
+        if station and station == previous_station:
+            continue
+        previous_station = station
         val = x[0] + ": " + x[1] + ' (' + str(x[2]) + ')'
         stops.append(val)
     _LOGGER.debug(f"Route stops: {stops}")
