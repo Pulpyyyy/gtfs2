@@ -1,11 +1,18 @@
 """Support for GTFS Integration."""
 from __future__ import annotations
 
+import asyncio
 import datetime
+import gc
+import time
 import logging
 import os
 import glob
+import re
+import sqlite3
 import json
+import csv
+import io
 import requests
 import pygtfs
 from sqlalchemy.sql import text
@@ -17,6 +24,8 @@ from pathlib import Path
 
 import homeassistant.util.dt as dt_util
 from homeassistant.core import HomeAssistant
+from homeassistant.components import persistent_notification
+from homeassistant.helpers.translation import async_get_translations
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import entity_registry as er
@@ -38,6 +47,13 @@ from .const import (
     TIME_STR_FORMAT
     )
 from .gtfs_rt_helper import get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities
+from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in
+from .gtfs_filter import (
+    filter_gtfs_zip,
+    read_zip_agencies,
+    read_zip_routes,
+    zip_only_future_dates,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -668,6 +684,229 @@ def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file):
     pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file))
     check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
     
+def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
+                           only_routes=None):
+    """Unpack a zip into the scratch database, synchronously.
+
+    The counterpart of extract_from_zip, minus the fork: the caller is already
+    off the event loop, and an import has to be finished before its routes can
+    be copied out. Nothing here touches the real database.
+
+    only_routes cuts the feed down to those routes before pygtfs sees it.
+    pygtfs pays per row, so this is what makes a national feed usable:
+    measured on gtfs-nl.zip, 15.1 M stop_times filtered in 40 s down to a
+    feed pygtfs imports in half a second, where the full import built a
+    2.6 GB scratch file. When the filter cannot run, the whole feed is
+    imported as before: only slower, never wrong. The filtered path also
+    leaves the source zip untouched, where the historic path strips tables
+    out of it in place.
+
+    Returns True when the scratch file holds a feed.
+    """
+    feed_file = os.path.join(gtfs_dir, file)
+    filtered = None
+    if only_routes:
+        candidate = scratch_file + ".zip"
+        if filter_gtfs_zip(feed_file, candidate, only_routes,
+                           drop_feed_info=clean_feed_info) is not None:
+            filtered = candidate
+            feed_file = candidate
+        else:
+            _LOGGER.warning(
+                "Could not filter %s, importing the whole feed instead", file)
+    if filtered is None:
+        drop = ['shapes.txt', 'transfers.txt', 'fare_attributes.txt',
+                'levels.txt', 'pathways.txt', 'translations.txt']
+        if clean_feed_info:
+            drop.append('feed_info.txt')
+        remove_from_zip(drop, gtfs_dir, file[:-4])
+
+    # same connection arguments as the real database, so the scratch one
+    # behaves identically under a timeout
+    conn = f"{scratch_file}?check_same_thread=False&timeout=60"
+    try:
+        scratch = pygtfs.Schedule(conn)
+        pygtfs.append_feed(scratch, feed_file)
+        ok = bool(scratch.feeds)
+        # the session holds a connection the pool does not know about, so
+        # closing only the engine leaves the file open until garbage
+        # collection - long enough for the cleanup below to fail on Windows
+        scratch.session.close()
+        scratch.engine.dispose()
+        del scratch
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.error("Could not unpack %s into the import database: %s", file, ex)
+        return False
+    finally:
+        if filtered and os.path.exists(filtered):
+            # pygtfs read the filtered zip through a handle it only drops on
+            # collection, and Windows refuses to delete a file still open
+            gc.collect()
+            try:
+                os.remove(filtered)
+            except OSError as ex:
+                _LOGGER.warning("Could not remove %s: %s", filtered, ex)
+    if not ok:
+        _LOGGER.error("The import database holds no feed after unpacking %s", file)
+    return ok
+
+
+def _source_request(data):
+    """The url and headers a source's zip is fetched with, api key included."""
+    url = data["url"]
+    headers = {"User-Agent": "home-assistant-gtfs2"}
+    key = data.get(CONF_API_KEY)
+    if key and data.get(CONF_API_KEY_LOCATION) == "query_string":
+        url = url + "?" + (data.get(CONF_API_KEY_NAME) or "api_key") + "=" + key
+    if key and data.get(CONF_API_KEY_LOCATION) == "header":
+        headers[(data.get(CONF_API_KEY_NAME) or "api_key")] = key
+    return url, headers
+
+
+def ensure_source_zip(hass, path, data):
+    """Make sure the source zip is in place, without starting any import.
+
+    The front half of get_gtfs: same checks, same download, same error codes,
+    minus the part that unpacks the feed into a database. The config flow
+    calls this when a source is submitted, so the lines can be chosen from
+    the zip alone and the import can wait until it knows which routes to
+    keep - on a national feed, the difference between a flow that continues
+    and one that ends on a progress notification.
+
+    Returns None when the zip is ready, else the code the flow already
+    words: "extracting", "no_zip_file", "no_data_file".
+    """
+    gtfs_dir = hass.config.path(path)
+    os.makedirs(gtfs_dir, exist_ok=True)
+    filename = data["file"]
+    zip_path = os.path.join(gtfs_dir, filename + ".zip")
+    if check_extracting(hass, path, filename):
+        return "extracting"
+    if data["extract_from"] == "zip":
+        return None if os.path.exists(zip_path) else "no_zip_file"
+    if not os.path.exists(zip_path):
+        try:
+            url, headers = _source_request(data)
+            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15)
+            r.raise_for_status()
+            with open(zip_path, "wb") as out:
+                out.write(r.content)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("The given URL or GTFS data file/folder was not found: %s", ex)
+            return "no_data_file"
+    return None
+
+
+def open_datasource(gtfs_dir, filename):
+    """Open a datasource that is known to exist, with no extracting gate.
+
+    get_gtfs refuses to answer while anything writes to the file, because a
+    journal used to mean the legacy fork was still building it in place. In
+    the two database model the real file receives short legitimate writes
+    while the sensors live - an index being added, an intern - so a journal
+    can exist for milliseconds and means nothing. Callers that just proved
+    the datasource exists, like the step after a finished import, open it
+    here instead of walking into that gate.
+
+    Returns the schedule, or None when the file is not there.
+    """
+    sqlite_file = os.path.join(gtfs_dir, filename + ".sqlite")
+    if not os.path.exists(sqlite_file):
+        _LOGGER.error("No datasource to open: %s", sqlite_file)
+        return None
+    return pygtfs.Schedule(f"{sqlite_file}?check_same_thread=False&timeout=60")
+
+
+def refresh_datasource(hass, path, data):
+    """Refresh a datasource from its source, keeping the sensors served.
+
+    The legacy update rebuilt the real database in place: on a large feed
+    the sensors read a half-built file for as long as the import took. Here
+    the fresh feed is filtered down to the routes the database actually
+    follows, unpacked into the scratch database, copied into a new real
+    file built beside the old one, and the two are swapped in one rename.
+    The coordinators reopen the file on their next cycle, so they only ever
+    see the old complete data or the new complete data.
+
+    Falls back to the legacy full extract when there is nothing to refresh
+    from: no database yet, or one that follows no route.
+
+    Returns {route_id: stop_times} on success, False on failure, and
+    whatever get_gtfs returns when it falls back.
+    """
+    gtfs_dir = hass.config.path(path)
+    filename = data["file"]
+    real = real_path(gtfs_dir, filename)
+    routes = sorted(routes_in(real))
+    if not routes:
+        _LOGGER.info("Datasource %s follows no route yet, extracting it whole",
+                     filename)
+        return get_gtfs(hass, path, data, True)
+
+    zip_name = filename + ".zip"
+    zip_path = os.path.join(gtfs_dir, zip_name)
+    if data.get("extract_from", "url") == "url":
+        # download beside the current zip and swap only once complete: the
+        # zip is the only full record of the feed and must survive a failed
+        # download
+        fresh = zip_path + ".new"
+        try:
+            url, headers = _source_request(data)
+            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15)
+            r.raise_for_status()
+            with open(fresh, "wb") as out:
+                out.write(r.content)
+            os.replace(fresh, zip_path)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Could not download %s: %s", data.get("url"), ex)
+            if os.path.exists(fresh):
+                try:
+                    os.remove(fresh)
+                except OSError:
+                    pass
+            return False
+    if not os.path.exists(zip_path):
+        _LOGGER.error("No source zip to refresh %s from", filename)
+        return False
+    if data.get("check_source_dates", False) and zip_only_future_dates(zip_path):
+        _LOGGER.info("New file contains only dates in the future, "
+                     "keeping the current data")
+        return False
+
+    # the new real database is built under its own datasource name, so every
+    # existing helper works on it unchanged and nothing it does can touch the
+    # file the sensors are reading
+    staging = filename + ".refresh"
+    new_real = real_path(gtfs_dir, staging)
+
+    def _build(scratch_file):
+        return build_scratch_database(
+            gtfs_dir, zip_name, scratch_file,
+            data.get("clean_feed_info", False), only_routes=routes)
+
+    try:
+        if os.path.exists(new_real):
+            os.remove(new_real)
+        added = import_routes(gtfs_dir, staging, routes, _build)
+        if added is None or len(added) < len(routes):
+            _LOGGER.error("Refresh of %s aborted, the current data stays: %s",
+                          filename, added)
+            return False
+        # intern only: everything in this file was just copied on purpose
+        optimise_datasource(gtfs_dir, staging)
+        os.replace(new_real, real)
+    finally:
+        for leftover in (new_real, new_real + "-journal"):
+            if os.path.exists(leftover):
+                try:
+                    os.remove(leftover)
+                except OSError as ex:
+                    _LOGGER.warning("Could not remove %s: %s", leftover, ex)
+    _LOGGER.info("Refreshed datasource %s from its source: %s stop_times "
+                 "per route", filename, added)
+    return added
+
+
 def check_calendar_dates_from_zip(gtfs_dir,file):
     _LOGGER.debug("Checking if file contains only future data: %s ", file)
     filename = os.path.join(gtfs_dir, file)
@@ -736,10 +975,256 @@ def remove_from_zip(delmelist,gtfs_dir,file):
         return     
 
 
-def get_route_list(schedule, data):
+def get_routes_in_zip(gtfs_dir, filename):
+    """The route_ids the source zip declares, read without unpacking it.
+
+    The zip kept beside a datasource is the only complete record of the feed:
+    a prune leaves routes and stops in place but empties everything that links
+    them, so asking the database which lines exist can only ever return the
+    lines it already knows. Reading the source answers for the whole network.
+
+    routes.txt is small - tens to a few thousand lines - and only one column is
+    needed, so the member is streamed and decoded on the fly rather than
+    extracted to disk.
+
+    Returns an empty set when the zip is gone or unreadable, which the caller
+    treats as "cannot tell", not as "no routes".
+    """
+    path = os.path.join(gtfs_dir, filename + ".zip")
+    if not os.path.exists(path):
+        _LOGGER.debug("No source zip beside datasource %s", filename)
+        return set()
+    try:
+        with zipfile.ZipFile(path) as zin:
+            member = next((n for n in zin.namelist()
+                           if n.rsplit("/", 1)[-1] == "routes.txt"), None)
+            if member is None:
+                _LOGGER.warning("No routes.txt in %s", path)
+                return set()
+            with zin.open(member) as fh:
+                # utf-8-sig: GTFS files routinely carry a byte order mark, and
+                # it would otherwise end up glued to the first column name
+                reader = csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig"))
+                if not reader.fieldnames or "route_id" not in reader.fieldnames:
+                    _LOGGER.warning("No route_id column in %s", member)
+                    return set()
+                return {row["route_id"] for row in reader if row.get("route_id")}
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.warning("Could not read routes from %s: %s", path, ex)
+        return set()
+
+
+def get_agencies_in_zip(gtfs_dir, filename):
+    """The agencies of the source zip, shaped like get_agency_list's rows.
+
+    What the agency step shows when no database exists yet: the feed is the
+    only thing there is to read, and nothing may start importing before the
+    lines are chosen.
+    """
+    rows = read_zip_agencies(os.path.join(gtfs_dir, filename + ".zip"))
+    rows.sort(key=lambda row: str(row.get("agency_name")))
+    return [f"{row.get('agency_id') or '0'}: {row['agency_name']}"
+            for row in rows]
+
+
+def get_route_options_from_zip(gtfs_dir, filename, agency=None):
+    """The route selector options, read from the source zip.
+
+    Same "route_type##route_id##label" values get_route_list builds from the
+    database, and every one carries the "##pruned" flag: no timetable is
+    loaded yet, and that flag is exactly what routes the flow through the
+    screen that imports one. agency narrows to one agency_id; "0" and None
+    mean the whole feed.
+    """
+    rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    if agency and agency != "0":
+        rows = [row for row in rows if (row.get("agency_id") or "0") == agency]
+    options = []
+    for row in rows:
+        label = _route_label(row.get("route_short_name"),
+                             row.get("route_long_name"),
+                             route_id=row["route_id"])
+        options.append(
+            f"{row.get('route_type') or '99'}##{row['route_id']}##{label}##pruned")
+    return sorted(options, key=lambda value: _natural(value.split("##")[2]))
+
+
+def get_route_labels_from_zip(gtfs_dir, filename, route_ids):
+    """get_route_labels when there is no database to ask: names from the zip."""
+    rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    known = {row["route_id"]: _route_label(row.get("route_short_name"),
+                                           row.get("route_long_name"),
+                                           route_id=row["route_id"])
+             for row in rows}
+    return {r: known.get(r, r) for r in route_ids}
+
+
+def routes_in_zip_for_agency(gtfs_dir, filename, route_ids, agency=None):
+    """Cut a list of route_ids down to one agency's, as routes.txt records it.
+
+    The also-import list offers what the feed declares minus what is loaded;
+    on a national feed that is thousands of lines from dozens of operators,
+    when the operator was already named on the agency screen. "0" and None
+    mean no cut.
+    """
+    if not agency or agency == "0":
+        return route_ids
+    rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    owned = {row["route_id"] for row in rows
+             if (row.get("agency_id") or "0") == agency}
+    return [r for r in route_ids if r in owned]
+
+
+def _says_something(part):
+    """Whether a name part carries anything a reader can use.
+
+    A line number is often nothing but digits, so digits count. What does not
+    count is punctuation on its own: SNCF publishes 54 lines whose long name is
+    the string " -", the two ends of a route it did not fill in, and showing
+    that to the user is worse than showing nothing.
+    """
+    return any(character.isalnum() for character in str(part or ""))
+
+
+def _route_endpoints(schedule, route_ids):
+    """Where each of these lines starts and ends, as "A > B".
+
+    Read from one trip per line, which is what the direction step already does
+    on the screen after this one. It is only asked for the lines whose name is
+    unusable, so the query stays small even on a national feed.
+    """
+    if not route_ids:
+        return {}
+    route_ids = sorted(route_ids)
+    placeholders = ", ".join(f":e{i}" for i in range(len(route_ids)))
+    sql = f"""
+    with picked as (
+        select route_id, min(trip_id) as trip_id
+        from trips where route_id in ({placeholders}) group by route_id
+    )
+    select p.route_id, st.stop_sequence, s.stop_name
+    from picked p
+    inner join stop_times st on st.trip_id = p.trip_id
+    inner join stops s on s.stop_id = st.stop_id
+    """  # noqa: S608
+    ends = {}
+    try:
+        with schedule.engine.connect() as conn:
+            rows = conn.execute(
+                text(sql), {f"e{i}": r for i, r in enumerate(route_ids)}).fetchall()
+    except Exception as ex:  # pylint: disable=broad-except
+        # without this the label falls back to the route_id, which is what it
+        # did before: ugly, but never empty
+        _LOGGER.warning("Could not read the ends of %s routes: %s", len(route_ids), ex)
+        return {}
+    for route_id, sequence, name in rows:
+        if not name:
+            continue
+        first, last = ends.get(route_id, (None, None))
+        if first is None or sequence < first[0]:
+            first = (sequence, name)
+        if last is None or sequence > last[0]:
+            last = (sequence, name)
+        ends[route_id] = (first, last)
+    return {route_id: f"{first[1]} > {last[1]}"
+            for route_id, (first, last) in ends.items()
+            if first and last and first[1] != last[1]}
+
+
+def _route_label(short, long_name, endpoints=None, route_id=None):
+    """What the user reads for one line: its number, then where it goes.
+
+    The two parts are kept only if they say something, so a line named
+    "INCONNU" against a long name of " -" no longer reads "INCONNU :  -". When
+    the long name is the one missing, the two ends of the route take its place,
+    which is the thing the user was looking for in the first place.
+    """
+    parts = [str(p) for p in (short, long_name)
+             if p and str(p) != "None" and _says_something(p)]
+    if len(parts) < 2 and endpoints:
+        parts = parts[:1] + [endpoints]
+    if parts:
+        return " : ".join(parts)
+    return str(route_id or "")
+
+
+def _natural(label):
+    """Sort key that reads 2 before 10, the way a line number is read."""
+    out = []
+    for chunk in re.split(r"(\d+)", str(label)):
+        out.append((1, int(chunk)) if chunk.isdigit() else (0, chunk.lower()))
+    return out
+
+
+def get_route_labels(schedule, route_ids):
+    """Readable names for route_ids, as {route_id: "41 : GARE - ESAT RODIN"}.
+
+    routes survives a prune even when its trips do not, so these names are
+    available for lines the datasource no longer carries any timetable for -
+    which is exactly when they need to be offered back.
+    """
+    if not route_ids:
+        return {}
+    out = {}
+    placeholders = ", ".join(f":r{i}" for i in range(len(route_ids)))
+    sql = ("select route_id, route_short_name, route_long_name from routes "
+           f"where route_id in ({placeholders})")  # noqa: S608
+    try:
+        with schedule.engine.connect() as conn:
+            rows = conn.execute(
+                text(sql), {f"r{i}": r for i, r in enumerate(route_ids)}).fetchall()
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.warning("Could not read route names: %s", ex)
+        return {r: r for r in route_ids}
+    rows = list(rows)
+    needs_ends = [r[0] for r in rows if not _says_something(r[2])]
+    endpoints = _route_endpoints(schedule, needs_ends)
+    for route_id, short, long in rows:
+        out[route_id] = _route_label(short, long, endpoints.get(route_id), route_id)
+    # a route the feed declares but routes does not: keep it selectable
+    for r in route_ids:
+        out.setdefault(r, r)
+    return {r: out[r] for r in route_ids}
+
+
+def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
+    """List the routes of a datasource.
+
+    with_trips_only skips the routes that carry no trip. A datasource holds
+    every route of the network, and routes stays complete even when the trips
+    of a route are not (or no longer) loaded, so offering those would send the
+    user to a stop list that comes back empty.
+
+    Routes that a prune emptied are the exception: they are kept, because the
+    user is entitled to add a line the prune removed, and hiding it would leave
+    no way back. They come back flagged so the caller can offer to reload the
+    datasource rather than walking into an empty stop list.
+
+    Which lines those are is read from the source zip, not from the database:
+    a prune empties whatever links routes to stops, so the database can only
+    report the lines it still carries. gtfs_dir enables that lookup; without it
+    the pruned lines are simply not offered, as before.
+    """
     _LOGGER.debug("Getting routes with data: %s", data)
     route_type_where = ""
     agency_where = ""
+    trips_where = ""
+    pruned = set()
+    if with_trips_only:
+        with_trips = "and exists (select 1 from trips t where t.route_id = r.route_id)"
+        if gtfs_dir:
+            in_zip = get_routes_in_zip(gtfs_dir, data["file"])
+            if in_zip:
+                with schedule.engine.connect() as conn:
+                    loaded = {r[0] for r in conn.execute(
+                        text("select distinct route_id from trips"))}
+                # declared by the feed but carrying no trip here: a prune took
+                # them out, and the zip can put them back
+                pruned = in_zip - loaded
+        trips_where = with_trips
+        if pruned:
+            placeholders = ", ".join(f":pr{i}" for i in range(len(pruned)))
+            trips_where = f"and (exists (select 1 from trips t where t.route_id = r.route_id) or r.route_id in ({placeholders}))"
     if data["agency"].split(': ')[0] != "0":
         agency_where = f"and r.agency_id = '{data['agency'].split(': ')[0]}'"
     if data["route_type"] != "99":
@@ -751,44 +1236,265 @@ def get_route_list(schedule, data):
     where 1=1
     {route_type_where}
     {agency_where}
-    order by agency_name, cast(route_id as decimal)
+    {trips_where}
+    order by agency_name
     """  # noqa: S608
     routes_list = []
     routes = []
     with schedule.engine.connect() as conn:
-        rows = conn.execute(text(sql_routes), {"q": "q"}).fetchall()
+        params = {"q": "q"}
+        params.update({f"pr{i}": r for i, r in enumerate(sorted(pruned))})
+        rows = conn.execute(text(sql_routes), params).fetchall()
     for row_cursor in rows:
         row = row_cursor._asdict()
         routes_list.append(list(row_cursor))
+    # the lines whose long name says nothing get the two ends of the route
+    # instead, read in one go rather than one query per line
+    endpoints = _route_endpoints(
+        schedule, [str(x[1]) for x in routes_list if not _says_something(x[3])])
     for x in routes_list:
-        val = str(x[0]) + "##" + str(x[1]) + ": (" + str(x[2]) + " - " + str(x[3]) + ") " + str(x[4])
+        # the value keeps route_type and route_id, which the flow parses back;
+        # what follows the second ## is only ever shown to the user, so it
+        # leads with the line number and where it goes, not the raw id
+        route_type, route_id, short, long, agency = (str(v) for v in x)
+        # route_long_name names the two ends of the line, in no particular
+        # order: the direction is picked on the same screen, so no arrow here
+        shown = _route_label(short, long, endpoints.get(route_id), route_id)
+        if route_id in pruned:
+            # a fourth field the flow reads to know the timetable is missing;
+            # the label itself stays clean, the flow explains it in words
+            val = f"{route_type}##{route_id}##{shown}##pruned"
+        else:
+            val = f"{route_type}##{route_id}##{shown}"
         routes.append(val)
+    # sorted on what the user reads, and read the way a line number is: the
+    # cast on route_id this used to order by is 0 for every id that is not a
+    # number, which is most of them outside a small network
+    routes.sort(key=lambda value: _natural(value.split("##")[2]))
     _LOGGER.debug(f"routes: {routes}")
     return routes
+
+def get_direction_labels(schedule, route_id):
+    """First and last stop of each direction, to label 0 and 1.
+
+    direction_id says nothing on its own, and trip_headsign is often empty,
+    so read where the vehicle actually starts and ends. A circular line ends
+    where it starts, so both directions would read the same: a rotation is
+    told by where it heads first out of the terminus
+    ("Zénith → Zénith via Plissay, Horloge Fleurie"). Returns {"0": "A → B"}
+    with only the directions that have trips.
+
+    The label trip is the longest one of its direction: an arbitrary trip
+    would as easily be a short turn, naming the line after a partial run
+    (GVB tram 1 read "Surinameplein → Azartplein" for a Matterhorn line).
+    """
+    _LOGGER.debug("Getting direction labels for route: %s", route_id)
+    sql = """
+    SELECT t.direction_id, s.stop_name, st.stop_sequence
+    from trips t
+    inner join stop_times st on st.trip_id = t.trip_id
+    inner join stops s on s.stop_id = st.stop_id
+    where t.trip_id in (
+        select trip_id from (
+            select st2.trip_id as trip_id, t2.direction_id as d,
+                   count(*) as n
+            from trips t2
+            inner join stop_times st2 on st2.trip_id = t2.trip_id
+            where t2.route_id = :route_id
+            group by st2.trip_id
+        )
+        group by d
+        having n = max(n)
+    )
+    order by t.direction_id, st.stop_sequence
+    """
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql), {"route_id": route_id}).fetchall()
+    stops = {}
+    for direction, name, _seq in rows:
+        key = str(direction if direction is not None else 0)
+        stops.setdefault(key, []).append(name)
+    labels = {}
+    for key, names in stops.items():
+        if not names or not names[0] or not names[-1]:
+            continue
+        label = f"{names[0]} → {names[-1]}"
+        if names[0] == names[-1]:
+            # circular: the two rotations serve the same stops (opposite
+            # platforms share a name), so comparing stop sets says nothing;
+            # what tells them apart is where each heads first
+            via = [n for n in names[1:-1] if n != names[0]][:2]
+            if via:
+                label += " via " + ", ".join(via)
+        labels[key] = label
+    _LOGGER.debug("Direction labels: %s", labels)
+    return labels
+
+
+def has_trip_between(schedule, route_id, origin_id, destination_id, direction=None):
+    """Whether any trip of a route calls at both stops, in this order.
+
+    This asks whether the journey exists at all, not whether a bus is due:
+    a sensor set up in the evening, or on a day the line does not run, is
+    still a valid sensor. Times are the coordinator's business. The stop
+    pair usually implies the direction, except on a circular line where
+    both rotations run it in the same order: pass direction to tell them
+    apart, trips without a direction_id still matching.
+    """
+    direction_where = ""
+    params = {
+        "route_id": route_id,
+        "origin_id": origin_id,
+        "destination_id": destination_id,
+    }
+    if direction is not None:
+        direction_where = "and (t.direction_id = :direction or t.direction_id is null)"
+        params["direction"] = int(direction)
+    sql = f"""
+    SELECT 1
+    from trips t
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stop_times d on d.trip_id = t.trip_id
+    where t.route_id = :route_id
+      and o.stop_id = :origin_id
+      and d.stop_id = :destination_id
+      and o.stop_sequence < d.stop_sequence
+      {direction_where}
+    limit 1
+    """
+    with schedule.engine.connect() as conn:
+        row = conn.execute(text(sql), params).fetchone()
+    _LOGGER.debug("Trip between %s and %s on %s (direction %s): %s",
+                  origin_id, destination_id, route_id, direction, bool(row))
+    return bool(row)
+
+
+def has_train_trip_between(schedule, origin_name, destination_name, line=None):
+    """Whether any rail trip serves both stations, in this order.
+
+    The train path works with station names rather than stop ids, matched
+    the way get_next_departure does: on the name's prefix, since a feed
+    splits a station into several platform stops sharing it. Held to one
+    line when the flow picked one, like the departures themselves.
+    """
+    line_where = "and r.route_short_name = :line" if line else ""
+    sql = f"""
+    SELECT 1
+    from trips t
+    inner join routes r on r.route_id = t.route_id
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stops so on so.stop_id = o.stop_id
+    inner join stop_times d on d.trip_id = t.trip_id
+    inner join stops sd on sd.stop_id = d.stop_id
+    where r.route_type in (2,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117)
+      and so.stop_name like :origin_name
+      and sd.stop_name like :destination_name
+      and o.stop_sequence < d.stop_sequence
+      {line_where}
+    limit 1
+    """
+    with schedule.engine.connect() as conn:
+        row = conn.execute(text(sql), {
+            "origin_name": origin_name + "%",
+            "destination_name": destination_name + "%",
+            "line": line,
+        }).fetchone()
+    _LOGGER.debug("Train trip between %s and %s (line %s): %s",
+                  origin_name, destination_name, line, bool(row))
+    return bool(row)
+
+
+def get_station_list(schedule, route_id=None):
+    """List the distinct stop names, for feeds where stop ids are unusable.
+
+    A station shows up in GTFS as several stops, one per platform or mode, so
+    the ids cannot be offered as they are. The names repeat instead: on a
+    regional rail feed, 925 stops come down to 379 names.
+    """
+    _LOGGER.debug("Getting station list for route: %s", route_id)
+    where = ""
+    if route_id:
+        where = f"""
+        where exists (
+            select 1 from stop_times st
+            inner join trips t on t.trip_id = st.trip_id
+            where st.stop_id = s.stop_id and t.route_id = '{route_id}'
+        )"""
+    sql = f"""
+    SELECT distinct s.stop_name
+    from stops s
+    {where}
+    order by s.stop_name
+    """  # noqa: S608
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql), {"q": "q"}).fetchall()
+    stations = [r[0] for r in rows if r[0]]
+    _LOGGER.debug("Stations returned: %s", len(stations))
+    return stations
+
 
 def get_stop_list(schedule, route_id, direction):
     _LOGGER.debug("Getting stops list for route: %s", route_id)
     sql_stops = f"""
-    SELECT distinct(s.stop_id), s.stop_name, st.stop_sequence
+    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence
     from trips t
     inner join stop_times st on st.trip_id = t.trip_id
     inner join stops s on s.stop_id = st.stop_id
     where  t.route_id = '{route_id}'
     and (t.direction_id = {direction} or t.direction_id is null)
-    order by st.stop_sequence
+    order by st.trip_id, st.stop_sequence
     """  # noqa: S608
-    stops_list = []
     stops = []
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql_stops), {"q": "q"}).fetchall()
-    for row_cursor in rows:
-        row = row_cursor._asdict()
-        stops_list.append(list(row_cursor))
-    for x in stops_list:
-        val = x[0] + ": " + x[1] + ' (' + str(x[2]) + ')'
+    trips = {}
+    names = {}
+    for trip_id, stop_id, stop_name, stop_sequence in rows:
+        trips.setdefault(trip_id, []).append((stop_id, stop_sequence))
+        names[stop_id] = stop_name
+    # Trips of one direction do not all run the full length, and a partial
+    # trip renumbers stop_sequence from 0, so sorting the union of all trips
+    # by stop_sequence interleaves the start of the route with its middle
+    # (TAO tram B: 110 short runs from mid-route). Walk the fullest trip
+    # first instead, it is the route as the rider rides it, then slot each
+    # stop it skips right after the stop preceding it on a trip that does
+    # serve it.
+    order = []
+    kept_seq = {}
+    for _trip_id, trip_stops in sorted(
+        trips.items(), key=lambda kv: (-len(kv[1]), kv[0])
+    ):
+        prev = -1
+        for stop_id, stop_sequence in trip_stops:
+            if stop_id in kept_seq:
+                prev = order.index(stop_id)
+                continue
+            prev += 1
+            order.insert(prev, stop_id)
+            kept_seq[stop_id] = stop_sequence
+    kept = [[stop_id, names[stop_id], kept_seq[stop_id]] for stop_id in order]
+    # A circular line calls at its terminus twice, under ids of its own: TAO
+    # line 22 runs Zenith to Zenith and offers three stops all reading
+    # "Zenith", which the user cannot tell apart. Number the repeats in the
+    # order the line calls at them, so the choice is about the journey rather
+    # than about a raw id. The value keeps the id untouched, only the readable
+    # part changes.
+    by_name = {}
+    for x in kept:
+        by_name.setdefault(x[1], []).append(x)
+    rank = {}
+    for name, group in by_name.items():
+        if len(group) > 1:
+            for n, x in enumerate(group, 1):
+                rank[x[0]] = n
+    for x in kept:
+        shown = x[1]
+        if x[0] in rank:
+            shown = f"{shown} #{rank[x[0]]}"
+        val = x[0] + ": " + shown + ' (' + str(x[2]) + ')'
         stops.append(val)
     _LOGGER.debug(f"Route stops: {stops}")
-    return stops 
+    return stops
     
 def get_agency_list(schedule, data):
     _LOGGER.debug("Getting agencies with data: %s", data)
@@ -823,6 +1529,26 @@ async def get_datasources(hass, path) -> dict[str]:
     _LOGGER.debug(f"Datasources in folder: {datasources}")
     return datasources
 
+
+async def get_zipfiles(hass, path) -> list[str]:
+    """List the zip files sitting in the gtfs2 folder, without their extension.
+
+    get_datasources lists datasources that were already extracted (.sqlite);
+    this lists the archives still waiting to be extracted, so the user can pick
+    one instead of typing its name.
+    """
+    gtfs_dir = hass.config.path(path)
+    os.makedirs(gtfs_dir, exist_ok=True)
+    files = await hass.async_add_executor_job(os.listdir, gtfs_dir)
+    zipfiles = sorted(
+        f[:-4] for f in files
+        if f.endswith(".zip") and not f.endswith("_temp.zip")
+        and not f.endswith("_temp_out.zip")
+    )
+    _LOGGER.debug(f"Zip files in folder: {zipfiles}")
+    return zipfiles
+
+
 def remove_datasource(hass, path, filename, include_sqlite):
     gtfs_dir = hass.config.path(path)
     _LOGGER.info(f"Removing datasource: {os.path.join(gtfs_dir, filename)}.*")
@@ -850,6 +1576,172 @@ def check_extracting(hass, gtfs_dir,file):
     return False    
 
 
+def check_extraction_result(gtfs_dir, filename):
+    """Whether an extraction actually produced a usable datasource.
+
+    check_extracting only says that nothing is writing any more, which a
+    process killed halfway satisfies just as well as one that succeeded: both
+    leave no journal behind. So finishing has to be told apart from working.
+
+    pygtfs writes the _feed row last, once every table is loaded, which makes
+    it the honest marker. The counts confirm the tables a journey needs are
+    populated, since a feed with no routes or no stop_times cannot answer any
+    query the integration makes.
+
+    Returns (ok, detail). On success detail holds the row counts; on failure
+    it is a reason code, so the notification can word it in the user's
+    language rather than repeat an English sentence built here.
+    """
+    sqlite_file = os.path.join(gtfs_dir, filename + ".sqlite")
+    if not os.path.exists(sqlite_file):
+        return False, "no_database"
+    try:
+        conn = sqlite3.connect(sqlite_file, timeout=10)
+    except sqlite3.Error as ex:
+        _LOGGER.error("Cannot open %s: %s", sqlite_file, ex)
+        return False, "cannot_open"
+    try:
+        cur = conn.cursor()
+        tables = {r[0] for r in cur.execute(
+            "select name from sqlite_master where type in ('table', 'view')")}
+        missing = {"_feed", "routes", "trips", "stops", "stop_times"} - tables
+        if missing:
+            _LOGGER.error("Missing tables in %s: %s", filename, sorted(missing))
+            return False, "tables_missing"
+        # the _feed row is written once everything else is in
+        if not cur.execute("select count(*) from _feed").fetchone()[0]:
+            return False, "unfinished"
+        counts = {t: cur.execute(f"select count(*) from {t}").fetchone()[0]  # noqa: S608
+                  for t in ("routes", "trips", "stops", "stop_times")}
+        empty = [t for t, n in counts.items() if not n]
+        if empty:
+            _LOGGER.error("Empty tables in %s: %s", filename, empty)
+            return False, "tables_empty"
+    except sqlite3.Error as ex:
+        _LOGGER.error("Cannot read %s: %s", sqlite_file, ex)
+        return False, "unreadable"
+    finally:
+        conn.close()
+    _LOGGER.debug("Extraction of %s looks complete: %s", filename, counts)
+    # the counts themselves, so the notification can word them in the user's
+    # language: "43 routes, 679988 stop_times" is table names, untranslatable
+    # and of no use to whoever reads it
+    return True, counts
+
+
+async def async_watch_extraction(hass: HomeAssistant, filename: str):
+    """Wait for an extraction to end, then say how it went.
+
+    The unpacking runs in a detached process, which has its own copy of hass
+    and no event loop: it cannot raise a notification itself, and anything it
+    creates dies with it. So the watching is done here, and the only thing that
+    crosses the boundary is the state of the files on disk.
+
+    This exists because the config flow is not a reliable witness. Closing its
+    window abandons the flow while the extraction carries on, leaving no way to
+    learn that it finished, or whether it worked.
+    """
+    gtfs_dir = hass.config.path(DEFAULT_PATH)
+    # every source goes through the progress step now, including one already
+    # unpacked. Nothing happened there, so there is nothing to announce.
+    ok, _ = await hass.async_add_executor_job(
+        check_extraction_result, gtfs_dir, filename)
+    if ok and not await hass.async_add_executor_job(
+        check_extracting, hass, DEFAULT_PATH, filename
+    ):
+        _LOGGER.debug("Nothing to watch for %s, it is already built", filename)
+        return
+    # the fork needs a moment before it creates the journal, so a datasource
+    # that does not look busy yet is not necessarily done
+    await asyncio.sleep(10)
+    while await hass.async_add_executor_job(
+        check_extracting, hass, DEFAULT_PATH, filename
+    ):
+        await asyncio.sleep(15)
+
+    ok, detail = await hass.async_add_executor_job(
+        check_extraction_result, gtfs_dir, filename)
+    # Whoever reads this closed the progress window: they left before knowing
+    # how it went, and have to pick the flow back up by hand. So say where to
+    # go, not just what happened.
+    if ok:
+        _LOGGER.info("Extraction of %s finished: %s", filename, detail)
+        await _async_notify(hass, "extract_ready", f"gtfs2_extract_{filename}",
+                            file=filename, routes=detail.get("routes", 0),
+                            stops=detail.get("stops", 0))
+    else:
+        _LOGGER.error("Extraction of %s failed: %s", filename, detail)
+        # the reason is a key of its own, so the whole message is translated
+        # rather than a translated frame around an English sentence
+        reason = await _async_text(hass, f"reason_{detail}", detail)
+        await _async_notify(hass, "extract_failed", f"gtfs2_extract_{filename}",
+                            file=filename, detail=reason)
+
+
+async def async_notify_import(hass, filename, routes, added):
+    """Report how an import went, for a user who closed the progress window.
+
+    The import runs in the executor and reaches its end whatever happens to the
+    flow, but an abandoned flow means nobody is left to say so. Called from a
+    background task, which outlives it.
+    """
+    if not added:
+        _LOGGER.error("Import into %s failed for %s", filename, routes)
+        await _async_notify(hass, "import_failed", f"gtfs2_import_{filename}",
+                            file=filename)
+        return
+    lines = ", ".join(r.split(":")[-1] for r in added)
+    _LOGGER.info("Import into %s added %s", filename, added)
+    await _async_notify(hass, "import_done", f"gtfs2_import_{filename}",
+                        file=filename, lines=lines)
+
+
+async def async_notify_line_orphaned(hass, filename, line):
+    """Say that a line's last sensor is gone while its timetable remains.
+
+    Raised by the entry removal hook. Deliberately not a prune: the user may
+    be reshuffling sensors and want the line right back, so the notification
+    names what is now dead weight and the service that drops it, and the
+    choice stays theirs.
+    """
+    _LOGGER.info("No sensor reads line %s of %s any more", line, filename)
+    await _async_notify(hass, "line_orphaned", f"gtfs2_prune_{filename}",
+                        file=filename, line=line)
+
+
+async def _async_notify(hass, key, notification_id, **values):
+    """Raise a notification in the user's language.
+
+    A notification is read outside any config flow, so it cannot lean on the
+    placeholders Home Assistant fills there: the strings are fetched and
+    formatted here. They live under a "notification" section of strings.json,
+    alongside the flow's own, so translating the integration covers them too.
+
+    Falls back to the key itself when a translation is missing, which is
+    visible without being fatal.
+    """
+    persistent_notification.async_create(
+        hass,
+        await _async_text(hass, key, key, **values),
+        title=await _async_text(hass, f"{key}_title", "GTFS", **values),
+        notification_id=notification_id)
+
+
+async def _async_text(hass, name, default, **values):
+    """One notification string, in the user's language, placeholders filled."""
+    try:
+        strings = await async_get_translations(
+            hass, hass.config.language, "notification", {DOMAIN})
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.warning("Could not load notification strings: %s", ex)
+        strings = {}
+    raw = strings.get(f"component.{DOMAIN}.notification.{name}", default)
+    try:
+        return raw.format(**values)
+    except (KeyError, IndexError):
+        return raw
+
+
 def check_datasource_index(hass, schedule, gtfs_dir, file):
     _LOGGER.debug("Check datasource index for file: %s", file)
     if check_extracting(hass, gtfs_dir,file):
@@ -859,13 +1751,19 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
     SELECT count(*) as checkidx
     FROM sqlite_master
     WHERE
-    type= 'index' and tbl_name = 'stop_times' and name like '%trip_id%';
+    (type= 'index' and tbl_name = 'stop_times' and name like '%trip_id%')
+    -- an interned datasource exposes stop_times as a view: its indexes
+    -- live on gtfs2_stop_times and must not be recreated here
+    or (type = 'view' and name = 'stop_times');
     """
     sql_index_2 = f"""
     SELECT count(*) as checkidx
     FROM sqlite_master
     WHERE
-    type= 'index' and tbl_name = 'stop_times' and name like '%stop_id%';
+    (type= 'index' and tbl_name = 'stop_times' and name like '%stop_id%')
+    -- an interned datasource exposes stop_times as a view: its indexes
+    -- live on gtfs2_stop_times and must not be recreated here
+    or (type = 'view' and name = 'stop_times');
     """
     sql_index_3 = f"""
     SELECT count(*) as checkidx
@@ -1615,4 +2513,4 @@ async def get_trip_stops(hass, data):
     
     _LOGGER.debug("Tripstops returned: %s", _tripstops)
     schedule.engine.dispose()
-    return _tripstops       
+    return _tripstops
