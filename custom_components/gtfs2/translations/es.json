@@ -209,6 +209,7 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Fuente de datos eliminada, esto puede afectar a las rutas existentes",
+      "generic_failure": "Fallo general, compruebe los registros",
       "stop_incorrect": "Destino inicial y/o final incorrecto, posiblemente no hay transporte 'hoy' o no en la misma dirección, compruebe los registros",
       "no_data_file": "Problema de recopilación de datos: URL incorrecta o nombre de archivo que no está en la carpeta correcta",
       "no_stops": "Problema de recogida de datos: probablemente no hay paradas en la ruta seleccionada",
