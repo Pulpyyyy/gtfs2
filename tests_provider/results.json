@@ -3141,15 +3141,9 @@
             "served": true,
             "to_stop": 1
           },
-          "got": {
-            "destination": "3981274",
-            "direction": 1,
-            "origin": "3980234",
-            "route": "152331",
-            "trip": "380800613"
-          },
+          "got": null,
           "ok": true,
-          "text": "asked 3980234 -> 3981274 on 152331 d0 (stop 12 to stop 1 of a 12-stop ride): got 3980234 -> 3981274 on 152331 d1, trip 380800613"
+          "text": "asked 3980234 -> 3981274 on 152331 d0 (stop 12 to stop 1 of a 12-stop ride): no departure"
         },
         {
           "asked": {
@@ -3877,15 +3871,9 @@
             "served": true,
             "to_stop": 1
           },
-          "got": {
-            "destination": "3980234",
-            "direction": 0,
-            "origin": "3981274",
-            "route": "152331",
-            "trip": "380800618"
-          },
+          "got": null,
           "ok": true,
-          "text": "asked 3981274 -> 3980234 on 152331 d1 (stop 15 to stop 1 of a 15-stop ride): got 3981274 -> 3980234 on 152331 d0, trip 380800618"
+          "text": "asked 3981274 -> 3980234 on 152331 d1 (stop 15 to stop 1 of a 15-stop ride): no departure"
         },
         {
           "asked": {
@@ -5682,15 +5670,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "3980102",
-            "direction": 1,
-            "origin": "3979878",
-            "route": "152328",
-            "trip": "380799628"
-          },
-          "ok": false,
-          "text": "asked 3979878 -> 3980102 on 152328 d0 (stop 23 to stop 1 of a 23-stop ride, this direction does not make it): got 3979878 -> 3980102 on 152328 d1, trip 380799628"
+          "got": null,
+          "ok": true,
+          "text": "asked 3979878 -> 3980102 on 152328 d0 (stop 23 to stop 1 of a 23-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -5817,8 +5799,8 @@
       "fixture": "gvb",
       "id": "gvb-7-d0-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "152328"
     },
     {
@@ -6273,15 +6255,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "3979878",
-            "direction": 0,
-            "origin": "3980102",
-            "route": "152328",
-            "trip": "380799711"
-          },
-          "ok": false,
-          "text": "asked 3980102 -> 3979878 on 152328 d1 (stop 24 to stop 1 of a 24-stop ride, this direction does not make it): got 3980102 -> 3979878 on 152328 d0, trip 380799711"
+          "got": null,
+          "ok": true,
+          "text": "asked 3980102 -> 3979878 on 152328 d1 (stop 24 to stop 1 of a 24-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -6453,8 +6429,8 @@
       "fixture": "gvb",
       "id": "gvb-7-d1-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "152328"
     },
     {
@@ -7379,15 +7355,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "CCO15A",
-            "direction": 1,
-            "origin": "GSNF0A",
-            "route": "A",
-            "trip": "1418363764878"
-          },
-          "ok": false,
-          "text": "asked GSNF0A -> CCO15A on A d0 (stop 35 to stop 1 of a 35-stop ride, this direction does not make it): got GSNF0A -> CCO15A on A d1, trip 1418363764878"
+          "got": null,
+          "ok": true,
+          "text": "asked GSNF0A -> CCO15A on A d0 (stop 35 to stop 1 of a 35-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -7424,8 +7394,8 @@
       "fixture": "palmbus",
       "id": "palmbus-A-d0-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "A"
     },
     {
@@ -7542,15 +7512,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "GSNF0A",
-            "direction": 0,
-            "origin": "CCO15A",
-            "route": "A",
-            "trip": "1418363764404"
-          },
-          "ok": false,
-          "text": "asked CCO15A -> GSNF0A on A d1 (stop 36 to stop 1 of a 36-stop ride, this direction does not make it): got CCO15A -> GSNF0A on A d0, trip 1418363764404"
+          "got": null,
+          "ok": true,
+          "text": "asked CCO15A -> GSNF0A on A d1 (stop 36 to stop 1 of a 36-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -7587,8 +7551,8 @@
       "fixture": "palmbus",
       "id": "palmbus-A-d1-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "A"
     },
     {
@@ -7933,15 +7897,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "GSNF0R",
-            "direction": 1,
-            "origin": "MSCE0A",
-            "route": "B",
-            "trip": "1418363764159"
-          },
-          "ok": false,
-          "text": "asked MSCE0A -> GSNF0R on B d0 (stop 29 to stop 1 of a 29-stop ride, this direction does not make it): got MSCE0A -> GSNF0R on B d1, trip 1418363764159"
+          "got": null,
+          "ok": true,
+          "text": "asked MSCE0A -> GSNF0R on B d0 (stop 29 to stop 1 of a 29-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -7978,8 +7936,8 @@
       "fixture": "palmbus",
       "id": "palmbus-B-d0-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "B"
     },
     {
@@ -8471,15 +8429,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "MSCE0A",
-            "direction": 0,
-            "origin": "GSNF0R",
-            "route": "B",
-            "trip": "1418363764271"
-          },
-          "ok": false,
-          "text": "asked GSNF0R -> MSCE0A on B d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): got GSNF0R -> MSCE0A on B d0, trip 1418363764271"
+          "got": null,
+          "ok": true,
+          "text": "asked GSNF0R -> MSCE0A on B d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -8606,8 +8558,8 @@
       "fixture": "palmbus",
       "id": "palmbus-B-d1-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "B"
     },
     {
@@ -8686,11 +8638,11 @@
             "destination": "Les Aubrais",
             "direction": 0,
             "origin": "Paris Austerlitz",
-            "route": "P8",
-            "trip": "OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106"
+            "route": "K8+",
+            "trip": "OCESN860503F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87547000:87543009:3:726:20261211"
           },
-          "ok": false,
-          "text": "asked Paris Austerlitz -> Les Aubrais on K8+ (stop 1 to stop 2 of a 2-stop ride): got Paris Austerlitz -> Les Aubrais on P8 d0, trip OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106"
+          "ok": true,
+          "text": "asked Paris Austerlitz -> Les Aubrais on K8+ (stop 1 to stop 2 of a 2-stop ride): got Paris Austerlitz -> Les Aubrais on K8+ d0, trip OCESN860503F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87547000:87543009:3:726:20261211"
         },
         {
           "asked": {
@@ -8706,11 +8658,11 @@
             "destination": "Orléans",
             "direction": 0,
             "origin": "Paris Austerlitz",
-            "route": "P8",
-            "trip": "OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106"
+            "route": "K8+",
+            "trip": "OCESN860503F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87547000:87543009:3:726:20261211"
           },
-          "ok": false,
-          "text": "asked Paris Austerlitz -> Orléans on K8+ (stop 1 to stop 3 of a 3-stop ride): got Paris Austerlitz -> Orléans on P8 d0, trip OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106"
+          "ok": true,
+          "text": "asked Paris Austerlitz -> Orléans on K8+ (stop 1 to stop 3 of a 3-stop ride): got Paris Austerlitz -> Orléans on K8+ d0, trip OCESN860503F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87547000:87543009:3:726:20261211"
         },
         {
           "asked": {
@@ -8726,11 +8678,11 @@
             "destination": "Les Aubrais",
             "direction": 0,
             "origin": "Paris Austerlitz",
-            "route": "P8",
-            "trip": "OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106"
+            "route": "K8+",
+            "trip": "OCESN860503F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87547000:87543009:3:726:20261211"
           },
-          "ok": false,
-          "text": "asked Paris Austerlitz -> Les Aubrais on K8+ (stop 1 to stop 2 of a 3-stop ride): got Paris Austerlitz -> Les Aubrais on P8 d0, trip OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106"
+          "ok": true,
+          "text": "asked Paris Austerlitz -> Les Aubrais on K8+ (stop 1 to stop 2 of a 3-stop ride): got Paris Austerlitz -> Les Aubrais on K8+ d0, trip OCESN860503F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87547000:87543009:3:726:20261211"
         },
         {
           "asked": {
@@ -8746,11 +8698,11 @@
             "destination": "Orléans",
             "direction": 0,
             "origin": "Les Aubrais",
-            "route": "P8",
-            "trip": "OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106"
+            "route": "K8+",
+            "trip": "OCESN860503F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87547000:87543009:3:726:20261211"
           },
-          "ok": false,
-          "text": "asked Les Aubrais -> Orléans on K8+ (stop 2 to stop 3 of a 3-stop ride): got Les Aubrais -> Orléans on P8 d0, trip OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106"
+          "ok": true,
+          "text": "asked Les Aubrais -> Orléans on K8+ (stop 2 to stop 3 of a 3-stop ride): got Les Aubrais -> Orléans on K8+ d0, trip OCESN860503F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87547000:87543009:3:726:20261211"
         },
         {
           "asked": {
@@ -8817,8 +8769,8 @@
       "fixture": "sncf-journeys",
       "id": "sncf-journeys-K8+-d0-pairs",
       "kind": "pairs",
-      "outcome": "xfailed",
-      "reason": "a train journey is matched by stop name prefix on any line, not the asked one",
+      "outcome": "passed",
+      "reason": null,
       "route": "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
     },
     {
@@ -8857,11 +8809,11 @@
             "destination": "Les Aubrais Gare Routière",
             "direction": 1,
             "origin": "Orléans",
-            "route": "P8",
-            "trip": "OCESN424586R1187_R:CTE:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87543090:8:1350:20261211"
+            "route": "K8+",
+            "trip": "OCESN425012R1187_R:CTE:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87737429:3:1500:20261106"
           },
-          "ok": false,
-          "text": "asked Orléans -> Les Aubrais Gare Routière on K8+ (stop 1 to stop 2 of a 3-stop ride): got Orléans -> Les Aubrais Gare Routière on P8 d1, trip OCESN424586R1187_R:CTE:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87543090:8:1350:20261211"
+          "ok": true,
+          "text": "asked Orléans -> Les Aubrais Gare Routière on K8+ (stop 1 to stop 2 of a 3-stop ride): got Orléans -> Les Aubrais Gare Routière on K8+ d1, trip OCESN425012R1187_R:CTE:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87737429:3:1500:20261106"
         },
         {
           "asked": {
@@ -9068,8 +9020,8 @@
       "fixture": "sncf-journeys",
       "id": "sncf-journeys-K8+-d1-pairs",
       "kind": "pairs",
-      "outcome": "xfailed",
-      "reason": "a train journey is matched by stop name prefix on any line, not the asked one",
+      "outcome": "passed",
+      "reason": null,
       "route": "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
     },
     {
@@ -11043,11 +10995,11 @@
             "destination": "Paris Austerlitz",
             "direction": 1,
             "origin": "Orléans",
-            "route": "K8+",
-            "trip": "OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+            "route": "P8",
+            "trip": "OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
           },
-          "ok": false,
-          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 11 of a 11-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+          "ok": true,
+          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 11 of a 11-stop ride): got Orléans -> Paris Austerlitz on P8 d1, trip OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
         },
         {
           "asked": {
@@ -11103,11 +11055,11 @@
             "destination": "Paris Austerlitz",
             "direction": 1,
             "origin": "Orléans",
-            "route": "K8+",
-            "trip": "OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+            "route": "P8",
+            "trip": "OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
           },
-          "ok": false,
-          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 12 of a 12-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+          "ok": true,
+          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 12 of a 12-stop ride): got Orléans -> Paris Austerlitz on P8 d1, trip OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
         },
         {
           "asked": {
@@ -11163,11 +11115,11 @@
             "destination": "Paris Austerlitz",
             "direction": 1,
             "origin": "Orléans",
-            "route": "K8+",
-            "trip": "OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+            "route": "P8",
+            "trip": "OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
           },
-          "ok": false,
-          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 10 of a 10-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+          "ok": true,
+          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 10 of a 10-stop ride): got Orléans -> Paris Austerlitz on P8 d1, trip OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
         },
         {
           "asked": {
@@ -11223,11 +11175,11 @@
             "destination": "Paris Austerlitz",
             "direction": 1,
             "origin": "Orléans",
-            "route": "K8+",
-            "trip": "OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+            "route": "P8",
+            "trip": "OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
           },
-          "ok": false,
-          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 9 of a 9-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+          "ok": true,
+          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 9 of a 9-stop ride): got Orléans -> Paris Austerlitz on P8 d1, trip OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
         },
         {
           "asked": {
@@ -11283,11 +11235,11 @@
             "destination": "Paris Austerlitz",
             "direction": 1,
             "origin": "Orléans",
-            "route": "K8+",
-            "trip": "OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+            "route": "P8",
+            "trip": "OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
           },
-          "ok": false,
-          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 11 of a 11-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+          "ok": true,
+          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 11 of a 11-stop ride): got Orléans -> Paris Austerlitz on P8 d1, trip OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
         },
         {
           "asked": {
@@ -11343,11 +11295,11 @@
             "destination": "Paris Austerlitz",
             "direction": 1,
             "origin": "Orléans",
-            "route": "K8+",
-            "trip": "OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+            "route": "P8",
+            "trip": "OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
           },
-          "ok": false,
-          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 8 of a 8-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+          "ok": true,
+          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 8 of a 8-stop ride): got Orléans -> Paris Austerlitz on P8 d1, trip OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
         },
         {
           "asked": {
@@ -11403,11 +11355,11 @@
             "destination": "Paris Austerlitz",
             "direction": 1,
             "origin": "Orléans",
-            "route": "K8+",
-            "trip": "OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+            "route": "P8",
+            "trip": "OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
           },
-          "ok": false,
-          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 5 of a 5-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119"
+          "ok": true,
+          "text": "asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 5 of a 5-stop ride): got Orléans -> Paris Austerlitz on P8 d1, trip OCESN860582F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87547000:12:801:20261211"
         },
         {
           "asked": {
@@ -11454,8 +11406,8 @@
       "fixture": "sncf-journeys",
       "id": "sncf-journeys-P8(CDD3F95:)-d1-pairs",
       "kind": "pairs",
-      "outcome": "xfailed",
-      "reason": "a train journey is matched by stop name prefix on any line, not the asked one",
+      "outcome": "passed",
+      "reason": null,
       "route": "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"
     },
     {
@@ -11472,13 +11424,13 @@
           },
           "got": {
             "destination": "ORLEANS:StopArea:06001010",
-            "direction": 1,
+            "direction": 0,
             "origin": "ORLEANS:StopArea:01001010",
             "route": "ORLEANS:Line:22",
-            "trip": "ORLEANS:VehicleJourney:22_R_100_10_2280_1_062801"
+            "trip": "ORLEANS:VehicleJourney:22_A_98_10_2281_1_064001"
           },
           "ok": true,
-          "text": "asked ORLEANS:StopArea:01001010 -> ORLEANS:StopArea:06001010 on ORLEANS:Line:22 d0 (stop 1 to stop 32 of a 32-stop ride): got ORLEANS:StopArea:01001010 -> ORLEANS:StopArea:06001010 on ORLEANS:Line:22 d1, trip ORLEANS:VehicleJourney:22_R_100_10_2280_1_062801"
+          "text": "asked ORLEANS:StopArea:01001010 -> ORLEANS:StopArea:06001010 on ORLEANS:Line:22 d0 (stop 1 to stop 32 of a 32-stop ride): got ORLEANS:StopArea:01001010 -> ORLEANS:StopArea:06001010 on ORLEANS:Line:22 d0, trip ORLEANS:VehicleJourney:22_A_98_10_2281_1_064001"
         },
         {
           "asked": {
@@ -12061,15 +12013,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:00035910",
-            "direction": 1,
-            "origin": "ORLEANS:StopArea:01001712",
-            "route": "ORLEANS:Line:40",
-            "trip": "ORLEANS:VehicleJourney:40_R_85_10_4002_1_061401"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:01001712 -> ORLEANS:StopArea:00035910 on ORLEANS:Line:40 d0 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): got ORLEANS:StopArea:01001712 -> ORLEANS:StopArea:00035910 on ORLEANS:Line:40 d1, trip ORLEANS:VehicleJourney:40_R_85_10_4002_1_061401"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:01001712 -> ORLEANS:StopArea:00035910 on ORLEANS:Line:40 d0 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -12106,8 +12052,8 @@
       "fixture": "tao-journeys",
       "id": "tao-journeys-40-d0-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "ORLEANS:Line:40"
     },
     {
@@ -12650,15 +12596,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:01001712",
-            "direction": 0,
-            "origin": "ORLEANS:StopArea:00035910",
-            "route": "ORLEANS:Line:40",
-            "trip": "ORLEANS:VehicleJourney:40_A_86_10_4002_1_070100"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:00035910 -> ORLEANS:StopArea:01001712 on ORLEANS:Line:40 d1 (stop 26 to stop 1 of a 26-stop ride, this direction does not make it): got ORLEANS:StopArea:00035910 -> ORLEANS:StopArea:01001712 on ORLEANS:Line:40 d0, trip ORLEANS:VehicleJourney:40_A_86_10_4002_1_070100"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:00035910 -> ORLEANS:StopArea:01001712 on ORLEANS:Line:40 d1 (stop 26 to stop 1 of a 26-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -12830,8 +12770,8 @@
       "fixture": "tao-journeys",
       "id": "tao-journeys-40-d1-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "ORLEANS:Line:40"
     },
     {
@@ -13827,15 +13767,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:THOPIT1",
-            "direction": 1,
-            "origin": "ORLEANS:StopArea:TVERNE1",
-            "route": "ORLEANS:Line:A",
-            "trip": "ORLEANS:VehicleJourney:A_R_470_21_A01_1_085930"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:TVERNE1 -> ORLEANS:StopArea:THOPIT1 on ORLEANS:Line:A d0 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): got ORLEANS:StopArea:TVERNE1 -> ORLEANS:StopArea:THOPIT1 on ORLEANS:Line:A d1, trip ORLEANS:VehicleJourney:A_R_470_21_A01_1_085930"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:TVERNE1 -> ORLEANS:StopArea:THOPIT1 on ORLEANS:Line:A d0 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -13878,15 +13812,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:THOPIT1",
-            "direction": 1,
-            "origin": "ORLEANS:StopArea:TVERNE2",
-            "route": "ORLEANS:Line:A",
-            "trip": "ORLEANS:VehicleJourney:A_R_469_10_A01_1_050000"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:TVERNE2 -> ORLEANS:StopArea:THOPIT1 on ORLEANS:Line:A d0 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): got ORLEANS:StopArea:TVERNE2 -> ORLEANS:StopArea:THOPIT1 on ORLEANS:Line:A d1, trip ORLEANS:VehicleJourney:A_R_469_10_A01_1_050000"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:TVERNE2 -> ORLEANS:StopArea:THOPIT1 on ORLEANS:Line:A d0 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -13929,15 +13857,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:THOPIT2",
-            "direction": 1,
-            "origin": "ORLEANS:StopArea:TVERNE1",
-            "route": "ORLEANS:Line:A",
-            "trip": "ORLEANS:VehicleJourney:A_R_472_21_A01_1_065900"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:TVERNE1 -> ORLEANS:StopArea:THOPIT2 on ORLEANS:Line:A d0 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): got ORLEANS:StopArea:TVERNE1 -> ORLEANS:StopArea:THOPIT2 on ORLEANS:Line:A d1, trip ORLEANS:VehicleJourney:A_R_472_21_A01_1_065900"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:TVERNE1 -> ORLEANS:StopArea:THOPIT2 on ORLEANS:Line:A d0 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -13980,15 +13902,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:THOPIT2",
-            "direction": 1,
-            "origin": "ORLEANS:StopArea:TVERNE2",
-            "route": "ORLEANS:Line:A",
-            "trip": "ORLEANS:VehicleJourney:A_R_468_10_A01_1_145630"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:TVERNE2 -> ORLEANS:StopArea:THOPIT2 on ORLEANS:Line:A d0 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): got ORLEANS:StopArea:TVERNE2 -> ORLEANS:StopArea:THOPIT2 on ORLEANS:Line:A d1, trip ORLEANS:VehicleJourney:A_R_468_10_A01_1_145630"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:TVERNE2 -> ORLEANS:StopArea:THOPIT2 on ORLEANS:Line:A d0 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -14025,8 +13941,8 @@
       "fixture": "tao-journeys",
       "id": "tao-journeys-A-d0-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "ORLEANS:Line:A"
     },
     {
@@ -14359,15 +14275,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:TVERNE1",
-            "direction": 0,
-            "origin": "ORLEANS:StopArea:THOPIT1",
-            "route": "ORLEANS:Line:A",
-            "trip": "ORLEANS:VehicleJourney:A_A_477_21_A01_1_055950"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:THOPIT1 -> ORLEANS:StopArea:TVERNE1 on ORLEANS:Line:A d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): got ORLEANS:StopArea:THOPIT1 -> ORLEANS:StopArea:TVERNE1 on ORLEANS:Line:A d0, trip ORLEANS:VehicleJourney:A_A_477_21_A01_1_055950"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:THOPIT1 -> ORLEANS:StopArea:TVERNE1 on ORLEANS:Line:A d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -14410,15 +14320,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:TVERNE1",
-            "direction": 0,
-            "origin": "ORLEANS:StopArea:THOPIT2",
-            "route": "ORLEANS:Line:A",
-            "trip": "ORLEANS:VehicleJourney:A_A_471_21_A01_1_080005"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:THOPIT2 -> ORLEANS:StopArea:TVERNE1 on ORLEANS:Line:A d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): got ORLEANS:StopArea:THOPIT2 -> ORLEANS:StopArea:TVERNE1 on ORLEANS:Line:A d0, trip ORLEANS:VehicleJourney:A_A_471_21_A01_1_080005"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:THOPIT2 -> ORLEANS:StopArea:TVERNE1 on ORLEANS:Line:A d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -14461,15 +14365,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:TVERNE2",
-            "direction": 0,
-            "origin": "ORLEANS:StopArea:THOPIT1",
-            "route": "ORLEANS:Line:A",
-            "trip": "ORLEANS:VehicleJourney:A_A_467_10_A01_1_060100"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:THOPIT1 -> ORLEANS:StopArea:TVERNE2 on ORLEANS:Line:A d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): got ORLEANS:StopArea:THOPIT1 -> ORLEANS:StopArea:TVERNE2 on ORLEANS:Line:A d0, trip ORLEANS:VehicleJourney:A_A_467_10_A01_1_060100"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:THOPIT1 -> ORLEANS:StopArea:TVERNE2 on ORLEANS:Line:A d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -14512,15 +14410,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:TVERNE2",
-            "direction": 0,
-            "origin": "ORLEANS:StopArea:THOPIT2",
-            "route": "ORLEANS:Line:A",
-            "trip": "ORLEANS:VehicleJourney:A_A_466_10_A01_1_155930"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:THOPIT2 -> ORLEANS:StopArea:TVERNE2 on ORLEANS:Line:A d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): got ORLEANS:StopArea:THOPIT2 -> ORLEANS:StopArea:TVERNE2 on ORLEANS:Line:A d0, trip ORLEANS:VehicleJourney:A_A_466_10_A01_1_155930"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:THOPIT2 -> ORLEANS:StopArea:TVERNE2 on ORLEANS:Line:A d1 (stop 27 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -14557,8 +14449,8 @@
       "fixture": "tao-journeys",
       "id": "tao-journeys-A-d1-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "ORLEANS:Line:A"
     },
     {
@@ -15002,15 +14894,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:TPOMPI2",
-            "direction": 1,
-            "origin": "ORLEANS:StopArea:THAMEA1",
-            "route": "ORLEANS:Line:B",
-            "trip": "ORLEANS:VehicleJourney:B_R_173_10_B01_1_055030"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:THAMEA1 -> ORLEANS:StopArea:TPOMPI2 on ORLEANS:Line:B d0 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): got ORLEANS:StopArea:THAMEA1 -> ORLEANS:StopArea:TPOMPI2 on ORLEANS:Line:B d1, trip ORLEANS:VehicleJourney:B_R_173_10_B01_1_055030"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:THAMEA1 -> ORLEANS:StopArea:TPOMPI2 on ORLEANS:Line:B d0 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -15053,15 +14939,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:TPOMPI2",
-            "direction": 1,
-            "origin": "ORLEANS:StopArea:THAMEA2",
-            "route": "ORLEANS:Line:B",
-            "trip": "ORLEANS:VehicleJourney:B_R_175_10_B09_1_201110"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:THAMEA2 -> ORLEANS:StopArea:TPOMPI2 on ORLEANS:Line:B d0 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): got ORLEANS:StopArea:THAMEA2 -> ORLEANS:StopArea:TPOMPI2 on ORLEANS:Line:B d1, trip ORLEANS:VehicleJourney:B_R_175_10_B09_1_201110"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:THAMEA2 -> ORLEANS:StopArea:TPOMPI2 on ORLEANS:Line:B d0 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -15098,8 +14978,8 @@
       "fixture": "tao-journeys",
       "id": "tao-journeys-B-d0-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "ORLEANS:Line:B"
     },
     {
@@ -15476,15 +15356,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:THAMEA1",
-            "direction": 0,
-            "origin": "ORLEANS:StopArea:TPOMPI2",
-            "route": "ORLEANS:Line:B",
-            "trip": "ORLEANS:VehicleJourney:B_A_167_10_B01_1_050300"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:TPOMPI2 -> ORLEANS:StopArea:THAMEA1 on ORLEANS:Line:B d1 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): got ORLEANS:StopArea:TPOMPI2 -> ORLEANS:StopArea:THAMEA1 on ORLEANS:Line:B d0, trip ORLEANS:VehicleJourney:B_A_167_10_B01_1_050300"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:TPOMPI2 -> ORLEANS:StopArea:THAMEA1 on ORLEANS:Line:B d1 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -15527,15 +15401,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:THAMEA2",
-            "direction": 0,
-            "origin": "ORLEANS:StopArea:TPOMPI2",
-            "route": "ORLEANS:Line:B",
-            "trip": "ORLEANS:VehicleJourney:B_A_168_10_B06_1_195730"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:TPOMPI2 -> ORLEANS:StopArea:THAMEA2 on ORLEANS:Line:B d1 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): got ORLEANS:StopArea:TPOMPI2 -> ORLEANS:StopArea:THAMEA2 on ORLEANS:Line:B d0, trip ORLEANS:VehicleJourney:B_A_168_10_B06_1_195730"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:TPOMPI2 -> ORLEANS:StopArea:THAMEA2 on ORLEANS:Line:B d1 (stop 25 to stop 1 of a 25-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -15572,8 +15440,8 @@
       "fixture": "tao-journeys",
       "id": "tao-journeys-B-d1-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "ORLEANS:Line:B"
     },
     {
@@ -15690,15 +15558,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:01086001",
-            "direction": 1,
-            "origin": "ORLEANS:StopArea:01002003",
-            "route": "ORLEANS:Line:N",
-            "trip": "ORLEANS:VehicleJourney:N_R_16_21_2184_4_013000"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:01002003 -> ORLEANS:StopArea:01086001 on ORLEANS:Line:N d0 (stop 30 to stop 1 of a 30-stop ride, this direction does not make it): got ORLEANS:StopArea:01002003 -> ORLEANS:StopArea:01086001 on ORLEANS:Line:N d1, trip ORLEANS:VehicleJourney:N_R_16_21_2184_4_013000"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:01002003 -> ORLEANS:StopArea:01086001 on ORLEANS:Line:N d0 (stop 30 to stop 1 of a 30-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -15735,8 +15597,8 @@
       "fixture": "tao-journeys",
       "id": "tao-journeys-N-d0-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "ORLEANS:Line:N"
     },
     {
@@ -15853,15 +15715,9 @@
             "served": false,
             "to_stop": 1
           },
-          "got": {
-            "destination": "ORLEANS:StopArea:01002003",
-            "direction": 0,
-            "origin": "ORLEANS:StopArea:01086001",
-            "route": "ORLEANS:Line:N",
-            "trip": "ORLEANS:VehicleJourney:N_A_17_21_2184_4_003001"
-          },
-          "ok": false,
-          "text": "asked ORLEANS:StopArea:01086001 -> ORLEANS:StopArea:01002003 on ORLEANS:Line:N d1 (stop 30 to stop 1 of a 30-stop ride, this direction does not make it): got ORLEANS:StopArea:01086001 -> ORLEANS:StopArea:01002003 on ORLEANS:Line:N d0, trip ORLEANS:VehicleJourney:N_A_17_21_2184_4_003001"
+          "got": null,
+          "ok": true,
+          "text": "asked ORLEANS:StopArea:01086001 -> ORLEANS:StopArea:01002003 on ORLEANS:Line:N d1 (stop 30 to stop 1 of a 30-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -15898,8 +15754,8 @@
       "fixture": "tao-journeys",
       "id": "tao-journeys-N-d1-swapped",
       "kind": "swapped",
-      "outcome": "xfailed",
-      "reason": "the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction",
+      "outcome": "passed",
+      "reason": null,
       "route": "ORLEANS:Line:N"
     }
   ]

@@ -253,8 +253,6 @@ class Check:
 SELECTOR = ("the stop selector offers a stop twice or out of riding order "
             "(discussion #198)")
 SELECTOR_GVB = SELECTOR + "; trams 1, 7 and 17 also carry wrong direction_ids"
-SWAPPED = ("the swapped pair is answered although the asked direction does "
-           "not ride it: the query filters neither route nor direction")
 TRAIN = ("a train journey is matched by stop name prefix on any line, not "
          "the asked one")
 KNOWN = {
@@ -264,14 +262,7 @@ KNOWN = {
     "palmbus-B-d1-stop_list": SELECTOR,
     **{f"tao-journeys-{r}-d{d}-stop_list": SELECTOR
        for r in ("40", "A", "B") for d in (0, 1)},
-    **{f"{line}-d{d}-swapped": SWAPPED
-       for line in ("gvb-7", "palmbus-A", "palmbus-B", "tao-journeys-40",
-                    "tao-journeys-A", "tao-journeys-B", "tao-journeys-N")
-       for d in (0, 1)},
-    "sncf-journeys-K8+-d0-pairs": TRAIN,
-    "sncf-journeys-K8+-d1-pairs": TRAIN,
     "sncf-journeys-P8(A594575:)-d1-pairs": TRAIN,
-    "sncf-journeys-P8(CDD3F95:)-d1-pairs": TRAIN,
 }
 
 
