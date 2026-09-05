@@ -1689,10 +1689,11 @@ def get_station_list(schedule, route_id=None):
 def get_stop_list(schedule, route_id, direction):
     _LOGGER.debug("Getting stops list for route: %s", route_id)
     sql_stops = f"""
-    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station
+    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name
     from trips t
     inner join stop_times st on st.trip_id = t.trip_id
     inner join stops s on s.stop_id = st.stop_id
+    left join stops station on station.stop_id = s.parent_station
     where  t.route_id = '{route_id}'
     and (t.direction_id = {direction} or t.direction_id is null)
     order by st.trip_id, st.stop_sequence
@@ -1703,10 +1704,12 @@ def get_stop_list(schedule, route_id, direction):
     trips = {}
     names = {}
     stations = {}
-    for trip_id, stop_id, stop_name, stop_sequence, parent_station in rows:
+    station_names = {}
+    for trip_id, stop_id, stop_name, stop_sequence, parent_station, station_name in rows:
         trips.setdefault(trip_id, []).append((stop_id, stop_sequence))
         names[stop_id] = stop_name
         stations[stop_id] = parent_station
+        station_names[stop_id] = station_name
     # Trips of one direction do not all run the full length, and a partial
     # trip renumbers stop_sequence from 0, so sorting the union of all trips
     # by stop_sequence interleaves the start of the route with its middle
@@ -1751,22 +1754,36 @@ def get_stop_list(schedule, route_id, direction):
     kept = one_per_station
     # A circular line calls at its terminus twice, under ids of its own: TAO
     # line 22 runs Zenith to Zenith and offers three stops all reading
-    # "Zenith", which the user cannot tell apart. Number the repeats in the
-    # order the line calls at them, so the choice is about the journey rather
-    # than about a raw id. The value keeps the id untouched, only the readable
-    # part changes.
+    # "Zenith", which the user cannot tell apart. Two stops of the same name
+    # can also be two different places, and there the feed usually knows what
+    # tells them apart: on line 1 in Amsterdam one "Surinameplein" belongs to
+    # the Surinameplein station and the other to Hoofdweg, two hundred metres
+    # away. So a repeat carries its station when the station adds something,
+    # and falls back on its rank in the order the line calls at them when it
+    # does not. The value keeps the id untouched, only the readable part
+    # changes.
     by_name = {}
     for x in kept:
         by_name.setdefault(x[1], []).append(x)
-    rank = {}
+    label = {}
     for name, group in by_name.items():
-        if len(group) > 1:
-            for n, x in enumerate(group, 1):
-                rank[x[0]] = n
+        if len(group) == 1:
+            continue
+        for x in group:
+            station_name = station_names.get(x[0])
+            label[x[0]] = (f"{name} ({station_name})"
+                           if station_name and station_name not in name
+                           else name)
+        # the station settles it only if it settles it for everyone: where
+        # two of them still read the same, those keep their rank instead,
+        # and a stop the station already told apart keeps its plain reading
+        still_shared = [x for x in group
+                        if [y for y in group if label[y[0]] == label[x[0]]][1:]]
+        for n, x in enumerate(still_shared, 1):
+            label[x[0]] = f"{label[x[0]]} #{n}"
     for x in kept:
-        shown = x[1]
-        if x[0] in rank:
-            shown = f"{shown} #{rank[x[0]]}"
+        shown = label.get(x[0], x[1])
+        val = x[0] + ": " + shown + ' (' + str(x[2]) + ')'
         val = x[0] + ": " + shown + ' (' + str(x[2]) + ')'
         stops.append(val)
     _LOGGER.debug(f"Route stops: {stops}")
