@@ -2,172 +2,303 @@
   "config": {
     "step": {
       "user": {
-		"menu_options": {
-          "start_end": "Create schedule on start/end stops",
-          "local_stops": "Scheduled departure on stops in your vicinity",
-		  "source": "Setup a new data source",
-		  "remove": "Remove an existing data source, e.g. to free up space"
+        "menu_options": {
+          "source": "Add a data source: the GTFS file of a transport network",
+          "start_end": "Add a journey between two specific stops",
+          "local_stops": "Add every departure around a location, all routes",
+          "remove": "Remove a data source and free up disk space"
         },
-        "description": "Select your choice [(docu)]({docu_menu_options})"
+        "description": "A **data source** holds the timetable of one transport network. **Sensors** read from it: as many as you like, on the same source.\n\n[documentation]({docu_menu_options})"
       },
-	  "start_end": {
-        "data": {
-          "file": "Select source"
+      "user_empty": {
+        "menu_options": {
+          "source": "Add a data source: the GTFS file of a transport network"
         },
-        "description": "Select from existing sources in your gtfs2 folder [(docu)]({docu_select_source})"
+        "description": "You have no data source yet. Add one first: it holds the timetable of a transport network, and every sensor reads from it.\n\n[documentation]({docu_menu_options})"
       },
-	  "local_stops": {
+      "start_end": {
         "data": {
-          "file": "Select source",
-		  "device_tracker_id": "Object/Person to use for lat/lon",
-		  "name": "Name of the sensor"
+          "file": "Data source"
         },
-        "description": "Select from existing sources in your gtfs2 folder [(docu)]({docu_local_stops})"
-      },	  
+        "description": "Which transport network should this sensor read?\n\n[documentation]({docu_select_source})",
+        "data_description": {
+          "file": "Sources already present in your `gtfs2` folder. Add one first if the list is empty."
+        }
+      },
+      "local_stops": {
+        "data": {
+          "file": "Data source",
+          "device_tracker_id": "Person or zone to follow",
+          "name": "Sensor name"
+        },
+        "description": "Every departure, all routes, around one location.\n\n[documentation]({docu_local_stops})",
+        "data_description": {
+          "file": "Sources already present in your `gtfs2` folder.",
+          "device_tracker_id": "The stops are looked up around this person or zone, and follow them when they move.",
+          "name": "Shown on your dashboard, for example `Departures near home`."
+        }
+      },
       "source": {
-        "data": {
-          "file": "New datasource name",
-          "url": "external url to gtfs data (zip) file",
-          "api_key": "API key, if required",
-          "api_key_name": "API key name",
-          "api_key_location": "the location where the key is applied",
-		  "extract_from": "Extract data from:"
+        "menu_options": {
+          "source_url": "Download from a web address",
+          "source_zip": "Use a file already in the gtfs2 folder"
         },
-        "description": "NOTE: with a new url/zip, this may take quite a bit of time, \n depending on file-size and system performance [(docu)]({docu_extracting})"
+        "description": "Where should the transport data come from?\n\n[documentation]({docu_extracting})"
+      },
+      "source_url": {
+        "data": {
+          "url": "Web address of the GTFS file",
+          "file": "Name to save it under",
+          "needs_api_key": "This requires an API key"
+        },
+        "description": "Home Assistant will download the file and unpack it into a local database.\n\n[documentation]({docu_extracting})",
+        "data_description": {
+          "url": "The `.zip` published by the transport network.",
+          "file": "Your own name for this source. It identifies it later, and names the file on disk. Letters and digits, no spaces.",
+          "needs_api_key": "Tick this if the provider gave you a key to download the file."
+        }
+      },
+      "source_key": {
+        "data": {
+          "api_key": "API key",
+          "api_key_name": "Name the provider expects",
+          "api_key_location": "Where the key goes"
+        },
+        "description": "The provider states these in its documentation.\n\n[documentation]({docu_extracting})",
+        "data_description": {
+          "api_key": "The key itself, copied from the provider.",
+          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_location": "In the web address, or in the request header."
+        }
+      },
+      "source_zip": {
+        "data": {
+          "file": "File to use"
+        },
+        "description": "The file will be unpacked into a local database. A large network can take several minutes.\n\n[documentation]({docu_extracting})",
+        "data_description": {
+          "file": "The `.zip` files found in your `gtfs2` folder."
+        }
       },
       "agency": {
         "data": {
-          "agency": "Select the service provider (or ALL)"
+          "agency": "Operator"
         },
-		"description": "Select from the options below [(docu)]({docu_new_route})"
-      },		  
-      "route_type": {
-        "data": {
-          "route_type": "Type of transport"
-        },
-		"description": "Select from the options below [(docu)]({docu_new_route})"
-      },	  
+        "description": "This source carries several operators.\n\n[documentation]({docu_new_route})",
+        "data_description": {
+          "agency": "Pick one to shorten the route list on the next screen, or **ALL** to keep every route."
+        }
+      },
       "route": {
         "data": {
-          "route": "Name of the route",
-          "direction": "Principal/initial direction of the vehicle"
+          "route": "Route"
         },
-		"description": "Select from the options below [(docu)]({docu_new_route})"
+        "description": "Which line should this sensor follow?\n\n[documentation]({docu_new_route})",
+        "data_description": {
+          "route": "**{routes}** of the **{routes_total}** lines in this source have timetables loaded. Lines a cleanup removed are still offered: choosing one brings it back, without touching the others."
+        }
+      },
+      "route_reload": {
+        "title": "Line {route} has no timetable loaded",
+        "description": "The timetables for this line were removed to save space. Bringing them back means unpacking the network file, which takes a few minutes.\n\nIt costs the same whether one line or ten come back, so the **{missing}** other missing lines are offered below.\n\nYour other sensors keep working, and nothing you leave unticked comes back.\n\n[documentation]({docu_new_route})",
+        "data": {
+          "also_reload": "Bring back at the same time"
+        },
+        "data_description": {
+          "also_reload": "Leave empty to bring back only this line."
+        }
+      },
+      "route_reload_only": {
+        "title": "Line {route} has no timetable loaded",
+        "description": "The timetables for this line were removed to save space. Bringing them back means unpacking the network file, which takes a few minutes.\n\nYour other sensors keep working throughout, and no other line comes back.\n\n[documentation]({docu_new_route})"
+      },
+      "direction": {
+        "data": {
+          "direction": "Direction"
+        },
+        "data_description": {
+          "direction": "A sensor follows one direction. You can add a second sensor for the way back."
+        },
+        "description": "Which way should the sensor follow this line?\n\n[documentation]({docu_new_route})"
       },
       "stops": {
         "data": {
-          "origin": "Origin Stop",
-          "destination": "Destination Stop",
-          "name": "Name of the route",
-          "include_tomorrow": "Include tomorrow"
+          "origin": "Departure stop",
+          "destination": "Arrival stop"
         },
-		"description": "Select from the options below [(docu)]({docu_new_route})"
+        "description": "Which part of the line should the sensor watch?\n\n[documentation]({docu_new_route})",
+        "data_description": {
+          "origin": "Departures are counted from here. The list follows the direction of travel; a number tells apart two platforms sharing a name.",
+          "destination": "Used to keep only the trips that call at both stops, in this order. Leave it on the end of the line to see everything passing by."
+        }
       },
-      "stops_retry": {
+      "sensor": {
         "data": {
-          "origin": "Origin Stop",
-          "destination": "Destination Stop",
-          "name": "Name of the route",
-          "include_tomorrow": "Include tomorrow"
+          "name": "Sensor name",
+          "include_tomorrow": "Also show tomorrow's departures at the end of the day's service",
+          "add_return": "Also create the return journey"
         },
-		"description": "No trip found between selected stops, try again [(docu)]({docu_new_route})"
-      },	  
-	  "stops_train": {
-        "data": {
-          "origin": "Enter the city of departure",
-          "destination": "Enter the city of arrival",
-          "name": "Name of the route",
-          "refresh_interval": "Refresh interval in minutes",
-          "include_tomorrow": "Include tomorrow"
+        "data_description": {
+          "name": "Suggested from the line and the two stops. Shown on your dashboard.",
+          "include_tomorrow": "Without this, the sensor is empty between the last departure of the day and the first of the next.",
+          "add_return": "A second sensor for **{return_trip}**, the same line the other way."
         },
-		"description": "Select from the options below [(docu)]({docu_setup_train})"
+        "description": "The sensor will show the next departures for **{trip}**.\n\n[documentation]({docu_new_route})"
       },
-	  "remove": {
+      "stops_train": {
         "data": {
-          "file": "Select source to remove"
+          "origin": "Departure station",
+          "destination": "Arrival station",
+          "include_tomorrow": "Also show tomorrow's departures at the end of the day's service"
         },
-        "description": "Select from existing sources in your gtfs2 folder [(docu)]({docu_menu_options})"
-      }	
+        "description": "The sensor will show the next trains between two stations.\n\n[documentation]({docu_setup_train})",
+        "data_description": {
+          "origin": "Stations served by this route. A station appears once here, even when the feed splits it into several stops.",
+          "destination": "Same list. Pick the one you travel to.",
+          "include_tomorrow": "Without this, the sensor is empty between the last departure of the day and the first of the next."
+        }
+      },
+      "sensor_train": {
+        "data": {
+          "name": "Sensor name",
+          "add_return": "Also create the return journey"
+        },
+        "description": "The sensor will show the next trains for **{trip}**.",
+        "data_description": {
+          "name": "Suggested from the line and the stations, change it freely.",
+          "add_return": "A second sensor for **{return_trip}**, the same journey the other way."
+        }
+      },
+      "remove": {
+        "data": {
+          "file": "Data source to remove"
+        },
+        "description": "Deletes the source **and its database**. Sensors that read from it will stop working.\n\n[documentation]({docu_menu_options})",
+        "data_description": {
+          "file": "The `.zip` and the database are both removed from `gtfs2`."
+        }
+      },
+      "finished": {
+        "title": "Sensor created",
+        "description": "**{name}** is ready and will appear on your dashboard.\n\nMost networks need a few journeys: one line each way, or a couple of lines. Adding them now reuses the source you just picked.\n\n[documentation]({docu_new_route})",
+        "menu_options": {
+          "start_end": "Add another journey",
+          "optimise": "Free up disk space",
+          "finish": "That is all for now"
+        }
+      },
+      "optimise": {
+        "title": "Free up disk space",
+        "description": "The source **{file}** takes **{size}**. Most of it is timetables for lines no sensor reads.\n\n**{kept}** line(s) kept, **{dropped}** removed.\n\nRemoving them and compacting what remains often divides the size by ten or more. A removed line can always be added back later.\n\nThis takes a few seconds.\n\n[documentation]({docu_extracting})"
+      }
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
       "unknown": "[%key:common::config_flow::error::unknown%]",
-      "stop_incorrect": "Start and/or End destination incorrect, possibly no transport 'today' or not in same direction, check logs",
+      "stop_incorrect": "No departure found between these two cities. Check the spelling against the operator's own, and that they are on the same line.",
       "generic_failure": "Overall failure, check logs",
-      "no_data_file": "Data collection issue: URL incorrect or filename not in the correct folder",
-	  "no_zip_file": "Data collection issue: ZIP file not in the correct folder"
+      "no_data_file": "Could not download the file. Check the address, and that the source is reachable from Home Assistant. Some providers reject automated downloads.",
+      "no_zip_file": "Data collection issue: ZIP file not in the correct folder",
+      "stops_out_of_order": "The arrival stop comes before the departure stop on this line. The list follows the direction of travel: pick an arrival further down, or go back and choose the other direction.",
+      "no_trip_between": "No trip on this line calls at both stops in this order. Pick another pair, or go back and take the other direction.",
+      "name_taken": "A sensor already uses this name. Pick another one.",
+      "not_created": "The sensor could not be created. Check the log, then try a different name.",
+      "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Datasource deleted, this may affect existing routes",
       "stop_incorrect": "Start and/or End destination incorrect, \n possibly no transport 'today' or not in same direction, \n please check logs",
-	  "no_data_file": "Data collection issue: URL incorrect or filename not in the correct folder",
-	  "no_stops": "Data collection issue: probably no stops for the selected route",
-	  "no_zip_file": "Data collection issue: ZIP file not existing in the correct folder, note that it is capital-sensitive",
-	  "stop_limit_reached": "Detected a high number of stops for this radius, \npossibly impacting system performance. \n You can change the limit at your own risk before changing the radius.",
-	  "extracting": "(Still) extracting data, this will take time [(docu)]({docu_extracting})"
+      "no_data_file": "Data collection issue: URL incorrect or filename not in the correct folder",
+      "no_stops": "Data collection issue: probably no stops for the selected route",
+      "no_zip_file": "Data collection issue: ZIP file not existing in the correct folder, note that it is capital-sensitive",
+      "stop_limit_reached": "Detected a high number of stops for this radius, \npossibly impacting system performance. \n You can change the limit at your own risk before changing the radius.",
+      "extracting": "(Still) extracting data, this will take time [documentation]({docu_extracting})",
+      "no_zip_in_folder": "No .zip file found in {folder}. Place your GTFS zip file there, then start again.",
+      "no_routes_with_trips": "No route in this datasource has a timetable loaded. Run the update_gtfs service to reload it from the source.",
+      "generic_failure": "Overall failure, check logs",
+      "no_stops_read": "Could not read the stops of this route. Check the logs: the datasource may be busy or being rebuilt.",
+      "reload_failed": "The line could not be brought back. The network file may be missing or unreadable; the datasource itself was left untouched.",
+      "optimised": "Disk space freed. The source now takes {size}.",
+      "finished": "Setup complete. You can add more journeys at any time from the integration page.",
+      "unpacking": "{file} is being unpacked in the background. This takes several minutes, so there is nothing to wait for here.\n\nA notification will tell you when the source is ready, and where to carry on. Do not restart Home Assistant before then, it would stop the job."
+    },
+    "progress": {
+      "extracting": "**You can close this window.**\n\nA notification will tell you when {file} is ready: the unpacking carries on in the background.\n\nStaying here lets you chain straight on to picking a line. **{size}** so far; on a large network this takes several minutes.\n\nDo not restart Home Assistant before then, it would stop the job.",
+      "importing": "**You can close this window.**\n\nA notification will tell you when it is done: the {routes} line(s) from {file} carry on being brought back in the background.\n\nStaying here lets you chain straight on to picking the stops. **{size}** unpacked so far; your other sensors keep working.\n\nDo not restart Home Assistant before then, it would stop the job."
     }
   },
   "options": {
     "step": {
       "init": {
-        "description": "Customize the way the integration works [(docu)]({docu_configuring_options})",
+        "description": "Adjust how often this sensor refreshes and what it reports.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "refresh_interval": "Data refresh interval (in minutes)",
-		  "offset": "Offset in minutes",
-		  "max_local_stops": "Limit #stops to avoid possible performance impact. \nIncrease at your own risk",
-		  "source_timezone_correction": "Correct source gtfs timezone (in hours)",
-		  "real_time": "Setup Realtime integration? \n (needs data from the same source)",
-		  "local_stop_refresh_interval": "Data refresh interval (in minutes)",
+          "offset": "Offset in minutes",
+          "max_local_stops": "Limit #stops to avoid possible performance impact. \nIncrease at your own risk",
+          "source_timezone_correction": "Correct source gtfs timezone (in hours)",
+          "real_time": "Setup Realtime integration? \n (needs data from the same source)",
+          "local_stop_refresh_interval": "Data refresh interval (in minutes)",
           "timerange": "Checking for departures in future from 'now' (in minutes: between 15 and 120)",
-		  "check_source_dates": "experimental: avoid using new zip/source contain having no current information",
-		  "radius": "Radius to search for stops (in meters between 50 and 500)"
+          "check_source_dates": "experimental: avoid using new zip/source contain having no current information",
+          "radius": "Radius to search for stops (in meters between 50 and 500)"
+        },
+        "data_description": {
+          "refresh_interval": "How often the timetable is re-read, in minutes.",
+          "local_stop_refresh_interval": "How often the nearby stops are re-read, in minutes.",
+          "offset": "Hide departures you could not catch: the walking time to the stop, in minutes.",
+          "timerange": "How far ahead to look for departures, in minutes.",
+          "radius": "How far around the person or zone to look for stops, in metres.",
+          "max_local_stops": "Above this many stops the sensor gets slow. Raise it at your own risk.",
+          "real_time": "Read live delays from the provider, on top of the timetable.",
+          "source_timezone_correction": "Only if the source publishes times in another timezone, in hours.",
+          "check_source_dates": "Experimental: refuse a new file whose dates are all in the future."
         }
       },
-	  "real_time": {
-        "description": "Provide url to real time API [(docu)]({docu_configuring_options})",
+      "real_time": {
+        "description": "Three kinds of realtime data exist. Enter only the ones you want: **departures** is the only one required. Endings vary between providers, the bold part is the telling one.\n\n[documentation]({docu_configuring_options})",
         "data": {
-          "trip_update_url": "URL to trip data",
-		  "vehicle_position_url": "URL to vehicle position",
-		  "alerts_url": "URL to alerts",
-		  "api_key": "API key, if required",
-		  "api_key_name": "API key name",
-          "api_key_location": "the location where the key is applied",
-		  "accept": "Add Accept:application/x-protobuf to the header"
+          "trip_update_url": "Departures feed address",
+          "vehicle_position_url": "Vehicle positions feed address (optional)",
+          "alerts_url": "Service alerts feed address (optional)",
+          "needs_api_key": "This requires an API key"
+        },
+        "data_description": {
+          "trip_update_url": "The real delay on your sensor, instead of the timetable.\n`https://example.org/gtfs/`**`trip-updates`**",
+          "vehicle_position_url": "Where the vehicles are, for a map card. Leave empty if you do not want it.\n`https://example.org/gtfs/`**`vehicle-positions`**",
+          "alerts_url": "Disruption messages from the operator. Leave empty if you do not want it.\n`https://example.org/gtfs/`**`service-alerts`**",
+          "needs_api_key": "Tick this if the provider gave you a key to read these feeds."
+        }
+      },
+      "real_time_key": {
+        "description": "The provider states these in its documentation.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "api_key": "API key",
+          "api_key_name": "Name the provider expects",
+          "api_key_location": "Where the key goes",
+          "accept": "Also send Accept: application/x-protobuf (only applies when the key goes in the header)"
+        },
+        "data_description": {
+          "api_key": "The key itself, copied from the provider.",
+          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_location": "In the web address, or in the request header.",
+          "accept": "Only applies when the key goes in the header."
         }
       }
     },
-	"abort": {
-	  "stop_limit_reached": "Detected a high number of stops for this radius, \npossibly impacting system performance. \n You can change the limit at your own risk before changing the radius"
+    "abort": {
+      "stop_limit_reached": "Detected a high number of stops for this radius, \npossibly impacting system performance. \n You can change the limit at your own risk before changing the radius"
     }
   },
   "selector": {
-    "extract_from": {
+    "api_key_location": {
       "options": {
-        "zip": "ZIP: expects a file in gtfs2-folder with below name, without extension .zip",
-        "url": "URL: uses your URL below, leave 'na' if using zip"
+        "not_applicable": "No key needed (most sources)",
+        "header": "In the request header",
+        "query_string": "In the web address"
       }
-    },
-	"direction": {
-      "options": {
-        "0": "Outbound",
-        "1": "Return"
-      }
-    },
-	"route_type": {
-      "options": {
-		"99": "All but trains, between selected stops (next screen)",
-		"2": "Trains only, between manually entered cities (next screen)"
-      }
-    },
-	"api_key_location": {
-      "options": {
-        "not_applicable": "no key used (default)",
-		"header": "header: build the call with header/key",
-        "query_string": "query-string: to build the call with query/key"
-      }
-	}
+    }
   },
   "services": {
     "update_gtfs": {
@@ -176,87 +307,173 @@
       "fields": {
         "extract_from": {
           "name": "Indicate source to use zip or url",
-		  "description": "zip (local) or url"
-		},
-		"file": {
+          "description": "zip (local) or url"
+        },
+        "file": {
           "name": "Name of the transport service, without .zip",
-		  "description": "If you use the same name as an existing one, the existing one will be overwitten"
-		},
-		"url": {
+          "description": "If you use the same name as an existing one, the existing one will be overwitten"
+        },
+        "url": {
           "name": "URL",
-		  "description": "provide the full path to the zip file itself"
-		},
-		"clean_feed_info": {
+          "description": "provide the full path to the zip file itself"
+        },
+        "clean_feed_info": {
           "name": "Remove feed-info",
-		  "description": "Removes feed_info.txt from zip (use in case file content incorrect)"
-		}
-	  }
-	},
-	"update_gtfs_rt_local": {
+          "description": "Removes feed_info.txt from zip (use in case file content incorrect)"
+        },
+        "api_key": {
+          "name": "API key",
+          "description": "Only if the provider requires one"
+        },
+        "api_key_name": {
+          "name": "Parameter name",
+          "description": "The word the provider expects before the key, such as apikey"
+        },
+        "api_key_location": {
+          "name": "Where the key goes",
+          "description": "In the web address, or in the request header"
+        },
+        "check_source_dates": {
+          "name": "Refuse a file with no current dates",
+          "description": "Experimental: rejects a new file whose dates are all in the future"
+        }
+      }
+    },
+    "update_gtfs_rt_local": {
       "name": "Collects GTFS Realtime data",
       "description": "Can be used for Trip, Vehicle Location or Alerts",
       "fields": {
-        "name": {
-          "name": "Name of the provider",
-		  "description": "Strongly recommend to use the same as for static data"
-		},
-		"url": {
-          "name": "URL",
-		  "description": "Provide the full path to the realtime data"
-		},
-		"api_key": {
-          "name": "api_key",
-		  "description": "provide API key if required"
-		},
-		"api_key_name": {
-          "name": "api_key_name",
-		  "description": "API key name, default api_key"
-		},
-		"api_key_location": {
-          "name": "api_key_location",
-		  "description": "Select location of the key"
-		},	
-		"accept": {
-          "name": "Accept",
-		  "description": "Add application/protobuf to the header"
-		},
-		"rt_type": {
-          "name": "Indicate type of realtime data",
-		  "description": "Select type of realtime data from source"
-		},			
-		"entity_for_siri": {
-          "name": "SIRI RT Route",
-		  "description": "Experimental: SIRI format realtime only (!) select your configuration. see documentation > service"
-		},
-		"debug_output": {
-          "name": "debug_output",
-		  "description": "Save to local file in readable format"
-		}		
-	  }
-	},
-	"update_gtfs_local_stops": {
+        "file": {
+          "name": "Data source",
+          "description": "The name of the static source these realtime feeds belong to"
+        },
+        "url": {
+          "name": "Feed address",
+          "description": "Full address of the realtime feed"
+        },
+        "api_key": {
+          "name": "API key",
+          "description": "Only if the provider requires one"
+        },
+        "api_key_name": {
+          "name": "Parameter name",
+          "description": "The word the provider expects before the key, such as apikey or x-api-key"
+        },
+        "api_key_location": {
+          "name": "Where the key goes",
+          "description": "In the web address, or in the request header"
+        },
+        "accept": {
+          "name": "Send Accept: application/x-protobuf",
+          "description": "Only if the provider asks for it"
+        },
+        "rt_type": {
+          "name": "Kind of realtime data",
+          "description": "Departures, vehicle positions or service alerts"
+        },
+        "entity_for_siri": {
+          "name": "SIRI route",
+          "description": "Experimental, SIRI feeds only: pick the entry to read"
+        },
+        "debug_output": {
+          "name": "Write a readable copy",
+          "description": "Saves the decoded feed to a local file, for troubleshooting"
+        }
+      }
+    },
+    "update_gtfs_local_stops": {
       "name": "Update GTFS local stops",
       "description": "e.g. for moving 'person', to be defined for each person / zone",
       "fields": {
         "entity_id": {
           "name": "Entity that is connected to local stops",
-		  "description": "The entity for which you setup local stops"
-		}
-	  }
-	},
-	"extract_departures": {
+          "description": "The entity for which you setup local stops"
+        }
+      }
+    },
+    "extract_departures": {
       "name": "Extract departures",
       "description": "Extracts all next departures from your entity up-until tomorrow day end",
       "fields": {
         "config_entry": {
           "name": "Route from which to extract",
-		  "description": "Select your start/stop configuration"
-		},
-		"from_time": {
+          "description": "Select your start/stop configuration"
+        },
+        "from_time": {
           "name": "The time after which departures are collected",
-		  "description": "The time after which you would like to receive the slots. \n If left empty then all future slots will be extracted for today/tomorrow. \n In yaml this has to be 24H format"
-		}
-	  }
-	}
+          "description": "The time after which you would like to receive the slots. \n If left empty then all future slots will be extracted for today/tomorrow. \n In yaml this has to be 24H format"
+        }
+      }
+    },
+    "extract_trip_stops": {
+      "name": "Extract the stops of a trip",
+      "description": "Returns the ordered stops of the trip a sensor is currently following.",
+      "fields": {
+        "entity_id": {
+          "name": "Sensor",
+          "description": "The start/end sensor to read the current trip from"
+        }
+      }
+    },
+    "set_include_tomorrow": {
+      "name": "Show tomorrow's departures",
+      "description": "Turns tomorrow's departures on or off on existing sensors, without recreating them.",
+      "fields": {
+        "enabled": {
+          "name": "Enabled",
+          "description": "On to keep showing departures once the day's service is over"
+        },
+        "entry_id": {
+          "name": "One entry only",
+          "description": "Leave empty to apply to every start/end sensor"
+        }
+      }
+    },
+    "prune_datasource": {
+      "name": "Trim a data source to the routes in use",
+      "description": "Removes the timetables of routes no sensor reads, then reclaims the space. Routes stay listed, so the config flow still shows them all. Run update_gtfs to restore the full feed.",
+      "fields": {
+        "file": {
+          "name": "Data source",
+          "description": "Leave empty to trim every configured source"
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Report what would be removed, without changing anything"
+        }
+      }
+    },
+    "intern_datasource": {
+      "name": "Shrink a data source",
+      "description": "Replaces the long identifiers repeated on every row by short keys. Run it after trimming. Not reversible in place: run update_gtfs to rebuild from the local zip.",
+      "fields": {
+        "file": {
+          "name": "Data source",
+          "description": "Leave empty to shrink every configured source"
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Report what would change, without changing anything"
+        }
+      }
+    }
+  },
+  "notification": {
+    "extract_ready_title": "GTFS: {file} is ready",
+    "extract_ready": "The source holds **{routes}** lines and **{stops}** stops.\n\nSettings > Devices & services > GTFS2 > Add entry, then **Add a journey between two stops** to carry on.",
+    "extract_failed_title": "GTFS: {file} could not be unpacked",
+    "extract_failed": "The datasource is not usable: {detail}.\n\nNothing was added. Settings > Devices & services > GTFS2 > Add entry, then **Add a data source** to try again.",
+    "import_done_title": "GTFS: {file} updated",
+    "import_done": "Brought back into {file}: {lines}.\n\nSettings > Devices & services > GTFS2 > Add entry, then **Add a journey between two stops** to carry on.",
+    "import_failed_title": "GTFS: {file} was not changed",
+    "import_failed": "The lines could not be brought back into {file}.\n\nNothing was changed. Settings > Devices & services > GTFS2 > Add entry to try again.",
+    "line_orphaned_title": "GTFS: {file} keeps a line nobody reads",
+    "line_orphaned": "The last sensor reading line **{line}** was removed, but its timetable is still in {file}.\n\nThe service gtfs2.prune_datasource drops every line no sensor reads; call it with dry_run first to see what would go. Keeping the line only costs disk space, and adding a sensor on it uses it again.",
+    "reason_no_database": "no database was produced",
+    "reason_cannot_open": "the database cannot be opened",
+    "reason_tables_missing": "unpacking stopped before it wrote every table",
+    "reason_unfinished": "unpacking did not finish",
+    "reason_tables_empty": "some tables came out empty",
+    "reason_unreadable": "the database is unreadable"
   }
-  }
+}
