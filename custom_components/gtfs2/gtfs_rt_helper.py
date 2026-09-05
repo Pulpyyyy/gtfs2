@@ -356,7 +356,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                         if self._route_id not in departure_times:
                             departure_times[self._route_id] = {}
                                                
-                        if direction_id == "nn" or self._direction in (None, "None") or entity_id == self._trip_short_name: # in this case the trip_id serves as a basis so one can safely set direction to the requesting entity direction
+                        if direction_id == "nn" or self._direction in (None, "None") or entity_id == self._trip_short_name or trip_id in self._trip_list: # in this case the trip_id serves as a basis so one can safely set direction to the requesting entity direction; a trip from the entity's own trip list carries the static (possibly repaired) direction, which overrules what the rt feed announces
                             direction_id = self._direction                   
 
                         if direction_id not in departure_times[self._route_id]:
