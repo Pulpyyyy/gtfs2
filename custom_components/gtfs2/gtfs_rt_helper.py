@@ -8,7 +8,6 @@ import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
 import requests
 import voluptuous as vol
-from google.protobuf.message import DecodeError
 from google.transit import gtfs_realtime_pb2
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import ATTR_LATITUDE, ATTR_LONGITUDE, CONF_NAME
@@ -155,6 +154,10 @@ def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
 
 
 def _fetch_gtfs_feed_entities(url: str, headers, label: str):
+    # Imported here and not at module level: the class lives in protobuf,
+    # which arrives with gtfs-realtime-bindings, and the synthetic suite
+    # stubs those bindings out while replacing this whole function.
+    from google.protobuf.message import DecodeError
     _LOGGER.debug(f"GTFS RT get_feed_entities for url: {url} , headers: {headers}, label: {label}")
     feed = gtfs_realtime_pb2.FeedMessage()  # type: ignore
 
