@@ -123,13 +123,20 @@
       },
       "stops": {
         "data": {
-          "origin": "Departure stop",
+          "origin": "Departure stop"
+        },
+        "description": "Where should the departures be counted from?\n\n[documentation]({docu_new_route})",
+        "data_description": {
+          "origin": "Departures are counted from here. The list follows the direction of travel; a number tells apart two platforms sharing a name."
+        }
+      },
+      "destination": {
+        "data": {
           "destination": "Arrival stop"
         },
-        "description": "Which part of the line should the sensor watch?\n\n[documentation]({docu_new_route})",
+        "description": "Where does the journey from **{origin}** end?\n\n[documentation]({docu_new_route})",
         "data_description": {
-          "origin": "Departures are counted from here. The list follows the direction of travel; a number tells apart two platforms sharing a name.",
-          "destination": "Used to keep only the trips that call at both stops, in this order. Leave it on the end of the line to see everything passing by."
+          "destination": "Only the stops a trip really reaches from there are listed, in the direction of travel. Leave it on the end of the line to see everything passing by."
         }
       },
       "sensor": {
@@ -230,11 +237,10 @@
       "generic_failure": "Overall failure, check logs",
       "no_data_file": "Could not download the file. Check the address, and that the source is reachable from Home Assistant. Some providers reject automated downloads.",
       "no_zip_file": "Data collection issue: ZIP file not in the correct folder",
-      "stops_out_of_order": "The arrival stop comes before the departure stop on this line. The list follows the direction of travel: pick an arrival further down, or go back and choose the other direction.",
-      "no_trip_between": "No trip on this line calls at both stops in this order. Pick another pair, or go back and take the other direction.",
       "name_taken": "A sensor already uses this name. Pick another one.",
       "not_created": "The sensor could not be created. Check the log, then try a different name.",
-      "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again."
+      "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again.",
+      "no_destination": "No trip goes on from this stop in this direction: it is the end of the line. Pick another departure stop, or go back and take the other direction."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",

@@ -1689,21 +1689,38 @@ def get_station_list(schedule, route_id=None):
     return stations
 
 
-def get_stop_list(schedule, route_id, direction):
-    _LOGGER.debug("Getting stops list for route: %s", route_id)
-    sql_stops = f"""
+_STOP_ROWS = """
     SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name
     from trips t
     inner join stop_times st on st.trip_id = t.trip_id
     inner join stops s on s.stop_id = st.stop_id
     left join stops station on station.stop_id = s.parent_station
-    where  t.route_id = '{route_id}'
-    and (t.direction_id = {direction} or t.direction_id is null)
+    where t.route_id = :route_id
+    and (t.direction_id = :direction or t.direction_id is null)
     order by st.trip_id, st.stop_sequence
-    """  # noqa: S608
-    stops = []
-    with schedule.engine.connect() as conn:
-        rows = conn.execute(text(sql_stops), {"q": "q"}).fetchall()
+"""
+
+# the records the feed groups with a stop under one parent station: two
+# platforms of one place, which the rider does not tell apart and the
+# departure query already matches as one
+_STOP_GROUP = """(
+    select sibling.stop_id
+    from stops chosen, stops sibling
+    where chosen.stop_id = :origin
+      and (sibling.stop_id = chosen.stop_id
+           or (chosen.parent_station is not null
+               and chosen.parent_station <> ''
+               and sibling.parent_station = chosen.parent_station)))"""
+
+
+def _ride_of(rows):
+    """One stop per place, in riding order, out of (trip_id, stop_id,
+    stop_name, stop_sequence, parent_station, station_name) rows given by
+    trip and sequence.
+
+    Returns the kept [stop_id, name, sequence] and the station names by
+    stop_id, which the labels read.
+    """
     trips = {}
     names = {}
     stations = {}
@@ -1745,7 +1762,7 @@ def get_stop_list(schedule, route_id, direction):
     # Records of one station far apart in the list are not platforms of a
     # stop, they are the two sides of a line that passes twice, a loop or a
     # direction the feed fills with both ways round, and they stay apart:
-    # the numbering below is what tells those apart.
+    # the labels are what tell those apart.
     one_per_station = []
     previous_station = None
     for x in kept:
@@ -1754,17 +1771,24 @@ def get_stop_list(schedule, route_id, direction):
             continue
         previous_station = station
         one_per_station.append(x)
-    kept = one_per_station
-    # A circular line calls at its terminus twice, under ids of its own: TAO
-    # line 22 runs Zenith to Zenith and offers three stops all reading
-    # "Zenith", which the user cannot tell apart. Two stops of the same name
-    # can also be two different places, and there the feed usually knows what
-    # tells them apart: on line 1 in Amsterdam one "Surinameplein" belongs to
-    # the Surinameplein station and the other to Hoofdweg, two hundred metres
-    # away. So a repeat carries its station when the station adds something,
-    # and falls back on its rank in the order the line calls at them when it
-    # does not. The value keeps the id untouched, only the readable part
-    # changes.
+    return one_per_station, station_names
+
+
+def _labels_of(kept, station_names):
+    """{stop_id: readable name} for the stops whose name the line meets
+    more than once; a stop met once keeps its plain name.
+
+    A circular line calls at its terminus twice, under ids of its own: TAO
+    line 22 runs Zenith to Zenith and offers three stops all reading
+    "Zenith", which the user cannot tell apart. Two stops of the same name
+    can also be two different places, and there the feed usually knows what
+    tells them apart: on line 1 in Amsterdam one "Surinameplein" belongs to
+    the Surinameplein station and the other to Hoofdweg, two hundred metres
+    away. So a repeat carries its station when the station adds something,
+    and falls back on its rank in the order the line calls at them when it
+    does not. The value keeps the id untouched, only the readable part
+    changes.
+    """
     by_name = {}
     for x in kept:
         by_name.setdefault(x[1], []).append(x)
@@ -1784,14 +1808,68 @@ def get_stop_list(schedule, route_id, direction):
                         if [y for y in group if label[y[0]] == label[x[0]]][1:]]
         for n, x in enumerate(still_shared, 1):
             label[x[0]] = f"{label[x[0]]} #{n}"
-    for x in kept:
-        shown = label.get(x[0], x[1])
-        val = x[0] + ": " + shown + ' (' + str(x[2]) + ')'
-        val = x[0] + ": " + shown + ' (' + str(x[2]) + ')'
-        stops.append(val)
+    return label
+
+
+def _entries_of(kept, label):
+    """The picker's entries, "stop_id: Name (sequence)": get_next_departure
+    cuts the id back out of the value, only the name is the user's to read."""
+    return [f"{x[0]}: {label.get(x[0], x[1])} ({x[2]})" for x in kept]
+
+
+def get_stop_list(schedule, route_id, direction):
+    """Every stop a route rides in one direction, one per place, in riding order."""
+    _LOGGER.debug("Getting stops list for route: %s", route_id)
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(_STOP_ROWS), {
+            "route_id": route_id, "direction": int(direction)}).fetchall()
+    kept, station_names = _ride_of(rows)
+    stops = _entries_of(kept, _labels_of(kept, station_names))
     _LOGGER.debug(f"Route stops: {stops}")
     return stops
-    
+
+
+def get_destination_stop_list(schedule, route_id, direction, origin_stop_id):
+    """The stops a trip really reaches from the departure stop, on this
+    route and direction.
+
+    Only the trips that call at the origin are read, and of each only the
+    part after it, so every entry offered can be paired with the origin on
+    at least one trip and nothing has to be rejected afterwards. Whether
+    that trip runs today is the coordinator's business. The origin is
+    matched as a whole place, its platforms included, the way the departure
+    query matches it; a loop that calls at it twice is read from the first
+    call, which keeps the way back on offer. Same walk as get_stop_list and
+    the labels of the whole line, so a stop reads the same on both screens.
+    """
+    _LOGGER.debug("Getting destinations for route: %s direction: %s from: %s",
+                  route_id, direction, origin_stop_id)
+    sql = f"""
+    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name
+    from trips t
+    inner join (
+        select trip_id, min(stop_sequence) as origin_sequence
+        from stop_times where stop_id in {_STOP_GROUP} group by trip_id
+    ) o on o.trip_id = t.trip_id
+    inner join stop_times st on st.trip_id = t.trip_id
+        and st.stop_sequence > o.origin_sequence
+    inner join stops s on s.stop_id = st.stop_id
+    left join stops station on station.stop_id = s.parent_station
+    where t.route_id = :route_id
+    and (t.direction_id = :direction or t.direction_id is null)
+    order by st.trip_id, st.stop_sequence
+    """  # noqa: S608
+    scope = {"route_id": route_id, "direction": int(direction)}
+    with schedule.engine.connect() as conn:
+        whole = conn.execute(text(_STOP_ROWS), scope).fetchall()
+        rows = conn.execute(text(sql), {**scope, "origin": origin_stop_id}).fetchall()
+    line, station_names = _ride_of(whole)
+    kept, _ = _ride_of(rows)
+    stops = _entries_of(kept, _labels_of(line, station_names))
+    _LOGGER.debug(f"Destinations from {origin_stop_id}: {stops}")
+    return stops
+
+
 def get_agency_list(schedule, data):
     _LOGGER.debug("Getting agencies with data: %s", data)
     sql_agencies = f"""

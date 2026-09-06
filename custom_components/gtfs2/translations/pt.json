@@ -123,13 +123,20 @@
       },
       "stops": {
         "data": {
-          "origin": "Paragem de partida",
+          "origin": "Paragem de partida"
+        },
+        "description": "A partir de onde contar as partidas?\n\n[documentação]({docu_new_route})",
+        "data_description": {
+          "origin": "As partidas são contadas a partir daqui. A lista segue o sentido de circulação; um número distingue duas plataformas com o mesmo nome."
+        }
+      },
+      "destination": {
+        "data": {
           "destination": "Paragem de chegada"
         },
-        "description": "Que parte da linha deve o sensor vigiar?\n\n[documentação]({docu_new_route})",
+        "description": "Onde termina a viagem a partir de **{origin}**?\n\n[documentação]({docu_new_route})",
         "data_description": {
-          "origin": "As partidas são contadas a partir daqui. A lista segue o sentido de circulação; um número distingue duas plataformas com o mesmo nome.",
-          "destination": "Serve para manter apenas as viagens que servem ambas as paragens, por esta ordem. Deixe no fim da linha para ver tudo o que passa."
+          "destination": "Só são propostas as paragens que uma viagem alcança realmente a partir daí, no sentido de circulação. Deixe no fim da linha para ver tudo o que passa."
         }
       },
       "sensor": {
@@ -230,11 +237,10 @@
       "generic_failure": "Falha geral, verifique os logs",
       "no_data_file": "Não foi possível descarregar o ficheiro. Verifique o endereço e se a fonte está acessível a partir do Home Assistant. Alguns fornecedores recusam descargas automatizadas.",
       "no_zip_file": "Problema de recolha de dados: Ficheiro ZIP não está na pasta correta",
-      "stops_out_of_order": "A paragem de chegada está antes da de partida nesta linha. A lista segue o sentido de circulação: escolha uma chegada mais abaixo, ou volte atrás e escolha o outro sentido.",
-      "no_trip_between": "Nenhuma viagem desta linha serve ambas as paragens por esta ordem. Escolha outro par, ou volte atrás e escolha o outro sentido.",
       "name_taken": "Já existe um sensor com este nome. Escolha outro.",
       "not_created": "Não foi possível criar o sensor. Consulte o registo e tente outro nome.",
-      "reload_failed": "Não foi possível repor essa linha. A fonte não foi alterada; escolha outra linha ou tente novamente."
+      "reload_failed": "Não foi possível repor essa linha. A fonte não foi alterada; escolha outra linha ou tente novamente.",
+      "no_destination": "Nenhuma viagem continua a partir desta paragem neste sentido: é o fim da linha. Escolha outra paragem de partida, ou volte atrás e escolha o outro sentido."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
