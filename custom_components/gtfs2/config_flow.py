@@ -5,6 +5,8 @@ import logging
 
 import voluptuous as vol
 
+import homeassistant.util.dt as dt_util
+
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
@@ -57,6 +59,8 @@ from .gtfs_helper import (
     get_next_departure,
     get_route_list,
     get_stop_list,
+    get_destination_stop_list,
+    get_next_service_date,
     get_datasources,
     remove_datasource,
     check_datasource_index,
@@ -76,6 +80,16 @@ TRANSLATION_DESCRIPTION_PLACEHOLDERS = {
     "docu_configuring_options": "https://github.com/vingerha/gtfs2/wiki/04:-Configuring-a-route's-options-(inc.-adding-real%E2%80%90time)",
     "model": "Example model",
 }
+
+
+def _stop_name_of(entry):
+    """The stop name inside a picker entry "stop_id: Name #2 (12)": the
+    number given to a repeated name and the sequence are display only."""
+    name = entry.split(": ", 1)[1].rsplit(" (", 1)[0]
+    if " #" in name and name.rsplit(" #", 1)[1].isdigit():
+        name = name.rsplit(" #", 1)[0]
+    return name
+
 
 @config_entries.HANDLERS.register(DOMAIN)
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -328,85 +342,120 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self.async_step_stops()
 
     async def async_step_stops(self, user_input: dict | None = None) -> FlowResult:
-        """Handle the route step."""
+        """Pick the origin: every stop the route rides in this direction."""
         errors: dict[str, str] = {}
         if user_input is None:
             try:
-                stops = get_stop_list(
+                stops = await self.hass.async_add_executor_job(
+                    get_stop_list,
                     self._pygtfs,
                     self._user_inputs[CONF_ROUTE],
                     self._user_inputs[CONF_DIRECTION],
                 )
-                last_stop = stops[-1:][0]
+                if not stops:
+                    raise ValueError("no stops")
                 return self.async_show_form(
                     step_id="stops",
                     data_schema=vol.Schema(
                         {
                             vol.Required(CONF_ORIGIN): vol.In(stops),
-                            vol.Required(CONF_DESTINATION, default=last_stop): vol.In(stops),
-                            vol.Required(CONF_NAME): str,
-                            vol.Optional(CONF_INCLUDE_TOMORROW, default = False): selector.BooleanSelector(),
                         },
                     ),
                     description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                     errors=errors,
                 )
-            except:
+            except Exception:  # pylint: disable=broad-except
                 _LOGGER.debug(f"Likely no stops for this route: {[CONF_ROUTE]}")
                 return self.async_abort(reason="no_stops")
-                
-        # when train route-type, use the names of the selected stops       
-        if self._user_inputs[CONF_ROUTE_TYPE] == '2':
-            user_input[CONF_ORIGIN] = user_input.get(CONF_ORIGIN).split(': ')[1].split(" (")[0] 
-            user_input[CONF_DESTINATION] = user_input.get(CONF_DESTINATION).split(': ')[1].split(" (")[0]  
-            
+
         self._user_inputs.update(user_input)
-        _LOGGER.debug(f"UserInputs Stops: {self._user_inputs}")
-        check_config = await self._check_config(self._user_inputs)
-        if check_config:
-            return await self.async_step_stops_retry()
-        else:
-            return self.async_create_entry(
-                title=user_input[CONF_NAME], data=self._user_inputs
-            )
-            
-    async def async_step_stops_retry(self, user_input: dict | None = None) -> FlowResult:
-        """Handle the route step."""
+        _LOGGER.debug(f"UserInputs Origin: {self._user_inputs}")
+        return await self.async_step_destination()
+
+    async def async_step_destination(self, user_input: dict | None = None) -> FlowResult:
+        """Pick the destination among the stops a trip really rides to from
+        the chosen origin, so the pair can always be matched to a trip."""
         errors: dict[str, str] = {}
         if user_input is None:
-            try:
-                stops = get_stop_list(
-                    self._pygtfs,
-                    self._user_inputs[CONF_ROUTE],
-                    self._user_inputs[CONF_DIRECTION],
-                )
-                last_stop = stops[-1:][0]
-                return self.async_show_form(
-                    step_id="stops_retry",
-                    data_schema=vol.Schema(
-                        {
-                            vol.Required(CONF_ORIGIN, default = self._user_inputs[CONF_ORIGIN]): vol.In(stops),
-                            vol.Required(CONF_DESTINATION, default = self._user_inputs[CONF_DESTINATION]): vol.In(stops),
-                            vol.Required(CONF_NAME): str,
-                            vol.Optional(CONF_INCLUDE_TOMORROW, default = False): selector.BooleanSelector(),
-                        },
-                    ),
-                    description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                    errors=errors,
-                )
-            except:
-                _LOGGER.debug(f"Likely no stops for this route: {[CONF_ROUTE]}")
-                return self.async_abort(reason="no_stops")
+            destinations = await self.hass.async_add_executor_job(
+                get_destination_stop_list,
+                self._pygtfs,
+                self._user_inputs[CONF_ROUTE],
+                self._user_inputs[CONF_DIRECTION],
+                self._user_inputs[CONF_ORIGIN].split(": ")[0],
+            )
+            if not destinations:
+                # the origin is the last stop of every trip that calls at it
+                return self.async_abort(reason="no_destination")
+            return self.async_show_form(
+                step_id="destination",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(CONF_DESTINATION, default=destinations[-1]): vol.In(destinations),
+                        vol.Required(CONF_NAME): str,
+                        vol.Optional(CONF_INCLUDE_TOMORROW, default=False): selector.BooleanSelector(),
+                    },
+                ),
+                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                errors=errors,
+            )
+
+        # when train route-type, use the names of the selected stops: a
+        # platform id is not something the rider picks, the station is
+        if self._user_inputs[CONF_ROUTE_TYPE] == '2':
+            self._user_inputs[CONF_ORIGIN] = _stop_name_of(self._user_inputs[CONF_ORIGIN])
+            user_input[CONF_DESTINATION] = _stop_name_of(user_input[CONF_DESTINATION])
+
         self._user_inputs.update(user_input)
-        _LOGGER.debug(f"UserInputs Stops: {self._user_inputs}")
+        _LOGGER.debug(f"UserInputs Destination: {self._user_inputs}")
         check_config = await self._check_config(self._user_inputs)
+        if check_config == "stop_incorrect":
+            # the pair is one the line rides, only not today or tomorrow
+            return await self.async_step_confirm_no_service()
         if check_config:
-            return await self.async_step_stops_retry()
-        else:
+            return self.async_abort(reason=check_config)
+        return self.async_create_entry(
+            title=self._user_inputs[CONF_NAME], data=self._user_inputs
+        )
+
+    async def async_step_confirm_no_service(self, user_input: dict | None = None) -> FlowResult:
+        """Nothing runs today or tomorrow between the chosen stops.
+
+        The pair is valid whether or not it runs today, so the save is never
+        refused: the screen says when the first trip is, the same date the
+        entity will carry as next_service_date, and lets the user decide.
+        Nothing found within the search horizon is the one case worth a
+        warning, and the only one where the default is not to save.
+        """
+        if user_input is None:
+            data = self._user_inputs
+            next_service = await self.hass.async_add_executor_job(
+                get_next_service_date,
+                self._pygtfs,
+                data[CONF_ORIGIN].split(": ")[0],
+                data[CONF_DESTINATION].split(": ")[0],
+                dt_util.now().strftime("%Y-%m-%d"),
+                data[CONF_ROUTE_TYPE],
+            )
+            _LOGGER.debug("No departure today or tomorrow, next service: %s", next_service)
+            return self.async_show_form(
+                step_id="confirm_no_service",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required("save_anyway", default=next_service is not None): selector.BooleanSelector(),
+                    },
+                ),
+                description_placeholders={
+                    **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                    "next_service_date": next_service or "none within the next 90 days",
+                },
+            )
+        if user_input.get("save_anyway"):
             return self.async_create_entry(
-                title=user_input[CONF_NAME], data=self._user_inputs
-            )            
-            
+                title=self._user_inputs[CONF_NAME], data=self._user_inputs
+            )
+        return self.async_abort(reason="not_saved")
+
     async def async_step_stops_train(self, user_input: dict | None = None) -> FlowResult:
         """Handle the stops when train, as often impossible to select ID"""
         errors: dict[str, str] = {}
