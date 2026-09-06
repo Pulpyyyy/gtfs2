@@ -26,7 +26,7 @@ import logging
 from datetime import datetime, time, timedelta
 
 import homeassistant.util.dt as dt_util
-from sqlalchemy import text
+from sqlalchemy.sql import text
 
 from .const import CONF_DEVICE_TRACKER_ID, CONF_ROUTE
 from .gtfs_rt_helper import cached_feed_has_future_stop
