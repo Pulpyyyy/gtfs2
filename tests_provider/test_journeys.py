@@ -7,6 +7,12 @@ fixture zip, with the clock pinned to a day the trips actually run:
     stop_list   each stop_id once, in an order every trip agrees with, and
                 one entry for two platforms of a place called one after the
                 other
+    destinations  from an origin, get_destination_stop_list offers every
+                stop a trip rides to after it, once, in riding order, and
+                nothing no trip through that origin reaches
+    next_service  get_next_service_date, asked on a day a pair runs, answers
+                that day; asked the day after, the next day the feed holds
+                within its horizon, or nothing
     pairs       origin before destination on some trip: get_next_departure
                 answers it, on the right stops, in riding order, arriving no
                 earlier than it departs
@@ -16,7 +22,7 @@ fixture zip, with the clock pinned to a day the trips actually run:
 Trains (route_type 2) ride their own path in get_next_departure, matched by
 stop name with no direction: for them the pairs are checked by name, the
 answer must stay on the asked line, and a swapped pair is legitimate, it is
-the return journey, so only `pairs` is checked.
+the return journey, so only `pairs` and `next_service` are checked, by name.
 
 One test per fixture, route, direction and promise; its message lists every
 pair that broke the promise. The promises are about what the sensors say,
@@ -56,9 +62,12 @@ import fixture_db  # noqa: E402
 gtfs_helper = ha_stub.load("gtfs_helper")
 get_next_departure = gtfs_helper.get_next_departure
 get_stop_list = gtfs_helper.get_stop_list
+get_destination_stop_list = gtfs_helper.get_destination_stop_list
+get_next_service_date = gtfs_helper.get_next_service_date
 
 FIXTURES = Path(__file__).parent / "fixtures"
-KINDS = ("stop_list", "pairs", "swapped")
+KINDS = ("stop_list", "destinations", "next_service", "pairs", "swapped")
+TRAIN_KINDS = ("pairs", "next_service")
 
 
 class Fixture:
@@ -184,6 +193,63 @@ def service_date(schedule, trip_ids):
     return row[0]
 
 
+def pair_service_days(schedule, origin, destination, route_type):
+    """Every day the feed says some trip rides origin before destination,
+    as sorted ISO dates: calendar_dates additions, and calendar windows
+    expanded by weekday minus their removals. The stops are matched the way
+    the sensor matches them, by id, or by name prefix for a train."""
+    if route_type == "2":
+        o_where = "o.stop_id IN (SELECT stop_id FROM stops WHERE stop_name LIKE :o)"
+        x_where = "x.stop_id IN (SELECT stop_id FROM stops WHERE stop_name LIKE :x)"
+        params = {"o": origin + "%", "x": destination + "%"}
+    else:
+        o_where, x_where = "o.stop_id = :o", "x.stop_id = :x"
+        params = {"o": origin, "x": destination}
+    serving = f"""
+    SELECT DISTINCT t.service_id FROM trips t
+    INNER JOIN stop_times o ON o.trip_id = t.trip_id
+    INNER JOIN stop_times x ON x.trip_id = t.trip_id
+    WHERE {o_where} AND {x_where} AND o.stop_sequence < x.stop_sequence
+    """  # noqa: S608
+    days = set()
+    with schedule.engine.connect() as conn:
+        services = {row[0] for row in conn.execute(text(serving), params)}
+        if not services:
+            return []
+        exceptions = conn.execute(text(
+            "SELECT service_id, date, exception_type FROM calendar_dates")).fetchall()
+        for service_id, day, kind in exceptions:
+            if service_id in services and kind == 1:
+                days.add(str(day)[:10])
+        removed = {(s, str(d)[:10]) for s, d, k in exceptions if k == 2}
+        for row in conn.execute(text(
+                "SELECT service_id, monday, tuesday, wednesday, thursday, "
+                "friday, saturday, sunday, start_date, end_date FROM calendar")):
+            if row[0] not in services or not row[8] or not row[9]:
+                continue
+            day = datetime.date.fromisoformat(str(row[8])[:10])
+            end = datetime.date.fromisoformat(str(row[9])[:10])
+            while day <= end:
+                if row[1 + day.weekday()] and (row[0], day.isoformat()) not in removed:
+                    days.add(day.isoformat())
+                day += datetime.timedelta(days=1)
+    return sorted(days)
+
+
+def next_of(days, from_iso, horizon=90):
+    """What get_next_service_date is expected to answer from that day."""
+    start = datetime.date.fromisoformat(from_iso)
+    end = start + datetime.timedelta(days=horizon)
+    for day in days:
+        if start <= datetime.date.fromisoformat(day) <= end:
+            return day
+    return None
+
+
+def shifted(iso, days):
+    return (datetime.date.fromisoformat(iso) + datetime.timedelta(days=days)).isoformat()
+
+
 def circular_like(grouped_by_dir):
     """Both directions ride mostly the same stops in the same order.
 
@@ -219,6 +285,12 @@ def served_between(patterns, origins, destinations):
     return False
 
 
+def sample_origins(pattern):
+    """The first stop, one in the middle, and the one before last."""
+    picks = sorted({0, len(pattern) // 2, max(0, len(pattern) - 2)})
+    return [i for i in picks if i < len(pattern) - 1]
+
+
 def sample_pairs(pattern):
     """First to last, first to middle, middle to last: the ends and a leg."""
     seen = []
@@ -247,32 +319,13 @@ class Check:
         return [r["text"] for r in self.records if not r["ok"]]
 
 
-# Cases known to fail on main today, each with what breaks the promise.
-# The marks are strict: the day a fix lands, its marks have to go with it,
-# which is how a fix PR and the test that turns green arrive together.
-SELECTOR = ("the stop selector offers a stop twice or out of riding order "
-            "(discussion #198)")
-SELECTOR_GVB = SELECTOR + "; trams 1, 7 and 17 also carry wrong direction_ids"
-SWAPPED = ("the swapped pair is answered although the asked direction does "
-           "not ride it: the query filters neither route nor direction")
-TRAIN = ("a train journey is matched by stop name prefix on any line, not "
-         "the asked one")
-KNOWN = {
-    **{f"gvb-{r}-d{d}-stop_list": SELECTOR_GVB
-       for r in ("1", "7", "13", "14", "17") for d in (0, 1)},
-    "palmbus-22-d0-stop_list": SELECTOR,
-    "palmbus-B-d1-stop_list": SELECTOR,
-    **{f"tao-journeys-{r}-d{d}-stop_list": SELECTOR
-       for r in ("40", "A", "B") for d in (0, 1)},
-    **{f"{line}-d{d}-swapped": SWAPPED
-       for line in ("gvb-7", "palmbus-A", "palmbus-B", "tao-journeys-40",
-                    "tao-journeys-A", "tao-journeys-B", "tao-journeys-N")
-       for d in (0, 1)},
-    "sncf-journeys-K8+-d0-pairs": TRAIN,
-    "sncf-journeys-K8+-d1-pairs": TRAIN,
-    "sncf-journeys-P8(A594575:)-d1-pairs": TRAIN,
-    "sncf-journeys-P8(CDD3F95:)-d1-pairs": TRAIN,
-}
+# Cases known to fail, each with what breaks the promise. The marks are
+# strict: the day a fix lands, its marks have to go with it, which is how a
+# fix PR and the test that turns green arrive together. On main the stop
+# selector, the swapped pair and the train match each carry a set of marks;
+# this branch passes every one of them, so the dict is empty here, and a
+# case that regresses gets its mark back with the reason.
+KNOWN: dict[str, str] = {}
 
 
 def _cases():
@@ -291,7 +344,7 @@ def _cases():
             ids = [ids] if isinstance(ids, str) else ids
             for route_id in ids:
                 train = fx.route_types.get(route_id) == 2
-                kinds = ("pairs",) if train else KINDS
+                kinds = TRAIN_KINDS if train else KINDS
                 shown = label if len(ids) == 1 else f"{label}({route_id[-8:]})"
                 for direction in directions_of(fx.schedule, route_id):
                     for kind in kinds:
@@ -317,7 +370,7 @@ def test_journeys(record_property, fixture, route_id, direction, kind):
     dt_util.set_default_time_zone(dt_util.get_time_zone(fx.agency_tz))
     check = Check()
     if fx.route_types.get(route_id) == 2:
-        check_train_route(check, fx, route_id, direction)
+        check_train_route(check, fx, route_id, direction, kind)
     else:
         check_route(check, fx, route_id, direction, kind)
     record_property("case", {"fixture": fixture, "route": route_id,
@@ -408,8 +461,72 @@ def check_route(check, fx, route_id, direction, kind):
                                 f"{pattern[0]} .. {pattern[-1]}")
         return
 
-    hass = fx.hass()
     route_type = str(fx.route_types.get(route_id))
+    if kind == "destinations":
+        # From an origin, the trips that call at it and the rest of their
+        # ride: the list must hold every such stop, once, in the order the
+        # ride makes, and no stop no trip through that origin reaches. A
+        # place is offered once whatever its platforms, so a pattern stop
+        # may be stood for by a sibling record, as in stop_list above.
+        for pattern in grouped:
+            for o in sample_origins(pattern):
+                origin = pattern[o]
+                offered = [entry.split(": ", 1)[0] for entry in
+                           get_destination_stop_list(schedule, route_id,
+                                                     query_direction, origin)]
+                at = {stop_id: n for n, stop_id in enumerate(offered)}
+                who = f"from {named(fx, origin)}"
+                twice = sorted({s for s in offered if offered.count(s) > 1})
+                text = f"a destination is offered twice {who}"
+                if twice:
+                    text += ": " + listed([named(fx, s) for s in twice])
+                check.note(not twice, text, origin=origin, twice=twice)
+                after = []
+                for stop in pattern[o + 1:]:
+                    if stop not in after:
+                        after.append(stop)
+                missing = [s for s in after
+                           if not (fx.siblings_of(s) & set(offered))]
+                text = f"a stop this ride reaches {who} is not offered"
+                if missing:
+                    text += (": " + listed([named(fx, s) for s in missing])
+                             + f" (on the ride {pattern[0]} .. {pattern[-1]})")
+                check.note(not missing, text, origin=origin, missing=missing)
+                reachable = set()
+                for other in grouped:
+                    hits = [i for i, s in enumerate(other)
+                            if s in fx.siblings_of(origin)]
+                    if hits:
+                        reachable.update(other[hits[0] + 1:])
+                stray = [s for s in offered if s not in reachable]
+                text = f"a destination no trip reaches {who} is offered"
+                if stray:
+                    text += ": " + listed([named(fx, s) for s in stray])
+                check.note(not stray, text, origin=origin, stray=stray)
+                places = []
+                for stop in after:
+                    previous = next((p for p in reversed(places) if p is not None), None)
+                    offered_at = [at[s] for s in fx.siblings_of(stop) if s in at]
+                    if not offered_at:
+                        places.append(None)
+                    elif previous is None:
+                        places.append(min(offered_at))
+                    else:
+                        places.append(min(offered_at, key=lambda n: (n < previous, abs(n - previous))))
+                known = [place for place in places if place is not None]
+                descents = sum(1 for a, b in zip(known, known[1:]) if a >= b)
+                check.note(descents == 0, f"the destinations {who} contradict "
+                           f"the riding order {pattern[0]} .. {pattern[-1]}",
+                           origin=origin)
+        return
+
+    if kind == "next_service":
+        check_next_service(check, fx, route_type, [
+            (pattern[o], pattern[d]) for pattern in grouped
+            for o, d in sample_pairs(pattern)[:1]])
+        return
+
+    hass = fx.hass()
     with freeze_time(fx.instant_on("1970-01-01")) as clock:
         for pattern, trip_ids in sorted(grouped.items()):
             # the same stand-in reading as above, so a pair asks for the
@@ -468,6 +585,34 @@ def check_route(check, fx, route_id, direction, kind):
                                      served=served)
                     got = got_of(result)
                     check.note(honest, answered(asked, got), asked=asked, got=got)
+
+
+def check_next_service(check, fx, route_type, pairs):
+    """For each pair: asked on the first day it runs, the answer is that
+    day; asked the day after, the next day the feed holds within the
+    horizon or nothing; asked after its last day, nothing within the
+    horizon. The expected side is read from the calendar tables directly,
+    so a wrong day or an ignored table shows up as a wrong date."""
+    seen = set()
+    for origin, destination in pairs:
+        if (origin, destination) in seen or origin == destination:
+            continue
+        seen.add((origin, destination))
+        days = pair_service_days(fx.schedule, origin, destination, route_type)
+        who = f"{origin} -> {destination}"
+        if not days:
+            check.note(False, f"no service day for {who}",
+                       origin=origin, destination=destination)
+            continue
+        first, last = days[0], days[-1]
+        for asked in (first, shifted(first, 1), shifted(last, 1)):
+            expected = next_of(days, asked)
+            got = get_next_service_date(fx.schedule, origin, destination,
+                                        asked, route_type)
+            check.note(got == expected,
+                       f"asked on {asked} for {who}: expected {expected}, "
+                       f"got {got}", origin=origin, destination=destination,
+                       asked=asked, expected=expected, got=got)
 
 
 def asked_of(pattern, a, b, route, direction, served=None):
@@ -546,11 +691,18 @@ def _data_for(schedule, route_id, route_type, entries, position,
     }
 
 
-def check_train_route(check, fx, route_id, direction):
+def check_train_route(check, fx, route_id, direction, kind):
     schedule = fx.schedule
     short_name = fx.route_short_names[route_id]
     hass = fx.hass()
     grouped = patterns_of(schedule, route_id, direction)
+    if kind == "next_service":
+        pairs = []
+        for pattern in grouped:
+            for o, d in sample_pairs(pattern)[:1]:
+                pairs.append((fx.stop_names[pattern[o]], fx.stop_names[pattern[d]]))
+        check_next_service(check, fx, "2", pairs)
+        return
     with freeze_time(fx.instant_on("1970-01-01")) as clock:
         for pattern, trip_ids in sorted(grouped.items()):
             day = service_date(schedule, trip_ids)

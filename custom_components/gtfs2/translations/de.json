@@ -123,13 +123,20 @@
       },
       "stops": {
         "data": {
-          "origin": "Starthaltestelle",
+          "origin": "Starthaltestelle"
+        },
+        "description": "Ab wo sollen die Abfahrten gezählt werden?\n\n[Dokumentation]({docu_new_route})",
+        "data_description": {
+          "origin": "Ab hier werden die Abfahrten gezählt. Die Liste folgt der Fahrtrichtung; eine Zahl unterscheidet zwei gleichnamige Bahnsteige."
+        }
+      },
+      "destination": {
+        "data": {
           "destination": "Zielhaltestelle"
         },
-        "description": "Welchen Abschnitt der Linie soll der Sensor beobachten?\n\n[Dokumentation]({docu_new_route})",
+        "description": "Wo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_new_route})",
         "data_description": {
-          "origin": "Ab hier werden die Abfahrten gezählt. Die Liste folgt der Fahrtrichtung; eine Zahl unterscheidet zwei gleichnamige Bahnsteige.",
-          "destination": "Behält nur die Fahrten, die beide Haltestellen in dieser Reihenfolge bedienen. Auf der Endhaltestelle belassen, um alles zu sehen."
+          "destination": "Nur die Haltestellen, die eine Fahrt von dort tatsächlich erreicht, werden angeboten, in Fahrtrichtung. Auf der Endhaltestelle belassen, um alles zu sehen."
         }
       },
       "sensor": {
@@ -200,11 +207,10 @@
       "generic_failure": "Gesamtfehler, Protokolle prüfen",
       "no_data_file": "Die Datei konnte nicht heruntergeladen werden. Prüfen Sie die Adresse und ob die Quelle von Home Assistant aus erreichbar ist. Manche Anbieter lehnen automatisierte Downloads ab.",
       "no_zip_file": "Problem bei der Datenerfassung: ZIP-Datei nicht im richtigen Ordner",
-      "stops_out_of_order": "Die Zielhaltestelle liegt auf dieser Linie vor der Starthaltestelle. Die Liste folgt der Fahrtrichtung: wählen Sie ein Ziel weiter unten, oder gehen Sie zurück und nehmen Sie die Gegenrichtung.",
-      "no_trip_between": "Keine Fahrt dieser Linie bedient beide Haltestellen in dieser Reihenfolge. Wählen Sie ein anderes Paar oder die Gegenrichtung.",
       "name_taken": "Ein Sensor trägt diesen Namen bereits. Wählen Sie einen anderen.",
       "not_created": "Der Sensor konnte nicht erstellt werden. Prüfen Sie das Protokoll und versuchen Sie einen anderen Namen.",
-      "reload_failed": "Diese Linie konnte nicht wiederhergestellt werden. Die Quelle blieb unverändert; wählen Sie eine andere Linie oder versuchen Sie es erneut."
+      "reload_failed": "Diese Linie konnte nicht wiederhergestellt werden. Die Quelle blieb unverändert; wählen Sie eine andere Linie oder versuchen Sie es erneut.",
+      "no_destination": "Keine Fahrt führt in dieser Richtung über diese Haltestelle hinaus: sie ist die Endhaltestelle. Wählen Sie eine andere Starthaltestelle, oder gehen Sie zurück und nehmen Sie die Gegenrichtung."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
