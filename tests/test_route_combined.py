@@ -86,6 +86,19 @@ class _FakeConfig:
         return value
 
 
+class _FakeConfigEntries:
+    """Stand-in for `hass.config_entries`.
+
+    Realtime settles per source on this branch: the coordinator looks
+    for the datasource entry of the file first and only then reads the
+    sensor's own options. With no entry registered it takes the options
+    below, which is the upstream behaviour these cases were captured on.
+    """
+
+    def async_entries(self, domain: str | None = None) -> list:
+        return []
+
+
 class _FakeHass:
     """Stand-in for `homeassistant.core.HomeAssistant`.
 
@@ -97,6 +110,7 @@ class _FakeHass:
 
     def __init__(self, time_zone: str) -> None:
         self.config = _FakeConfig(time_zone)
+        self.config_entries = _FakeConfigEntries()
 
     async def async_add_executor_job(self, fn, *args):
         return fn(*args)
@@ -127,7 +141,10 @@ class _FakeConfigEntry:
         self.options = {
             "offset": 0,
             "real_time": True,
-            "trip_update_url": None,
+            # A source with no trip update url runs no trip realtime at all
+            # on this branch, so the feed needs an address; the fetch on it
+            # is patched below and the value itself is never used.
+            "trip_update_url": "http://rt.test/trip_updates",
             "vehicle_position_url": None,
             "alerts_url": None,
         }
