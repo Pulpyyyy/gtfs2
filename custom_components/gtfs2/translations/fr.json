@@ -123,13 +123,20 @@
       },
       "stops": {
         "data": {
-          "origin": "Arrêt de départ",
+          "origin": "Arrêt de départ"
+        },
+        "description": "D'où compter les départs ?\n\n[documentation]({docu_new_route})",
+        "data_description": {
+          "origin": "Les départs sont comptés depuis cet arrêt. La liste suit le sens de circulation ; un numéro distingue deux quais portant le même nom."
+        }
+      },
+      "destination": {
+        "data": {
           "destination": "Arrêt d'arrivée"
         },
-        "description": "Quelle portion de la ligne le capteur doit-il surveiller ?\n\n[documentation]({docu_new_route})",
+        "description": "Où se termine le trajet depuis **{origin}** ?\n\n[documentation]({docu_new_route})",
         "data_description": {
-          "origin": "Les départs sont comptés depuis cet arrêt. La liste suit le sens de circulation ; un numéro distingue deux quais portant le même nom.",
-          "destination": "Sert à ne retenir que les trajets desservant les deux arrêts, dans cet ordre. Laissez le terminus pour voir tout ce qui passe."
+          "destination": "Seuls les arrêts qu'un trajet atteint réellement depuis là sont proposés, dans le sens de circulation. Laissez le terminus pour voir tout ce qui passe."
         }
       },
       "sensor": {
@@ -200,11 +207,10 @@
       "generic_failure": "Échec global, vérifiez les logs d'érreur",
       "no_data_file": "Impossible de télécharger le fichier. Vérifiez l'adresse, et que la source est joignable depuis Home Assistant. Certains fournisseurs refusent les téléchargements automatisés.",
       "no_zip_file": "Problème de collecte de données : fichier ZIP ne se trouve pas dans le bon dossier",
-      "stops_out_of_order": "L'arrêt d'arrivée est situé avant l'arrêt de départ sur cette ligne. La liste suit le sens de circulation : choisissez une arrivée plus bas, ou revenez en arrière pour prendre l'autre sens.",
-      "no_trip_between": "Aucun trajet de cette ligne ne dessert les deux arrêts dans cet ordre. Choisissez un autre couple, ou revenez en arrière pour prendre l'autre sens.",
       "name_taken": "Un capteur porte déjà ce nom. Choisissez-en un autre.",
       "not_created": "Le capteur n'a pas pu être créé. Consultez le journal, puis essayez un autre nom.",
-      "reload_failed": "Cette ligne n'a pas pu être rétablie. La source n'a pas été modifiée ; choisissez une autre ligne, ou réessayez."
+      "reload_failed": "Cette ligne n'a pas pu être rétablie. La source n'a pas été modifiée ; choisissez une autre ligne, ou réessayez.",
+      "no_destination": "Aucun trajet ne continue depuis cet arrêt dans ce sens : c'est le terminus. Choisissez un autre arrêt de départ, ou revenez en arrière pour prendre l'autre sens."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",

@@ -7,6 +7,9 @@ fixture zip, with the clock pinned to a day the trips actually run:
     stop_list   each stop_id once, in an order every trip agrees with, and
                 one entry for two platforms of a place called one after the
                 other
+    destinations  from an origin, get_destination_stop_list offers every
+                stop a trip rides to after it, once, in riding order, and
+                nothing no trip through that origin reaches
     next_service  get_next_service_date, asked on a day a pair runs, answers
                 that day; asked the day after, the next day the feed holds
                 within its horizon, or nothing
@@ -59,10 +62,11 @@ import fixture_db  # noqa: E402
 gtfs_helper = ha_stub.load("gtfs_helper")
 get_next_departure = gtfs_helper.get_next_departure
 get_stop_list = gtfs_helper.get_stop_list
+get_destination_stop_list = gtfs_helper.get_destination_stop_list
 get_next_service_date = gtfs_helper.get_next_service_date
 
 FIXTURES = Path(__file__).parent / "fixtures"
-KINDS = ("stop_list", "next_service", "pairs", "swapped")
+KINDS = ("stop_list", "destinations", "next_service", "pairs", "swapped")
 TRAIN_KINDS = ("pairs", "next_service")
 
 
@@ -281,6 +285,12 @@ def served_between(patterns, origins, destinations):
     return False
 
 
+def sample_origins(pattern):
+    """The first stop, one in the middle, and the one before last."""
+    picks = sorted({0, len(pattern) // 2, max(0, len(pattern) - 2)})
+    return [i for i in picks if i < len(pattern) - 1]
+
+
 def sample_pairs(pattern):
     """First to last, first to middle, middle to last: the ends and a leg."""
     seen = []
@@ -452,6 +462,64 @@ def check_route(check, fx, route_id, direction, kind):
         return
 
     route_type = str(fx.route_types.get(route_id))
+    if kind == "destinations":
+        # From an origin, the trips that call at it and the rest of their
+        # ride: the list must hold every such stop, once, in the order the
+        # ride makes, and no stop no trip through that origin reaches. A
+        # place is offered once whatever its platforms, so a pattern stop
+        # may be stood for by a sibling record, as in stop_list above.
+        for pattern in grouped:
+            for o in sample_origins(pattern):
+                origin = pattern[o]
+                offered = [entry.split(": ", 1)[0] for entry in
+                           get_destination_stop_list(schedule, route_id,
+                                                     query_direction, origin)]
+                at = {stop_id: n for n, stop_id in enumerate(offered)}
+                who = f"from {named(fx, origin)}"
+                twice = sorted({s for s in offered if offered.count(s) > 1})
+                text = f"a destination is offered twice {who}"
+                if twice:
+                    text += ": " + listed([named(fx, s) for s in twice])
+                check.note(not twice, text, origin=origin, twice=twice)
+                after = []
+                for stop in pattern[o + 1:]:
+                    if stop not in after:
+                        after.append(stop)
+                missing = [s for s in after
+                           if not (fx.siblings_of(s) & set(offered))]
+                text = f"a stop this ride reaches {who} is not offered"
+                if missing:
+                    text += (": " + listed([named(fx, s) for s in missing])
+                             + f" (on the ride {pattern[0]} .. {pattern[-1]})")
+                check.note(not missing, text, origin=origin, missing=missing)
+                reachable = set()
+                for other in grouped:
+                    hits = [i for i, s in enumerate(other)
+                            if s in fx.siblings_of(origin)]
+                    if hits:
+                        reachable.update(other[hits[0] + 1:])
+                stray = [s for s in offered if s not in reachable]
+                text = f"a destination no trip reaches {who} is offered"
+                if stray:
+                    text += ": " + listed([named(fx, s) for s in stray])
+                check.note(not stray, text, origin=origin, stray=stray)
+                places = []
+                for stop in after:
+                    previous = next((p for p in reversed(places) if p is not None), None)
+                    offered_at = [at[s] for s in fx.siblings_of(stop) if s in at]
+                    if not offered_at:
+                        places.append(None)
+                    elif previous is None:
+                        places.append(min(offered_at))
+                    else:
+                        places.append(min(offered_at, key=lambda n: (n < previous, abs(n - previous))))
+                known = [place for place in places if place is not None]
+                descents = sum(1 for a, b in zip(known, known[1:]) if a >= b)
+                check.note(descents == 0, f"the destinations {who} contradict "
+                           f"the riding order {pattern[0]} .. {pattern[-1]}",
+                           origin=origin)
+        return
+
     if kind == "next_service":
         check_next_service(check, fx, route_type, [
             (pattern[o], pattern[d]) for pattern in grouped
