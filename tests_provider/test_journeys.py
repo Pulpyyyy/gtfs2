@@ -247,23 +247,13 @@ class Check:
         return [r["text"] for r in self.records if not r["ok"]]
 
 
-# Cases known to fail on main today, each with what breaks the promise.
-# The marks are strict: the day a fix lands, its marks have to go with it,
-# which is how a fix PR and the test that turns green arrive together.
-SELECTOR = ("the stop selector offers a stop twice or out of riding order "
-            "(discussion #198)")
-SELECTOR_GVB = SELECTOR + "; trams 1, 7 and 17 also carry wrong direction_ids"
-TRAIN = ("a train journey is matched by stop name prefix on any line, not "
-         "the asked one")
-KNOWN = {
-    **{f"gvb-{r}-d{d}-stop_list": SELECTOR_GVB
-       for r in ("1", "7", "13", "14", "17") for d in (0, 1)},
-    "palmbus-22-d0-stop_list": SELECTOR,
-    "palmbus-B-d1-stop_list": SELECTOR,
-    **{f"tao-journeys-{r}-d{d}-stop_list": SELECTOR
-       for r in ("40", "A", "B") for d in (0, 1)},
-    "sncf-journeys-P8(A594575:)-d1-pairs": TRAIN,
-}
+# Cases known to fail, each with what breaks the promise. The marks are
+# strict: the day a fix lands, its marks have to go with it, which is how a
+# fix PR and the test that turns green arrive together. On main the stop
+# selector, the swapped pair and the train match each carry a set of marks;
+# this branch passes every one of them, so the dict is empty here, and a
+# case that regresses gets its mark back with the reason.
+KNOWN: dict[str, str] = {}
 
 
 def _cases():
