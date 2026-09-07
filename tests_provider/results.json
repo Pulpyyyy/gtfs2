@@ -4,72 +4,141 @@
       "checks": [
         {
           "ok": true,
-          "origin": "3980295",
-          "text": "a destination is offered twice from 3980295 Amsterdam, Azartplein",
+          "origin": "4132580",
+          "text": "a destination is offered twice from 4132580 Amsterdam, Surinameplein",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980295",
-          "text": "a stop this ride reaches from 3980295 Amsterdam, Azartplein is not offered"
+          "origin": "4132580",
+          "text": "a stop this ride reaches from 4132580 Amsterdam, Surinameplein is not offered"
         },
         {
           "ok": true,
-          "origin": "3980295",
+          "origin": "4132580",
           "stray": [],
-          "text": "a destination no trip reaches from 3980295 Amsterdam, Azartplein is offered"
+          "text": "a destination no trip reaches from 4132580 Amsterdam, Surinameplein is offered"
         },
         {
           "ok": true,
-          "origin": "3980295",
-          "text": "the destinations from 3980295 Amsterdam, Azartplein contradict the riding order 3980295 .. 4015830"
+          "origin": "4132580",
+          "text": "the destinations from 4132580 Amsterdam, Surinameplein contradict the riding order 4132580 .. 3979810"
         },
         {
           "ok": true,
-          "origin": "3980004",
-          "text": "a destination is offered twice from 3980004 Amsterdam, Frederiksplein",
+          "origin": "3979766",
+          "text": "a destination is offered twice from 3979766 Amsterdam, Weesperplein",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980004",
-          "text": "a stop this ride reaches from 3980004 Amsterdam, Frederiksplein is not offered"
+          "origin": "3979766",
+          "text": "a stop this ride reaches from 3979766 Amsterdam, Weesperplein is not offered"
         },
         {
           "ok": true,
-          "origin": "3980004",
+          "origin": "3979766",
           "stray": [],
-          "text": "a destination no trip reaches from 3980004 Amsterdam, Frederiksplein is offered"
+          "text": "a destination no trip reaches from 3979766 Amsterdam, Weesperplein is offered"
         },
         {
           "ok": true,
-          "origin": "3980004",
-          "text": "the destinations from 3980004 Amsterdam, Frederiksplein contradict the riding order 3980295 .. 4015830"
+          "origin": "3979766",
+          "text": "the destinations from 3979766 Amsterdam, Weesperplein contradict the riding order 4132580 .. 3979810"
         },
         {
           "ok": true,
-          "origin": "3980919",
-          "text": "a destination is offered twice from 3980919 Amsterdam, Rhijnvis Feithstraat",
+          "origin": "3980764",
+          "text": "a destination is offered twice from 3980764 Amsterdam, C. van Eesterenlaan",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980919",
-          "text": "a stop this ride reaches from 3980919 Amsterdam, Rhijnvis Feithstraat is not offered"
+          "origin": "3980764",
+          "text": "a stop this ride reaches from 3980764 Amsterdam, C. van Eesterenlaan is not offered"
         },
         {
           "ok": true,
-          "origin": "3980919",
+          "origin": "3980764",
           "stray": [],
-          "text": "a destination no trip reaches from 3980919 Amsterdam, Rhijnvis Feithstraat is offered"
+          "text": "a destination no trip reaches from 3980764 Amsterdam, C. van Eesterenlaan is offered"
         },
         {
           "ok": true,
-          "origin": "3980919",
-          "text": "the destinations from 3980919 Amsterdam, Rhijnvis Feithstraat contradict the riding order 3980295 .. 4015830"
+          "origin": "3980764",
+          "text": "the destinations from 3980764 Amsterdam, C. van Eesterenlaan contradict the riding order 4132580 .. 3979810"
+        },
+        {
+          "ok": true,
+          "origin": "3979966",
+          "text": "a destination is offered twice from 3979966 Amsterdam, Rhijnvis Feithstraat",
+          "twice": []
+        },
+        {
+          "missing": [],
+          "ok": true,
+          "origin": "3979966",
+          "text": "a stop this ride reaches from 3979966 Amsterdam, Rhijnvis Feithstraat is not offered"
+        },
+        {
+          "ok": true,
+          "origin": "3979966",
+          "stray": [],
+          "text": "a destination no trip reaches from 3979966 Amsterdam, Rhijnvis Feithstraat is offered"
+        },
+        {
+          "ok": true,
+          "origin": "3979966",
+          "text": "the destinations from 3979966 Amsterdam, Rhijnvis Feithstraat contradict the riding order 3979966 .. 3979810"
+        },
+        {
+          "ok": true,
+          "origin": "3979766",
+          "text": "a destination is offered twice from 3979766 Amsterdam, Weesperplein",
+          "twice": []
+        },
+        {
+          "missing": [],
+          "ok": true,
+          "origin": "3979766",
+          "text": "a stop this ride reaches from 3979766 Amsterdam, Weesperplein is not offered"
+        },
+        {
+          "ok": true,
+          "origin": "3979766",
+          "stray": [],
+          "text": "a destination no trip reaches from 3979766 Amsterdam, Weesperplein is offered"
+        },
+        {
+          "ok": true,
+          "origin": "3979766",
+          "text": "the destinations from 3979766 Amsterdam, Weesperplein contradict the riding order 3979966 .. 3979810"
+        },
+        {
+          "ok": true,
+          "origin": "3980764",
+          "text": "a destination is offered twice from 3980764 Amsterdam, C. van Eesterenlaan",
+          "twice": []
+        },
+        {
+          "missing": [],
+          "ok": true,
+          "origin": "3980764",
+          "text": "a stop this ride reaches from 3980764 Amsterdam, C. van Eesterenlaan is not offered"
+        },
+        {
+          "ok": true,
+          "origin": "3980764",
+          "stray": [],
+          "text": "a destination no trip reaches from 3980764 Amsterdam, C. van Eesterenlaan is offered"
+        },
+        {
+          "ok": true,
+          "origin": "3980764",
+          "text": "the destinations from 3980764 Amsterdam, C. van Eesterenlaan contradict the riding order 3979966 .. 3979810"
         },
         {
           "ok": true,
@@ -277,75 +346,6 @@
           "ok": true,
           "origin": "3980764",
           "text": "the destinations from 3980764 Amsterdam, C. van Eesterenlaan contradict the riding order 3981002 .. 3979810"
-        },
-        {
-          "ok": true,
-          "origin": "3979966",
-          "text": "a destination is offered twice from 3979966 Amsterdam, Rhijnvis Feithstraat",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3979966",
-          "text": "a stop this ride reaches from 3979966 Amsterdam, Rhijnvis Feithstraat is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979966",
-          "stray": [],
-          "text": "a destination no trip reaches from 3979966 Amsterdam, Rhijnvis Feithstraat is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979966",
-          "text": "the destinations from 3979966 Amsterdam, Rhijnvis Feithstraat contradict the riding order 3979966 .. 3979810"
-        },
-        {
-          "ok": true,
-          "origin": "3979766",
-          "text": "a destination is offered twice from 3979766 Amsterdam, Weesperplein",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3979766",
-          "text": "a stop this ride reaches from 3979766 Amsterdam, Weesperplein is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979766",
-          "stray": [],
-          "text": "a destination no trip reaches from 3979766 Amsterdam, Weesperplein is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979766",
-          "text": "the destinations from 3979766 Amsterdam, Weesperplein contradict the riding order 3979966 .. 3979810"
-        },
-        {
-          "ok": true,
-          "origin": "3980764",
-          "text": "a destination is offered twice from 3980764 Amsterdam, C. van Eesterenlaan",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3980764",
-          "text": "a stop this ride reaches from 3980764 Amsterdam, C. van Eesterenlaan is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980764",
-          "stray": [],
-          "text": "a destination no trip reaches from 3980764 Amsterdam, C. van Eesterenlaan is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980764",
-          "text": "the destinations from 3980764 Amsterdam, C. van Eesterenlaan contradict the riding order 3979966 .. 3979810"
         }
       ],
       "direction": 0,
@@ -360,30 +360,57 @@
       "checks": [
         {
           "asked": "2026-09-06",
-          "destination": "4015830",
+          "destination": "3979810",
           "expected": "2026-09-06",
           "got": "2026-09-06",
           "ok": true,
-          "origin": "3980295",
-          "text": "asked on 2026-09-06 for 3980295 -> 4015830: expected 2026-09-06, got 2026-09-06"
+          "origin": "4132580",
+          "text": "asked on 2026-09-06 for 4132580 -> 3979810: expected 2026-09-06, got 2026-09-06"
         },
         {
           "asked": "2026-09-07",
-          "destination": "4015830",
+          "destination": "3979810",
           "expected": "2026-09-13",
           "got": "2026-09-13",
           "ok": true,
-          "origin": "3980295",
-          "text": "asked on 2026-09-07 for 3980295 -> 4015830: expected 2026-09-13, got 2026-09-13"
+          "origin": "4132580",
+          "text": "asked on 2026-09-07 for 4132580 -> 3979810: expected 2026-09-13, got 2026-09-13"
         },
         {
           "asked": "2026-09-14",
-          "destination": "4015830",
+          "destination": "3979810",
           "expected": null,
           "got": null,
           "ok": true,
-          "origin": "3980295",
-          "text": "asked on 2026-09-14 for 3980295 -> 4015830: expected None, got None"
+          "origin": "4132580",
+          "text": "asked on 2026-09-14 for 4132580 -> 3979810: expected None, got None"
+        },
+        {
+          "asked": "2026-09-06",
+          "destination": "3979810",
+          "expected": "2026-09-06",
+          "got": "2026-09-06",
+          "ok": true,
+          "origin": "3979966",
+          "text": "asked on 2026-09-06 for 3979966 -> 3979810: expected 2026-09-06, got 2026-09-06"
+        },
+        {
+          "asked": "2026-09-07",
+          "destination": "3979810",
+          "expected": "2026-09-13",
+          "got": "2026-09-13",
+          "ok": true,
+          "origin": "3979966",
+          "text": "asked on 2026-09-07 for 3979966 -> 3979810: expected 2026-09-13, got 2026-09-13"
+        },
+        {
+          "asked": "2026-09-16",
+          "destination": "3979810",
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "origin": "3979966",
+          "text": "asked on 2026-09-16 for 3979966 -> 3979810: expected None, got None"
         },
         {
           "asked": "2026-09-14",
@@ -438,33 +465,6 @@
           "ok": true,
           "origin": "4138837",
           "text": "asked on 2026-11-30 for 4138837 -> 3979810: expected None, got None"
-        },
-        {
-          "asked": "2026-09-06",
-          "destination": "3979810",
-          "expected": "2026-09-06",
-          "got": "2026-09-06",
-          "ok": true,
-          "origin": "3979966",
-          "text": "asked on 2026-09-06 for 3979966 -> 3979810: expected 2026-09-06, got 2026-09-06"
-        },
-        {
-          "asked": "2026-09-07",
-          "destination": "3979810",
-          "expected": "2026-09-13",
-          "got": "2026-09-13",
-          "ok": true,
-          "origin": "3979966",
-          "text": "asked on 2026-09-07 for 3979966 -> 3979810: expected 2026-09-13, got 2026-09-13"
-        },
-        {
-          "asked": "2026-09-16",
-          "destination": "3979810",
-          "expected": null,
-          "got": null,
-          "ok": true,
-          "origin": "3979966",
-          "text": "asked on 2026-09-16 for 3979966 -> 3979810: expected None, got None"
         }
       ],
       "direction": 0,
@@ -492,10 +492,10 @@
             "direction": 0,
             "origin": "3979966",
             "route": "152323",
-            "trip": "380877660"
+            "trip": "380816281"
           },
           "ok": true,
-          "text": "asked 3979966 -> 3979810 on 152323 d0 (stop 1 to stop 15 of a 15-stop ride): got 3979966 -> 3979810 on 152323 d0, trip 380877660"
+          "text": "asked 3979966 -> 3979810 on 152323 d0 (stop 1 to stop 15 of a 15-stop ride): got 3979966 -> 3979810 on 152323 d0, trip 380816281"
         },
         {
           "asked": {
@@ -512,10 +512,10 @@
             "direction": 0,
             "origin": "3979966",
             "route": "152323",
-            "trip": "380877660"
+            "trip": "380816281"
           },
           "ok": true,
-          "text": "asked 3979966 -> 3979766 on 152323 d0 (stop 1 to stop 8 of a 15-stop ride): got 3979966 -> 3979766 on 152323 d0, trip 380877660"
+          "text": "asked 3979966 -> 3979766 on 152323 d0 (stop 1 to stop 8 of a 15-stop ride): got 3979966 -> 3979766 on 152323 d0, trip 380816281"
         },
         {
           "asked": {
@@ -532,70 +532,10 @@
             "direction": 0,
             "origin": "3979766",
             "route": "152323",
-            "trip": "380877660"
+            "trip": "380816281"
           },
           "ok": true,
-          "text": "asked 3979766 -> 3979810 on 152323 d0 (stop 8 to stop 15 of a 15-stop ride): got 3979766 -> 3979810 on 152323 d0, trip 380877660"
-        },
-        {
-          "asked": {
-            "destination": "4015830",
-            "direction": 0,
-            "from_stop": 1,
-            "origin": "3980295",
-            "ride_length": 16,
-            "route": "152323",
-            "to_stop": 16
-          },
-          "got": {
-            "destination": "4015830",
-            "direction": 0,
-            "origin": "3980295",
-            "route": "152323",
-            "trip": "380816180"
-          },
-          "ok": true,
-          "text": "asked 3980295 -> 4015830 on 152323 d0 (stop 1 to stop 16 of a 16-stop ride): got 3980295 -> 4015830 on 152323 d0, trip 380816180"
-        },
-        {
-          "asked": {
-            "destination": "3980004",
-            "direction": 0,
-            "from_stop": 1,
-            "origin": "3980295",
-            "ride_length": 16,
-            "route": "152323",
-            "to_stop": 9
-          },
-          "got": {
-            "destination": "3980004",
-            "direction": 0,
-            "origin": "3980295",
-            "route": "152323",
-            "trip": "380816180"
-          },
-          "ok": true,
-          "text": "asked 3980295 -> 3980004 on 152323 d0 (stop 1 to stop 9 of a 16-stop ride): got 3980295 -> 3980004 on 152323 d0, trip 380816180"
-        },
-        {
-          "asked": {
-            "destination": "4015830",
-            "direction": 0,
-            "from_stop": 9,
-            "origin": "3980004",
-            "ride_length": 16,
-            "route": "152323",
-            "to_stop": 16
-          },
-          "got": {
-            "destination": "4015830",
-            "direction": 0,
-            "origin": "3980004",
-            "route": "152323",
-            "trip": "380816180"
-          },
-          "ok": true,
-          "text": "asked 3980004 -> 4015830 on 152323 d0 (stop 9 to stop 16 of a 16-stop ride): got 3980004 -> 4015830 on 152323 d0, trip 380816180"
+          "text": "asked 3979766 -> 3979810 on 152323 d0 (stop 8 to stop 15 of a 15-stop ride): got 3979766 -> 3979810 on 152323 d0, trip 380816281"
         },
         {
           "asked": {
@@ -722,6 +662,66 @@
             "destination": "3979810",
             "direction": 0,
             "from_stop": 1,
+            "origin": "4132580",
+            "ride_length": 16,
+            "route": "152323",
+            "to_stop": 16
+          },
+          "got": {
+            "destination": "3979810",
+            "direction": 0,
+            "origin": "4132580",
+            "route": "152323",
+            "trip": "380816081"
+          },
+          "ok": true,
+          "text": "asked 4132580 -> 3979810 on 152323 d0 (stop 1 to stop 16 of a 16-stop ride): got 4132580 -> 3979810 on 152323 d0, trip 380816081"
+        },
+        {
+          "asked": {
+            "destination": "3979766",
+            "direction": 0,
+            "from_stop": 1,
+            "origin": "4132580",
+            "ride_length": 16,
+            "route": "152323",
+            "to_stop": 9
+          },
+          "got": {
+            "destination": "3979766",
+            "direction": 0,
+            "origin": "4132580",
+            "route": "152323",
+            "trip": "380816081"
+          },
+          "ok": true,
+          "text": "asked 4132580 -> 3979766 on 152323 d0 (stop 1 to stop 9 of a 16-stop ride): got 4132580 -> 3979766 on 152323 d0, trip 380816081"
+        },
+        {
+          "asked": {
+            "destination": "3979810",
+            "direction": 0,
+            "from_stop": 9,
+            "origin": "3979766",
+            "ride_length": 16,
+            "route": "152323",
+            "to_stop": 16
+          },
+          "got": {
+            "destination": "3979810",
+            "direction": 0,
+            "origin": "3979766",
+            "route": "152323",
+            "trip": "380816281"
+          },
+          "ok": true,
+          "text": "asked 3979766 -> 3979810 on 152323 d0 (stop 9 to stop 16 of a 16-stop ride): got 3979766 -> 3979810 on 152323 d0, trip 380816281"
+        },
+        {
+          "asked": {
+            "destination": "3979810",
+            "direction": 0,
+            "from_stop": 1,
             "origin": "4138837",
             "ride_length": 12,
             "route": "152323",
@@ -805,7 +805,16 @@
         },
         {
           "ok": true,
-          "text": "the list contradicts the riding order 3980295 .. 4015830"
+          "text": "the list contradicts the riding order 4132580 .. 3979810"
+        },
+        {
+          "ok": true,
+          "text": "a trip serves a stop the list does not offer",
+          "unoffered": []
+        },
+        {
+          "ok": true,
+          "text": "the list contradicts the riding order 3979966 .. 3979810"
         },
         {
           "ok": true,
@@ -833,15 +842,6 @@
         {
           "ok": true,
           "text": "the list contradicts the riding order 3981002 .. 3979810"
-        },
-        {
-          "ok": true,
-          "text": "a trip serves a stop the list does not offer",
-          "unoffered": []
-        },
-        {
-          "ok": true,
-          "text": "the list contradicts the riding order 3979966 .. 3979810"
         }
       ],
       "direction": 0,
@@ -862,12 +862,12 @@
             "origin": "3979810",
             "ride_length": 15,
             "route": "152323",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979810 -> 3979966 on 152323 d0 (stop 15 to stop 1 of a 15-stop ride): no departure"
+          "text": "asked 3979810 -> 3979966 on 152323 d0 (stop 15 to stop 1 of a 15-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -877,12 +877,12 @@
             "origin": "3979766",
             "ride_length": 15,
             "route": "152323",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979766 -> 3979966 on 152323 d0 (stop 8 to stop 1 of a 15-stop ride): no departure"
+          "text": "asked 3979766 -> 3979966 on 152323 d0 (stop 8 to stop 1 of a 15-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -892,57 +892,12 @@
             "origin": "3979810",
             "ride_length": 15,
             "route": "152323",
-            "served": true,
+            "served": false,
             "to_stop": 8
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979810 -> 3979766 on 152323 d0 (stop 15 to stop 8 of a 15-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980295",
-            "direction": 0,
-            "from_stop": 16,
-            "origin": "4015830",
-            "ride_length": 16,
-            "route": "152323",
-            "served": false,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 4015830 -> 3980295 on 152323 d0 (stop 16 to stop 1 of a 16-stop ride, this direction does not make it): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980295",
-            "direction": 0,
-            "from_stop": 9,
-            "origin": "3980004",
-            "ride_length": 16,
-            "route": "152323",
-            "served": true,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3980004 -> 3980295 on 152323 d0 (stop 9 to stop 1 of a 16-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980004",
-            "direction": 0,
-            "from_stop": 16,
-            "origin": "4015830",
-            "ride_length": 16,
-            "route": "152323",
-            "served": false,
-            "to_stop": 9
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 4015830 -> 3980004 on 152323 d0 (stop 16 to stop 9 of a 16-stop ride, this direction does not make it): no departure"
+          "text": "asked 3979810 -> 3979766 on 152323 d0 (stop 15 to stop 8 of a 15-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -982,12 +937,12 @@
             "origin": "3979810",
             "ride_length": 27,
             "route": "152323",
-            "served": true,
+            "served": false,
             "to_stop": 14
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979810 -> 3980938 on 152323 d0 (stop 27 to stop 14 of a 27-stop ride): no departure"
+          "text": "asked 3979810 -> 3980938 on 152323 d0 (stop 27 to stop 14 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -1036,18 +991,63 @@
         },
         {
           "asked": {
+            "destination": "4132580",
+            "direction": 0,
+            "from_stop": 16,
+            "origin": "3979810",
+            "ride_length": 16,
+            "route": "152323",
+            "served": false,
+            "to_stop": 1
+          },
+          "got": null,
+          "ok": true,
+          "text": "asked 3979810 -> 4132580 on 152323 d0 (stop 16 to stop 1 of a 16-stop ride, this direction does not make it): no departure"
+        },
+        {
+          "asked": {
+            "destination": "4132580",
+            "direction": 0,
+            "from_stop": 9,
+            "origin": "3979766",
+            "ride_length": 16,
+            "route": "152323",
+            "served": false,
+            "to_stop": 1
+          },
+          "got": null,
+          "ok": true,
+          "text": "asked 3979766 -> 4132580 on 152323 d0 (stop 9 to stop 1 of a 16-stop ride, this direction does not make it): no departure"
+        },
+        {
+          "asked": {
+            "destination": "3979766",
+            "direction": 0,
+            "from_stop": 16,
+            "origin": "3979810",
+            "ride_length": 16,
+            "route": "152323",
+            "served": false,
+            "to_stop": 9
+          },
+          "got": null,
+          "ok": true,
+          "text": "asked 3979810 -> 3979766 on 152323 d0 (stop 16 to stop 9 of a 16-stop ride, this direction does not make it): no departure"
+        },
+        {
+          "asked": {
             "destination": "4138837",
             "direction": 0,
             "from_stop": 12,
             "origin": "3979810",
             "ride_length": 12,
             "route": "152323",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979810 -> 4138837 on 152323 d0 (stop 12 to stop 1 of a 12-stop ride): no departure"
+          "text": "asked 3979810 -> 4138837 on 152323 d0 (stop 12 to stop 1 of a 12-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -1057,12 +1057,12 @@
             "origin": "3980814",
             "ride_length": 12,
             "route": "152323",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3980814 -> 4138837 on 152323 d0 (stop 7 to stop 1 of a 12-stop ride): no departure"
+          "text": "asked 3980814 -> 4138837 on 152323 d0 (stop 7 to stop 1 of a 12-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -1072,12 +1072,12 @@
             "origin": "3979810",
             "ride_length": 12,
             "route": "152323",
-            "served": true,
+            "served": false,
             "to_stop": 7
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979810 -> 3980814 on 152323 d0 (stop 12 to stop 7 of a 12-stop ride): no departure"
+          "text": "asked 3979810 -> 3980814 on 152323 d0 (stop 12 to stop 7 of a 12-stop ride, this direction does not make it): no departure"
         }
       ],
       "direction": 0,
@@ -1092,141 +1092,72 @@
       "checks": [
         {
           "ok": true,
-          "origin": "4132580",
-          "text": "a destination is offered twice from 4132580 Amsterdam, Surinameplein",
+          "origin": "3980295",
+          "text": "a destination is offered twice from 3980295 Amsterdam, Azartplein",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "4132580",
-          "text": "a stop this ride reaches from 4132580 Amsterdam, Surinameplein is not offered"
+          "origin": "3980295",
+          "text": "a stop this ride reaches from 3980295 Amsterdam, Azartplein is not offered"
         },
         {
           "ok": true,
-          "origin": "4132580",
+          "origin": "3980295",
           "stray": [],
-          "text": "a destination no trip reaches from 4132580 Amsterdam, Surinameplein is offered"
+          "text": "a destination no trip reaches from 3980295 Amsterdam, Azartplein is offered"
         },
         {
           "ok": true,
-          "origin": "4132580",
-          "text": "the destinations from 4132580 Amsterdam, Surinameplein contradict the riding order 4132580 .. 3979810"
+          "origin": "3980295",
+          "text": "the destinations from 3980295 Amsterdam, Azartplein contradict the riding order 3980295 .. 4015830"
         },
         {
           "ok": true,
-          "origin": "3979766",
-          "text": "a destination is offered twice from 3979766 Amsterdam, Weesperplein",
+          "origin": "3980004",
+          "text": "a destination is offered twice from 3980004 Amsterdam, Frederiksplein",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3979766",
-          "text": "a stop this ride reaches from 3979766 Amsterdam, Weesperplein is not offered"
+          "origin": "3980004",
+          "text": "a stop this ride reaches from 3980004 Amsterdam, Frederiksplein is not offered"
         },
         {
           "ok": true,
-          "origin": "3979766",
+          "origin": "3980004",
           "stray": [],
-          "text": "a destination no trip reaches from 3979766 Amsterdam, Weesperplein is offered"
+          "text": "a destination no trip reaches from 3980004 Amsterdam, Frederiksplein is offered"
         },
         {
           "ok": true,
-          "origin": "3979766",
-          "text": "the destinations from 3979766 Amsterdam, Weesperplein contradict the riding order 4132580 .. 3979810"
+          "origin": "3980004",
+          "text": "the destinations from 3980004 Amsterdam, Frederiksplein contradict the riding order 3980295 .. 4015830"
         },
         {
           "ok": true,
-          "origin": "3980764",
-          "text": "a destination is offered twice from 3980764 Amsterdam, C. van Eesterenlaan",
+          "origin": "3980919",
+          "text": "a destination is offered twice from 3980919 Amsterdam, Rhijnvis Feithstraat",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980764",
-          "text": "a stop this ride reaches from 3980764 Amsterdam, C. van Eesterenlaan is not offered"
+          "origin": "3980919",
+          "text": "a stop this ride reaches from 3980919 Amsterdam, Rhijnvis Feithstraat is not offered"
         },
         {
           "ok": true,
-          "origin": "3980764",
+          "origin": "3980919",
           "stray": [],
-          "text": "a destination no trip reaches from 3980764 Amsterdam, C. van Eesterenlaan is offered"
+          "text": "a destination no trip reaches from 3980919 Amsterdam, Rhijnvis Feithstraat is offered"
         },
         {
           "ok": true,
-          "origin": "3980764",
-          "text": "the destinations from 3980764 Amsterdam, C. van Eesterenlaan contradict the riding order 4132580 .. 3979810"
-        },
-        {
-          "ok": true,
-          "origin": "3979966",
-          "text": "a destination is offered twice from 3979966 Amsterdam, Rhijnvis Feithstraat",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3979966",
-          "text": "a stop this ride reaches from 3979966 Amsterdam, Rhijnvis Feithstraat is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979966",
-          "stray": [],
-          "text": "a destination no trip reaches from 3979966 Amsterdam, Rhijnvis Feithstraat is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979966",
-          "text": "the destinations from 3979966 Amsterdam, Rhijnvis Feithstraat contradict the riding order 3979966 .. 3979810"
-        },
-        {
-          "ok": true,
-          "origin": "3979766",
-          "text": "a destination is offered twice from 3979766 Amsterdam, Weesperplein",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3979766",
-          "text": "a stop this ride reaches from 3979766 Amsterdam, Weesperplein is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979766",
-          "stray": [],
-          "text": "a destination no trip reaches from 3979766 Amsterdam, Weesperplein is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979766",
-          "text": "the destinations from 3979766 Amsterdam, Weesperplein contradict the riding order 3979966 .. 3979810"
-        },
-        {
-          "ok": true,
-          "origin": "3980764",
-          "text": "a destination is offered twice from 3980764 Amsterdam, C. van Eesterenlaan",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3980764",
-          "text": "a stop this ride reaches from 3980764 Amsterdam, C. van Eesterenlaan is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980764",
-          "stray": [],
-          "text": "a destination no trip reaches from 3980764 Amsterdam, C. van Eesterenlaan is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980764",
-          "text": "the destinations from 3980764 Amsterdam, C. van Eesterenlaan contradict the riding order 3979966 .. 3979810"
+          "origin": "3980919",
+          "text": "the destinations from 3980919 Amsterdam, Rhijnvis Feithstraat contradict the riding order 3980295 .. 4015830"
         },
         {
           "ok": true,
@@ -1448,57 +1379,30 @@
       "checks": [
         {
           "asked": "2026-09-06",
-          "destination": "3979810",
+          "destination": "4015830",
           "expected": "2026-09-06",
           "got": "2026-09-06",
           "ok": true,
-          "origin": "4132580",
-          "text": "asked on 2026-09-06 for 4132580 -> 3979810: expected 2026-09-06, got 2026-09-06"
+          "origin": "3980295",
+          "text": "asked on 2026-09-06 for 3980295 -> 4015830: expected 2026-09-06, got 2026-09-06"
         },
         {
           "asked": "2026-09-07",
-          "destination": "3979810",
+          "destination": "4015830",
           "expected": "2026-09-13",
           "got": "2026-09-13",
           "ok": true,
-          "origin": "4132580",
-          "text": "asked on 2026-09-07 for 4132580 -> 3979810: expected 2026-09-13, got 2026-09-13"
+          "origin": "3980295",
+          "text": "asked on 2026-09-07 for 3980295 -> 4015830: expected 2026-09-13, got 2026-09-13"
         },
         {
           "asked": "2026-09-14",
-          "destination": "3979810",
+          "destination": "4015830",
           "expected": null,
           "got": null,
           "ok": true,
-          "origin": "4132580",
-          "text": "asked on 2026-09-14 for 4132580 -> 3979810: expected None, got None"
-        },
-        {
-          "asked": "2026-09-06",
-          "destination": "3979810",
-          "expected": "2026-09-06",
-          "got": "2026-09-06",
-          "ok": true,
-          "origin": "3979966",
-          "text": "asked on 2026-09-06 for 3979966 -> 3979810: expected 2026-09-06, got 2026-09-06"
-        },
-        {
-          "asked": "2026-09-07",
-          "destination": "3979810",
-          "expected": "2026-09-13",
-          "got": "2026-09-13",
-          "ok": true,
-          "origin": "3979966",
-          "text": "asked on 2026-09-07 for 3979966 -> 3979810: expected 2026-09-13, got 2026-09-13"
-        },
-        {
-          "asked": "2026-09-16",
-          "destination": "3979810",
-          "expected": null,
-          "got": null,
-          "ok": true,
-          "origin": "3979966",
-          "text": "asked on 2026-09-16 for 3979966 -> 3979810: expected None, got None"
+          "origin": "3980295",
+          "text": "asked on 2026-09-14 for 3980295 -> 4015830: expected None, got None"
         },
         {
           "asked": "2026-09-14",
@@ -1627,66 +1531,6 @@
         },
         {
           "asked": {
-            "destination": "3979810",
-            "direction": 1,
-            "from_stop": 1,
-            "origin": "3979966",
-            "ride_length": 15,
-            "route": "152323",
-            "to_stop": 15
-          },
-          "got": {
-            "destination": "3979810",
-            "direction": 1,
-            "origin": "3979966",
-            "route": "152323",
-            "trip": "380816281"
-          },
-          "ok": true,
-          "text": "asked 3979966 -> 3979810 on 152323 d1 (stop 1 to stop 15 of a 15-stop ride): got 3979966 -> 3979810 on 152323 d1, trip 380816281"
-        },
-        {
-          "asked": {
-            "destination": "3979766",
-            "direction": 1,
-            "from_stop": 1,
-            "origin": "3979966",
-            "ride_length": 15,
-            "route": "152323",
-            "to_stop": 8
-          },
-          "got": {
-            "destination": "3979766",
-            "direction": 1,
-            "origin": "3979966",
-            "route": "152323",
-            "trip": "380816281"
-          },
-          "ok": true,
-          "text": "asked 3979966 -> 3979766 on 152323 d1 (stop 1 to stop 8 of a 15-stop ride): got 3979966 -> 3979766 on 152323 d1, trip 380816281"
-        },
-        {
-          "asked": {
-            "destination": "3979810",
-            "direction": 1,
-            "from_stop": 8,
-            "origin": "3979766",
-            "ride_length": 15,
-            "route": "152323",
-            "to_stop": 15
-          },
-          "got": {
-            "destination": "3979810",
-            "direction": 1,
-            "origin": "3979766",
-            "route": "152323",
-            "trip": "380816281"
-          },
-          "ok": true,
-          "text": "asked 3979766 -> 3979810 on 152323 d1 (stop 8 to stop 15 of a 15-stop ride): got 3979766 -> 3979810 on 152323 d1, trip 380816281"
-        },
-        {
-          "asked": {
             "destination": "3980743",
             "direction": 1,
             "from_stop": 1,
@@ -1807,63 +1651,63 @@
         },
         {
           "asked": {
-            "destination": "3979810",
+            "destination": "4015830",
             "direction": 1,
             "from_stop": 1,
-            "origin": "4132580",
+            "origin": "3980295",
             "ride_length": 16,
             "route": "152323",
             "to_stop": 16
           },
           "got": {
-            "destination": "3979810",
+            "destination": "4015830",
             "direction": 1,
-            "origin": "4132580",
+            "origin": "3980295",
             "route": "152323",
-            "trip": "380816081"
+            "trip": "380816180"
           },
           "ok": true,
-          "text": "asked 4132580 -> 3979810 on 152323 d1 (stop 1 to stop 16 of a 16-stop ride): got 4132580 -> 3979810 on 152323 d1, trip 380816081"
+          "text": "asked 3980295 -> 4015830 on 152323 d1 (stop 1 to stop 16 of a 16-stop ride): got 3980295 -> 4015830 on 152323 d1, trip 380816180"
         },
         {
           "asked": {
-            "destination": "3979766",
+            "destination": "3980004",
             "direction": 1,
             "from_stop": 1,
-            "origin": "4132580",
+            "origin": "3980295",
             "ride_length": 16,
             "route": "152323",
             "to_stop": 9
           },
           "got": {
-            "destination": "3979766",
+            "destination": "3980004",
             "direction": 1,
-            "origin": "4132580",
+            "origin": "3980295",
             "route": "152323",
-            "trip": "380816081"
+            "trip": "380816180"
           },
           "ok": true,
-          "text": "asked 4132580 -> 3979766 on 152323 d1 (stop 1 to stop 9 of a 16-stop ride): got 4132580 -> 3979766 on 152323 d1, trip 380816081"
+          "text": "asked 3980295 -> 3980004 on 152323 d1 (stop 1 to stop 9 of a 16-stop ride): got 3980295 -> 3980004 on 152323 d1, trip 380816180"
         },
         {
           "asked": {
-            "destination": "3979810",
+            "destination": "4015830",
             "direction": 1,
             "from_stop": 9,
-            "origin": "3979766",
+            "origin": "3980004",
             "ride_length": 16,
             "route": "152323",
             "to_stop": 16
           },
           "got": {
-            "destination": "3979810",
+            "destination": "4015830",
             "direction": 1,
-            "origin": "3979766",
+            "origin": "3980004",
             "route": "152323",
-            "trip": "380816281"
+            "trip": "380816180"
           },
           "ok": true,
-          "text": "asked 3979766 -> 3979810 on 152323 d1 (stop 9 to stop 16 of a 16-stop ride): got 3979766 -> 3979810 on 152323 d1, trip 380816281"
+          "text": "asked 3980004 -> 4015830 on 152323 d1 (stop 9 to stop 16 of a 16-stop ride): got 3980004 -> 4015830 on 152323 d1, trip 380816180"
         }
       ],
       "direction": 1,
@@ -1882,14 +1726,9 @@
           "text": "the stop list offers a stop twice"
         },
         {
-          "folded": [
-            [
-              "3979810",
-              "3980295"
-            ]
-          ],
-          "ok": false,
-          "text": "the list offers one station twice in a row: 3979810 Amsterdam, Azartplein then 3980295 Amsterdam, Azartplein"
+          "folded": [],
+          "ok": true,
+          "text": "the list offers one station twice in a row"
         },
         {
           "ok": true,
@@ -1898,16 +1737,7 @@
         },
         {
           "ok": true,
-          "text": "the list contradicts the riding order 4132580 .. 3979810"
-        },
-        {
-          "ok": true,
-          "text": "a trip serves a stop the list does not offer",
-          "unoffered": []
-        },
-        {
-          "ok": true,
-          "text": "the list contradicts the riding order 3979966 .. 3979810"
+          "text": "the list contradicts the riding order 3980295 .. 4015830"
         },
         {
           "ok": true,
@@ -1941,8 +1771,8 @@
       "fixture": "gvb",
       "id": "gvb-1-d1-stop_list",
       "kind": "stop_list",
-      "outcome": "xfailed",
-      "reason": "two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups); trams 1, 7 and 17 also carry wrong direction_ids",
+      "outcome": "passed",
+      "reason": null,
       "route": "152323"
     },
     {
@@ -1991,51 +1821,6 @@
           "got": null,
           "ok": true,
           "text": "asked 3980743 -> 3980204 on 152323 d1 (stop 12 to stop 7 of a 12-stop ride, this direction does not make it): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3979966",
-            "direction": 1,
-            "from_stop": 15,
-            "origin": "3979810",
-            "ride_length": 15,
-            "route": "152323",
-            "served": true,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3979810 -> 3979966 on 152323 d1 (stop 15 to stop 1 of a 15-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3979966",
-            "direction": 1,
-            "from_stop": 8,
-            "origin": "3979766",
-            "ride_length": 15,
-            "route": "152323",
-            "served": true,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3979766 -> 3979966 on 152323 d1 (stop 8 to stop 1 of a 15-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3979766",
-            "direction": 1,
-            "from_stop": 15,
-            "origin": "3979810",
-            "ride_length": 15,
-            "route": "152323",
-            "served": true,
-            "to_stop": 8
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3979810 -> 3979766 on 152323 d1 (stop 15 to stop 8 of a 15-stop ride): no departure"
         },
         {
           "asked": {
@@ -2105,12 +1890,12 @@
             "origin": "3981186",
             "ride_length": 27,
             "route": "152323",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3981186 -> 3980295 on 152323 d1 (stop 14 to stop 1 of a 27-stop ride): no departure"
+          "text": "asked 3981186 -> 3980295 on 152323 d1 (stop 14 to stop 1 of a 27-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -2129,10 +1914,10 @@
         },
         {
           "asked": {
-            "destination": "4132580",
+            "destination": "3980295",
             "direction": 1,
             "from_stop": 16,
-            "origin": "3979810",
+            "origin": "4015830",
             "ride_length": 16,
             "route": "152323",
             "served": false,
@@ -2140,14 +1925,14 @@
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979810 -> 4132580 on 152323 d1 (stop 16 to stop 1 of a 16-stop ride, this direction does not make it): no departure"
+          "text": "asked 4015830 -> 3980295 on 152323 d1 (stop 16 to stop 1 of a 16-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
-            "destination": "4132580",
+            "destination": "3980295",
             "direction": 1,
             "from_stop": 9,
-            "origin": "3979766",
+            "origin": "3980004",
             "ride_length": 16,
             "route": "152323",
             "served": false,
@@ -2155,22 +1940,22 @@
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979766 -> 4132580 on 152323 d1 (stop 9 to stop 1 of a 16-stop ride, this direction does not make it): no departure"
+          "text": "asked 3980004 -> 3980295 on 152323 d1 (stop 9 to stop 1 of a 16-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
-            "destination": "3979766",
+            "destination": "3980004",
             "direction": 1,
             "from_stop": 16,
-            "origin": "3979810",
+            "origin": "4015830",
             "ride_length": 16,
             "route": "152323",
-            "served": true,
+            "served": false,
             "to_stop": 9
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979810 -> 3979766 on 152323 d1 (stop 16 to stop 9 of a 16-stop ride): no departure"
+          "text": "asked 4015830 -> 3980004 on 152323 d1 (stop 16 to stop 9 of a 16-stop ride, this direction does not make it): no departure"
         }
       ],
       "direction": 1,
@@ -4763,7 +4548,7 @@
       "id": "gvb-14-d0-stop_list",
       "kind": "stop_list",
       "outcome": "xfailed",
-      "reason": "two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups); trams 1, 7 and 17 also carry wrong direction_ids",
+      "reason": "two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups)",
       "route": "152331"
     },
     {
@@ -6144,7 +5929,7 @@
       "id": "gvb-14-d1-stop_list",
       "kind": "stop_list",
       "outcome": "xfailed",
-      "reason": "two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups); trams 1, 7 and 17 also carry wrong direction_ids",
+      "reason": "two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups)",
       "route": "152331"
     },
     {
@@ -6576,72 +6361,72 @@
         },
         {
           "ok": true,
-          "origin": "3981271",
-          "text": "a destination is offered twice from 3981271 Amsterdam, Centraal Station",
+          "origin": "4015830",
+          "text": "a destination is offered twice from 4015830 Amsterdam, Surinameplein",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3981271",
-          "text": "a stop this ride reaches from 3981271 Amsterdam, Centraal Station is not offered"
+          "origin": "4015830",
+          "text": "a stop this ride reaches from 4015830 Amsterdam, Surinameplein is not offered"
         },
         {
           "ok": true,
-          "origin": "3981271",
+          "origin": "4015830",
           "stray": [],
-          "text": "a destination no trip reaches from 3981271 Amsterdam, Centraal Station is offered"
+          "text": "a destination no trip reaches from 4015830 Amsterdam, Surinameplein is offered"
         },
         {
           "ok": true,
-          "origin": "3981271",
-          "text": "the destinations from 3981271 Amsterdam, Centraal Station contradict the riding order 3981271 .. 4132580"
+          "origin": "4015830",
+          "text": "the destinations from 4015830 Amsterdam, Surinameplein contradict the riding order 4015830 .. 3981271"
         },
         {
           "ok": true,
-          "origin": "3980180",
-          "text": "a destination is offered twice from 3980180 Amsterdam, Leidseplein",
+          "origin": "3980599",
+          "text": "a destination is offered twice from 3980599 Amsterdam, Leidseplein",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980180",
-          "text": "a stop this ride reaches from 3980180 Amsterdam, Leidseplein is not offered"
+          "origin": "3980599",
+          "text": "a stop this ride reaches from 3980599 Amsterdam, Leidseplein is not offered"
         },
         {
           "ok": true,
-          "origin": "3980180",
+          "origin": "3980599",
           "stray": [],
-          "text": "a destination no trip reaches from 3980180 Amsterdam, Leidseplein is offered"
+          "text": "a destination no trip reaches from 3980599 Amsterdam, Leidseplein is offered"
         },
         {
           "ok": true,
-          "origin": "3980180",
-          "text": "the destinations from 3980180 Amsterdam, Leidseplein contradict the riding order 3981271 .. 4132580"
+          "origin": "3980599",
+          "text": "the destinations from 3980599 Amsterdam, Leidseplein contradict the riding order 4015830 .. 3981271"
         },
         {
           "ok": true,
-          "origin": "3980601",
-          "text": "a destination is offered twice from 3980601 Amsterdam, Corantijnstraat",
+          "origin": "3979826",
+          "text": "a destination is offered twice from 3979826 Amsterdam, Nieuwezijds Kolk",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980601",
-          "text": "a stop this ride reaches from 3980601 Amsterdam, Corantijnstraat is not offered"
+          "origin": "3979826",
+          "text": "a stop this ride reaches from 3979826 Amsterdam, Nieuwezijds Kolk is not offered"
         },
         {
           "ok": true,
-          "origin": "3980601",
+          "origin": "3979826",
           "stray": [],
-          "text": "a destination no trip reaches from 3980601 Amsterdam, Corantijnstraat is offered"
+          "text": "a destination no trip reaches from 3979826 Amsterdam, Nieuwezijds Kolk is offered"
         },
         {
           "ok": true,
-          "origin": "3980601",
-          "text": "the destinations from 3980601 Amsterdam, Corantijnstraat contradict the riding order 3981271 .. 4132580"
+          "origin": "3979826",
+          "text": "the destinations from 3979826 Amsterdam, Nieuwezijds Kolk contradict the riding order 4015830 .. 3981271"
         },
         {
           "ok": true,
@@ -6779,30 +6564,30 @@
         },
         {
           "asked": "2026-09-06",
-          "destination": "4132580",
+          "destination": "3981271",
           "expected": "2026-09-06",
           "got": "2026-09-06",
           "ok": true,
-          "origin": "3981271",
-          "text": "asked on 2026-09-06 for 3981271 -> 4132580: expected 2026-09-06, got 2026-09-06"
+          "origin": "4015830",
+          "text": "asked on 2026-09-06 for 4015830 -> 3981271: expected 2026-09-06, got 2026-09-06"
         },
         {
           "asked": "2026-09-07",
-          "destination": "4132580",
+          "destination": "3981271",
           "expected": "2026-09-13",
           "got": "2026-09-13",
           "ok": true,
-          "origin": "3981271",
-          "text": "asked on 2026-09-07 for 3981271 -> 4132580: expected 2026-09-13, got 2026-09-13"
+          "origin": "4015830",
+          "text": "asked on 2026-09-07 for 4015830 -> 3981271: expected 2026-09-13, got 2026-09-13"
         },
         {
           "asked": "2026-09-14",
-          "destination": "4132580",
+          "destination": "3981271",
           "expected": null,
           "got": null,
           "ok": true,
-          "origin": "3981271",
-          "text": "asked on 2026-09-14 for 3981271 -> 4132580: expected None, got None"
+          "origin": "4015830",
+          "text": "asked on 2026-09-14 for 4015830 -> 3981271: expected None, got None"
         },
         {
           "asked": "2026-09-06",
@@ -6977,10 +6762,10 @@
             "direction": 0,
             "origin": "3980599",
             "route": "152324",
-            "trip": "380840045"
+            "trip": "380816483"
           },
           "ok": true,
-          "text": "asked 3980599 -> 3981271 on 152324 d0 (stop 1 to stop 8 of a 8-stop ride): got 3980599 -> 3981271 on 152324 d0, trip 380840045"
+          "text": "asked 3980599 -> 3981271 on 152324 d0 (stop 1 to stop 8 of a 8-stop ride): got 3980599 -> 3981271 on 152324 d0, trip 380816483"
         },
         {
           "asked": {
@@ -6997,10 +6782,10 @@
             "direction": 0,
             "origin": "3980599",
             "route": "152324",
-            "trip": "380840045"
+            "trip": "380816483"
           },
           "ok": true,
-          "text": "asked 3980599 -> 3980023 on 152324 d0 (stop 1 to stop 5 of a 8-stop ride): got 3980599 -> 3980023 on 152324 d0, trip 380840045"
+          "text": "asked 3980599 -> 3980023 on 152324 d0 (stop 1 to stop 5 of a 8-stop ride): got 3980599 -> 3980023 on 152324 d0, trip 380816483"
         },
         {
           "asked": {
@@ -7017,70 +6802,70 @@
             "direction": 0,
             "origin": "3980023",
             "route": "152324",
-            "trip": "380840045"
+            "trip": "380816483"
           },
           "ok": true,
-          "text": "asked 3980023 -> 3981271 on 152324 d0 (stop 5 to stop 8 of a 8-stop ride): got 3980023 -> 3981271 on 152324 d0, trip 380840045"
+          "text": "asked 3980023 -> 3981271 on 152324 d0 (stop 5 to stop 8 of a 8-stop ride): got 3980023 -> 3981271 on 152324 d0, trip 380816483"
         },
         {
           "asked": {
-            "destination": "4132580",
+            "destination": "3981271",
             "direction": 0,
             "from_stop": 1,
-            "origin": "3981271",
+            "origin": "4015830",
             "ride_length": 15,
             "route": "152324",
             "to_stop": 15
           },
           "got": {
-            "destination": "4132580",
+            "destination": "3981271",
             "direction": 0,
-            "origin": "3981271",
+            "origin": "4015830",
             "route": "152324",
-            "trip": "380816284"
+            "trip": "380816385"
           },
           "ok": true,
-          "text": "asked 3981271 -> 4132580 on 152324 d0 (stop 1 to stop 15 of a 15-stop ride): got 3981271 -> 4132580 on 152324 d0, trip 380816284"
+          "text": "asked 4015830 -> 3981271 on 152324 d0 (stop 1 to stop 15 of a 15-stop ride): got 4015830 -> 3981271 on 152324 d0, trip 380816385"
         },
         {
           "asked": {
-            "destination": "3980180",
+            "destination": "3980599",
             "direction": 0,
             "from_stop": 1,
-            "origin": "3981271",
+            "origin": "4015830",
             "ride_length": 15,
             "route": "152324",
             "to_stop": 8
           },
           "got": {
-            "destination": "3980180",
+            "destination": "3980599",
             "direction": 0,
-            "origin": "3981271",
+            "origin": "4015830",
             "route": "152324",
-            "trip": "380816284"
+            "trip": "380816385"
           },
           "ok": true,
-          "text": "asked 3981271 -> 3980180 on 152324 d0 (stop 1 to stop 8 of a 15-stop ride): got 3981271 -> 3980180 on 152324 d0, trip 380816284"
+          "text": "asked 4015830 -> 3980599 on 152324 d0 (stop 1 to stop 8 of a 15-stop ride): got 4015830 -> 3980599 on 152324 d0, trip 380816385"
         },
         {
           "asked": {
-            "destination": "4132580",
+            "destination": "3981271",
             "direction": 0,
             "from_stop": 8,
-            "origin": "3980180",
+            "origin": "3980599",
             "ride_length": 15,
             "route": "152324",
             "to_stop": 15
           },
           "got": {
-            "destination": "4132580",
+            "destination": "3981271",
             "direction": 0,
-            "origin": "3980180",
+            "origin": "3980599",
             "route": "152324",
-            "trip": "380816284"
+            "trip": "380816483"
           },
           "ok": true,
-          "text": "asked 3980180 -> 4132580 on 152324 d0 (stop 8 to stop 15 of a 15-stop ride): got 3980180 -> 4132580 on 152324 d0, trip 380816284"
+          "text": "asked 3980599 -> 3981271 on 152324 d0 (stop 8 to stop 15 of a 15-stop ride): got 3980599 -> 3981271 on 152324 d0, trip 380816483"
         }
       ],
       "direction": 0,
@@ -7128,7 +6913,7 @@
         },
         {
           "ok": true,
-          "text": "the list contradicts the riding order 3981271 .. 4132580"
+          "text": "the list contradicts the riding order 4015830 .. 3981271"
         },
         {
           "ok": true,
@@ -7188,12 +6973,12 @@
             "origin": "3981271",
             "ride_length": 24,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 13
           },
           "got": null,
           "ok": true,
-          "text": "asked 3981271 -> 3980752 on 152324 d0 (stop 24 to stop 13 of a 24-stop ride): no departure"
+          "text": "asked 3981271 -> 3980752 on 152324 d0 (stop 24 to stop 13 of a 24-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -7203,12 +6988,12 @@
             "origin": "3981271",
             "ride_length": 14,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3981271 -> 3980305 on 152324 d0 (stop 14 to stop 1 of a 14-stop ride): no departure"
+          "text": "asked 3981271 -> 3980305 on 152324 d0 (stop 14 to stop 1 of a 14-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -7218,12 +7003,12 @@
             "origin": "3979912",
             "ride_length": 14,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979912 -> 3980305 on 152324 d0 (stop 8 to stop 1 of a 14-stop ride): no departure"
+          "text": "asked 3979912 -> 3980305 on 152324 d0 (stop 8 to stop 1 of a 14-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -7233,12 +7018,12 @@
             "origin": "3981271",
             "ride_length": 14,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 8
           },
           "got": null,
           "ok": true,
-          "text": "asked 3981271 -> 3979912 on 152324 d0 (stop 14 to stop 8 of a 14-stop ride): no departure"
+          "text": "asked 3981271 -> 3979912 on 152324 d0 (stop 14 to stop 8 of a 14-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -7248,12 +7033,12 @@
             "origin": "3981271",
             "ride_length": 8,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3981271 -> 3980599 on 152324 d0 (stop 8 to stop 1 of a 8-stop ride): no departure"
+          "text": "asked 3981271 -> 3980599 on 152324 d0 (stop 8 to stop 1 of a 8-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -7263,12 +7048,12 @@
             "origin": "3980023",
             "ride_length": 8,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3980023 -> 3980599 on 152324 d0 (stop 5 to stop 1 of a 8-stop ride): no departure"
+          "text": "asked 3980023 -> 3980599 on 152324 d0 (stop 5 to stop 1 of a 8-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -7278,57 +7063,57 @@
             "origin": "3981271",
             "ride_length": 8,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 5
           },
           "got": null,
           "ok": true,
-          "text": "asked 3981271 -> 3980023 on 152324 d0 (stop 8 to stop 5 of a 8-stop ride): no departure"
+          "text": "asked 3981271 -> 3980023 on 152324 d0 (stop 8 to stop 5 of a 8-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
-            "destination": "3981271",
+            "destination": "4015830",
             "direction": 0,
             "from_stop": 15,
-            "origin": "4132580",
+            "origin": "3981271",
             "ride_length": 15,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 4132580 -> 3981271 on 152324 d0 (stop 15 to stop 1 of a 15-stop ride): no departure"
+          "text": "asked 3981271 -> 4015830 on 152324 d0 (stop 15 to stop 1 of a 15-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
-            "destination": "3981271",
+            "destination": "4015830",
             "direction": 0,
             "from_stop": 8,
-            "origin": "3980180",
+            "origin": "3980599",
             "ride_length": 15,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3980180 -> 3981271 on 152324 d0 (stop 8 to stop 1 of a 15-stop ride): no departure"
+          "text": "asked 3980599 -> 4015830 on 152324 d0 (stop 8 to stop 1 of a 15-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
-            "destination": "3980180",
+            "destination": "3980599",
             "direction": 0,
             "from_stop": 15,
-            "origin": "4132580",
+            "origin": "3981271",
             "ride_length": 15,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 8
           },
           "got": null,
           "ok": true,
-          "text": "asked 4132580 -> 3980180 on 152324 d0 (stop 15 to stop 8 of a 15-stop ride): no departure"
+          "text": "asked 3981271 -> 3980599 on 152324 d0 (stop 15 to stop 8 of a 15-stop ride, this direction does not make it): no departure"
         }
       ],
       "direction": 0,
@@ -7481,141 +7266,72 @@
         },
         {
           "ok": true,
-          "origin": "4015830",
-          "text": "a destination is offered twice from 4015830 Amsterdam, Surinameplein",
+          "origin": "3981271",
+          "text": "a destination is offered twice from 3981271 Amsterdam, Centraal Station",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "4015830",
-          "text": "a stop this ride reaches from 4015830 Amsterdam, Surinameplein is not offered"
+          "origin": "3981271",
+          "text": "a stop this ride reaches from 3981271 Amsterdam, Centraal Station is not offered"
         },
         {
           "ok": true,
-          "origin": "4015830",
+          "origin": "3981271",
           "stray": [],
-          "text": "a destination no trip reaches from 4015830 Amsterdam, Surinameplein is offered"
+          "text": "a destination no trip reaches from 3981271 Amsterdam, Centraal Station is offered"
         },
         {
           "ok": true,
-          "origin": "4015830",
-          "text": "the destinations from 4015830 Amsterdam, Surinameplein contradict the riding order 4015830 .. 3981271"
+          "origin": "3981271",
+          "text": "the destinations from 3981271 Amsterdam, Centraal Station contradict the riding order 3981271 .. 4132580"
         },
         {
           "ok": true,
-          "origin": "3980599",
-          "text": "a destination is offered twice from 3980599 Amsterdam, Leidseplein",
+          "origin": "3980180",
+          "text": "a destination is offered twice from 3980180 Amsterdam, Leidseplein",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980599",
-          "text": "a stop this ride reaches from 3980599 Amsterdam, Leidseplein is not offered"
+          "origin": "3980180",
+          "text": "a stop this ride reaches from 3980180 Amsterdam, Leidseplein is not offered"
         },
         {
           "ok": true,
-          "origin": "3980599",
+          "origin": "3980180",
           "stray": [],
-          "text": "a destination no trip reaches from 3980599 Amsterdam, Leidseplein is offered"
+          "text": "a destination no trip reaches from 3980180 Amsterdam, Leidseplein is offered"
         },
         {
           "ok": true,
-          "origin": "3980599",
-          "text": "the destinations from 3980599 Amsterdam, Leidseplein contradict the riding order 4015830 .. 3981271"
+          "origin": "3980180",
+          "text": "the destinations from 3980180 Amsterdam, Leidseplein contradict the riding order 3981271 .. 4132580"
         },
         {
           "ok": true,
-          "origin": "3979826",
-          "text": "a destination is offered twice from 3979826 Amsterdam, Nieuwezijds Kolk",
+          "origin": "3980601",
+          "text": "a destination is offered twice from 3980601 Amsterdam, Corantijnstraat",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3979826",
-          "text": "a stop this ride reaches from 3979826 Amsterdam, Nieuwezijds Kolk is not offered"
+          "origin": "3980601",
+          "text": "a stop this ride reaches from 3980601 Amsterdam, Corantijnstraat is not offered"
         },
         {
           "ok": true,
-          "origin": "3979826",
+          "origin": "3980601",
           "stray": [],
-          "text": "a destination no trip reaches from 3979826 Amsterdam, Nieuwezijds Kolk is offered"
+          "text": "a destination no trip reaches from 3980601 Amsterdam, Corantijnstraat is offered"
         },
         {
           "ok": true,
-          "origin": "3979826",
-          "text": "the destinations from 3979826 Amsterdam, Nieuwezijds Kolk contradict the riding order 4015830 .. 3981271"
-        },
-        {
-          "ok": true,
-          "origin": "3980599",
-          "text": "a destination is offered twice from 3980599 Amsterdam, Leidseplein",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3980599",
-          "text": "a stop this ride reaches from 3980599 Amsterdam, Leidseplein is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980599",
-          "stray": [],
-          "text": "a destination no trip reaches from 3980599 Amsterdam, Leidseplein is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980599",
-          "text": "the destinations from 3980599 Amsterdam, Leidseplein contradict the riding order 3980599 .. 3981271"
-        },
-        {
-          "ok": true,
-          "origin": "3980023",
-          "text": "a destination is offered twice from 3980023 Amsterdam, Paleisstraat",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3980023",
-          "text": "a stop this ride reaches from 3980023 Amsterdam, Paleisstraat is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980023",
-          "stray": [],
-          "text": "a destination no trip reaches from 3980023 Amsterdam, Paleisstraat is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980023",
-          "text": "the destinations from 3980023 Amsterdam, Paleisstraat contradict the riding order 3980599 .. 3981271"
-        },
-        {
-          "ok": true,
-          "origin": "3979826",
-          "text": "a destination is offered twice from 3979826 Amsterdam, Nieuwezijds Kolk",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3979826",
-          "text": "a stop this ride reaches from 3979826 Amsterdam, Nieuwezijds Kolk is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979826",
-          "stray": [],
-          "text": "a destination no trip reaches from 3979826 Amsterdam, Nieuwezijds Kolk is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979826",
-          "text": "the destinations from 3979826 Amsterdam, Nieuwezijds Kolk contradict the riding order 3980599 .. 3981271"
+          "origin": "3980601",
+          "text": "the destinations from 3980601 Amsterdam, Corantijnstraat contradict the riding order 3981271 .. 4132580"
         }
       ],
       "direction": 1,
@@ -7684,57 +7400,30 @@
         },
         {
           "asked": "2026-09-06",
-          "destination": "3981271",
+          "destination": "4132580",
           "expected": "2026-09-06",
           "got": "2026-09-06",
           "ok": true,
-          "origin": "4015830",
-          "text": "asked on 2026-09-06 for 4015830 -> 3981271: expected 2026-09-06, got 2026-09-06"
+          "origin": "3981271",
+          "text": "asked on 2026-09-06 for 3981271 -> 4132580: expected 2026-09-06, got 2026-09-06"
         },
         {
           "asked": "2026-09-07",
-          "destination": "3981271",
+          "destination": "4132580",
           "expected": "2026-09-13",
           "got": "2026-09-13",
           "ok": true,
-          "origin": "4015830",
-          "text": "asked on 2026-09-07 for 4015830 -> 3981271: expected 2026-09-13, got 2026-09-13"
+          "origin": "3981271",
+          "text": "asked on 2026-09-07 for 3981271 -> 4132580: expected 2026-09-13, got 2026-09-13"
         },
         {
           "asked": "2026-09-14",
-          "destination": "3981271",
+          "destination": "4132580",
           "expected": null,
           "got": null,
           "ok": true,
-          "origin": "4015830",
-          "text": "asked on 2026-09-14 for 4015830 -> 3981271: expected None, got None"
-        },
-        {
-          "asked": "2026-09-06",
-          "destination": "3981271",
-          "expected": "2026-09-06",
-          "got": "2026-09-06",
-          "ok": true,
-          "origin": "3980599",
-          "text": "asked on 2026-09-06 for 3980599 -> 3981271: expected 2026-09-06, got 2026-09-06"
-        },
-        {
-          "asked": "2026-09-07",
-          "destination": "3981271",
-          "expected": "2026-09-13",
-          "got": "2026-09-13",
-          "ok": true,
-          "origin": "3980599",
-          "text": "asked on 2026-09-07 for 3980599 -> 3981271: expected 2026-09-13, got 2026-09-13"
-        },
-        {
-          "asked": "2026-11-30",
-          "destination": "3981271",
-          "expected": null,
-          "got": null,
-          "ok": true,
-          "origin": "3980599",
-          "text": "asked on 2026-11-30 for 3980599 -> 3981271: expected None, got None"
+          "origin": "3981271",
+          "text": "asked on 2026-09-14 for 3981271 -> 4132580: expected None, got None"
         }
       ],
       "direction": 1,
@@ -7809,66 +7498,6 @@
         },
         {
           "asked": {
-            "destination": "3981271",
-            "direction": 1,
-            "from_stop": 1,
-            "origin": "3980599",
-            "ride_length": 8,
-            "route": "152324",
-            "to_stop": 8
-          },
-          "got": {
-            "destination": "3981271",
-            "direction": 1,
-            "origin": "3980599",
-            "route": "152324",
-            "trip": "380816483"
-          },
-          "ok": true,
-          "text": "asked 3980599 -> 3981271 on 152324 d1 (stop 1 to stop 8 of a 8-stop ride): got 3980599 -> 3981271 on 152324 d1, trip 380816483"
-        },
-        {
-          "asked": {
-            "destination": "3980023",
-            "direction": 1,
-            "from_stop": 1,
-            "origin": "3980599",
-            "ride_length": 8,
-            "route": "152324",
-            "to_stop": 5
-          },
-          "got": {
-            "destination": "3980023",
-            "direction": 1,
-            "origin": "3980599",
-            "route": "152324",
-            "trip": "380816483"
-          },
-          "ok": true,
-          "text": "asked 3980599 -> 3980023 on 152324 d1 (stop 1 to stop 5 of a 8-stop ride): got 3980599 -> 3980023 on 152324 d1, trip 380816483"
-        },
-        {
-          "asked": {
-            "destination": "3981271",
-            "direction": 1,
-            "from_stop": 5,
-            "origin": "3980023",
-            "ride_length": 8,
-            "route": "152324",
-            "to_stop": 8
-          },
-          "got": {
-            "destination": "3981271",
-            "direction": 1,
-            "origin": "3980023",
-            "route": "152324",
-            "trip": "380816483"
-          },
-          "ok": true,
-          "text": "asked 3980023 -> 3981271 on 152324 d1 (stop 5 to stop 8 of a 8-stop ride): got 3980023 -> 3981271 on 152324 d1, trip 380816483"
-        },
-        {
-          "asked": {
             "destination": "3980351",
             "direction": 1,
             "from_stop": 1,
@@ -7929,63 +7558,63 @@
         },
         {
           "asked": {
-            "destination": "3981271",
+            "destination": "4132580",
             "direction": 1,
             "from_stop": 1,
-            "origin": "4015830",
+            "origin": "3981271",
             "ride_length": 15,
             "route": "152324",
             "to_stop": 15
           },
           "got": {
-            "destination": "3981271",
+            "destination": "4132580",
             "direction": 1,
-            "origin": "4015830",
+            "origin": "3981271",
             "route": "152324",
-            "trip": "380816385"
+            "trip": "380816284"
           },
           "ok": true,
-          "text": "asked 4015830 -> 3981271 on 152324 d1 (stop 1 to stop 15 of a 15-stop ride): got 4015830 -> 3981271 on 152324 d1, trip 380816385"
+          "text": "asked 3981271 -> 4132580 on 152324 d1 (stop 1 to stop 15 of a 15-stop ride): got 3981271 -> 4132580 on 152324 d1, trip 380816284"
         },
         {
           "asked": {
-            "destination": "3980599",
+            "destination": "3980180",
             "direction": 1,
             "from_stop": 1,
-            "origin": "4015830",
+            "origin": "3981271",
             "ride_length": 15,
             "route": "152324",
             "to_stop": 8
           },
           "got": {
-            "destination": "3980599",
+            "destination": "3980180",
             "direction": 1,
-            "origin": "4015830",
+            "origin": "3981271",
             "route": "152324",
-            "trip": "380816385"
+            "trip": "380816284"
           },
           "ok": true,
-          "text": "asked 4015830 -> 3980599 on 152324 d1 (stop 1 to stop 8 of a 15-stop ride): got 4015830 -> 3980599 on 152324 d1, trip 380816385"
+          "text": "asked 3981271 -> 3980180 on 152324 d1 (stop 1 to stop 8 of a 15-stop ride): got 3981271 -> 3980180 on 152324 d1, trip 380816284"
         },
         {
           "asked": {
-            "destination": "3981271",
+            "destination": "4132580",
             "direction": 1,
             "from_stop": 8,
-            "origin": "3980599",
+            "origin": "3980180",
             "ride_length": 15,
             "route": "152324",
             "to_stop": 15
           },
           "got": {
-            "destination": "3981271",
+            "destination": "4132580",
             "direction": 1,
-            "origin": "3980599",
+            "origin": "3980180",
             "route": "152324",
-            "trip": "380816483"
+            "trip": "380816284"
           },
           "ok": true,
-          "text": "asked 3980599 -> 3981271 on 152324 d1 (stop 8 to stop 15 of a 15-stop ride): got 3980599 -> 3981271 on 152324 d1, trip 380816483"
+          "text": "asked 3980180 -> 4132580 on 152324 d1 (stop 8 to stop 15 of a 15-stop ride): got 3980180 -> 4132580 on 152324 d1, trip 380816284"
         }
       ],
       "direction": 1,
@@ -8033,16 +7662,7 @@
         },
         {
           "ok": true,
-          "text": "the list contradicts the riding order 4015830 .. 3981271"
-        },
-        {
-          "ok": true,
-          "text": "a trip serves a stop the list does not offer",
-          "unoffered": []
-        },
-        {
-          "ok": true,
-          "text": "the list contradicts the riding order 3980599 .. 3981271"
+          "text": "the list contradicts the riding order 3981271 .. 4132580"
         }
       ],
       "direction": 1,
@@ -8102,51 +7722,6 @@
         },
         {
           "asked": {
-            "destination": "3980599",
-            "direction": 1,
-            "from_stop": 8,
-            "origin": "3981271",
-            "ride_length": 8,
-            "route": "152324",
-            "served": true,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3981271 -> 3980599 on 152324 d1 (stop 8 to stop 1 of a 8-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980599",
-            "direction": 1,
-            "from_stop": 5,
-            "origin": "3980023",
-            "ride_length": 8,
-            "route": "152324",
-            "served": true,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3980023 -> 3980599 on 152324 d1 (stop 5 to stop 1 of a 8-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980023",
-            "direction": 1,
-            "from_stop": 8,
-            "origin": "3981271",
-            "ride_length": 8,
-            "route": "152324",
-            "served": true,
-            "to_stop": 5
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3981271 -> 3980023 on 152324 d1 (stop 8 to stop 5 of a 8-stop ride): no departure"
-        },
-        {
-          "asked": {
             "destination": "3981271",
             "direction": 1,
             "from_stop": 24,
@@ -8192,10 +7767,10 @@
         },
         {
           "asked": {
-            "destination": "4015830",
+            "destination": "3981271",
             "direction": 1,
             "from_stop": 15,
-            "origin": "3981271",
+            "origin": "4132580",
             "ride_length": 15,
             "route": "152324",
             "served": false,
@@ -8203,14 +7778,14 @@
           },
           "got": null,
           "ok": true,
-          "text": "asked 3981271 -> 4015830 on 152324 d1 (stop 15 to stop 1 of a 15-stop ride, this direction does not make it): no departure"
+          "text": "asked 4132580 -> 3981271 on 152324 d1 (stop 15 to stop 1 of a 15-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
-            "destination": "4015830",
+            "destination": "3981271",
             "direction": 1,
             "from_stop": 8,
-            "origin": "3980599",
+            "origin": "3980180",
             "ride_length": 15,
             "route": "152324",
             "served": false,
@@ -8218,22 +7793,22 @@
           },
           "got": null,
           "ok": true,
-          "text": "asked 3980599 -> 4015830 on 152324 d1 (stop 8 to stop 1 of a 15-stop ride, this direction does not make it): no departure"
+          "text": "asked 3980180 -> 3981271 on 152324 d1 (stop 8 to stop 1 of a 15-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
-            "destination": "3980599",
+            "destination": "3980180",
             "direction": 1,
             "from_stop": 15,
-            "origin": "3981271",
+            "origin": "4132580",
             "ride_length": 15,
             "route": "152324",
-            "served": true,
+            "served": false,
             "to_stop": 8
           },
           "got": null,
           "ok": true,
-          "text": "asked 3981271 -> 3980599 on 152324 d1 (stop 15 to stop 8 of a 15-stop ride): no departure"
+          "text": "asked 4132580 -> 3980180 on 152324 d1 (stop 15 to stop 8 of a 15-stop ride, this direction does not make it): no departure"
         }
       ],
       "direction": 1,
@@ -8386,72 +7961,72 @@
         },
         {
           "ok": true,
-          "origin": "3980102",
-          "text": "a destination is offered twice from 3980102 Amsterdam, Sloterpark",
+          "origin": "3979878",
+          "text": "a destination is offered twice from 3979878 Amsterdam, Plantage Parklaan",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980102",
-          "text": "a stop this ride reaches from 3980102 Amsterdam, Sloterpark is not offered"
+          "origin": "3979878",
+          "text": "a stop this ride reaches from 3979878 Amsterdam, Plantage Parklaan is not offered"
         },
         {
           "ok": true,
-          "origin": "3980102",
+          "origin": "3979878",
           "stray": [],
-          "text": "a destination no trip reaches from 3980102 Amsterdam, Sloterpark is offered"
+          "text": "a destination no trip reaches from 3979878 Amsterdam, Plantage Parklaan is offered"
         },
         {
           "ok": true,
-          "origin": "3980102",
-          "text": "the destinations from 3980102 Amsterdam, Sloterpark contradict the riding order 3980102 .. 3979878"
+          "origin": "3979878",
+          "text": "the destinations from 3979878 Amsterdam, Plantage Parklaan contradict the riding order 3979878 .. 3980102"
         },
         {
           "ok": true,
-          "origin": "3980752",
-          "text": "a destination is offered twice from 3980752 Amsterdam, Witte de Withstraat",
+          "origin": "3980270",
+          "text": "a destination is offered twice from 3980270 Amsterdam, Postjesweg",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980752",
-          "text": "a stop this ride reaches from 3980752 Amsterdam, Witte de Withstraat is not offered"
+          "origin": "3980270",
+          "text": "a stop this ride reaches from 3980270 Amsterdam, Postjesweg is not offered"
         },
         {
           "ok": true,
-          "origin": "3980752",
+          "origin": "3980270",
           "stray": [],
-          "text": "a destination no trip reaches from 3980752 Amsterdam, Witte de Withstraat is offered"
+          "text": "a destination no trip reaches from 3980270 Amsterdam, Postjesweg is offered"
         },
         {
           "ok": true,
-          "origin": "3980752",
-          "text": "the destinations from 3980752 Amsterdam, Witte de Withstraat contradict the riding order 3980102 .. 3979878"
+          "origin": "3980270",
+          "text": "the destinations from 3980270 Amsterdam, Postjesweg contradict the riding order 3979878 .. 3980102"
         },
         {
           "ok": true,
-          "origin": "3980057",
-          "text": "a destination is offered twice from 3980057 Amsterdam, Artis/Holocaustmuseum",
+          "origin": "3980825",
+          "text": "a destination is offered twice from 3980825 Amsterdam, Burgemeester Röellstraat",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980057",
-          "text": "a stop this ride reaches from 3980057 Amsterdam, Artis/Holocaustmuseum is not offered"
+          "origin": "3980825",
+          "text": "a stop this ride reaches from 3980825 Amsterdam, Burgemeester Röellstraat is not offered"
         },
         {
           "ok": true,
-          "origin": "3980057",
+          "origin": "3980825",
           "stray": [],
-          "text": "a destination no trip reaches from 3980057 Amsterdam, Artis/Holocaustmuseum is offered"
+          "text": "a destination no trip reaches from 3980825 Amsterdam, Burgemeester Röellstraat is offered"
         },
         {
           "ok": true,
-          "origin": "3980057",
-          "text": "the destinations from 3980057 Amsterdam, Artis/Holocaustmuseum contradict the riding order 3980102 .. 3979878"
+          "origin": "3980825",
+          "text": "the destinations from 3980825 Amsterdam, Burgemeester Röellstraat contradict the riding order 3979878 .. 3980102"
         },
         {
           "ok": true,
@@ -8589,30 +8164,30 @@
         },
         {
           "asked": "2026-09-06",
-          "destination": "3979878",
+          "destination": "3980102",
           "expected": "2026-09-06",
           "got": "2026-09-06",
           "ok": true,
-          "origin": "3980102",
-          "text": "asked on 2026-09-06 for 3980102 -> 3979878: expected 2026-09-06, got 2026-09-06"
+          "origin": "3979878",
+          "text": "asked on 2026-09-06 for 3979878 -> 3980102: expected 2026-09-06, got 2026-09-06"
         },
         {
           "asked": "2026-09-07",
-          "destination": "3979878",
+          "destination": "3980102",
           "expected": "2026-09-13",
           "got": "2026-09-13",
           "ok": true,
-          "origin": "3980102",
-          "text": "asked on 2026-09-07 for 3980102 -> 3979878: expected 2026-09-13, got 2026-09-13"
+          "origin": "3979878",
+          "text": "asked on 2026-09-07 for 3979878 -> 3980102: expected 2026-09-13, got 2026-09-13"
         },
         {
           "asked": "2026-09-21",
-          "destination": "3979878",
+          "destination": "3980102",
           "expected": null,
           "got": null,
           "ok": true,
-          "origin": "3980102",
-          "text": "asked on 2026-09-21 for 3980102 -> 3979878: expected None, got None"
+          "origin": "3979878",
+          "text": "asked on 2026-09-21 for 3979878 -> 3980102: expected None, got None"
         },
         {
           "asked": "2026-09-05",
@@ -8657,6 +8232,66 @@
             "destination": "3980102",
             "direction": 0,
             "from_stop": 1,
+            "origin": "3979878",
+            "ride_length": 24,
+            "route": "152328",
+            "to_stop": 24
+          },
+          "got": {
+            "destination": "3980102",
+            "direction": 0,
+            "origin": "3979878",
+            "route": "152328",
+            "trip": "380799628"
+          },
+          "ok": true,
+          "text": "asked 3979878 -> 3980102 on 152328 d0 (stop 1 to stop 24 of a 24-stop ride): got 3979878 -> 3980102 on 152328 d0, trip 380799628"
+        },
+        {
+          "asked": {
+            "destination": "3980270",
+            "direction": 0,
+            "from_stop": 1,
+            "origin": "3979878",
+            "ride_length": 24,
+            "route": "152328",
+            "to_stop": 13
+          },
+          "got": {
+            "destination": "3980270",
+            "direction": 0,
+            "origin": "3979878",
+            "route": "152328",
+            "trip": "380799628"
+          },
+          "ok": true,
+          "text": "asked 3979878 -> 3980270 on 152328 d0 (stop 1 to stop 13 of a 24-stop ride): got 3979878 -> 3980270 on 152328 d0, trip 380799628"
+        },
+        {
+          "asked": {
+            "destination": "3980102",
+            "direction": 0,
+            "from_stop": 13,
+            "origin": "3980270",
+            "ride_length": 24,
+            "route": "152328",
+            "to_stop": 24
+          },
+          "got": {
+            "destination": "3980102",
+            "direction": 0,
+            "origin": "3980270",
+            "route": "152328",
+            "trip": "380799801"
+          },
+          "ok": true,
+          "text": "asked 3980270 -> 3980102 on 152328 d0 (stop 13 to stop 24 of a 24-stop ride): got 3980270 -> 3980102 on 152328 d0, trip 380799801"
+        },
+        {
+          "asked": {
+            "destination": "3980102",
+            "direction": 0,
+            "from_stop": 1,
             "origin": "3980004",
             "ride_length": 20,
             "route": "152328",
@@ -8667,10 +8302,10 @@
             "direction": 0,
             "origin": "3980004",
             "route": "152328",
-            "trip": "380786681"
+            "trip": "380799801"
           },
           "ok": true,
-          "text": "asked 3980004 -> 3980102 on 152328 d0 (stop 1 to stop 20 of a 20-stop ride): got 3980004 -> 3980102 on 152328 d0, trip 380786681"
+          "text": "asked 3980004 -> 3980102 on 152328 d0 (stop 1 to stop 20 of a 20-stop ride): got 3980004 -> 3980102 on 152328 d0, trip 380799801"
         },
         {
           "asked": {
@@ -8687,10 +8322,10 @@
             "direction": 0,
             "origin": "3980004",
             "route": "152328",
-            "trip": "380786681"
+            "trip": "380799801"
           },
           "ok": true,
-          "text": "asked 3980004 -> 3979816 on 152328 d0 (stop 1 to stop 11 of a 20-stop ride): got 3980004 -> 3979816 on 152328 d0, trip 380786681"
+          "text": "asked 3980004 -> 3979816 on 152328 d0 (stop 1 to stop 11 of a 20-stop ride): got 3980004 -> 3979816 on 152328 d0, trip 380799801"
         },
         {
           "asked": {
@@ -8707,70 +8342,10 @@
             "direction": 0,
             "origin": "3979816",
             "route": "152328",
-            "trip": "380786681"
+            "trip": "380799801"
           },
           "ok": true,
-          "text": "asked 3979816 -> 3980102 on 152328 d0 (stop 11 to stop 20 of a 20-stop ride): got 3979816 -> 3980102 on 152328 d0, trip 380786681"
-        },
-        {
-          "asked": {
-            "destination": "3979878",
-            "direction": 0,
-            "from_stop": 1,
-            "origin": "3980102",
-            "ride_length": 23,
-            "route": "152328",
-            "to_stop": 23
-          },
-          "got": {
-            "destination": "3979878",
-            "direction": 0,
-            "origin": "3980102",
-            "route": "152328",
-            "trip": "380799711"
-          },
-          "ok": true,
-          "text": "asked 3980102 -> 3979878 on 152328 d0 (stop 1 to stop 23 of a 23-stop ride): got 3980102 -> 3979878 on 152328 d0, trip 380799711"
-        },
-        {
-          "asked": {
-            "destination": "3980752",
-            "direction": 0,
-            "from_stop": 1,
-            "origin": "3980102",
-            "ride_length": 23,
-            "route": "152328",
-            "to_stop": 12
-          },
-          "got": {
-            "destination": "3980752",
-            "direction": 0,
-            "origin": "3980102",
-            "route": "152328",
-            "trip": "380799711"
-          },
-          "ok": true,
-          "text": "asked 3980102 -> 3980752 on 152328 d0 (stop 1 to stop 12 of a 23-stop ride): got 3980102 -> 3980752 on 152328 d0, trip 380799711"
-        },
-        {
-          "asked": {
-            "destination": "3979878",
-            "direction": 0,
-            "from_stop": 12,
-            "origin": "3980752",
-            "ride_length": 23,
-            "route": "152328",
-            "to_stop": 23
-          },
-          "got": {
-            "destination": "3979878",
-            "direction": 0,
-            "origin": "3980752",
-            "route": "152328",
-            "trip": "380799711"
-          },
-          "ok": true,
-          "text": "asked 3980752 -> 3979878 on 152328 d0 (stop 12 to stop 23 of a 23-stop ride): got 3980752 -> 3979878 on 152328 d0, trip 380799711"
+          "text": "asked 3979816 -> 3980102 on 152328 d0 (stop 11 to stop 20 of a 20-stop ride): got 3979816 -> 3980102 on 152328 d0, trip 380799801"
         },
         {
           "asked": {
@@ -8938,7 +8513,7 @@
         },
         {
           "ok": true,
-          "text": "the list contradicts the riding order 3980102 .. 3979878"
+          "text": "the list contradicts the riding order 3979878 .. 3980102"
         },
         {
           "ok": true,
@@ -8962,18 +8537,69 @@
       "checks": [
         {
           "asked": {
+            "destination": "3979878",
+            "direction": 0,
+            "from_stop": 24,
+            "origin": "3980102",
+            "ride_length": 24,
+            "route": "152328",
+            "served": false,
+            "to_stop": 1
+          },
+          "got": {
+            "destination": "3979878",
+            "direction": 1,
+            "origin": "3980102",
+            "route": "152328",
+            "trip": "380799711"
+          },
+          "ok": false,
+          "text": "asked 3980102 -> 3979878 on 152328 d0 (stop 24 to stop 1 of a 24-stop ride, this direction does not make it): got 3980102 -> 3979878 on 152328 d1, trip 380799711"
+        },
+        {
+          "asked": {
+            "destination": "3979878",
+            "direction": 0,
+            "from_stop": 13,
+            "origin": "3980270",
+            "ride_length": 24,
+            "route": "152328",
+            "served": false,
+            "to_stop": 1
+          },
+          "got": null,
+          "ok": true,
+          "text": "asked 3980270 -> 3979878 on 152328 d0 (stop 13 to stop 1 of a 24-stop ride, this direction does not make it): no departure"
+        },
+        {
+          "asked": {
+            "destination": "3980270",
+            "direction": 0,
+            "from_stop": 24,
+            "origin": "3980102",
+            "ride_length": 24,
+            "route": "152328",
+            "served": false,
+            "to_stop": 13
+          },
+          "got": null,
+          "ok": true,
+          "text": "asked 3980102 -> 3980270 on 152328 d0 (stop 24 to stop 13 of a 24-stop ride, this direction does not make it): no departure"
+        },
+        {
+          "asked": {
             "destination": "3980004",
             "direction": 0,
             "from_stop": 20,
             "origin": "3980102",
             "ride_length": 20,
             "route": "152328",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3980102 -> 3980004 on 152328 d0 (stop 20 to stop 1 of a 20-stop ride): no departure"
+          "text": "asked 3980102 -> 3980004 on 152328 d0 (stop 20 to stop 1 of a 20-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -8983,12 +8609,12 @@
             "origin": "3979816",
             "ride_length": 20,
             "route": "152328",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979816 -> 3980004 on 152328 d0 (stop 11 to stop 1 of a 20-stop ride): no departure"
+          "text": "asked 3979816 -> 3980004 on 152328 d0 (stop 11 to stop 1 of a 20-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -8998,63 +8624,12 @@
             "origin": "3980102",
             "ride_length": 20,
             "route": "152328",
-            "served": true,
+            "served": false,
             "to_stop": 11
           },
           "got": null,
           "ok": true,
-          "text": "asked 3980102 -> 3979816 on 152328 d0 (stop 20 to stop 11 of a 20-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980102",
-            "direction": 0,
-            "from_stop": 23,
-            "origin": "3979878",
-            "ride_length": 23,
-            "route": "152328",
-            "served": false,
-            "to_stop": 1
-          },
-          "got": {
-            "destination": "3980102",
-            "direction": 1,
-            "origin": "3979878",
-            "route": "152328",
-            "trip": "380799628"
-          },
-          "ok": false,
-          "text": "asked 3979878 -> 3980102 on 152328 d0 (stop 23 to stop 1 of a 23-stop ride, this direction does not make it): got 3979878 -> 3980102 on 152328 d1, trip 380799628"
-        },
-        {
-          "asked": {
-            "destination": "3980102",
-            "direction": 0,
-            "from_stop": 12,
-            "origin": "3980752",
-            "ride_length": 23,
-            "route": "152328",
-            "served": true,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3980752 -> 3980102 on 152328 d0 (stop 12 to stop 1 of a 23-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980752",
-            "direction": 0,
-            "from_stop": 23,
-            "origin": "3979878",
-            "ride_length": 23,
-            "route": "152328",
-            "served": false,
-            "to_stop": 12
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3979878 -> 3980752 on 152328 d0 (stop 23 to stop 12 of a 23-stop ride, this direction does not make it): no departure"
+          "text": "asked 3980102 -> 3979816 on 152328 d0 (stop 20 to stop 11 of a 20-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -9094,12 +8669,12 @@
             "origin": "3980102",
             "ride_length": 30,
             "route": "152328",
-            "served": true,
+            "served": false,
             "to_stop": 16
           },
           "got": null,
           "ok": true,
-          "text": "asked 3980102 -> 3980831 on 152328 d0 (stop 30 to stop 16 of a 30-stop ride): no departure"
+          "text": "asked 3980102 -> 3980831 on 152328 d0 (stop 30 to stop 16 of a 30-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -9109,12 +8684,12 @@
             "origin": "3979878",
             "ride_length": 5,
             "route": "152328",
-            "served": false,
+            "served": true,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979878 -> 3981181 on 152328 d0 (stop 5 to stop 1 of a 5-stop ride, this direction does not make it): no departure"
+          "text": "asked 3979878 -> 3981181 on 152328 d0 (stop 5 to stop 1 of a 5-stop ride): no departure"
         },
         {
           "asked": {
@@ -9124,12 +8699,12 @@
             "origin": "3980735",
             "ride_length": 5,
             "route": "152328",
-            "served": false,
+            "served": true,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3980735 -> 3981181 on 152328 d0 (stop 3 to stop 1 of a 5-stop ride, this direction does not make it): no departure"
+          "text": "asked 3980735 -> 3981181 on 152328 d0 (stop 3 to stop 1 of a 5-stop ride): no departure"
         },
         {
           "asked": {
@@ -9139,12 +8714,12 @@
             "origin": "3979878",
             "ride_length": 5,
             "route": "152328",
-            "served": false,
+            "served": true,
             "to_stop": 3
           },
           "got": null,
           "ok": true,
-          "text": "asked 3979878 -> 3980735 on 152328 d0 (stop 5 to stop 3 of a 5-stop ride, this direction does not make it): no departure"
+          "text": "asked 3979878 -> 3980735 on 152328 d0 (stop 5 to stop 3 of a 5-stop ride): no departure"
         }
       ],
       "direction": 0,
@@ -9297,141 +8872,72 @@
         },
         {
           "ok": true,
-          "origin": "3979878",
-          "text": "a destination is offered twice from 3979878 Amsterdam, Plantage Parklaan",
+          "origin": "3980102",
+          "text": "a destination is offered twice from 3980102 Amsterdam, Sloterpark",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3979878",
-          "text": "a stop this ride reaches from 3979878 Amsterdam, Plantage Parklaan is not offered"
+          "origin": "3980102",
+          "text": "a stop this ride reaches from 3980102 Amsterdam, Sloterpark is not offered"
         },
         {
           "ok": true,
-          "origin": "3979878",
+          "origin": "3980102",
           "stray": [],
-          "text": "a destination no trip reaches from 3979878 Amsterdam, Plantage Parklaan is offered"
+          "text": "a destination no trip reaches from 3980102 Amsterdam, Sloterpark is offered"
         },
         {
           "ok": true,
-          "origin": "3979878",
-          "text": "the destinations from 3979878 Amsterdam, Plantage Parklaan contradict the riding order 3979878 .. 3980102"
+          "origin": "3980102",
+          "text": "the destinations from 3980102 Amsterdam, Sloterpark contradict the riding order 3980102 .. 3979878"
         },
         {
           "ok": true,
-          "origin": "3980270",
-          "text": "a destination is offered twice from 3980270 Amsterdam, Postjesweg",
+          "origin": "3980752",
+          "text": "a destination is offered twice from 3980752 Amsterdam, Witte de Withstraat",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980270",
-          "text": "a stop this ride reaches from 3980270 Amsterdam, Postjesweg is not offered"
+          "origin": "3980752",
+          "text": "a stop this ride reaches from 3980752 Amsterdam, Witte de Withstraat is not offered"
         },
         {
           "ok": true,
-          "origin": "3980270",
+          "origin": "3980752",
           "stray": [],
-          "text": "a destination no trip reaches from 3980270 Amsterdam, Postjesweg is offered"
+          "text": "a destination no trip reaches from 3980752 Amsterdam, Witte de Withstraat is offered"
         },
         {
           "ok": true,
-          "origin": "3980270",
-          "text": "the destinations from 3980270 Amsterdam, Postjesweg contradict the riding order 3979878 .. 3980102"
+          "origin": "3980752",
+          "text": "the destinations from 3980752 Amsterdam, Witte de Withstraat contradict the riding order 3980102 .. 3979878"
         },
         {
           "ok": true,
-          "origin": "3980825",
-          "text": "a destination is offered twice from 3980825 Amsterdam, Burgemeester Röellstraat",
+          "origin": "3980057",
+          "text": "a destination is offered twice from 3980057 Amsterdam, Artis/Holocaustmuseum",
           "twice": []
         },
         {
           "missing": [],
           "ok": true,
-          "origin": "3980825",
-          "text": "a stop this ride reaches from 3980825 Amsterdam, Burgemeester Röellstraat is not offered"
+          "origin": "3980057",
+          "text": "a stop this ride reaches from 3980057 Amsterdam, Artis/Holocaustmuseum is not offered"
         },
         {
           "ok": true,
-          "origin": "3980825",
+          "origin": "3980057",
           "stray": [],
-          "text": "a destination no trip reaches from 3980825 Amsterdam, Burgemeester Röellstraat is offered"
+          "text": "a destination no trip reaches from 3980057 Amsterdam, Artis/Holocaustmuseum is offered"
         },
         {
           "ok": true,
-          "origin": "3980825",
-          "text": "the destinations from 3980825 Amsterdam, Burgemeester Röellstraat contradict the riding order 3979878 .. 3980102"
-        },
-        {
-          "ok": true,
-          "origin": "3980004",
-          "text": "a destination is offered twice from 3980004 Amsterdam, Frederiksplein",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3980004",
-          "text": "a stop this ride reaches from 3980004 Amsterdam, Frederiksplein is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980004",
-          "stray": [],
-          "text": "a destination no trip reaches from 3980004 Amsterdam, Frederiksplein is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980004",
-          "text": "the destinations from 3980004 Amsterdam, Frederiksplein contradict the riding order 3980004 .. 3980102"
-        },
-        {
-          "ok": true,
-          "origin": "3979816",
-          "text": "a destination is offered twice from 3979816 Amsterdam, Mercatorplein",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3979816",
-          "text": "a stop this ride reaches from 3979816 Amsterdam, Mercatorplein is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979816",
-          "stray": [],
-          "text": "a destination no trip reaches from 3979816 Amsterdam, Mercatorplein is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3979816",
-          "text": "the destinations from 3979816 Amsterdam, Mercatorplein contradict the riding order 3980004 .. 3980102"
-        },
-        {
-          "ok": true,
-          "origin": "3980825",
-          "text": "a destination is offered twice from 3980825 Amsterdam, Burgemeester Röellstraat",
-          "twice": []
-        },
-        {
-          "missing": [],
-          "ok": true,
-          "origin": "3980825",
-          "text": "a stop this ride reaches from 3980825 Amsterdam, Burgemeester Röellstraat is not offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980825",
-          "stray": [],
-          "text": "a destination no trip reaches from 3980825 Amsterdam, Burgemeester Röellstraat is offered"
-        },
-        {
-          "ok": true,
-          "origin": "3980825",
-          "text": "the destinations from 3980825 Amsterdam, Burgemeester Röellstraat contradict the riding order 3980004 .. 3980102"
+          "origin": "3980057",
+          "text": "the destinations from 3980057 Amsterdam, Artis/Holocaustmuseum contradict the riding order 3980102 .. 3979878"
         }
       ],
       "direction": 1,
@@ -9500,57 +9006,30 @@
         },
         {
           "asked": "2026-09-06",
-          "destination": "3980102",
+          "destination": "3979878",
           "expected": "2026-09-06",
           "got": "2026-09-06",
           "ok": true,
-          "origin": "3979878",
-          "text": "asked on 2026-09-06 for 3979878 -> 3980102: expected 2026-09-06, got 2026-09-06"
+          "origin": "3980102",
+          "text": "asked on 2026-09-06 for 3980102 -> 3979878: expected 2026-09-06, got 2026-09-06"
         },
         {
           "asked": "2026-09-07",
-          "destination": "3980102",
+          "destination": "3979878",
           "expected": "2026-09-13",
           "got": "2026-09-13",
           "ok": true,
-          "origin": "3979878",
-          "text": "asked on 2026-09-07 for 3979878 -> 3980102: expected 2026-09-13, got 2026-09-13"
+          "origin": "3980102",
+          "text": "asked on 2026-09-07 for 3980102 -> 3979878: expected 2026-09-13, got 2026-09-13"
         },
         {
           "asked": "2026-09-21",
-          "destination": "3980102",
+          "destination": "3979878",
           "expected": null,
           "got": null,
           "ok": true,
-          "origin": "3979878",
-          "text": "asked on 2026-09-21 for 3979878 -> 3980102: expected None, got None"
-        },
-        {
-          "asked": "2026-09-06",
-          "destination": "3980102",
-          "expected": "2026-09-06",
-          "got": "2026-09-06",
-          "ok": true,
-          "origin": "3980004",
-          "text": "asked on 2026-09-06 for 3980004 -> 3980102: expected 2026-09-06, got 2026-09-06"
-        },
-        {
-          "asked": "2026-09-07",
-          "destination": "3980102",
-          "expected": "2026-09-13",
-          "got": "2026-09-13",
-          "ok": true,
-          "origin": "3980004",
-          "text": "asked on 2026-09-07 for 3980004 -> 3980102: expected 2026-09-13, got 2026-09-13"
-        },
-        {
-          "asked": "2026-09-28",
-          "destination": "3980102",
-          "expected": null,
-          "got": null,
-          "ok": true,
-          "origin": "3980004",
-          "text": "asked on 2026-09-28 for 3980004 -> 3980102: expected None, got None"
+          "origin": "3980102",
+          "text": "asked on 2026-09-21 for 3980102 -> 3979878: expected None, got None"
         }
       ],
       "direction": 1,
@@ -9563,126 +9042,6 @@
     },
     {
       "checks": [
-        {
-          "asked": {
-            "destination": "3980102",
-            "direction": 1,
-            "from_stop": 1,
-            "origin": "3979878",
-            "ride_length": 24,
-            "route": "152328",
-            "to_stop": 24
-          },
-          "got": {
-            "destination": "3980102",
-            "direction": 1,
-            "origin": "3979878",
-            "route": "152328",
-            "trip": "380799628"
-          },
-          "ok": true,
-          "text": "asked 3979878 -> 3980102 on 152328 d1 (stop 1 to stop 24 of a 24-stop ride): got 3979878 -> 3980102 on 152328 d1, trip 380799628"
-        },
-        {
-          "asked": {
-            "destination": "3980270",
-            "direction": 1,
-            "from_stop": 1,
-            "origin": "3979878",
-            "ride_length": 24,
-            "route": "152328",
-            "to_stop": 13
-          },
-          "got": {
-            "destination": "3980270",
-            "direction": 1,
-            "origin": "3979878",
-            "route": "152328",
-            "trip": "380799628"
-          },
-          "ok": true,
-          "text": "asked 3979878 -> 3980270 on 152328 d1 (stop 1 to stop 13 of a 24-stop ride): got 3979878 -> 3980270 on 152328 d1, trip 380799628"
-        },
-        {
-          "asked": {
-            "destination": "3980102",
-            "direction": 1,
-            "from_stop": 13,
-            "origin": "3980270",
-            "ride_length": 24,
-            "route": "152328",
-            "to_stop": 24
-          },
-          "got": {
-            "destination": "3980102",
-            "direction": 1,
-            "origin": "3980270",
-            "route": "152328",
-            "trip": "380799801"
-          },
-          "ok": true,
-          "text": "asked 3980270 -> 3980102 on 152328 d1 (stop 13 to stop 24 of a 24-stop ride): got 3980270 -> 3980102 on 152328 d1, trip 380799801"
-        },
-        {
-          "asked": {
-            "destination": "3980102",
-            "direction": 1,
-            "from_stop": 1,
-            "origin": "3980004",
-            "ride_length": 20,
-            "route": "152328",
-            "to_stop": 20
-          },
-          "got": {
-            "destination": "3980102",
-            "direction": 1,
-            "origin": "3980004",
-            "route": "152328",
-            "trip": "380799801"
-          },
-          "ok": true,
-          "text": "asked 3980004 -> 3980102 on 152328 d1 (stop 1 to stop 20 of a 20-stop ride): got 3980004 -> 3980102 on 152328 d1, trip 380799801"
-        },
-        {
-          "asked": {
-            "destination": "3979816",
-            "direction": 1,
-            "from_stop": 1,
-            "origin": "3980004",
-            "ride_length": 20,
-            "route": "152328",
-            "to_stop": 11
-          },
-          "got": {
-            "destination": "3979816",
-            "direction": 1,
-            "origin": "3980004",
-            "route": "152328",
-            "trip": "380799801"
-          },
-          "ok": true,
-          "text": "asked 3980004 -> 3979816 on 152328 d1 (stop 1 to stop 11 of a 20-stop ride): got 3980004 -> 3979816 on 152328 d1, trip 380799801"
-        },
-        {
-          "asked": {
-            "destination": "3980102",
-            "direction": 1,
-            "from_stop": 11,
-            "origin": "3979816",
-            "ride_length": 20,
-            "route": "152328",
-            "to_stop": 20
-          },
-          "got": {
-            "destination": "3980102",
-            "direction": 1,
-            "origin": "3979816",
-            "route": "152328",
-            "trip": "380799801"
-          },
-          "ok": true,
-          "text": "asked 3979816 -> 3980102 on 152328 d1 (stop 11 to stop 20 of a 20-stop ride): got 3979816 -> 3980102 on 152328 d1, trip 380799801"
-        },
         {
           "asked": {
             "destination": "3980992",
@@ -9742,6 +9101,66 @@
           },
           "ok": true,
           "text": "asked 3980182 -> 3980992 on 152328 d1 (stop 15 to stop 29 of a 29-stop ride): got 3980182 -> 3980992 on 152328 d1, trip 380786518"
+        },
+        {
+          "asked": {
+            "destination": "3979878",
+            "direction": 1,
+            "from_stop": 1,
+            "origin": "3980102",
+            "ride_length": 23,
+            "route": "152328",
+            "to_stop": 23
+          },
+          "got": {
+            "destination": "3979878",
+            "direction": 1,
+            "origin": "3980102",
+            "route": "152328",
+            "trip": "380799711"
+          },
+          "ok": true,
+          "text": "asked 3980102 -> 3979878 on 152328 d1 (stop 1 to stop 23 of a 23-stop ride): got 3980102 -> 3979878 on 152328 d1, trip 380799711"
+        },
+        {
+          "asked": {
+            "destination": "3980752",
+            "direction": 1,
+            "from_stop": 1,
+            "origin": "3980102",
+            "ride_length": 23,
+            "route": "152328",
+            "to_stop": 12
+          },
+          "got": {
+            "destination": "3980752",
+            "direction": 1,
+            "origin": "3980102",
+            "route": "152328",
+            "trip": "380799711"
+          },
+          "ok": true,
+          "text": "asked 3980102 -> 3980752 on 152328 d1 (stop 1 to stop 12 of a 23-stop ride): got 3980102 -> 3980752 on 152328 d1, trip 380799711"
+        },
+        {
+          "asked": {
+            "destination": "3979878",
+            "direction": 1,
+            "from_stop": 12,
+            "origin": "3980752",
+            "ride_length": 23,
+            "route": "152328",
+            "to_stop": 23
+          },
+          "got": {
+            "destination": "3979878",
+            "direction": 1,
+            "origin": "3980752",
+            "route": "152328",
+            "trip": "380799711"
+          },
+          "ok": true,
+          "text": "asked 3980752 -> 3979878 on 152328 d1 (stop 12 to stop 23 of a 23-stop ride): got 3980752 -> 3979878 on 152328 d1, trip 380799711"
         },
         {
           "asked": {
@@ -9849,16 +9268,7 @@
         },
         {
           "ok": true,
-          "text": "the list contradicts the riding order 3979878 .. 3980102"
-        },
-        {
-          "ok": true,
-          "text": "a trip serves a stop the list does not offer",
-          "unoffered": []
-        },
-        {
-          "ok": true,
-          "text": "the list contradicts the riding order 3980004 .. 3980102"
+          "text": "the list contradicts the riding order 3980102 .. 3979878"
         }
       ],
       "direction": 1,
@@ -9871,102 +9281,6 @@
     },
     {
       "checks": [
-        {
-          "asked": {
-            "destination": "3979878",
-            "direction": 1,
-            "from_stop": 24,
-            "origin": "3980102",
-            "ride_length": 24,
-            "route": "152328",
-            "served": false,
-            "to_stop": 1
-          },
-          "got": {
-            "destination": "3979878",
-            "direction": 0,
-            "origin": "3980102",
-            "route": "152328",
-            "trip": "380799711"
-          },
-          "ok": false,
-          "text": "asked 3980102 -> 3979878 on 152328 d1 (stop 24 to stop 1 of a 24-stop ride, this direction does not make it): got 3980102 -> 3979878 on 152328 d0, trip 380799711"
-        },
-        {
-          "asked": {
-            "destination": "3979878",
-            "direction": 1,
-            "from_stop": 13,
-            "origin": "3980270",
-            "ride_length": 24,
-            "route": "152328",
-            "served": false,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3980270 -> 3979878 on 152328 d1 (stop 13 to stop 1 of a 24-stop ride, this direction does not make it): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980270",
-            "direction": 1,
-            "from_stop": 24,
-            "origin": "3980102",
-            "ride_length": 24,
-            "route": "152328",
-            "served": false,
-            "to_stop": 13
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3980102 -> 3980270 on 152328 d1 (stop 24 to stop 13 of a 24-stop ride, this direction does not make it): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980004",
-            "direction": 1,
-            "from_stop": 20,
-            "origin": "3980102",
-            "ride_length": 20,
-            "route": "152328",
-            "served": true,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3980102 -> 3980004 on 152328 d1 (stop 20 to stop 1 of a 20-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3980004",
-            "direction": 1,
-            "from_stop": 11,
-            "origin": "3979816",
-            "ride_length": 20,
-            "route": "152328",
-            "served": true,
-            "to_stop": 1
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3979816 -> 3980004 on 152328 d1 (stop 11 to stop 1 of a 20-stop ride): no departure"
-        },
-        {
-          "asked": {
-            "destination": "3979816",
-            "direction": 1,
-            "from_stop": 20,
-            "origin": "3980102",
-            "ride_length": 20,
-            "route": "152328",
-            "served": true,
-            "to_stop": 11
-          },
-          "got": null,
-          "ok": true,
-          "text": "asked 3980102 -> 3979816 on 152328 d1 (stop 20 to stop 11 of a 20-stop ride): no departure"
-        },
         {
           "asked": {
             "destination": "3980102",
@@ -9990,12 +9304,12 @@
             "origin": "3980182",
             "ride_length": 29,
             "route": "152328",
-            "served": true,
+            "served": false,
             "to_stop": 1
           },
           "got": null,
           "ok": true,
-          "text": "asked 3980182 -> 3980102 on 152328 d1 (stop 15 to stop 1 of a 29-stop ride): no departure"
+          "text": "asked 3980182 -> 3980102 on 152328 d1 (stop 15 to stop 1 of a 29-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {
@@ -10011,6 +9325,57 @@
           "got": null,
           "ok": true,
           "text": "asked 3980992 -> 3980182 on 152328 d1 (stop 29 to stop 15 of a 29-stop ride, this direction does not make it): no departure"
+        },
+        {
+          "asked": {
+            "destination": "3980102",
+            "direction": 1,
+            "from_stop": 23,
+            "origin": "3979878",
+            "ride_length": 23,
+            "route": "152328",
+            "served": false,
+            "to_stop": 1
+          },
+          "got": {
+            "destination": "3980102",
+            "direction": 0,
+            "origin": "3979878",
+            "route": "152328",
+            "trip": "380799628"
+          },
+          "ok": false,
+          "text": "asked 3979878 -> 3980102 on 152328 d1 (stop 23 to stop 1 of a 23-stop ride, this direction does not make it): got 3979878 -> 3980102 on 152328 d0, trip 380799628"
+        },
+        {
+          "asked": {
+            "destination": "3980102",
+            "direction": 1,
+            "from_stop": 12,
+            "origin": "3980752",
+            "ride_length": 23,
+            "route": "152328",
+            "served": false,
+            "to_stop": 1
+          },
+          "got": null,
+          "ok": true,
+          "text": "asked 3980752 -> 3980102 on 152328 d1 (stop 12 to stop 1 of a 23-stop ride, this direction does not make it): no departure"
+        },
+        {
+          "asked": {
+            "destination": "3980752",
+            "direction": 1,
+            "from_stop": 23,
+            "origin": "3979878",
+            "ride_length": 23,
+            "route": "152328",
+            "served": false,
+            "to_stop": 12
+          },
+          "got": null,
+          "ok": true,
+          "text": "asked 3979878 -> 3980752 on 152328 d1 (stop 23 to stop 12 of a 23-stop ride, this direction does not make it): no departure"
         },
         {
           "asked": {

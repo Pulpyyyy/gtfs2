@@ -25,10 +25,7 @@ case: gvb-1-d1-pairs
   result: PASSED
 
 case: gvb-1-d1-stop_list
-  result: XFAILED
-  reason: two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups); trams 1, 7 and 17 also carry wrong direction_ids
-  detail:
-    the list offers one station twice in a row: 3979810 Amsterdam, Azartplein then 3980295 Amsterdam, Azartplein
+  result: PASSED
 
 case: gvb-1-d1-swapped
   result: PASSED
@@ -74,7 +71,7 @@ case: gvb-14-d0-pairs
 
 case: gvb-14-d0-stop_list
   result: XFAILED
-  reason: two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups); trams 1, 7 and 17 also carry wrong direction_ids
+  reason: two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups)
   detail:
     the list offers one station twice in a row: 3980992 Amsterdam, Flevopark then 3980163 Amsterdam, Flevopark, 3980251 Amsterdam, Dam then 3980489 Amsterdam, Dam
 
@@ -92,7 +89,7 @@ case: gvb-14-d1-pairs
 
 case: gvb-14-d1-stop_list
   result: XFAILED
-  reason: two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups); trams 1, 7 and 17 also carry wrong direction_ids
+  reason: two platforms of one place, called one after the other, are offered as two entries (fix/stop-platform-groups)
   detail:
     the list offers one station twice in a row: 3980992 Amsterdam, Flevopark then 3980163 Amsterdam, Flevopark
 
@@ -145,7 +142,7 @@ case: gvb-7-d0-swapped
   result: XFAILED
   reason: the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction
   detail:
-    asked 3979878 -> 3980102 on 152328 d0 (stop 23 to stop 1 of a 23-stop ride, this direction does not make it): got 3979878 -> 3980102 on 152328 d1, trip 380799628
+    asked 3980102 -> 3979878 on 152328 d0 (stop 24 to stop 1 of a 24-stop ride, this direction does not make it): got 3980102 -> 3979878 on 152328 d1, trip 380799711
 
 case: gvb-7-d1-destinations
   result: PASSED
@@ -163,7 +160,7 @@ case: gvb-7-d1-swapped
   result: XFAILED
   reason: the swapped pair is answered although the asked direction does not ride it: the query filters neither route nor direction
   detail:
-    asked 3980102 -> 3979878 on 152328 d1 (stop 24 to stop 1 of a 24-stop ride, this direction does not make it): got 3980102 -> 3979878 on 152328 d0, trip 380799711
+    asked 3979878 -> 3980102 on 152328 d1 (stop 23 to stop 1 of a 23-stop ride, this direction does not make it): got 3979878 -> 3980102 on 152328 d0, trip 380799628
 
 case: palmbus-21-d0-destinations
   result: PASSED

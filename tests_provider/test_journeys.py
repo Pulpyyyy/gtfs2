@@ -324,15 +324,13 @@ class Check:
 # which is how a fix PR and the test that turns green arrive together.
 PLATFORMS = ("two platforms of one place, called one after the other, are "
              "offered as two entries (fix/stop-platform-groups)")
-PLATFORMS_GVB = PLATFORMS + "; trams 1, 7 and 17 also carry wrong direction_ids"
 SWAPPED = ("the swapped pair is answered although the asked direction does "
            "not ride it: the query filters neither route nor direction")
 TRAIN = ("a train journey is matched by stop name prefix on any line, not "
          "the asked one")
 KNOWN = {
-    "gvb-1-d1-stop_list": PLATFORMS_GVB,
-    "gvb-14-d0-stop_list": PLATFORMS_GVB,
-    "gvb-14-d1-stop_list": PLATFORMS_GVB,
+    "gvb-14-d0-stop_list": PLATFORMS,
+    "gvb-14-d1-stop_list": PLATFORMS,
     **{f"tao-journeys-{r}-d{d}-stop_list": PLATFORMS
        for r in ("A", "B") for d in (0, 1)},
     **{f"{line}-d{d}-swapped": SWAPPED
