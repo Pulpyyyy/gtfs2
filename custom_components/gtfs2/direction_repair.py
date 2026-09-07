@@ -15,10 +15,21 @@ Classification is by the ORDER of the stops a trip shares with a canonical
 chain, not by how many it shares: short runs end on turnback stops that the
 full-length pattern never serves, so a coverage test leaves them
 unclassified (GVB tram 1: 650 of 1634 trips).
+
+Stops compare by station, not by platform: the parent_station when the feed
+publishes one, the stop itself otherwise. SNCF gives one station a stop_id
+per product, so two trains of one line shared no stop at all and 5623 of
+its 37500 trips fit neither chain; compared by station, 3085 do not.
+
+A route whose two directions follow the same stop order is either a loop,
+whose chain returns to its first station, or a line whose direction_id
+carries no sense (GVB tram 14: half of its 1404 trips ride against their
+label, under both labels). Neither is repaired: the loop needs nothing, the
+other holds no majority to recover a sense from, and is logged.
 """
 
 import logging
-from collections import Counter, defaultdict
+from collections import defaultdict
 
 from sqlalchemy.sql import text
 
@@ -30,10 +41,13 @@ _LOGGER = logging.getLogger(__name__)
 MIN_SHARED = 4
 MIN_SHARED_RATIO = 0.3
 MIN_MONOTONY = 0.9
-# a route whose two canonical chains mostly share stops in the same order is
-# circular: both rotations serve the same platforms and order proves nothing
+# two canonical chains that mostly share stops in the same order follow one
+# sense: order proves nothing between them
 CIRCULAR_SHARED_RATIO = 0.5
 CIRCULAR_MONOTONY = 0.8
+# moving a pattern across changes which pattern is the modal longest of each
+# direction, so a pass can uncover trips the one before left in place
+MAX_PASSES = 4
 
 
 def _canonical(patterns):
@@ -63,39 +77,109 @@ def _fits(seq, pos):
     )
 
 
-def plan_repairs(patterns_by_dir):
-    """Trips to move to the opposite direction, for one route.
+def _same_order(chain_a, chain_b):
+    """Whether two canonical chains mostly share their stops, in one order."""
+    pos_b = {sid: i for i, sid in enumerate(chain_b)}
+    shared = [s for s in chain_a if s in pos_b]
+    if len(shared) <= CIRCULAR_SHARED_RATIO * len(chain_a):
+        return False
+    _, monotony = _fit(shared, pos_b)
+    return monotony > CIRCULAR_MONOTONY
 
-    patterns_by_dir: {direction: {stop_id_tuple: [trip_id, ...]}} with
-    exactly two directions. Returns {trip_id: new_direction}, empty when the
-    route is healthy or circular.
-    """
-    if len(patterns_by_dir) != 2:
-        return {}
+
+def canonical_pair(patterns_by_dir):
+    """((direction, chain), (direction, chain)), directions in stable order."""
     (dir_a, pat_a), (dir_b, pat_b) = sorted(
         patterns_by_dir.items(), key=lambda kv: str(kv[0])
     )
-    chain_a = _canonical(pat_a)
-    chain_b = _canonical(pat_b)
+    return (dir_a, _canonical(pat_a)), (dir_b, _canonical(pat_b))
+
+
+def plan_repairs(patterns_by_dir):
+    """Trips to move to the opposite direction, for one route.
+
+    patterns_by_dir: {direction: {stop_tuple: [trip_id, ...]}} with exactly
+    two directions. Returns {trip_id: new_direction}, empty when the route
+    is healthy or when both directions follow one stop order (a loop, or a
+    direction_id without sense: same_order_report tells which).
+    """
+    if len(patterns_by_dir) != 2:
+        return {}
+    (dir_a, chain_a), (dir_b, chain_b) = canonical_pair(patterns_by_dir)
+    if _same_order(chain_a, chain_b):
+        return {}
     pos_a = {sid: i for i, sid in enumerate(chain_a)}
     pos_b = {sid: i for i, sid in enumerate(chain_b)}
 
-    shared = [s for s in chain_a if s in pos_b]
-    if len(shared) > CIRCULAR_SHARED_RATIO * len(chain_a):
-        _, monotony = _fit(shared, pos_b)
-        if monotony > CIRCULAR_MONOTONY:
-            return {}
-
     flips = {}
-    for own_dir, opp_dir, own_pos, opp_pos, patterns in (
-        (dir_a, dir_b, pos_a, pos_b, pat_a),
-        (dir_b, dir_a, pos_b, pos_a, pat_b),
+    for own_dir, opp_dir, own_pos, opp_pos in (
+        (dir_a, dir_b, pos_a, pos_b),
+        (dir_b, dir_a, pos_b, pos_a),
     ):
-        for pattern, trip_ids in patterns.items():
+        for pattern, trip_ids in patterns_by_dir[own_dir].items():
             if _fits(pattern, opp_pos) and not _fits(pattern, own_pos):
                 for trip_id in trip_ids:
                     flips[trip_id] = opp_dir
     return flips
+
+
+def plan_until_stable(patterns_by_dir):
+    """plan_repairs applied to the in-memory patterns until it finds nothing.
+
+    SNCF: a second pass over the repaired patterns moved 3 to 5 more trips
+    after the 80 to 90 of the first. The passes rewrite patterns_by_dir; the
+    database is written once, with the sum. A trip moved back to where it
+    started is not a repair.
+    """
+    origin = {
+        trip_id: direction
+        for direction, patterns in patterns_by_dir.items()
+        for trip_ids in patterns.values()
+        for trip_id in trip_ids
+    }
+    flips = {}
+    for _ in range(MAX_PASSES):
+        if any(not patterns for patterns in patterns_by_dir.values()):
+            break
+        step = plan_repairs(patterns_by_dir)
+        if not step:
+            break
+        for own_dir in list(patterns_by_dir):
+            for pattern in list(patterns_by_dir[own_dir]):
+                trip_ids = patterns_by_dir[own_dir][pattern]
+                new_dir = step.get(trip_ids[0])
+                if new_dir is None:
+                    continue
+                del patterns_by_dir[own_dir][pattern]
+                patterns_by_dir[new_dir].setdefault(pattern, []).extend(trip_ids)
+        flips.update(step)
+    return {t: d for t, d in flips.items() if d != origin[t]}
+
+
+def same_order_report(patterns_by_dir, station_name):
+    """Why a two-direction route whose directions follow one stop order was
+    left alone: ("loop",) or ("no_sense", against, total, first, last).
+
+    None when the two directions differ, which is the normal case. A loop
+    is a chain that returns to its first station; on any other route, the
+    trips that ride the shared chain the other way are counted.
+    """
+    (_, chain_a), (_, chain_b) = canonical_pair(patterns_by_dir)
+    if not _same_order(chain_a, chain_b):
+        return None
+    first = station_name.get(chain_a[0], chain_a[0])
+    last = station_name.get(chain_a[-1], chain_a[-1])
+    if chain_a[0] == chain_a[-1] or first == last:
+        return ("loop",)
+    pos_a = {sid: i for i, sid in enumerate(chain_a)}
+    against = total = 0
+    for patterns in patterns_by_dir.values():
+        for pattern, trip_ids in patterns.items():
+            total += len(trip_ids)
+            hits, monotony = _fit(pattern, pos_a)
+            if hits >= 2 and monotony < 0.5:
+                against += len(trip_ids)
+    return ("no_sense", against, total, first, last)
 
 
 def repair_trip_directions(schedule):
@@ -109,6 +193,34 @@ def repair_trip_directions(schedule):
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.error("Direction repair failed, database left as imported: %s", ex)
         return 0
+
+
+def _stations(schedule):
+    """{stop_id: station}, {station: name}: the parent station when the feed
+    publishes one, the stop itself otherwise."""
+    try:
+        with schedule.engine.connect() as conn:
+            rows = conn.execute(
+                text("SELECT stop_id, parent_station, stop_name FROM stops")
+            ).fetchall()
+    except Exception:  # pylint: disable=broad-except
+        # a stops table without the column: every stop is its own station
+        with schedule.engine.connect() as conn:
+            rows = [
+                (stop_id, None, name)
+                for stop_id, name in conn.execute(
+                    text("SELECT stop_id, stop_name FROM stops")
+                )
+            ]
+    station_of, station_name = {}, {}
+    for stop_id, parent, name in rows:
+        station = parent or stop_id
+        station_of[stop_id] = station
+        # the parent's own row names the station; a child only when the
+        # parent has no row of its own
+        if stop_id == station or station not in station_name:
+            station_name[station] = name
+    return station_of, station_name
 
 
 def _repair(schedule):
@@ -133,6 +245,8 @@ def _repair(schedule):
         _LOGGER.debug("Direction repair: no route with two directions, nothing to do")
         return 0
 
+    station_of, station_name = _stations(schedule)
+
     # one streaming pass; ordering by trip_id alone rides the
     # gtfs2_stop_times_trip_id index, the few stops of each trip are sorted here
     patterns = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
@@ -144,8 +258,13 @@ def _repair(schedule):
             return
         route_id, direction = trip_meta[current_trip]
         current_stops.sort()
-        pattern = tuple(sid for _, sid in current_stops)
-        patterns[route_id][direction][pattern].append(current_trip)
+        pattern = []
+        for _, stop_id in current_stops:
+            station = station_of.get(stop_id, stop_id)
+            # two platforms of one station in a row are one stop of the chain
+            if not pattern or pattern[-1] != station:
+                pattern.append(station)
+        patterns[route_id][direction][tuple(pattern)].append(current_trip)
 
     with schedule.engine.connect() as conn:
         for trip_id, stop_id, stop_sequence in conn.execute(
@@ -166,18 +285,32 @@ def _repair(schedule):
     for route_id in eligible:
         if route_id not in patterns:
             continue
-        route_flips = plan_repairs(patterns[route_id])
+        label = route_labels.get(route_id) or route_id
+        by_dir = patterns[route_id]
+        total = sum(len(t) for d in by_dir.values() for t in d.values())
+        route_flips = plan_until_stable(by_dir)
         if route_flips:
-            total = sum(
-                len(t) for d in patterns[route_id].values() for t in d.values()
-            )
             _LOGGER.info(
                 "Direction repair: route %s: %s of %s trips ride the opposite"
                 " direction's stop order, rewriting their direction_id",
-                route_labels.get(route_id) or route_id,
+                label,
                 len(route_flips),
                 total,
             )
+        else:
+            report = same_order_report(by_dir, station_name)
+            if report and report[0] == "no_sense":
+                _, against, total, first, last = report
+                # a route published one way under both labels has nothing
+                # to repair either, but nothing is hidden from a sensor
+                log = _LOGGER.warning if against else _LOGGER.info
+                log(
+                    "Direction repair: route %s: both directions follow the"
+                    " same stop order (%s to %s) and %s of %s trips ride the"
+                    " other way; direction_id carries no sense on this route,"
+                    " left as published",
+                    label, first, last, against, total,
+                )
         flips.update(route_flips)
 
     if not flips:
