@@ -265,9 +265,9 @@
           "needs_api_key": "É necessária uma chave API"
         },
         "data_description": {
-          "trip_update_url": "O atraso real no seu sensor, em vez do horário previsto.\n`https://exemplo.pt/gtfs/`**`trip-updates`**",
-          "vehicle_position_url": "Onde estão os veículos, para um mapa. Deixe vazio se não o quiser.\n`https://exemplo.pt/gtfs/`**`vehicle-positions`**",
-          "alerts_url": "Mensagens de perturbação do operador. Deixe vazio se não o quiser.\n`https://exemplo.pt/gtfs/`**`service-alerts`**",
+          "trip_update_url": "O atraso real no seu sensor, em vez do horário previsto.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Onde estão os veículos, para um mapa. Deixe vazio se não o quiser.\n`…/`**`vehicle-positions`**",
+          "alerts_url": "Mensagens de perturbação do operador. Deixe vazio se não o quiser.\n`…/`**`service-alerts`**",
           "needs_api_key": "Marque se o fornecedor lhe deu uma chave para ler estes fluxos."
         }
       },
@@ -292,6 +292,12 @@
     }
   },
   "selector": {
+    "extract_from": {
+      "options": {
+        "zip": "ZIP: espera um ficheiro na pasta gtfs2 com o nome abaixo, sem a extensão .zip",
+        "url": "URL: usa o seu URL abaixo, deixe 'na' se usar zip"
+      }
+    },
     "api_key_location": {
       "options": {
         "not_applicable": "Nenhuma chave necessária (a maioria das fontes)",
@@ -458,7 +464,7 @@
       }
     }
   },
-  "notification": {
+  "common": {
     "extract_ready_title": "GTFS: {file} está pronta",
     "extract_ready": "A fonte contém **{routes}** linhas e **{stops}** paragens.\n\nDefinições > Dispositivos e serviços > GTFS2 > Adicionar entrada, depois **Adicionar um trajeto entre duas paragens** para continuar.",
     "extract_failed_title": "GTFS: não foi possível descompactar {file}",

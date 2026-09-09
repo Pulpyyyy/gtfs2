@@ -265,9 +265,9 @@
           "needs_api_key": "Ein API-Schlüssel ist erforderlich"
         },
         "data_description": {
-          "trip_update_url": "Die tatsächliche Verspätung an Ihrem Sensor statt des Fahrplans.\n`https://beispiel.de/gtfs/`**`trip-updates`**",
-          "vehicle_position_url": "Wo die Fahrzeuge sind, für eine Karte. Leer lassen, wenn nicht gewünscht.\n`https://beispiel.de/gtfs/`**`vehicle-positions`**",
-          "alerts_url": "Meldungen des Betreibers. Leer lassen, wenn nicht gewünscht.\n`https://beispiel.de/gtfs/`**`service-alerts`**",
+          "trip_update_url": "Die tatsächliche Verspätung an Ihrem Sensor statt des Fahrplans.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Wo die Fahrzeuge sind, für eine Karte. Leer lassen, wenn nicht gewünscht.\n`…/`**`vehicle-positions`**",
+          "alerts_url": "Meldungen des Betreibers. Leer lassen, wenn nicht gewünscht.\n`…/`**`service-alerts`**",
           "needs_api_key": "Ankreuzen, wenn der Anbieter Ihnen einen Schlüssel für diese Feeds gegeben hat."
         }
       },
@@ -292,6 +292,12 @@
     }
   },
   "selector": {
+    "extract_from": {
+      "options": {
+        "zip": "ZIP: erwartet eine Datei im GTFS2-Ordner mit dem folgenden Namen, ohne Erweiterung .zip",
+        "url": "URL: verwendet Ihre URL unten, lassen Sie ‚na‘, wenn Sie zip verwenden"
+      }
+    },
     "api_key_location": {
       "options": {
         "not_applicable": "Kein Schlüssel nötig (die meisten Quellen)",
@@ -458,7 +464,7 @@
       }
     }
   },
-  "notification": {
+  "common": {
     "extract_ready_title": "GTFS: {file} ist bereit",
     "extract_ready": "Die Quelle enthält **{routes}** Linien und **{stops}** Haltestellen.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
     "extract_failed_title": "GTFS: {file} konnte nicht entpackt werden",
