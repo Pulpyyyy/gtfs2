@@ -1690,14 +1690,32 @@ def get_station_list(schedule, route_id=None):
     return stations
 
 
+# The trips of one direction ride a handful of distinct stop patterns, a
+# few thousand times each over the feed's calendar (TAO tram A: 4214 trips,
+# 27 stops). The walk only needs each pattern once, so one trip stands for
+# every trip that rides the same stops in the same order: the lowest
+# trip_id of the pattern, which is also the trip _ride_of would have walked
+# first among them, so the result is the one reading every trip gives.
+# The signature is concatenated in scan order on purpose: sorting it
+# first costs more than reading every trip did (TAO A: 4.2 s against 2.8
+# for the six lines, 1.2 s this way). Should the order ever vary between
+# two trips of one pattern, that pattern is read twice, never lost.
 _STOP_ROWS = """
+    with ride as (
+        select t.trip_id, group_concat(st.stop_sequence || ':' || st.stop_id) as stops
+        from trips t
+        inner join stop_times st on st.trip_id = t.trip_id
+        where t.route_id = :route_id
+        and (t.direction_id = :direction or t.direction_id is null)
+        group by t.trip_id
+    ), sample as (
+        select min(trip_id) as trip_id from ride group by stops
+    )
     SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name
-    from trips t
-    inner join stop_times st on st.trip_id = t.trip_id
+    from sample
+    inner join stop_times st on st.trip_id = sample.trip_id
     inner join stops s on s.stop_id = st.stop_id
     left join stops station on station.stop_id = s.parent_station
-    where t.route_id = :route_id
-    and (t.direction_id = :direction or t.direction_id is null)
     order by st.trip_id, st.stop_sequence
 """
 
@@ -1845,19 +1863,30 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id):
     """
     _LOGGER.debug("Getting destinations for route: %s direction: %s from: %s",
                   route_id, direction, origin_stop_id)
+    # same sampling as _STOP_ROWS, on the part of each trip after the origin
     sql = f"""
-    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name
-    from trips t
-    inner join (
+    with through as (
         select trip_id, min(stop_sequence) as origin_sequence
         from stop_times where stop_id in {_STOP_GROUP} group by trip_id
-    ) o on o.trip_id = t.trip_id
-    inner join stop_times st on st.trip_id = t.trip_id
+    ), ride as (
+        select t.trip_id, group_concat(st.stop_sequence || ':' || st.stop_id) as stops
+        from trips t
+        inner join through o on o.trip_id = t.trip_id
+        inner join stop_times st on st.trip_id = t.trip_id
+            and st.stop_sequence > o.origin_sequence
+        where t.route_id = :route_id
+        and (t.direction_id = :direction or t.direction_id is null)
+        group by t.trip_id
+    ), sample as (
+        select min(trip_id) as trip_id from ride group by stops
+    )
+    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name
+    from sample
+    inner join through o on o.trip_id = sample.trip_id
+    inner join stop_times st on st.trip_id = sample.trip_id
         and st.stop_sequence > o.origin_sequence
     inner join stops s on s.stop_id = st.stop_id
     left join stops station on station.stop_id = s.parent_station
-    where t.route_id = :route_id
-    and (t.direction_id = :direction or t.direction_id is null)
     order by st.trip_id, st.stop_sequence
     """  # noqa: S608
     scope = {"route_id": route_id, "direction": int(direction)}
