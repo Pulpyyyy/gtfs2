@@ -887,13 +887,22 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
     sql_add_index_6 = f"""
     create index gtfs2_trips_route_id on trips(route_id)
     """
+    # A single-agency feed may leave agency_id out of routes.txt, and out
+    # of agency.txt as well (TAO does): then there is nothing to copy, the
+    # two tables already agree on the missing value, and copying it back
+    # would only log the "fix" again at every refresh. So only count the
+    # routes when the agency table has an id to give them.
     sql_check_route_agency = f"""
     SELECT count(*) as check_agency
-    FROM routes where agency_id='None'
+    FROM routes where (agency_id='None' or agency_id is null)
+    and exists (select 1 from agency
+                where agency_id is not null and agency_id not in ('None', ''))
     """
     sql_fix_route_agency = f"""
-    update routes set agency_id = (select agency_id from agency limit 1)
-        where agency_id='None'
+    update routes set agency_id = (select agency_id from agency
+                                   where agency_id is not null
+                                   and agency_id not in ('None', '') limit 1)
+        where agency_id='None' or agency_id is null
     """
     
     with schedule.engine.connect() as conn:
