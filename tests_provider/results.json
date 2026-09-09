@@ -10098,14 +10098,14 @@
             "to_stop": 8
           },
           "got": {
-            "destination": "Champagnole Paul-Émile Victor",
+            "destination": "Champagnole",
             "direction": 1,
             "origin": "La Chaumusse - Fort-du-Plasne",
             "route": "P8",
             "trip": "OCESN895512F1187_F:TER:FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575::87743633:87713412:13:841:20261212"
           },
-          "ok": false,
-          "text": "asked La Chaumusse - Fort-du-Plasne -> Champagnole on P8 (stop 5 to stop 8 of a 8-stop ride): got La Chaumusse - Fort-du-Plasne -> Champagnole Paul-Émile Victor on P8 d1, trip OCESN895512F1187_F:TER:FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575::87743633:87713412:13:841:20261212"
+          "ok": true,
+          "text": "asked La Chaumusse - Fort-du-Plasne -> Champagnole on P8 (stop 5 to stop 8 of a 8-stop ride): got La Chaumusse - Fort-du-Plasne -> Champagnole on P8 d1, trip OCESN895512F1187_F:TER:FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575::87743633:87713412:13:841:20261212"
         },
         {
           "asked": {
@@ -10352,8 +10352,8 @@
       "fixture": "sncf-journeys",
       "id": "sncf-journeys-P8(A594575:)-d1-pairs",
       "kind": "pairs",
-      "outcome": "xfailed",
-      "reason": "a train journey is matched by stop name prefix on any line, not the asked one",
+      "outcome": "passed",
+      "reason": null,
       "route": "FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575:"
     },
     {

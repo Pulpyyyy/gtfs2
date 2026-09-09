@@ -270,7 +270,6 @@ KNOWN = {
        for d in (0, 1)},
     "sncf-journeys-K8+-d0-pairs": TRAIN,
     "sncf-journeys-K8+-d1-pairs": TRAIN,
-    "sncf-journeys-P8(A594575:)-d1-pairs": TRAIN,
     "sncf-journeys-P8(CDD3F95:)-d1-pairs": TRAIN,
 }
 

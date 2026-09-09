@@ -246,10 +246,7 @@ case: sncf-journeys-P8(A594575:)-d0-pairs
   result: PASSED
 
 case: sncf-journeys-P8(A594575:)-d1-pairs
-  result: XFAILED
-  reason: a train journey is matched by stop name prefix on any line, not the asked one
-  detail:
-    asked La Chaumusse - Fort-du-Plasne -> Champagnole on P8 (stop 5 to stop 8 of a 8-stop ride): got La Chaumusse - Fort-du-Plasne -> Champagnole Paul-Émile Victor on P8 d1, trip OCESN895512F1187_F:TER:FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575::87743633:87713412:13:841:20261212
+  result: PASSED
 
 case: sncf-journeys-P8(CDD3F95:)-d0-pairs
   result: PASSED
