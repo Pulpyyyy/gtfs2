@@ -259,11 +259,9 @@ TRAIN = ("a train journey is matched by stop name prefix on any line, not "
          "the asked one")
 KNOWN = {
     **{f"gvb-{r}-d{d}-stop_list": SELECTOR_GVB
-       for r in ("1", "7", "13", "14", "17") for d in (0, 1)},
-    "palmbus-22-d0-stop_list": SELECTOR,
-    "palmbus-B-d1-stop_list": SELECTOR,
+       for r, d in (("1", 1), ("14", 0), ("14", 1))},
     **{f"tao-journeys-{r}-d{d}-stop_list": SELECTOR
-       for r in ("40", "A", "B") for d in (0, 1)},
+       for r in ("A", "B") for d in (0, 1)},
     **{f"{line}-d{d}-swapped": SWAPPED
        for line in ("gvb-7", "palmbus-A", "palmbus-B", "tao-journeys-40",
                     "tao-journeys-A", "tao-journeys-B", "tao-journeys-N")
