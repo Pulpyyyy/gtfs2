@@ -207,9 +207,9 @@
           "needs_api_key": "This requires an API key"
         },
         "data_description": {
-          "trip_update_url": "The real delay on your sensor, instead of the timetable.\n`https://example.org/gtfs/`**`trip-updates`**",
-          "vehicle_position_url": "Where the vehicles are, for a map card. Leave empty if you do not want it.\n`https://example.org/gtfs/`**`vehicle-positions`**",
-          "alerts_url": "Disruption messages from the operator. Leave empty if you do not want it.\n`https://example.org/gtfs/`**`service-alerts`**",
+          "trip_update_url": "The real delay on your sensor, instead of the timetable.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Where the vehicles are, for a map card. Leave empty if you do not want it.\n`…/`**`vehicle-positions`**",
+          "alerts_url": "Disruption messages from the operator. Leave empty if you do not want it.\n`…/`**`service-alerts`**",
           "needs_api_key": "Tick this if the provider gave you a key to read these feeds."
         }
       },

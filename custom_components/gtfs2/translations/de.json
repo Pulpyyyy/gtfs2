@@ -207,9 +207,9 @@
           "needs_api_key": "Ein API-Schlüssel ist erforderlich"
         },
         "data_description": {
-          "trip_update_url": "Die tatsächliche Verspätung an Ihrem Sensor statt des Fahrplans.\n`https://beispiel.de/gtfs/`**`trip-updates`**",
-          "vehicle_position_url": "Wo die Fahrzeuge sind, für eine Karte. Leer lassen, wenn nicht gewünscht.\n`https://beispiel.de/gtfs/`**`vehicle-positions`**",
-          "alerts_url": "Meldungen des Betreibers. Leer lassen, wenn nicht gewünscht.\n`https://beispiel.de/gtfs/`**`service-alerts`**",
+          "trip_update_url": "Die tatsächliche Verspätung an Ihrem Sensor statt des Fahrplans.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Wo die Fahrzeuge sind, für eine Karte. Leer lassen, wenn nicht gewünscht.\n`…/`**`vehicle-positions`**",
+          "alerts_url": "Meldungen des Betreibers. Leer lassen, wenn nicht gewünscht.\n`…/`**`service-alerts`**",
           "needs_api_key": "Ankreuzen, wenn der Anbieter Ihnen einen Schlüssel für diese Feeds gegeben hat."
         }
       },

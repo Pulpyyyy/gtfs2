@@ -207,9 +207,9 @@
           "needs_api_key": "Se necesita una clave API"
         },
         "data_description": {
-          "trip_update_url": "El retraso real en su sensor, en lugar del horario previsto.\n`https://ejemplo.es/gtfs/`**`trip-updates`**",
-          "vehicle_position_url": "Dónde están los vehículos, para un mapa. Déjelo vacío si no lo quiere.\n`https://ejemplo.es/gtfs/`**`vehicle-positions`**",
-          "alerts_url": "Mensajes de incidencias del operador. Déjelo vacío si no lo quiere.\n`https://ejemplo.es/gtfs/`**`service-alerts`**",
+          "trip_update_url": "El retraso real en su sensor, en lugar del horario previsto.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Dónde están los vehículos, para un mapa. Déjelo vacío si no lo quiere.\n`…/`**`vehicle-positions`**",
+          "alerts_url": "Mensajes de incidencias del operador. Déjelo vacío si no lo quiere.\n`…/`**`service-alerts`**",
           "needs_api_key": "Marque si el proveedor le dio una clave para leer estos flujos."
         }
       },

@@ -207,9 +207,9 @@
           "needs_api_key": "Une clé d'API est nécessaire"
         },
         "data_description": {
-          "trip_update_url": "Le retard réel sur votre capteur, au lieu de l'horaire théorique.\n`https://exemple.fr/gtfs/`**`trip-updates`**",
-          "vehicle_position_url": "Où se trouvent les véhicules, pour une carte. Laissez vide si vous n'en voulez pas.\n`https://exemple.fr/gtfs/`**`vehicle-positions`**",
-          "alerts_url": "Les messages de perturbation de l'exploitant. Laissez vide si vous n'en voulez pas.\n`https://exemple.fr/gtfs/`**`service-alerts`**",
+          "trip_update_url": "Le retard réel sur votre capteur, au lieu de l'horaire théorique.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Où se trouvent les véhicules, pour une carte. Laissez vide si vous n'en voulez pas.\n`…/`**`vehicle-positions`**",
+          "alerts_url": "Les messages de perturbation de l'exploitant. Laissez vide si vous n'en voulez pas.\n`…/`**`service-alerts`**",
           "needs_api_key": "Cochez si le fournisseur vous a remis une clé pour lire ces flux."
         }
       },
