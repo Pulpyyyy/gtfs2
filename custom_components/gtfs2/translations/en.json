@@ -136,7 +136,7 @@
           "add_return": "Also create the return journey"
         },
         "data_description": {
-          "name": "Suggested from the line and the two stops. Shown on your dashboard.",
+          "name": "Suggested from the line and the two stops. Shown on your dashboard, and it sets the entity id: a sensor created later under another name is a new entity, and the cards pointing at this one will need updating.",
           "add_return": "A second sensor for **{return_trip}**, the same line the other way."
         },
         "description": "The sensor will show the next departures for **{trip}**.\n\n[documentation]({docu_new_route})"
