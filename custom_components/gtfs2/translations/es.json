@@ -139,7 +139,7 @@
           "add_return": "Crear también el trayecto de vuelta"
         },
         "data_description": {
-          "name": "Propuesto a partir de la línea y las dos paradas. Se muestra en su panel.",
+          "name": "Propuesto a partir de la línea y las dos paradas. Se muestra en su panel y fija el identificador de la entidad: un sensor creado más tarde con otro nombre es una entidad nueva, y las tarjetas que apuntan a este deberán actualizarse.",
           "include_tomorrow": "Sin esto, el sensor queda vacío entre la última salida del día y la primera del siguiente.",
           "add_return": "Un segundo sensor para **{return_trip}**, la misma línea en sentido contrario."
         },

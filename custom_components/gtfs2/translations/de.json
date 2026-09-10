@@ -139,7 +139,7 @@
           "add_return": "Auch die Gegenrichtung anlegen"
         },
         "data_description": {
-          "name": "Aus der Linie und den beiden Haltestellen vorgeschlagen. Auf Ihrem Dashboard angezeigt.",
+          "name": "Aus der Linie und den beiden Haltestellen vorgeschlagen. Auf Ihrem Dashboard angezeigt, und er legt die Entitäts-ID fest: ein später unter anderem Namen angelegter Sensor ist eine neue Entität, und Karten, die auf diesen zeigen, müssen angepasst werden.",
           "include_tomorrow": "Ohne dies bleibt der Sensor zwischen der letzten Abfahrt des Tages und der ersten des nächsten leer.",
           "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Linie in Gegenrichtung."
         },
