@@ -125,7 +125,7 @@
         "data": {
           "origin": "Arrêt de départ"
         },
-        "description": "D'où compter les départs ?\n\n[documentation]({docu_new_route})",
+        "description": "Ligne **{route}**, sens **{direction}**.\n\nD'où compter les départs ?\n\n[documentation]({docu_new_route})",
         "data_description": {
           "origin": "Les départs sont comptés depuis cet arrêt. La liste suit le sens de circulation ; un numéro distingue deux quais portant le même nom."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Arrêt d'arrivée"
         },
-        "description": "Où se termine le trajet depuis **{origin}** ?\n\n[documentation]({docu_new_route})",
+        "description": "Ligne **{route}**, sens **{direction}**.\n\nOù se termine le trajet depuis **{origin}** ?\n\n[documentation]({docu_new_route})",
         "data_description": {
           "destination": "Seuls les arrêts qu'un trajet atteint réellement depuis là sont proposés, dans le sens de circulation. Laissez le terminus pour voir tout ce qui passe."
         }
@@ -142,12 +142,10 @@
       "sensor": {
         "data": {
           "name": "Nom du capteur",
-          "include_tomorrow": "Afficher aussi les départs de demain à la fin du service de la journée",
           "add_return": "Créer aussi le trajet retour"
         },
         "data_description": {
           "name": "Proposé à partir de la ligne et des deux arrêts. Affiché sur votre tableau de bord, et il fixe l'identifiant de l'entité : un capteur recréé plus tard sous un autre nom est une nouvelle entité, et les cartes qui pointent vers celui-ci devront être mises à jour.",
-          "include_tomorrow": "Sans cela, le capteur reste vide entre le dernier départ de la journée et le premier du lendemain.",
           "add_return": "Un second capteur pour **{return_trip}**, la même ligne dans l'autre sens."
         },
         "description": "Le capteur affichera les prochains départs pour **{trip}**.\n\n[documentation]({docu_new_route})"
@@ -157,7 +155,7 @@
           "name": "Nom du capteur",
           "add_return": "Créer aussi le trajet retour"
         },
-        "description": "Le capteur affichera les prochains trains pour **{trip}**.",
+        "description": "Le capteur affichera les prochains départs pour **{trip}**.",
         "data_description": {
           "name": "Proposé d'après la ligne et les gares, modifiez-le librement.",
           "add_return": "Un second capteur pour **{return_trip}**, le même trajet dans l'autre sens."
@@ -165,15 +163,20 @@
       },
       "stops_train": {
         "data": {
-          "origin": "Gare de départ",
-          "destination": "Gare d'arrivée",
-          "include_tomorrow": "Afficher aussi les départs de demain à la fin du service de la journée"
+          "origin": "Gare de départ"
         },
-        "description": "Le capteur affichera les prochains trains entre deux gares.\n\n[documentation]({docu_setup_train})",
+        "description": "Ligne **{route}**.\n\nLe capteur affichera les prochains départs entre deux gares, dans un sens ou dans l'autre.\n\n[documentation]({docu_setup_train})",
         "data_description": {
-          "origin": "Les gares desservies par cette ligne. Une gare n'apparaît qu'une fois, même quand la source la découpe en plusieurs arrêts.",
-          "destination": "La même liste. Choisissez celle où vous allez.",
-          "include_tomorrow": "Sans cela, le capteur reste vide entre le dernier départ de la journée et le premier du lendemain."
+          "origin": "Les gares desservies par cette ligne. Une gare n'apparaît qu'une fois, même quand la source la découpe en plusieurs arrêts. Quand la ligne mêle trains et cars, chaque gare indique lesquels la desservent : une gare routière qui porte son propre nom se choisit seule, pour un trajet à part."
+        }
+      },
+      "destination_train": {
+        "data": {
+          "destination": "Gare d'arrivée"
+        },
+        "description": "Ligne **{route}**.\n\nOù se termine le trajet depuis **{origin}** ?\n\n[documentation]({docu_setup_train})",
+        "data_description": {
+          "destination": "Seules les gares qu'un trajet de cette ligne atteint réellement depuis là sont proposées. Quand la ligne mêle trains et cars, chaque gare indique lesquels y arrivent depuis votre départ."
         }
       },
       "remove": {
@@ -189,6 +192,7 @@
         "title": "Capteur créé",
         "description": "**{name}** est prêt et va apparaître sur votre tableau de bord.\n\nLa plupart des réseaux demandent plusieurs trajets : une ligne dans chaque sens, ou deux ou trois lignes. Les ajouter maintenant réutilise la source que vous venez de choisir.\n\n[documentation]({docu_new_route})",
         "menu_options": {
+          "same_line": "Un autre trajet sur cette ligne",
           "start_end": "Ajouter un autre trajet",
           "optimise": "Libérer de l'espace disque",
           "finish": "C'est tout pour l'instant"
@@ -427,20 +431,6 @@
         }
       }
     },
-    "set_include_tomorrow": {
-      "name": "Afficher les départs de demain",
-      "description": "Active ou désactive les départs de demain sur des capteurs existants, sans les recréer.",
-      "fields": {
-        "enabled": {
-          "name": "Activé",
-          "description": "Activé pour continuer d'afficher des départs une fois le service du jour terminé"
-        },
-        "entry_id": {
-          "name": "Une seule entrée",
-          "description": "Laissez vide pour appliquer à tous les capteurs départ/arrivée"
-        }
-      }
-    },
     "prune_datasource": {
       "name": "Réduire une source aux lignes utilisées",
       "description": "Supprime les horaires des lignes qu'aucun capteur ne lit, puis récupère l'espace. Les lignes restent listées, le config flow les montre donc toutes. Lancez update_gtfs pour rétablir la source complète.",
@@ -471,6 +461,8 @@
     }
   },
   "common": {
+    "mode_train": "train",
+    "mode_coach": "car",
     "extract_ready_title": "GTFS : {file} est prête",
     "extract_ready": "La source contient **{routes}** lignes et **{stops}** arrêts.\n\nParamètres > Appareils et services > GTFS2 > Ajouter une entrée, puis **Ajouter un trajet entre deux arrêts** pour continuer.",
     "extract_failed_title": "GTFS : {file} n'a pas pu être décompressée",

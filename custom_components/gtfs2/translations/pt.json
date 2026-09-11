@@ -125,7 +125,7 @@
         "data": {
           "origin": "Paragem de partida"
         },
-        "description": "A partir de onde contar as partidas?\n\n[documentação]({docu_new_route})",
+        "description": "Linha **{route}**, sentido **{direction}**.\n\nA partir de onde contar as partidas?\n\n[documentação]({docu_new_route})",
         "data_description": {
           "origin": "As partidas são contadas a partir daqui. A lista segue o sentido de circulação; um número distingue duas plataformas com o mesmo nome."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Paragem de chegada"
         },
-        "description": "Onde termina a viagem a partir de **{origin}**?\n\n[documentação]({docu_new_route})",
+        "description": "Linha **{route}**, sentido **{direction}**.\n\nOnde termina a viagem a partir de **{origin}**?\n\n[documentação]({docu_new_route})",
         "data_description": {
           "destination": "Só são propostas as paragens que uma viagem alcança realmente a partir daí, no sentido de circulação. Deixe no fim da linha para ver tudo o que passa."
         }
@@ -142,27 +142,30 @@
       "sensor": {
         "data": {
           "name": "Nome do sensor",
-          "include_tomorrow": "Mostrar também as partidas de amanhã no fim do serviço do dia",
           "add_return": "Criar também a viagem de regresso"
         },
         "data_description": {
           "name": "Sugerido a partir da linha e das duas paragens. Mostrado no seu painel e fixa o identificador da entidade: um sensor criado mais tarde com outro nome é uma entidade nova, e os cartões que apontam para este terão de ser atualizados.",
-          "include_tomorrow": "Sem isto, o sensor fica vazio entre a última partida do dia e a primeira do seguinte.",
           "add_return": "Um segundo sensor para **{return_trip}**, a mesma linha no sentido inverso."
         },
         "description": "O sensor mostrará as próximas partidas de **{trip}**.\n\n[documentação]({docu_new_route})"
       },
       "stops_train": {
         "data": {
-          "origin": "Estação de partida",
-          "destination": "Estação de chegada",
-          "include_tomorrow": "Mostrar também as partidas de amanhã no fim do serviço do dia"
+          "origin": "Estação de partida"
         },
-        "description": "O sensor mostrará os próximos comboios entre duas estações.\n\n[documentação]({docu_setup_train})",
+        "description": "Linha **{route}**.\n\nO sensor mostrará as próximas partidas entre duas estações, num sentido ou no outro.\n\n[documentação]({docu_setup_train})",
         "data_description": {
-          "origin": "Estações servidas por esta linha. Uma estação aparece uma só vez, mesmo quando a fonte a divide em várias paragens.",
-          "destination": "A mesma lista. Escolha o seu destino.",
-          "include_tomorrow": "Sem isto, o sensor fica vazio entre a última partida do dia e a primeira do seguinte."
+          "origin": "Estações servidas por esta linha. Uma estação aparece uma só vez, mesmo quando a fonte a divide em várias paragens. Quando a linha mistura comboios e autocarros, cada estação indica quais param nela: um terminal rodoviário com nome próprio escolhe-se sozinho, para uma viagem à parte."
+        }
+      },
+      "destination_train": {
+        "data": {
+          "destination": "Estação de chegada"
+        },
+        "description": "Linha **{route}**.\n\nOnde termina a viagem a partir de **{origin}**?\n\n[documentação]({docu_setup_train})",
+        "data_description": {
+          "destination": "Só são propostas as estações que uma viagem desta linha alcança realmente a partir daí. Quando a linha mistura comboios e autocarros, cada estação indica quais chegam a ela a partir da sua partida."
         }
       },
       "sensor_train": {
@@ -170,7 +173,7 @@
           "name": "Nome do sensor",
           "add_return": "Criar também a viagem de regresso"
         },
-        "description": "O sensor mostrará os próximos comboios para **{trip}**.",
+        "description": "O sensor mostrará as próximas partidas para **{trip}**.",
         "data_description": {
           "name": "Sugerido a partir da linha e das estações, pode alterá-lo livremente.",
           "add_return": "Um segundo sensor para **{return_trip}**, a mesma viagem no sentido inverso."
@@ -189,6 +192,7 @@
         "title": "Sensor criado",
         "description": "**{name}** está pronto e vai aparecer no seu painel.\n\nA maioria das redes precisa de vários trajetos: uma linha em cada sentido, ou duas a três linhas. Adicioná-los agora reutiliza a fonte que acabou de escolher.\n\n[documentação]({docu_new_route})",
         "menu_options": {
+          "same_line": "Outro trajeto nesta linha",
           "start_end": "Adicionar outro trajeto",
           "optimise": "Libertar espaço em disco",
           "finish": "É tudo por agora"
@@ -427,20 +431,6 @@
         }
       }
     },
-    "set_include_tomorrow": {
-      "name": "Mostrar as partidas de amanhã",
-      "description": "Liga ou desliga as partidas de amanhã em sensores existentes, sem os recriar.",
-      "fields": {
-        "enabled": {
-          "name": "Ativado",
-          "description": "Ligado para continuar a mostrar partidas quando o serviço do dia terminar"
-        },
-        "entry_id": {
-          "name": "Apenas uma entrada",
-          "description": "Deixe vazio para aplicar a todos os sensores de partida/chegada"
-        }
-      }
-    },
     "prune_datasource": {
       "name": "Reduzir uma fonte às linhas em uso",
       "description": "Remove os horários das linhas que nenhum sensor lê e recupera o espaço. As linhas continuam listadas, pelo que o assistente as mostra todas. Execute update_gtfs para repor a fonte completa.",
@@ -471,6 +461,8 @@
     }
   },
   "common": {
+    "mode_train": "comboio",
+    "mode_coach": "autocarro",
     "extract_ready_title": "GTFS: {file} está pronta",
     "extract_ready": "A fonte contém **{routes}** linhas e **{stops}** paragens.\n\nDefinições > Dispositivos e serviços > GTFS2 > Adicionar entrada, depois **Adicionar um trajeto entre duas paragens** para continuar.",
     "extract_failed_title": "GTFS: não foi possível descompactar {file}",
