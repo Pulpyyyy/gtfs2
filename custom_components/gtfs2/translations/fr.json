@@ -146,7 +146,7 @@
           "add_return": "Créer aussi le trajet retour"
         },
         "data_description": {
-          "name": "Proposé à partir de la ligne et des deux arrêts. Affiché sur votre tableau de bord.",
+          "name": "Proposé à partir de la ligne et des deux arrêts. Affiché sur votre tableau de bord, et il fixe l'identifiant de l'entité : un capteur recréé plus tard sous un autre nom est une nouvelle entité, et les cartes qui pointent vers celui-ci devront être mises à jour.",
           "include_tomorrow": "Sans cela, le capteur reste vide entre le dernier départ de la journée et le premier du lendemain.",
           "add_return": "Un second capteur pour **{return_trip}**, la même ligne dans l'autre sens."
         },
