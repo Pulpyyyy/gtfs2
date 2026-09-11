@@ -24385,6 +24385,65 @@
     {
       "checks": [
         {
+          "ok": true,
+          "text": "from Les Aubrais (line K8+): 3 offered, 3 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais (line None): 3 offered, 3 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais Gare Routière (line K8+): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais Gare Routière (line None): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Orléans (line K8+): 5 offered, 5 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Orléans (line None): 5 offered, 5 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Austerlitz (line K8+): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Austerlitz (line None): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Bercy Bourg. Pays d'Auv. (line K8+): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Bercy Bourg. Pays d'Auv. (line None): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris-Austerlitz Routiere (line K8+): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris-Austerlitz Routiere (line None): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        }
+      ],
+      "direction": 0,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-K8+-d0-destinations",
+      "kind": "destinations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
+    },
+    {
+      "checks": [
+        {
           "asked": "2026-09-27",
           "destination": "Orléans",
           "expected": "2026-09-27",
@@ -24708,6 +24767,276 @@
       "fixture": "sncf-journeys",
       "id": "sncf-journeys-K8+-d0-pairs",
       "kind": "pairs",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere + Paris Austerlitz -> Orléans on 2026-09-27: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere + Paris Austerlitz -> Orléans on 2026-09-27: route types [714, 714], expected [714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere + Paris Austerlitz -> Orléans on 2026-09-27: next service 2026-09-27, the stations alone give ['2026-09-27', '2026-09-28']"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere + Paris Austerlitz -> Orléans on 2026-09-27: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. -> Orléans on 2026-09-27: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. -> Orléans on 2026-09-27: route types [714, 714, 2, 2], expected [714, 714, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. -> Orléans on 2026-09-27: next service 2026-09-27, the stations alone give ['2026-09-27', '2026-09-27']"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. -> Orléans on 2026-09-27: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere -> Orléans + Les Aubrais on 2026-09-27: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere -> Orléans + Les Aubrais on 2026-09-27: route types [714, 714], expected [714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere -> Orléans + Les Aubrais on 2026-09-27: next service 2026-09-27, the stations alone give ['2026-09-27', None]"
+        },
+        {
+          "ok": true,
+          "text": "Paris-Austerlitz Routiere -> Orléans + Les Aubrais on 2026-09-27: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris-Austerlitz Routiere -> Les Aubrais on 2026-10-05: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris-Austerlitz Routiere -> Les Aubrais on 2026-10-05: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris-Austerlitz Routiere -> Les Aubrais on 2026-10-05: next service 2026-10-05, the stations alone give ['2026-10-05', None]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris-Austerlitz Routiere -> Les Aubrais on 2026-10-05: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. -> Les Aubrais on 2026-10-05: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. -> Les Aubrais on 2026-10-05: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. -> Les Aubrais on 2026-10-05: next service 2026-10-05, the stations alone give ['2026-10-05', None]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. -> Les Aubrais on 2026-10-05: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz -> Les Aubrais + Orléans on 2026-10-05: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz -> Les Aubrais + Orléans on 2026-10-05: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz -> Les Aubrais + Orléans on 2026-10-05: next service 2026-10-05, the stations alone give ['2026-10-05', '2026-10-05']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz -> Les Aubrais + Orléans on 2026-10-05: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris-Austerlitz Routiere -> Orléans on 2026-08-31: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris-Austerlitz Routiere -> Orléans on 2026-08-31: route types [2], expected [2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris-Austerlitz Routiere -> Orléans on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-09-27']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris-Austerlitz Routiere -> Orléans on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. -> Orléans on 2026-08-31: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. -> Orléans on 2026-08-31: route types [2], expected [2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. -> Orléans on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-09-26']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. -> Orléans on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz -> Orléans + Les Aubrais on 2026-08-31: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz -> Orléans + Les Aubrais on 2026-08-31: route types [2], expected [2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz -> Orléans + Les Aubrais on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz -> Orléans + Les Aubrais on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. + Paris-Austerlitz Routiere -> Orléans on 2026-09-26: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. + Paris-Austerlitz Routiere -> Orléans on 2026-09-26: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. + Paris-Austerlitz Routiere -> Orléans on 2026-09-26: next service 2026-09-26, the stations alone give ['2026-09-26', '2026-09-27']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. + Paris-Austerlitz Routiere -> Orléans on 2026-09-26: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. + Paris Austerlitz -> Orléans on 2026-09-26: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. + Paris Austerlitz -> Orléans on 2026-09-26: route types [2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. + Paris Austerlitz -> Orléans on 2026-09-26: next service 2026-09-26, the stations alone give ['2026-09-26', '2026-09-26']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. + Paris Austerlitz -> Orléans on 2026-09-26: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. -> Orléans + Les Aubrais on 2026-09-26: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. -> Orléans + Les Aubrais on 2026-09-26: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. -> Orléans + Les Aubrais on 2026-09-26: next service 2026-09-26, the stations alone give ['2026-09-26', '2026-09-26']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Bercy Bourg. Pays d'Auv. -> Orléans + Les Aubrais on 2026-09-26: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "the line has coach stops but no departure read left from one"
+        },
+        {
+          "ok": true,
+          "text": "station modes {'Orléans': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais': {'train'}, 'Paris Austerlitz': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}, the trips call at {'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'coach', 'train'}, 'Paris Austerlitz': {'train'}, 'Les Aubrais': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}"
+        }
+      ],
+      "direction": 0,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-K8+-d0-stations",
+      "kind": "stations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "from Les Aubrais (line K8+): 3 offered, 3 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais (line None): 3 offered, 3 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais Gare Routière (line K8+): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais Gare Routière (line None): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Orléans (line K8+): 5 offered, 5 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Orléans (line None): 5 offered, 5 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Austerlitz (line K8+): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Austerlitz (line None): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Bercy Bourg. Pays d'Auv. (line K8+): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Bercy Bourg. Pays d'Auv. (line None): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris-Austerlitz Routiere (line K8+): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris-Austerlitz Routiere (line None): 2 offered, 2 ridden to; missing [], extra [], modes differ at []"
+        }
+      ],
+      "direction": 1,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-K8+-d1-destinations",
+      "kind": "destinations",
       "outcome": "passed",
       "reason": null,
       "route": "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
@@ -25112,6 +25441,500 @@
     {
       "checks": [
         {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris-Austerlitz Routiere on 2026-09-16: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris-Austerlitz Routiere on 2026-09-16: route types [714, 714], expected [714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris-Austerlitz Routiere on 2026-09-16: next service 2026-09-16, the stations alone give ['2026-09-16', '2026-09-16']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris-Austerlitz Routiere on 2026-09-16: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris-Austerlitz Routiere on 2026-09-16: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris-Austerlitz Routiere on 2026-09-16: route types [714], expected [714]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris-Austerlitz Routiere on 2026-09-16: next service 2026-09-16, the stations alone give ['2026-09-16', None]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris-Austerlitz Routiere on 2026-09-16: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-09-16: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-09-16: route types [2, 714], expected [2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-09-16: next service 2026-09-16, the stations alone give ['2026-09-16', '2026-09-16']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-09-16: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-09-16: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-09-16: route types [714], expected [714]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-09-16: next service 2026-09-16, the stations alone give ['2026-09-16', '2026-09-26']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-09-16: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris-Austerlitz Routiere on 2026-11-21: 9 trips, the stations alone give 9"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris-Austerlitz Routiere on 2026-11-21: route types [714, 714, 714, 714, 714, 714, 714, 714, 714], expected [714, 714, 714, 714, 714, 714, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris-Austerlitz Routiere on 2026-11-21: next service 2026-11-21, the stations alone give ['2026-11-21', '2026-11-21']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris-Austerlitz Routiere on 2026-11-21: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris-Austerlitz Routiere on 2026-11-21: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris-Austerlitz Routiere on 2026-11-21: route types [714, 714, 714, 714], expected [714, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris-Austerlitz Routiere on 2026-11-21: next service 2026-11-21, the stations alone give ['2026-11-21', None]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris-Austerlitz Routiere on 2026-11-21: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-11-21: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-11-21: route types [2, 714, 714, 714, 714], expected [2, 714, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-11-21: next service 2026-11-21, the stations alone give ['2026-11-21', '2026-11-21']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-11-21: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-11-21: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-11-21: route types [714, 714, 714, 714], expected [714, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-11-21: next service 2026-11-21, the stations alone give ['2026-11-21', None]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-11-21: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière + Orléans -> Paris-Austerlitz Routiere on 2026-11-21: 9 trips, the stations alone give 9"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière + Orléans -> Paris-Austerlitz Routiere on 2026-11-21: route types [714, 714, 714, 714, 714, 714, 714, 714, 714], expected [714, 714, 714, 714, 714, 714, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière + Orléans -> Paris-Austerlitz Routiere on 2026-11-21: next service 2026-11-21, the stations alone give ['2026-11-21', '2026-11-21']"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière + Orléans -> Paris-Austerlitz Routiere on 2026-11-21: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière + Les Aubrais -> Paris-Austerlitz Routiere on 2026-11-21: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière + Les Aubrais -> Paris-Austerlitz Routiere on 2026-11-21: route types [714, 714, 714, 714, 714], expected [714, 714, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière + Les Aubrais -> Paris-Austerlitz Routiere on 2026-11-21: next service 2026-11-21, the stations alone give ['2026-11-21', None]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière + Les Aubrais -> Paris-Austerlitz Routiere on 2026-11-21: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-11-21: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-11-21: route types [714, 714, 714, 714, 714], expected [714, 714, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-11-21: next service 2026-11-21, the stations alone give ['2026-11-21', None]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière -> Paris-Austerlitz Routiere + Paris Austerlitz on 2026-11-21: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-11-21: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-11-21: route types [714, 714, 714, 714, 714], expected [714, 714, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-11-21: next service 2026-11-21, the stations alone give ['2026-11-21', None]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais Gare Routière -> Paris-Austerlitz Routiere + Paris Bercy Bourg. Pays d'Auv. on 2026-11-21: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris Austerlitz on 2026-08-31: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris Austerlitz on 2026-08-31: route types [2], expected [2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris Austerlitz on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', None]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris Austerlitz on 2026-08-31: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris Austerlitz on 2026-08-31: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris Austerlitz on 2026-08-31: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris Austerlitz on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris Austerlitz on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Paris-Austerlitz Routiere on 2026-08-31: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Paris-Austerlitz Routiere on 2026-08-31: route types [2], expected [2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Paris-Austerlitz Routiere on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-09-16']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Paris-Austerlitz Routiere on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. on 2026-08-31: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. on 2026-08-31: route types [2], expected [2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-09-26']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris Bercy Bourg. Pays d'Auv. on 2026-09-26: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris Bercy Bourg. Pays d'Auv. on 2026-09-26: route types [2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris Bercy Bourg. Pays d'Auv. on 2026-09-26: next service 2026-09-26, the stations alone give ['2026-09-26', None]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais Gare Routière -> Paris Bercy Bourg. Pays d'Auv. on 2026-09-26: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris Bercy Bourg. Pays d'Auv. on 2026-09-26: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris Bercy Bourg. Pays d'Auv. on 2026-09-26: route types [2, 2, 2, 2, 2, 2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2, 2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris Bercy Bourg. Pays d'Auv. on 2026-09-26: next service 2026-09-26, the stations alone give ['2026-09-26', '2026-09-26']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans + Les Aubrais -> Paris Bercy Bourg. Pays d'Auv. on 2026-09-26: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Bercy Bourg. Pays d'Auv. + Paris-Austerlitz Routiere on 2026-09-26: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Bercy Bourg. Pays d'Auv. + Paris-Austerlitz Routiere on 2026-09-26: route types [2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Bercy Bourg. Pays d'Auv. + Paris-Austerlitz Routiere on 2026-09-26: next service 2026-09-26, the stations alone give ['2026-09-26', '2026-10-12']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Bercy Bourg. Pays d'Auv. + Paris-Austerlitz Routiere on 2026-09-26: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Bercy Bourg. Pays d'Auv. + Paris Austerlitz on 2026-09-26: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Bercy Bourg. Pays d'Auv. + Paris Austerlitz on 2026-09-26: route types [2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Bercy Bourg. Pays d'Auv. + Paris Austerlitz on 2026-09-26: next service 2026-09-26, the stations alone give ['2026-09-26', '2026-09-28']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Bercy Bourg. Pays d'Auv. + Paris Austerlitz on 2026-09-26: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais + Orléans -> Paris Austerlitz on 2026-10-05: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais + Orléans -> Paris Austerlitz on 2026-10-05: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais + Orléans -> Paris Austerlitz on 2026-10-05: next service 2026-10-05, the stations alone give ['2026-10-05', '2026-10-05']"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais + Orléans -> Paris Austerlitz on 2026-10-05: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais + Les Aubrais Gare Routière -> Paris Austerlitz on 2026-10-05: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais + Les Aubrais Gare Routière -> Paris Austerlitz on 2026-10-05: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais + Les Aubrais Gare Routière -> Paris Austerlitz on 2026-10-05: next service 2026-10-05, the stations alone give ['2026-10-05', None]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais + Les Aubrais Gare Routière -> Paris Austerlitz on 2026-10-05: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais -> Paris Austerlitz + Paris-Austerlitz Routiere on 2026-10-05: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais -> Paris Austerlitz + Paris-Austerlitz Routiere on 2026-10-05: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais -> Paris Austerlitz + Paris-Austerlitz Routiere on 2026-10-05: next service 2026-10-05, the stations alone give ['2026-10-05', None]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais -> Paris Austerlitz + Paris-Austerlitz Routiere on 2026-10-05: trip test True, the stations alone give [True, False]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais -> Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. on 2026-10-05: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais -> Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. on 2026-10-05: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais -> Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. on 2026-10-05: next service 2026-10-05, the stations alone give ['2026-10-05', None]"
+        },
+        {
+          "ok": true,
+          "text": "Les Aubrais -> Paris Austerlitz + Paris Bercy Bourg. Pays d'Auv. on 2026-10-05: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "the line has coach stops but no departure read left from one"
+        },
+        {
+          "ok": true,
+          "text": "station modes {'Orléans': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais': {'train'}, 'Paris Austerlitz': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}, the trips call at {'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'coach', 'train'}, 'Paris Austerlitz': {'train'}, 'Les Aubrais': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}"
+        }
+      ],
+      "direction": 1,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-K8+-d1-stations",
+      "kind": "stations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "from Aigues-Mortes (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Aigues-Mortes (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Aimargues (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Aimargues (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Beauvoisin (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Beauvoisin (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Générac (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Générac (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Le Cailar (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Le Cailar (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Le Grau-du-Roi (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Le Grau-du-Roi (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Nîmes Centre (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Nîmes Centre (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Césaire (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Césaire (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Laurent-d'Aigouze (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Laurent-d'Aigouze (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Vauvert (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Vauvert (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        }
+      ],
+      "direction": 0,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(924A148:)-d0-destinations",
+      "kind": "destinations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::9F9C7618-AF98-47D8-BFB4-0B1C2924A148:"
+    },
+    {
+      "checks": [
+        {
           "asked": "2026-08-31",
           "destination": "Nîmes Centre",
           "expected": "2026-08-31",
@@ -25274,6 +26097,112 @@
       "fixture": "sncf-journeys",
       "id": "sncf-journeys-P8(924A148:)-d0-pairs",
       "kind": "pairs",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::9F9C7618-AF98-47D8-BFB4-0B1C2924A148:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "station modes {}, the trips call at {'Le Grau-du-Roi': {'train'}, 'Aigues-Mortes': {'train'}, \"Saint-Laurent-d'Aigouze\": {'train'}, 'Aimargues': {'train'}, 'Le Cailar': {'train'}, 'Vauvert': {'train'}, 'Beauvoisin': {'train'}, 'Générac': {'train'}, 'Saint-Césaire': {'train'}, 'Nîmes Centre': {'train'}}"
+        }
+      ],
+      "direction": 0,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(924A148:)-d0-stations",
+      "kind": "stations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::9F9C7618-AF98-47D8-BFB4-0B1C2924A148:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "from Aigues-Mortes (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Aigues-Mortes (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Aimargues (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Aimargues (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Beauvoisin (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Beauvoisin (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Générac (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Générac (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Le Cailar (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Le Cailar (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Le Grau-du-Roi (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Le Grau-du-Roi (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Nîmes Centre (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Nîmes Centre (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Césaire (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Césaire (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Laurent-d'Aigouze (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Laurent-d'Aigouze (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Vauvert (line P8): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Vauvert (line None): 9 offered, 9 ridden to; missing [], extra [], modes differ at []"
+        }
+      ],
+      "direction": 1,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(924A148:)-d1-destinations",
+      "kind": "destinations",
       "outcome": "passed",
       "reason": null,
       "route": "FR:Line::9F9C7618-AF98-47D8-BFB4-0B1C2924A148:"
@@ -25446,6 +26375,144 @@
       "outcome": "passed",
       "reason": null,
       "route": "FR:Line::9F9C7618-AF98-47D8-BFB4-0B1C2924A148:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "station modes {}, the trips call at {'Le Grau-du-Roi': {'train'}, 'Aigues-Mortes': {'train'}, \"Saint-Laurent-d'Aigouze\": {'train'}, 'Aimargues': {'train'}, 'Le Cailar': {'train'}, 'Vauvert': {'train'}, 'Beauvoisin': {'train'}, 'Générac': {'train'}, 'Saint-Césaire': {'train'}, 'Nîmes Centre': {'train'}}"
+        }
+      ],
+      "direction": 1,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(924A148:)-d1-stations",
+      "kind": "stations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::9F9C7618-AF98-47D8-BFB4-0B1C2924A148:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "from Andelot (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Andelot (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Arc-et-Senans (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Arc-et-Senans (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Besançon Viotte (line P8): 11 offered, 11 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Besançon Viotte (line None): 11 offered, 11 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Champagnole (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Champagnole (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Champagnole Paul-Émile Victor (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Champagnole Paul-Émile Victor (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Dole (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Dole (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from La Chaumusse - Fort-du-Plasne (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from La Chaumusse - Fort-du-Plasne (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from La Chaux-des-Crotenay (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from La Chaux-des-Crotenay (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Montbarrey (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Montbarrey (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Morbier (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Morbier (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Morez (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Morez (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Mouchard (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Mouchard (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Claude (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Claude (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Laurent-en-Grandvaux (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Laurent-en-Grandvaux (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        }
+      ],
+      "direction": 0,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(A594575:)-d0-destinations",
+      "kind": "destinations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575:"
     },
     {
       "checks": [
@@ -26067,6 +27134,764 @@
       "fixture": "sncf-journeys",
       "id": "sncf-journeys-P8(A594575:)-d0-pairs",
       "kind": "pairs",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "Dole + Andelot -> Mouchard on 2026-09-04: 7 trips, the stations alone give 7"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Andelot -> Mouchard on 2026-09-04: route types [2, 2, 2, 714, 2, 714, 714], expected [2, 2, 2, 714, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Andelot -> Mouchard on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Andelot -> Mouchard on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Champagnole -> Mouchard on 2026-09-04: 7 trips, the stations alone give 7"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Champagnole -> Mouchard on 2026-09-04: route types [2, 2, 2, 714, 2, 714, 714], expected [2, 2, 2, 714, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Champagnole -> Mouchard on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Champagnole -> Mouchard on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Besançon Viotte -> Mouchard on 2026-09-04: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Besançon Viotte -> Mouchard on 2026-09-04: route types [2, 2, 714, 2, 714], expected [2, 2, 714, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Besançon Viotte -> Mouchard on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Besançon Viotte -> Mouchard on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Dole -> Mouchard + Saint-Claude on 2026-09-04: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Dole -> Mouchard + Saint-Claude on 2026-09-04: route types [2, 2, 714, 714], expected [2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Dole -> Mouchard + Saint-Claude on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Dole -> Mouchard + Saint-Claude on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Dole -> Saint-Claude on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Dole -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 714], expected [2, 2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Dole -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Dole -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Champagnole -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Champagnole -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 2, 714, 714, 714], expected [2, 2, 2, 2, 2, 2, 2, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Champagnole -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Champagnole -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Mouchard -> Saint-Claude on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Mouchard -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 714], expected [2, 2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Mouchard -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Mouchard -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Besançon Viotte -> Saint-Claude on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Besançon Viotte -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 714], expected [2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Besançon Viotte -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Besançon Viotte -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot -> Saint-Claude + Mouchard on 2026-08-31: 7 trips, the stations alone give 7"
+        },
+        {
+          "ok": true,
+          "text": "Andelot -> Saint-Claude + Mouchard on 2026-08-31: route types [2, 2, 2, 2, 714, 2, 714], expected [2, 2, 2, 2, 714, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot -> Saint-Claude + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot -> Saint-Claude + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Dole -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Dole -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 714, 714], expected [2, 2, 2, 2, 2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Dole -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Dole -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Andelot -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Andelot -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 2, 714, 714, 714], expected [2, 2, 2, 2, 2, 2, 2, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Andelot -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Andelot -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Mouchard -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Mouchard -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 714, 714], expected [2, 2, 2, 2, 2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Mouchard -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Mouchard -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Besançon Viotte -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Besançon Viotte -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 714, 714], expected [2, 2, 2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Besançon Viotte -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Besançon Viotte -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole -> Saint-Claude + Mouchard on 2026-08-31: 10 trips, the stations alone give 10"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole -> Saint-Claude + Mouchard on 2026-08-31: route types [714, 2, 2, 2, 2, 2, 714, 714, 2, 714], expected [714, 2, 2, 2, 2, 2, 714, 714, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole -> Saint-Claude + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole -> Saint-Claude + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Dole -> Saint-Claude on 2026-09-04: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Dole -> Saint-Claude on 2026-09-04: route types [2, 2, 2, 2, 2, 714], expected [2, 2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Dole -> Saint-Claude on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Dole -> Saint-Claude on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Andelot -> Saint-Claude on 2026-09-04: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Andelot -> Saint-Claude on 2026-09-04: route types [2, 2, 2, 2, 2, 2, 2, 2, 714], expected [2, 2, 2, 2, 2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Andelot -> Saint-Claude on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Andelot -> Saint-Claude on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Champagnole -> Saint-Claude on 2026-09-04: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Champagnole -> Saint-Claude on 2026-09-04: route types [2, 2, 2, 2, 2, 2, 2, 2, 714, 714], expected [2, 2, 2, 2, 2, 2, 2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Champagnole -> Saint-Claude on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Champagnole -> Saint-Claude on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Besançon Viotte -> Saint-Claude on 2026-09-04: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Besançon Viotte -> Saint-Claude on 2026-09-04: route types [2, 2, 2, 2, 714], expected [2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Besançon Viotte -> Saint-Claude on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Besançon Viotte -> Saint-Claude on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Andelot -> Saint-Claude on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Andelot -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 714], expected [2, 2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Andelot -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Andelot -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Champagnole -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Champagnole -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 714, 714], expected [2, 2, 2, 2, 2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Champagnole -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Champagnole -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Mouchard -> Saint-Claude on 2026-08-31: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Mouchard -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Mouchard -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Mouchard -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Besançon Viotte -> Saint-Claude on 2026-08-31: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Besançon Viotte -> Saint-Claude on 2026-08-31: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Besançon Viotte -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Dole + Besançon Viotte -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Dole -> Saint-Claude + Mouchard on 2026-08-31: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Dole -> Saint-Claude + Mouchard on 2026-08-31: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Dole -> Saint-Claude + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Dole -> Saint-Claude + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Dole -> Saint-Claude on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Dole -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 714], expected [2, 2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Dole -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Dole -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Champagnole -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Champagnole -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 2, 714, 714, 714], expected [2, 2, 2, 2, 2, 2, 2, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Champagnole -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Champagnole -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Mouchard -> Saint-Claude on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Mouchard -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 714], expected [2, 2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Mouchard -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Mouchard -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Besançon Viotte -> Saint-Claude on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Besançon Viotte -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 714], expected [2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Besançon Viotte -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot + Besançon Viotte -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot -> Saint-Claude + Mouchard on 2026-08-31: 7 trips, the stations alone give 7"
+        },
+        {
+          "ok": true,
+          "text": "Andelot -> Saint-Claude + Mouchard on 2026-08-31: route types [2, 2, 2, 2, 714, 2, 714], expected [2, 2, 2, 2, 714, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Andelot -> Saint-Claude + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Andelot -> Saint-Claude + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Dole -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Dole -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 714, 714], expected [2, 2, 2, 2, 2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Dole -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Dole -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Andelot -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Andelot -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 2, 714, 714, 714], expected [2, 2, 2, 2, 2, 2, 2, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Andelot -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Andelot -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Mouchard -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Mouchard -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 714, 714], expected [2, 2, 2, 2, 2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Mouchard -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Mouchard -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Besançon Viotte -> Saint-Claude on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Besançon Viotte -> Saint-Claude on 2026-08-31: route types [2, 2, 2, 2, 714, 714], expected [2, 2, 2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Besançon Viotte -> Saint-Claude on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole + Besançon Viotte -> Saint-Claude on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole -> Saint-Claude + Mouchard on 2026-08-31: 10 trips, the stations alone give 10"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole -> Saint-Claude + Mouchard on 2026-08-31: route types [714, 2, 2, 2, 2, 2, 714, 714, 2, 714], expected [714, 2, 2, 2, 2, 2, 714, 714, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole -> Saint-Claude + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole -> Saint-Claude + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Dole -> Saint-Claude on 2026-09-04: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Dole -> Saint-Claude on 2026-09-04: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Dole -> Saint-Claude on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Dole -> Saint-Claude on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Andelot -> Saint-Claude on 2026-09-04: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Andelot -> Saint-Claude on 2026-09-04: route types [2, 2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Andelot -> Saint-Claude on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Andelot -> Saint-Claude on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Champagnole -> Saint-Claude on 2026-09-04: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Champagnole -> Saint-Claude on 2026-09-04: route types [2, 2, 2, 2, 2, 2, 714], expected [2, 2, 2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Champagnole -> Saint-Claude on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Champagnole -> Saint-Claude on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Mouchard -> Saint-Claude on 2026-09-04: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Mouchard -> Saint-Claude on 2026-09-04: route types [2, 2, 2, 2, 714], expected [2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Mouchard -> Saint-Claude on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte + Mouchard -> Saint-Claude on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte -> Saint-Claude + Mouchard on 2026-09-04: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte -> Saint-Claude + Mouchard on 2026-09-04: route types [2], expected [2]"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte -> Saint-Claude + Mouchard on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Besançon Viotte -> Saint-Claude + Mouchard on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "the line has coach stops but no departure read left from one"
+        },
+        {
+          "ok": true,
+          "text": "station modes {'Dole': {'coach', 'train'}, 'Mouchard': {'coach', 'train'}, 'Champagnole': {'coach', 'train'}, 'La Chaux-des-Crotenay': {'coach', 'train'}, 'La Chaumusse - Fort-du-Plasne': {'coach', 'train'}, 'Saint-Laurent-en-Grandvaux': {'coach', 'train'}, 'Morbier': {'coach', 'train'}, 'Morez': {'coach', 'train'}, 'Saint-Claude': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Andelot': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Montbarrey': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'coach', 'train'}, 'Mouchard': {'coach', 'train'}, 'Champagnole': {'coach', 'train'}, 'La Chaux-des-Crotenay': {'coach', 'train'}, 'La Chaumusse - Fort-du-Plasne': {'coach', 'train'}, 'Saint-Laurent-en-Grandvaux': {'coach', 'train'}, 'Morbier': {'coach', 'train'}, 'Morez': {'coach', 'train'}, 'Saint-Claude': {'coach', 'train'}, 'Andelot': {'coach', 'train'}, 'Montbarrey': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
+        }
+      ],
+      "direction": 0,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(A594575:)-d0-stations",
+      "kind": "stations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "from Andelot (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Andelot (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Arc-et-Senans (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Arc-et-Senans (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Besançon Viotte (line P8): 11 offered, 11 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Besançon Viotte (line None): 11 offered, 11 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Champagnole (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Champagnole (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Champagnole Paul-Émile Victor (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Champagnole Paul-Émile Victor (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Dole (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Dole (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Franois (line P8): 1 offered, 1 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Franois (line None): 1 offered, 1 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from La Chaumusse - Fort-du-Plasne (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from La Chaumusse - Fort-du-Plasne (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from La Chaux-des-Crotenay (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from La Chaux-des-Crotenay (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Montbarrey (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Montbarrey (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Morbier (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Morbier (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Morez (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Morez (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Mouchard (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Mouchard (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Claude (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Claude (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Laurent-en-Grandvaux (line P8): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Saint-Laurent-en-Grandvaux (line None): 14 offered, 14 ridden to; missing [], extra [], modes differ at []"
+        }
+      ],
+      "direction": 1,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(A594575:)-d1-destinations",
+      "kind": "destinations",
       "outcome": "passed",
       "reason": null,
       "route": "FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575:"
@@ -26845,6 +28670,1076 @@
     {
       "checks": [
         {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor + Mouchard -> Dole on 2026-08-31: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor + Mouchard -> Dole on 2026-08-31: route types [2, 2, 714, 714], expected [2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor + Mouchard -> Dole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor + Mouchard -> Dole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor + Saint-Claude -> Dole on 2026-08-31: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor + Saint-Claude -> Dole on 2026-08-31: route types [2, 2, 714], expected [2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor + Saint-Claude -> Dole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor + Saint-Claude -> Dole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Mouchard on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Mouchard on 2026-08-31: route types [2, 714, 2], expected [2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Andelot on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Andelot on 2026-08-31: route types [2, 2, 714, 2], expected [2, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Andelot on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Andelot on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Champagnole on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Champagnole on 2026-08-31: route types [2, 2, 2, 714, 2], expected [2, 2, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Champagnole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Champagnole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Besançon Viotte on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Besançon Viotte on 2026-08-31: route types [2, 714, 2], expected [2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Besançon Viotte on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Champagnole Paul-Émile Victor -> Dole + Besançon Viotte on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Champagnole Paul-Émile Victor -> Dole on 2026-09-01: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Champagnole Paul-Émile Victor -> Dole on 2026-09-01: route types [714, 2, 2, 714, 714], expected [714, 2, 2, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Champagnole Paul-Émile Victor -> Dole on 2026-09-01: next service 2026-09-01, the stations alone give ['2026-09-01', '2026-09-01']"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Champagnole Paul-Émile Victor -> Dole on 2026-09-01: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Saint-Claude -> Dole on 2026-09-01: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Saint-Claude -> Dole on 2026-09-01: route types [714, 2, 2, 714], expected [714, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Saint-Claude -> Dole on 2026-09-01: next service 2026-09-01, the stations alone give ['2026-09-01', '2026-09-01']"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard + Saint-Claude -> Dole on 2026-09-01: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Andelot on 2026-09-01: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Andelot on 2026-09-01: route types [714, 2, 2, 2, 714], expected [714, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Andelot on 2026-09-01: next service 2026-09-01, the stations alone give ['2026-09-01', '2026-09-01']"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Andelot on 2026-09-01: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Champagnole on 2026-09-01: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Champagnole on 2026-09-01: route types [714, 2, 2, 2, 714], expected [714, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Champagnole on 2026-09-01: next service 2026-09-01, the stations alone give ['2026-09-01', '2026-09-01']"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Champagnole on 2026-09-01: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Besançon Viotte on 2026-09-01: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Besançon Viotte on 2026-09-01: route types [714, 2, 714, 2], expected [714, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Besançon Viotte on 2026-09-01: next service 2026-09-01, the stations alone give ['2026-09-01', '2026-09-01']"
+        },
+        {
+          "ok": true,
+          "text": "Mouchard -> Dole + Besançon Viotte on 2026-09-01: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Mouchard on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Mouchard on 2026-08-31: route types [714, 2, 2, 2, 714, 2], expected [714, 2, 2, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Dole on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Dole on 2026-08-31: route types [714, 2, 2], expected [714, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Dole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Dole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Andelot on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Andelot on 2026-08-31: route types [714, 2, 2, 2], expected [714, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Andelot on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Andelot on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Champagnole on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Champagnole on 2026-08-31: route types [714, 2, 2, 2, 2], expected [714, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Champagnole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Champagnole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Besançon Viotte on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Besançon Viotte on 2026-08-31: route types [714, 2, 2], expected [714, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Besançon Viotte on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Mouchard + Besançon Viotte on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Andelot on 2026-09-02: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Andelot on 2026-09-02: route types [2, 2, 2, 2, 714, 714, 714], expected [2, 2, 2, 2, 714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Andelot on 2026-09-02: next service 2026-09-02, the stations alone give ['2026-09-02', '2026-09-02']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Andelot on 2026-09-02: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Andelot on 2026-09-02: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Andelot on 2026-09-02: route types [2, 2, 2, 2, 714], expected [2, 2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Andelot on 2026-09-02: next service 2026-09-02, the stations alone give ['2026-09-02', '2026-09-02']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Andelot on 2026-09-02: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Dole on 2026-09-02: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Dole on 2026-09-02: route types [2, 2, 714], expected [2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Dole on 2026-09-02: next service 2026-09-02, the stations alone give ['2026-09-02', '2026-09-02']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Dole on 2026-09-02: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Mouchard on 2026-09-02: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Mouchard on 2026-09-02: route types [2, 2, 714], expected [2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Mouchard on 2026-09-02: next service 2026-09-02, the stations alone give ['2026-09-02', '2026-09-02']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Mouchard on 2026-09-02: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Champagnole on 2026-09-02: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Champagnole on 2026-09-02: route types [2, 2, 2, 714], expected [2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Champagnole on 2026-09-02: next service 2026-09-02, the stations alone give ['2026-09-02', '2026-09-02']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Champagnole on 2026-09-02: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Besançon Viotte on 2026-09-02: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Besançon Viotte on 2026-09-02: route types [2, 2, 714], expected [2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Besançon Viotte on 2026-09-02: next service 2026-09-02, the stations alone give ['2026-09-02', '2026-09-03']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Besançon Viotte on 2026-09-02: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Dole on 2026-10-19: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Dole on 2026-10-19: route types [714, 714, 714], expected [714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Dole on 2026-10-19: next service 2026-10-19, the stations alone give ['2026-10-19', '2026-10-19']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Dole on 2026-10-19: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Dole on 2026-10-19: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Dole on 2026-10-19: route types [714, 714, 714], expected [714, 714, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Dole on 2026-10-19: next service 2026-10-19, the stations alone give ['2026-10-19', '2026-10-19']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Dole on 2026-10-19: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Mouchard on 2026-10-19: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Mouchard on 2026-10-19: route types [714, 714, 2], expected [714, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Mouchard on 2026-10-19: next service 2026-10-19, the stations alone give ['2026-10-19', '2026-10-19']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Mouchard on 2026-10-19: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Andelot on 2026-10-19: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Andelot on 2026-10-19: route types [714, 2, 2], expected [714, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Andelot on 2026-10-19: next service 2026-10-19, the stations alone give ['2026-10-19', '2026-10-19']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Andelot on 2026-10-19: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Champagnole on 2026-10-19: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Champagnole on 2026-10-19: route types [714, 714, 2, 2], expected [714, 714, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Champagnole on 2026-10-19: next service 2026-10-19, the stations alone give ['2026-10-19', '2026-10-19']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Champagnole on 2026-10-19: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Besançon Viotte on 2026-10-19: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Besançon Viotte on 2026-10-19: route types [714, 2], expected [714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Besançon Viotte on 2026-10-19: next service 2026-10-19, the stations alone give ['2026-10-19', '2026-10-19']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Besançon Viotte on 2026-10-19: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Champagnole on 2026-08-31: 6 trips, the stations alone give 6"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Champagnole on 2026-08-31: route types [714, 2, 2, 2, 2, 2, 2, 2, 714, 2], expected [714, 2, 2, 2, 2, 2, 2, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Champagnole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Champagnole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Champagnole on 2026-08-31: 7 trips, the stations alone give 7"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Champagnole on 2026-08-31: route types [714, 2, 2, 2, 2, 2, 2], expected [714, 2, 2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Champagnole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Champagnole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Dole on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Dole on 2026-08-31: route types [714, 2, 2, 2, 2], expected [714, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Dole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Dole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Mouchard on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Mouchard on 2026-08-31: route types [714, 2, 2, 2, 2], expected [714, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Andelot on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Andelot on 2026-08-31: route types [714, 2, 2, 2, 2], expected [714, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Andelot on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Andelot on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Besançon Viotte on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Besançon Viotte on 2026-08-31: route types [714, 2, 2, 2, 2], expected [714, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Besançon Viotte on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Champagnole + Besançon Viotte on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Andelot on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Andelot on 2026-08-31: route types [2, 2, 2, 2, 2, 714, 2], expected [2, 2, 2, 2, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Andelot on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Andelot on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Andelot on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Andelot on 2026-08-31: route types [2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Andelot on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Andelot on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Dole on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Dole on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Dole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Dole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Mouchard on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Mouchard on 2026-08-31: route types [714, 2, 2, 2], expected [714, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Champagnole on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Champagnole on 2026-08-31: route types [714, 2, 2, 2, 2], expected [714, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Champagnole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Champagnole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Besançon Viotte on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Besançon Viotte on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Besançon Viotte on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Andelot + Besançon Viotte on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Besançon Viotte on 2026-09-04: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Besançon Viotte on 2026-09-04: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Besançon Viotte on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Besançon Viotte on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Besançon Viotte on 2026-09-04: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Besançon Viotte on 2026-09-04: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Besançon Viotte on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Besançon Viotte on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Dole on 2026-09-04: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Dole on 2026-09-04: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Dole on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Dole on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Mouchard on 2026-09-04: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Mouchard on 2026-09-04: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Mouchard on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Mouchard on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Andelot on 2026-09-04: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Andelot on 2026-09-04: route types [2, 2, 2, 714], expected [2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Andelot on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Andelot on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Champagnole on 2026-09-04: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Champagnole on 2026-09-04: route types [2, 2, 2, 714], expected [2, 2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Champagnole on 2026-09-04: next service 2026-09-04, the stations alone give ['2026-09-04', '2026-09-04']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Champagnole on 2026-09-04: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Besançon Viotte on 2026-08-31: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Besançon Viotte on 2026-08-31: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Besançon Viotte on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Besançon Viotte on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Besançon Viotte on 2026-08-31: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Besançon Viotte on 2026-08-31: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Besançon Viotte on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Besançon Viotte on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Dole on 2026-08-31: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Dole on 2026-08-31: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Dole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Dole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Mouchard on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Mouchard on 2026-08-31: route types [714, 2, 2], expected [714, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Andelot on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Andelot on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Andelot on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Andelot on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Champagnole on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Champagnole on 2026-08-31: route types [714, 2, 2, 2, 2], expected [714, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Champagnole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Besançon Viotte + Champagnole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Dole on 2026-08-31: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Dole on 2026-08-31: route types [2, 2, 714], expected [2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Dole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Champagnole Paul-Émile Victor -> Dole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Dole on 2026-08-31: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Dole on 2026-08-31: route types [2, 2, 714], expected [2, 2, 714]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Dole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude + Mouchard -> Dole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Mouchard on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Mouchard on 2026-08-31: route types [714, 2, 2], expected [714, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Mouchard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Mouchard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Andelot on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Andelot on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Andelot on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Andelot on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Champagnole on 2026-08-31: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Champagnole on 2026-08-31: route types [714, 2, 2, 2, 2], expected [714, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Champagnole on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Champagnole on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Besançon Viotte on 2026-08-31: 2 trips, the stations alone give 2"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Besançon Viotte on 2026-08-31: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Besançon Viotte on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Saint-Claude -> Dole + Besançon Viotte on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "the line has coach stops but no departure read left from one"
+        },
+        {
+          "ok": true,
+          "text": "station modes {'Dole': {'coach', 'train'}, 'Mouchard': {'coach', 'train'}, 'Champagnole': {'coach', 'train'}, 'La Chaux-des-Crotenay': {'coach', 'train'}, 'La Chaumusse - Fort-du-Plasne': {'coach', 'train'}, 'Saint-Laurent-en-Grandvaux': {'coach', 'train'}, 'Morbier': {'coach', 'train'}, 'Morez': {'coach', 'train'}, 'Saint-Claude': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Andelot': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Montbarrey': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'coach', 'train'}, 'Mouchard': {'coach', 'train'}, 'Champagnole': {'coach', 'train'}, 'La Chaux-des-Crotenay': {'coach', 'train'}, 'La Chaumusse - Fort-du-Plasne': {'coach', 'train'}, 'Saint-Laurent-en-Grandvaux': {'coach', 'train'}, 'Morbier': {'coach', 'train'}, 'Morez': {'coach', 'train'}, 'Saint-Claude': {'coach', 'train'}, 'Andelot': {'coach', 'train'}, 'Montbarrey': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
+        }
+      ],
+      "direction": 1,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(A594575:)-d1-stations",
+      "kind": "stations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::79F02D11-43E5-467F-ACFC-6DDA1A594575:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "from Angerville (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Angerville (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Artenay (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Artenay (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Boisseaux (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Boisseaux (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Cercottes (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Cercottes (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Chevilly (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Chevilly (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Château-Gaillard (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Château-Gaillard (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Guillerval (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Guillerval (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais Gare Routière (line P8): 7 offered, 7 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais Gare Routière (line None): 7 offered, 7 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Monnerville (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Monnerville (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Orléans (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Orléans (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Austerlitz (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Austerlitz (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Toury (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Toury (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Étampes (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Étampes (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        }
+      ],
+      "direction": 0,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(CDD3F95:)-d0-destinations",
+      "kind": "destinations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"
+    },
+    {
+      "checks": [
+        {
           "asked": "2026-08-31",
           "destination": "Orléans",
           "expected": "2026-08-31",
@@ -27394,6 +30289,276 @@
       "fixture": "sncf-journeys",
       "id": "sncf-journeys-P8(CDD3F95:)-d0-pairs",
       "kind": "pairs",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "Angerville + Paris Austerlitz -> Orléans on 2026-09-16: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Angerville + Paris Austerlitz -> Orléans on 2026-09-16: route types [2, 2, 714, 2, 2, 2, 2], expected [2, 2, 714, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Angerville + Paris Austerlitz -> Orléans on 2026-09-16: next service 2026-09-16, the stations alone give ['2026-09-16', '2026-09-16']"
+        },
+        {
+          "ok": true,
+          "text": "Angerville + Paris Austerlitz -> Orléans on 2026-09-16: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-09-07: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-09-07: route types [2, 2, 2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-09-07: next service 2026-09-07, the stations alone give ['2026-09-07', '2026-09-07']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-09-07: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-09-05: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-09-05: route types [2, 2], expected [2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-09-05: next service 2026-09-05, the stations alone give ['2026-09-05', '2026-09-05']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-09-05: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-10-16: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-10-16: route types [2, 2, 2, 2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-10-16: next service 2026-10-16, the stations alone give ['2026-10-16', '2026-10-16']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-10-16: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: route types [2, 2, 2, 2, 2, 2, 2, 2], expected [2, 2, 2, 2, 2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Paris Austerlitz + Angerville -> Orléans on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "the line has coach stops but no departure read left from one"
+        },
+        {
+          "ok": true,
+          "text": "station modes {'Orléans': {'coach', 'train'}, 'Cercottes': {'coach', 'train'}, 'Chevilly': {'coach', 'train'}, 'Artenay': {'coach', 'train'}, 'Château-Gaillard': {'coach', 'train'}, 'Toury': {'coach', 'train'}, 'Angerville': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Les Aubrais': {'train'}, 'Boisseaux': {'train'}, 'Monnerville': {'train'}, 'Guillerval': {'train'}, 'Étampes': {'train'}, 'Paris Austerlitz': {'train'}}, the trips call at {'Angerville': {'coach', 'train'}, 'Toury': {'coach', 'train'}, 'Château-Gaillard': {'coach', 'train'}, 'Artenay': {'coach', 'train'}, 'Chevilly': {'coach', 'train'}, 'Cercottes': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'coach', 'train'}, 'Paris Austerlitz': {'train'}, 'Étampes': {'train'}, 'Guillerval': {'train'}, 'Monnerville': {'train'}, 'Boisseaux': {'train'}, 'Les Aubrais': {'train'}}"
+        }
+      ],
+      "direction": 0,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(CDD3F95:)-d0-stations",
+      "kind": "stations",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "from Angerville (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Angerville (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Artenay (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Artenay (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Boisseaux (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Boisseaux (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Cercottes (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Cercottes (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Chevilly (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Chevilly (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Château-Gaillard (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Château-Gaillard (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Guillerval (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Guillerval (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais Gare Routière (line P8): 7 offered, 7 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Les Aubrais Gare Routière (line None): 7 offered, 7 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Monnerville (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Monnerville (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Orléans (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Orléans (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Austerlitz (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Paris Austerlitz (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Toury (line P8): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Toury (line None): 13 offered, 13 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Étampes (line P8): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        },
+        {
+          "ok": true,
+          "text": "from Étampes (line None): 12 offered, 12 ridden to; missing [], extra [], modes differ at []"
+        }
+      ],
+      "direction": 1,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(CDD3F95:)-d1-destinations",
+      "kind": "destinations",
       "outcome": "passed",
       "reason": null,
       "route": "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"
@@ -28097,6 +31262,345 @@
       "fixture": "sncf-journeys",
       "id": "sncf-journeys-P8(CDD3F95:)-d1-pairs",
       "kind": "pairs",
+      "outcome": "passed",
+      "reason": null,
+      "route": "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"
+    },
+    {
+      "checks": [
+        {
+          "ok": true,
+          "text": "Orléans -> Château-Gaillard + Angerville on 2026-09-09: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Château-Gaillard + Angerville on 2026-09-09: route types [2, 2, 2, 714, 2], expected [2, 2, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Château-Gaillard + Angerville on 2026-09-09: next service 2026-09-09, the stations alone give ['2026-09-09', '2026-09-09']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Château-Gaillard + Angerville on 2026-09-09: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Château-Gaillard + Paris Austerlitz on 2026-09-09: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Château-Gaillard + Paris Austerlitz on 2026-09-09: route types [2, 2, 2, 714, 2], expected [2, 2, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Château-Gaillard + Paris Austerlitz on 2026-09-09: next service 2026-09-09, the stations alone give ['2026-09-09', '2026-09-09']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Château-Gaillard + Paris Austerlitz on 2026-09-09: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Angerville + Château-Gaillard on 2026-09-16: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Angerville + Château-Gaillard on 2026-09-16: route types [2, 2, 714, 2], expected [2, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Angerville + Château-Gaillard on 2026-09-16: next service 2026-09-16, the stations alone give ['2026-09-16', '2026-09-16']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Angerville + Château-Gaillard on 2026-09-16: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Angerville + Paris Austerlitz on 2026-09-16: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Angerville + Paris Austerlitz on 2026-09-16: route types [2, 2, 714, 2], expected [2, 2, 714, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Angerville + Paris Austerlitz on 2026-09-16: next service 2026-09-16, the stations alone give ['2026-09-16', '2026-09-16']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Angerville + Paris Austerlitz on 2026-09-16: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-09-06: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-09-06: route types [2], expected [2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-09-06: next service 2026-09-06, the stations alone give ['2026-09-06', '2026-09-06']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-09-06: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-09-06: 1 trips, the stations alone give 1"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-09-06: route types [2], expected [2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-09-06: next service 2026-09-06, the stations alone give ['2026-09-06', '2026-09-06']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-09-06: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: 3 trips, the stations alone give 3"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: route types [2, 2, 2], expected [2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: next service 2026-08-31, the stations alone give ['2026-08-31', '2026-08-31']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-08-31: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-11-19: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-11-19: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-11-19: next service 2026-11-19, the stations alone give ['2026-11-19', '2026-11-19']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-11-19: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-11-19: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-11-19: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-11-19: next service 2026-11-19, the stations alone give ['2026-11-19', '2026-11-19']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-11-19: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-10-08: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-10-08: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-10-08: next service 2026-10-08, the stations alone give ['2026-10-08', '2026-10-08']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-10-08: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-10-08: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-10-08: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-10-08: next service 2026-10-08, the stations alone give ['2026-10-08', '2026-10-08']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-10-08: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-09-07: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-09-07: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-09-07: next service 2026-09-07, the stations alone give ['2026-09-07', '2026-09-07']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-09-07: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-09-07: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-09-07: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-09-07: next service 2026-09-07, the stations alone give ['2026-09-07', '2026-09-07']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-09-07: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-11-18: 5 trips, the stations alone give 5"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-11-18: route types [2, 2, 714, 2, 2], expected [2, 2, 714, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-11-18: next service 2026-11-18, the stations alone give ['2026-11-18', '2026-11-18']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Château-Gaillard on 2026-11-18: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-11-18: 4 trips, the stations alone give 4"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-11-18: route types [2, 2, 2, 2], expected [2, 2, 2, 2]"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-11-18: next service 2026-11-18, the stations alone give ['2026-11-18', '2026-11-18']"
+        },
+        {
+          "ok": true,
+          "text": "Orléans -> Paris Austerlitz + Angerville on 2026-11-18: trip test True, the stations alone give [True, True]"
+        },
+        {
+          "ok": true,
+          "text": "the line has coach stops but no departure read left from one"
+        },
+        {
+          "ok": true,
+          "text": "station modes {'Orléans': {'coach', 'train'}, 'Cercottes': {'coach', 'train'}, 'Chevilly': {'coach', 'train'}, 'Artenay': {'coach', 'train'}, 'Château-Gaillard': {'coach', 'train'}, 'Toury': {'coach', 'train'}, 'Angerville': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Les Aubrais': {'train'}, 'Boisseaux': {'train'}, 'Monnerville': {'train'}, 'Guillerval': {'train'}, 'Étampes': {'train'}, 'Paris Austerlitz': {'train'}}, the trips call at {'Angerville': {'coach', 'train'}, 'Toury': {'coach', 'train'}, 'Château-Gaillard': {'coach', 'train'}, 'Artenay': {'coach', 'train'}, 'Chevilly': {'coach', 'train'}, 'Cercottes': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'coach', 'train'}, 'Paris Austerlitz': {'train'}, 'Étampes': {'train'}, 'Guillerval': {'train'}, 'Monnerville': {'train'}, 'Boisseaux': {'train'}, 'Les Aubrais': {'train'}}"
+        }
+      ],
+      "direction": 1,
+      "fixture": "sncf-journeys",
+      "id": "sncf-journeys-P8(CDD3F95:)-d1-stations",
+      "kind": "stations",
       "outcome": "passed",
       "reason": null,
       "route": "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"

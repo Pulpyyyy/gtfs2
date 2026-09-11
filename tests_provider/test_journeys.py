@@ -23,8 +23,15 @@ Trains (route_type 2) ride their own path in get_next_departure, matched by
 stop name with no direction: for them the pairs are checked by name, the
 answer must stay on the asked line, and a swapped pair is legitimate, it is
 the return journey, so only `pairs` and `next_service` are checked, by name.
-A train entry may also tick several stations at one end, the station and the
-coach station its replacement coaches leave from:
+Their arrival screen offers stations, not stops:
+
+    destinations  from a station, get_train_destination_list offers every
+                station a trip of the line calls at after it, with the modes
+                it is reached by (a coach stop is a coach), and nothing else
+
+A train entry created while the station screen took several stations at one
+end (the station and the coach station its replacement coaches leave from)
+still reads them all:
 
     stations    two stations ticked answer every departure each one gives
                 alone, and each departure's route type is a replacement bus
@@ -74,7 +81,7 @@ get_next_service_date = gtfs_helper.get_next_service_date
 FIXTURES = Path(__file__).parent / "fixtures"
 KINDS = ("stop_list", "destinations", "next_service", "pairs", "swapped",
          "midnight")
-TRAIN_KINDS = ("pairs", "next_service", "stations")
+TRAIN_KINDS = ("pairs", "next_service", "destinations", "stations")
 
 
 class Fixture:
@@ -923,6 +930,9 @@ def check_train_route(check, fx, route_id, direction, kind):
     if kind == "stations":
         check_train_stations(check, fx, route_id, direction)
         return
+    if kind == "destinations":
+        check_train_destinations(check, fx, route_id, direction)
+        return
     with freeze_time(fx.instant_on("1970-01-01")) as clock:
         for pattern, trip_ids in sorted(grouped.items()):
             day = service_date(schedule, trip_ids)
@@ -1076,3 +1086,49 @@ def check_train_stations(check, fx, route_id, direction):
     modes = gtfs_helper.get_station_modes(schedule, route_id)
     check.note(modes == (called if mixed else {}),
                f"station modes {modes}, the trips call at {called}")
+
+
+def check_train_destinations(check, fx, route_id, direction):
+    """The arrival screen of the train flow. From each station this route's
+    trips call at in this direction, it offers every station a trip of the
+    line calls at after it, once, and nothing else; each with the modes it
+    is reached by, a coach stop being a coach. The line is the route's code,
+    so every route sharing it counts, both ways, the way the departures are
+    held to it; with no code, the route alone."""
+    schedule = fx.schedule
+    short_name = fx.route_short_names[route_id]
+    prefix = gtfs_helper.COACH_STOP_PREFIX
+    line_routes = [r for r, name in fx.route_short_names.items()
+                   if name == short_name
+                   and int(fx.route_types[r]) in gtfs_helper.RAIL_ROUTE_TYPES]
+
+    def ridden(routes):
+        reached = {}
+        for r in routes:
+            for d in directions_of(schedule, r):
+                for pattern in patterns_of(schedule, r, d):
+                    names = [fx.stop_names[s] for s in pattern]
+                    for i, origin in enumerate(names):
+                        for j in range(i + 1, len(names)):
+                            if names[j] != origin:
+                                reached.setdefault(origin, {}).setdefault(
+                                    names[j], set()).add(
+                                    "coach" if pattern[j].startswith(prefix) else "train")
+        return reached
+
+    by_line, by_route = ridden(line_routes), ridden([route_id])
+    origins = sorted({fx.stop_names[s]
+                      for p in patterns_of(schedule, route_id, direction) for s in p})
+    for origin in origins:
+        for line, ridden_from in ((short_name, by_line), (None, by_route)):
+            offered = gtfs_helper.get_train_destination_list(
+                schedule, route_id, origin, line)
+            expected = ridden_from.get(origin, {})
+            missing = sorted(set(expected) - set(offered))
+            extra = sorted(set(offered) - set(expected))
+            modes = sorted(n for n in set(offered) & set(expected)
+                           if offered[n] != expected[n])
+            check.note(offered == expected,
+                       f"from {origin} (line {line}): {len(offered)} offered, "
+                       f"{len(expected)} ridden to; missing {missing}, extra {extra}, "
+                       f"modes differ at {modes}")

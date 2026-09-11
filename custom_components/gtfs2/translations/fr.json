@@ -155,7 +155,7 @@
           "name": "Nom du capteur",
           "add_return": "Créer aussi le trajet retour"
         },
-        "description": "Le capteur affichera les prochains trains pour **{trip}**.",
+        "description": "Le capteur affichera les prochains départs pour **{trip}**.",
         "data_description": {
           "name": "Proposé d'après la ligne et les gares, modifiez-le librement.",
           "add_return": "Un second capteur pour **{return_trip}**, le même trajet dans l'autre sens."
@@ -163,13 +163,20 @@
       },
       "stops_train": {
         "data": {
-          "origin": "Gare de départ",
+          "origin": "Gare de départ"
+        },
+        "description": "Ligne **{route}**.\n\nLe capteur affichera les prochains départs entre deux gares, dans un sens ou dans l'autre.\n\n[documentation]({docu_setup_train})",
+        "data_description": {
+          "origin": "Les gares desservies par cette ligne. Une gare n'apparaît qu'une fois, même quand la source la découpe en plusieurs arrêts. Quand la ligne mêle trains et cars, chaque gare indique lesquels la desservent : une gare routière qui porte son propre nom se choisit seule, pour un trajet à part."
+        }
+      },
+      "destination_train": {
+        "data": {
           "destination": "Gare d'arrivée"
         },
-        "description": "Ligne **{route}**, sens **{direction}**.\n\nLe capteur affichera les prochains départs entre deux gares.\n\n[documentation]({docu_setup_train})",
+        "description": "Ligne **{route}**.\n\nOù se termine le trajet depuis **{origin}** ?\n\n[documentation]({docu_setup_train})",
         "data_description": {
-          "origin": "Les gares desservies par cette ligne. Une gare n'apparaît qu'une fois, même quand la source la découpe en plusieurs arrêts. Quand la ligne mêle trains et cars, chaque gare indique lesquels la desservent. Vous pouvez en cocher plusieurs, par exemple la gare et la gare routière d'où partent les cars.",
-          "destination": "La même liste, où vous pouvez aussi en cocher plusieurs. Choisissez où vous allez."
+          "destination": "Seules les gares qu'un trajet de cette ligne atteint réellement depuis là sont proposées. Quand la ligne mêle trains et cars, chaque gare indique lesquels y arrivent depuis votre départ."
         }
       },
       "remove": {
@@ -185,6 +192,7 @@
         "title": "Capteur créé",
         "description": "**{name}** est prêt et va apparaître sur votre tableau de bord.\n\nLa plupart des réseaux demandent plusieurs trajets : une ligne dans chaque sens, ou deux ou trois lignes. Les ajouter maintenant réutilise la source que vous venez de choisir.\n\n[documentation]({docu_new_route})",
         "menu_options": {
+          "same_line": "Un autre trajet sur cette ligne",
           "start_end": "Ajouter un autre trajet",
           "optimise": "Libérer de l'espace disque",
           "finish": "C'est tout pour l'instant"

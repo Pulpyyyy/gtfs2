@@ -152,13 +152,20 @@
       },
       "stops_train": {
         "data": {
-          "origin": "Abfahrtsbahnhof",
+          "origin": "Abfahrtsbahnhof"
+        },
+        "description": "Linie **{route}**.\n\nDer Sensor zeigt die nächsten Abfahrten zwischen zwei Bahnhöfen, in beiden Richtungen.\n\n[Dokumentation]({docu_setup_train})",
+        "data_description": {
+          "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt. Mischt die Linie Züge und Busse, zeigt jeder Bahnhof, welche dort halten: ein Busbahnhof mit eigenem Namen wird für sich gewählt, für eine eigene Fahrt."
+        }
+      },
+      "destination_train": {
+        "data": {
           "destination": "Zielbahnhof"
         },
-        "description": "Linie **{route}**, Richtung **{direction}**.\n\nDer Sensor zeigt die nächsten Abfahrten zwischen zwei Bahnhöfen.\n\n[Dokumentation]({docu_setup_train})",
+        "description": "Linie **{route}**.\n\nWo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_setup_train})",
         "data_description": {
-          "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt. Mischt die Linie Züge und Busse, zeigt jeder Bahnhof, welche dort halten. Mehrere können gewählt werden, etwa der Bahnhof und der Busbahnhof, von dem die Busse abfahren.",
-          "destination": "Dieselbe Liste, auch hier sind mehrere möglich. Wählen Sie Ihr Ziel."
+          "destination": "Nur die Bahnhöfe, die eine Fahrt dieser Linie von dort tatsächlich erreicht, werden angeboten. Mischt die Linie Züge und Busse, zeigt jeder Bahnhof, welche ihn von Ihrem Abfahrtsbahnhof aus erreichen."
         }
       },
       "sensor_train": {
@@ -166,7 +173,7 @@
           "name": "Sensorname",
           "add_return": "Auch die Rückfahrt anlegen"
         },
-        "description": "Der Sensor zeigt die nächsten Züge für **{trip}**.",
+        "description": "Der Sensor zeigt die nächsten Abfahrten für **{trip}**.",
         "data_description": {
           "name": "Aus der Linie und den Bahnhöfen vorgeschlagen, frei änderbar.",
           "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Fahrt in der Gegenrichtung."
@@ -185,6 +192,7 @@
         "title": "Sensor erstellt",
         "description": "**{name}** ist bereit und erscheint auf Ihrem Dashboard.\n\nDie meisten Netze brauchen mehrere Fahrten: eine Linie je Richtung oder zwei bis drei Linien. Sie jetzt hinzuzufügen nutzt die eben gewählte Quelle weiter.\n\n[Dokumentation]({docu_new_route})",
         "menu_options": {
+          "same_line": "Weitere Fahrt auf dieser Linie",
           "start_end": "Weitere Fahrt hinzufügen",
           "optimise": "Speicherplatz freigeben",
           "finish": "Das war es fürs Erste"

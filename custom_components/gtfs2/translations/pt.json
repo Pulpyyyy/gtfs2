@@ -152,13 +152,20 @@
       },
       "stops_train": {
         "data": {
-          "origin": "Estação de partida",
+          "origin": "Estação de partida"
+        },
+        "description": "Linha **{route}**.\n\nO sensor mostrará as próximas partidas entre duas estações, num sentido ou no outro.\n\n[documentação]({docu_setup_train})",
+        "data_description": {
+          "origin": "Estações servidas por esta linha. Uma estação aparece uma só vez, mesmo quando a fonte a divide em várias paragens. Quando a linha mistura comboios e autocarros, cada estação indica quais param nela: um terminal rodoviário com nome próprio escolhe-se sozinho, para uma viagem à parte."
+        }
+      },
+      "destination_train": {
+        "data": {
           "destination": "Estação de chegada"
         },
-        "description": "Linha **{route}**, sentido **{direction}**.\n\nO sensor mostrará as próximas partidas entre duas estações.\n\n[documentação]({docu_setup_train})",
+        "description": "Linha **{route}**.\n\nOnde termina a viagem a partir de **{origin}**?\n\n[documentação]({docu_setup_train})",
         "data_description": {
-          "origin": "Estações servidas por esta linha. Uma estação aparece uma só vez, mesmo quando a fonte a divide em várias paragens. Quando a linha mistura comboios e autocarros, cada estação indica quais param nela. Pode marcar várias, por exemplo a estação e o terminal rodoviário de onde partem os autocarros.",
-          "destination": "A mesma lista, aqui também pode marcar várias. Escolha o seu destino."
+          "destination": "Só são propostas as estações que uma viagem desta linha alcança realmente a partir daí. Quando a linha mistura comboios e autocarros, cada estação indica quais chegam a ela a partir da sua partida."
         }
       },
       "sensor_train": {
@@ -166,7 +173,7 @@
           "name": "Nome do sensor",
           "add_return": "Criar também a viagem de regresso"
         },
-        "description": "O sensor mostrará os próximos comboios para **{trip}**.",
+        "description": "O sensor mostrará as próximas partidas para **{trip}**.",
         "data_description": {
           "name": "Sugerido a partir da linha e das estações, pode alterá-lo livremente.",
           "add_return": "Um segundo sensor para **{return_trip}**, a mesma viagem no sentido inverso."
@@ -185,6 +192,7 @@
         "title": "Sensor criado",
         "description": "**{name}** está pronto e vai aparecer no seu painel.\n\nA maioria das redes precisa de vários trajetos: uma linha em cada sentido, ou duas a três linhas. Adicioná-los agora reutiliza a fonte que acabou de escolher.\n\n[documentação]({docu_new_route})",
         "menu_options": {
+          "same_line": "Outro trajeto nesta linha",
           "start_end": "Adicionar outro trajeto",
           "optimise": "Libertar espaço em disco",
           "finish": "É tudo por agora"

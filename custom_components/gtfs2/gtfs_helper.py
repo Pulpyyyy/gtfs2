@@ -1807,6 +1807,46 @@ def get_station_modes(schedule, route_id):
     return modes if mixed else {}
 
 
+def get_train_destination_list(schedule, route_id, origin_name, line=None):
+    """{station name: {"train", "coach"}} for the stations a trip of the line
+    really reaches from the departure station, and by which of the two.
+
+    The arrival screen of the train flow offers only these: the departures
+    are matched on the exact name and the line, so a station no trip rides
+    to from the departure could never answer. A trip rides one mode from end
+    to end (SNCF: no trip mixes coach and train stops), so a train station
+    leads to the train arrivals and a coach station to the coach ones. The
+    trips are held to the line's code like the departures, to the route
+    itself when the line has none.
+    """
+    rail = ",".join(str(t) for t in RAIL_ROUTE_TYPES)
+    scope = "r.route_short_name = :line" if line else "t.route_id = :route_id"
+    sql = f"""
+    SELECT distinct sd.stop_name, sd.stop_id
+    from trips t
+    inner join routes r on r.route_id = t.route_id
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stops so on so.stop_id = o.stop_id
+    inner join stop_times d on d.trip_id = t.trip_id
+        and d.stop_sequence > o.stop_sequence
+    inner join stops sd on sd.stop_id = d.stop_id
+    where r.route_type in ({rail})
+      and so.stop_name = :origin
+      and {scope}
+    """  # noqa: S608
+    params = {"origin": origin_name, "line": line, "route_id": str(route_id or "")}
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql), params).fetchall()
+    reached = {}
+    for name, stop_id in rows:
+        if name and name != origin_name:
+            reached.setdefault(name, set()).add(
+                "coach" if str(stop_id).startswith(COACH_STOP_PREFIX) else "train")
+    _LOGGER.debug("Train destinations from %s (line %s, route %s): %s",
+                  origin_name, line, route_id, len(reached))
+    return dict(sorted(reached.items()))
+
+
 # The trips of one direction ride a handful of distinct stop patterns, a
 # few thousand times each over the feed's calendar (TAO tram A: 4214 trips,
 # 27 stops). The walk only needs each pattern once, so one trip stands for
