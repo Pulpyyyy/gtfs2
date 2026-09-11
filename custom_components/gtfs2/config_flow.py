@@ -45,6 +45,8 @@ from .const import (
     CONF_DIRECTION,
     CONF_ORIGIN,
     CONF_DESTINATION,
+    CONF_ORIGIN_STATIONS,
+    CONF_DESTINATION_STATIONS,
     CONF_NAME,
     CONF_INCLUDE_TOMORROW,
     CONF_LOCAL_STOP_REFRESH_INTERVAL,
@@ -64,9 +66,12 @@ from .gtfs_helper import (
     get_route_list,
     get_stop_list,
     get_station_list,
+    get_station_modes,
     has_trip_between,
     get_destination_stop_list,
     has_train_trip_between,
+    entry_stations,
+    _async_text,
     get_direction_labels,
     get_datasources,
     get_zipfiles,
@@ -98,6 +103,22 @@ CONF_NEEDS_API_KEY = "needs_api_key"
 CONF_ADD_RETURN = "add_return"
 # other pruned lines to bring back in the same import, never saved
 CONF_ALSO_RELOAD = "also_reload"
+
+def _picked_stations(value):
+    """The stations ticked in a multiple selector, each once, in the order
+    ticked. A single name still arrives as a string from an older form."""
+    names = [value] if isinstance(value, str) else list(value or [])
+    return list(dict.fromkeys(n.strip() for n in names if n and n.strip()))
+
+
+def _station_label(name, modes, words):
+    """A station as the picker shows it. On a line that mixes trains and
+    coaches every station says which of them call there, "Orléans (train,
+    coach)", so a coach station reads as one; elsewhere the plain name."""
+    if not modes:
+        return name
+    return f"{name} ({', '.join(words[m] for m in ('train', 'coach') if m in modes)})"
+
 
 def _stop_id(entry):
     """The stop_id of a "stop_id: Name (sequence)" entry."""
@@ -198,6 +219,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._extract_task = None
         self._extract_next_step: str | None = None
         self._route_label: str = ""
+        # the directions as the direction screen offered them, and the one
+        # picked, recalled on the screens that follow
+        self._direction_labels: dict = {}
+        self._direction_label: str = ""
         # how big the database has grown, shown while it is being built
         self._extract_size: str = "0 MB"
         # the import running behind the progress screen, and its routes
@@ -864,6 +889,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._user_inputs[CONF_FILE])
         return await self.async_step_direction()
 
+    def _journey_placeholders(self, **extra):
+        """The line and the direction picked so far, recalled at the top of
+        the screens that pick the stops: once past the direction screen,
+        nothing said which way the list ran."""
+        return {
+            **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+            "route": self._route_label or str(self._user_inputs.get(CONF_ROUTE, "")),
+            "direction": self._direction_label or str(self._user_inputs.get(CONF_DIRECTION, "")),
+            **extra,
+        }
+
     async def async_step_direction(self, user_input: dict | None = None) -> FlowResult:
         """Pick the direction, labelled with where the vehicle actually goes."""
         errors: dict[str, str] = {}
@@ -872,6 +908,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # and last stop of each one
             labels = await self.hass.async_add_executor_job(
                 get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE])
+            self._direction_labels = labels
             options = [
                 selector.SelectOptionDict(value=k, label=labels[k])
                 for k in sorted(labels)
@@ -892,6 +929,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors=errors,
             )
         self._user_inputs.update(user_input)
+        picked = str(user_input.get(CONF_DIRECTION, ""))
+        self._direction_label = self._direction_labels.get(picked, picked)
         _LOGGER.debug(f"UserInputs Direction: {self._user_inputs}")
         # GTFS route_type 2 is rail: those feeds rarely have usable stop ids,
         # so they are matched on city names instead of picked from a list
@@ -934,7 +973,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                     },
                 ),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                description_placeholders=self._journey_placeholders(),
                 errors=errors,
             )
 
@@ -977,10 +1016,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                     },
                 ),
-                description_placeholders={
-                    **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                    "origin": _base_name(origin),
-                },
+                description_placeholders=self._journey_placeholders(
+                    origin=_base_name(origin)),
                 errors=errors,
             )
 
@@ -1188,8 +1225,26 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not stations:
             stations = await self.hass.async_add_executor_job(
                 get_station_list, self._pygtfs)
+        # Several stations may be ticked at each end. An operator can run the
+        # coaches that replace its trains from a coach station the feed files
+        # under a name of its own: the SNCF K8+ leaves Paris from "Paris
+        # Austerlitz" by train and from "Paris-Austerlitz Routiere" by coach.
+        # Nothing in the feed ties the two together, not the parent station,
+        # not the order of the calls, not the train numbers, so the rider
+        # says which stations are one departure for them.
+        # A line that mixes trains and coaches says which one calls where:
+        # "Paris-Austerlitz Routiere" alone does not read as a coach station.
+        # The value stays the plain name, which is what the queries match.
+        modes = await self.hass.async_add_executor_job(
+            get_station_modes, self._pygtfs, self._user_inputs.get(CONF_ROUTE))
+        words = {mode: await _async_text(self.hass, f"mode_{mode}", mode)
+                 for mode in ("train", "coach")}
         station_select = selector.SelectSelector(
-            selector.SelectSelectorConfig(options=stations, custom_value=True)
+            selector.SelectSelectorConfig(
+                options=[selector.SelectOptionDict(
+                    value=name, label=_station_label(name, modes.get(name), words))
+                    for name in stations],
+                custom_value=True, multiple=True)
         )
 
         def _show(errors, previous=None):
@@ -1199,20 +1254,31 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="stops_train",
                 data_schema=vol.Schema(
                     {
-                        vol.Required(CONF_ORIGIN, default=previous.get(CONF_ORIGIN, "")): station_select,
-                        vol.Required(CONF_DESTINATION, default=previous.get(CONF_DESTINATION, "")): station_select,
+                        vol.Required(CONF_ORIGIN, default=_picked_stations(previous.get(CONF_ORIGIN))): station_select,
+                        vol.Required(CONF_DESTINATION, default=_picked_stations(previous.get(CONF_DESTINATION))): station_select,
                         vol.Optional(CONF_INCLUDE_TOMORROW, default=previous.get(CONF_INCLUDE_TOMORROW, False)): selector.BooleanSelector(),
                     },
                 ),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                description_placeholders=self._journey_placeholders(),
                 errors=errors,
             )
 
         if user_input is None:
             return _show(errors)
+        origins = _picked_stations(user_input.get(CONF_ORIGIN))
+        destinations = _picked_stations(user_input.get(CONF_DESTINATION))
+        if not origins or not destinations:
+            errors["base"] = "stop_incorrect"
+            return _show(errors, user_input)
         # an unticked BooleanSelector is simply absent from user_input
         user_input.setdefault(CONF_INCLUDE_TOMORROW, False)
         self._user_inputs.update(user_input)
+        # the first station ticked names the entry and stands for it wherever
+        # one name is read; the departures read them all
+        self._user_inputs[CONF_ORIGIN] = origins[0]
+        self._user_inputs[CONF_DESTINATION] = destinations[0]
+        self._user_inputs[CONF_ORIGIN_STATIONS] = origins
+        self._user_inputs[CONF_DESTINATION_STATIONS] = destinations
         self._user_inputs[CONF_DIRECTION] = 0
         self._user_inputs[CONF_ROUTE] = "train"
         # the picked line's code: the departures hold to that line
@@ -1245,13 +1311,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # return wears the same label as the outward.
             back = f"{destination} → {origin}"
             self._return_name = f"{line} {back}".strip() if line else back
+            # the stations ticked at each end swap sides with the names
+            origins = entry_stations(self._user_inputs, "origin")
+            destinations = entry_stations(self._user_inputs, "destination")
             exists = await self.hass.async_add_executor_job(
-                has_train_trip_between, self._pygtfs, destination, origin,
+                has_train_trip_between, self._pygtfs, destinations, origins,
                 self._route_label or None,
             )
             self._return_trip = {
                 CONF_ORIGIN: destination,
                 CONF_DESTINATION: origin,
+                CONF_ORIGIN_STATIONS: destinations,
+                CONF_DESTINATION_STATIONS: origins,
                 CONF_NAME: self._return_name,
             } if exists else {}
 
@@ -1529,6 +1600,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "schedule": self._pygtfs,
             "origin": data["origin"],
             "destination": data["destination"],
+            "origin_stations": data.get(CONF_ORIGIN_STATIONS),
+            "destination_stations": data.get(CONF_DESTINATION_STATIONS),
             "offset": 0,
             "include_tomorrow": True,
             "gtfs_dir": DEFAULT_PATH,

@@ -125,7 +125,7 @@
         "data": {
           "origin": "Arrêt de départ"
         },
-        "description": "D'où compter les départs ?\n\n[documentation]({docu_new_route})",
+        "description": "Ligne **{route}**, sens **{direction}**.\n\nD'où compter les départs ?\n\n[documentation]({docu_new_route})",
         "data_description": {
           "origin": "Les départs sont comptés depuis cet arrêt. La liste suit le sens de circulation ; un numéro distingue deux quais portant le même nom."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Arrêt d'arrivée"
         },
-        "description": "Où se termine le trajet depuis **{origin}** ?\n\n[documentation]({docu_new_route})",
+        "description": "Ligne **{route}**, sens **{direction}**.\n\nOù se termine le trajet depuis **{origin}** ?\n\n[documentation]({docu_new_route})",
         "data_description": {
           "destination": "Seuls les arrêts qu'un trajet atteint réellement depuis là sont proposés, dans le sens de circulation. Laissez le terminus pour voir tout ce qui passe."
         }
@@ -169,10 +169,10 @@
           "destination": "Gare d'arrivée",
           "include_tomorrow": "Afficher aussi les départs de demain à la fin du service de la journée"
         },
-        "description": "Le capteur affichera les prochains trains entre deux gares.\n\n[documentation]({docu_setup_train})",
+        "description": "Ligne **{route}**, sens **{direction}**.\n\nLe capteur affichera les prochains départs entre deux gares.\n\n[documentation]({docu_setup_train})",
         "data_description": {
-          "origin": "Les gares desservies par cette ligne. Une gare n'apparaît qu'une fois, même quand la source la découpe en plusieurs arrêts.",
-          "destination": "La même liste. Choisissez celle où vous allez.",
+          "origin": "Les gares desservies par cette ligne. Une gare n'apparaît qu'une fois, même quand la source la découpe en plusieurs arrêts. Quand la ligne mêle trains et cars, chaque gare indique lesquels la desservent. Vous pouvez en cocher plusieurs, par exemple la gare et la gare routière d'où partent les cars.",
+          "destination": "La même liste, où vous pouvez aussi en cocher plusieurs. Choisissez où vous allez.",
           "include_tomorrow": "Sans cela, le capteur reste vide entre le dernier départ de la journée et le premier du lendemain."
         }
       },
@@ -471,6 +471,8 @@
     }
   },
   "common": {
+    "mode_train": "train",
+    "mode_coach": "car",
     "extract_ready_title": "GTFS : {file} est prête",
     "extract_ready": "La source contient **{routes}** lignes et **{stops}** arrêts.\n\nParamètres > Appareils et services > GTFS2 > Ajouter une entrée, puis **Ajouter un trajet entre deux arrêts** pour continuer.",
     "extract_failed_title": "GTFS : {file} n'a pas pu être décompressée",

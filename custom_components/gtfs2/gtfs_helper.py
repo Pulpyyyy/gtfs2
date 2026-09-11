@@ -67,9 +67,58 @@ _LOGGER = logging.getLogger(__name__)
 # unbounded scan would walk the whole calendar to say so.
 NEXT_SERVICE_HORIZON_DAYS = 90
 
+# The SNCF files the coaches that stand in for its trains under the train line
+# itself, so route_type calls them rail. Only the stop tells them apart: a
+# coach calls at "StopPoint:OCECar TER-87543009" where the train calls at
+# "StopPoint:OCETrain TER-87543009", same station, same name. On the national
+# feed of September 2026, 283 of the 582 rail lines carry such coaches, and no
+# coach shares a single stop_id with a train. "Navette" is not one of them: it
+# is the rail shuttle between Tours and Saint-Pierre-des-Corps.
+COACH_STOP_PREFIX = "StopPoint:OCECar "
+# GTFS extended route type: Rail Replacement Bus Service
+RAIL_REPLACEMENT_BUS = 714
+RAIL_ROUTE_TYPES = (2, *range(100, 118))
+
+
+def departure_route_type(route_type, origin_stop_id):
+    """The route_type of one departure: its line's, unless the line is rail
+    and the departure leaves from a coach stop, which makes it a rail
+    replacement bus."""
+    try:
+        rail = int(route_type) in RAIL_ROUTE_TYPES
+    except (TypeError, ValueError):
+        return route_type
+    if rail and str(origin_stop_id or "").startswith(COACH_STOP_PREFIX):
+        return RAIL_REPLACEMENT_BUS
+    return route_type
+
+
+def entry_stations(data, end):
+    """Every station a train entry matches at one end, "origin" or
+    "destination": the ones ticked on the station screen, or the single name
+    an entry created before that screen took several holds."""
+    names = data.get(f"{end}_stations") or [data.get(end)]
+    return [str(name) for name in names if name]
+
+
+def station_names_in(prefix, names):
+    """An SQL "(:prefix_name_0, ...)" for a list of station names, and its
+    parameters.
+
+    A train entry may name several stations at one end: the station, and the
+    coach station its replacement coaches leave from, which the feed files as
+    a station of its own under another name (SNCF K8+: "Paris Austerlitz" for
+    the trains, "Paris-Austerlitz Routiere" 240 m away for the coaches).
+    Nothing in the feed links the two, so the rider ticks both.
+    """
+    names = [str(name) for name in names or [] if name] or [""]
+    keys = [f"{prefix}_name_{n}" for n in range(len(names))]
+    return "(" + ", ".join(f":{key}" for key in keys) + ")", dict(zip(keys, names))
+
 
 def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3",
-                          horizon=NEXT_SERVICE_HORIZON_DAYS):
+                          horizon=NEXT_SERVICE_HORIZON_DAYS, line=None,
+                          origin_names=None, dest_names=None):
     """Return the first date on or after from_date that this trip runs, or None.
 
     include_tomorrow only ever reaches J+1, so a line that rests over the
@@ -84,6 +133,11 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
 
     Returns a plain 'YYYY-MM-DD' string, and None when no service is found
     within horizon: a route can legitimately have no trips left at all.
+
+    For a train, origin_id and dest_id are station names; origin_names and
+    dest_names, when given, are every station the entry ticked at each end,
+    and line holds the answer to the line the flow picked, as the departures
+    are held to it.
     """
     # the coordinator calls this with whatever get_gtfs returned, which is a
     # sentinel string or None when the datasource is unusable. Matched by
@@ -91,17 +145,26 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     if schedule is None or isinstance(schedule, str):
         _LOGGER.warning("No usable schedule to look up the next service date (%s)", schedule or "empty")
         return None
+    line_join = line_where = ""
     if route_type == "2":
         # trains match on the exact stop_name, like get_next_departure does
+        origin_in, params = station_names_in("origin", origin_names or [origin_id])
+        dest_in, dest_params = station_names_in("dest", dest_names or [dest_id])
+        params.update(dest_params)
         origin_where = ("o.stop_id in (select stop_id from stops "
-                        "where stop_name = :origin)")
+                        f"where stop_name in {origin_in})")
         dest_where = ("x.stop_id in (select stop_id from stops "
-                      "where stop_name = :dest)")
-        origin_id = str(origin_id)
-        dest_id = str(dest_id)
+                      f"where stop_name in {dest_in})")
+        if line:
+            # without it, a day the line rests but another one serves the
+            # same stations (P8 beside K8+) read as a day it runs
+            line_join = "inner join routes r on r.route_id = t.route_id"
+            line_where = "and r.route_short_name = :line"
+            params["line"] = line
     else:
         origin_where = "o.stop_id = :origin"
         dest_where = "x.stop_id = :dest"
+        params = {"origin": origin_id, "dest": dest_id}
 
     sql = f"""
         with recursive dates(d) as (
@@ -115,8 +178,10 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
             from trips t
             inner join stop_times o on o.trip_id = t.trip_id
             inner join stop_times x on x.trip_id = t.trip_id
+            {line_join}
             where {origin_where} and {dest_where}
               and o.stop_sequence < x.stop_sequence
+              {line_where}
         )
         select min(dates.d) from dates
         where exists (
@@ -141,8 +206,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     try:
         with schedule.engine.connect() as conn:
             row = conn.execute(text(sql), {
-                "origin": origin_id,
-                "dest": dest_id,
+                **params,
                 "from_date": from_date,
                 "horizon": f"+{int(horizon)} days",
             }).fetchone()
@@ -159,7 +223,8 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
 
 def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
                            now, now_date, yesterday, tomorrow, tomorrow_date, schedule,
-                           direction=None, route=None, line=None):
+                           direction=None, route=None, line=None,
+                           origin_names=None, destination_names=None):
     """Run the static-GTFS SQL query and return matching rows as plain dicts.
                                                                                                             
                  
@@ -178,8 +243,13 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         # departed first.
         start_station_id = str(origin)
         end_station_id = str(destination)
-        start_station_where = f"AND start_station.stop_id in (select stop_id from stops where stop_name = :origin_station_id)"
-        end_station_where = f"AND end_station.stop_id in (select stop_id from stops where stop_name = :end_station_id)"
+        # every station the entry ticked at each end, the coach station its
+        # replacement coaches leave from included
+        origin_in, name_params = station_names_in("origin", origin_names or [origin])
+        dest_in, dest_params = station_names_in("dest", destination_names or [destination])
+        name_params.update(dest_params)
+        start_station_where = f"AND start_station.stop_id in (select stop_id from stops where stop_name IN {origin_in})"
+        end_station_where = f"AND end_station.stop_id in (select stop_id from stops where stop_name IN {dest_in})"
         # the train flow does not ask for a direction, it stores 0 as a placeholder
         direction_where = ""
         direction = None
@@ -190,6 +260,7 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         _LOGGER.debug("Setting up TRAIN Route for start/end : %s / %s ", start_station_id, end_station_id)
     else:
         route_type_where = "1=1"
+        name_params = {}
         start_station_id = origin.split(': ')[0]
         end_station_id = destination.split(': ')[0]
         # A feed often writes one physical stop as several records, one per
@@ -250,6 +321,7 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
     sql_query = f"""
         SELECT trip.trip_id, trip.route_id,trip.trip_headsign, trip.direction_id,trip.trip_short_name,
                route.route_long_name,route.route_short_name,
+               route.route_type AS route_type,
         	   start_station.stop_id as origin_stop_id,
                start_station.stop_name as origin_stop_name,
                start_station.stop_timezone as origin_stop_timezone,
@@ -308,6 +380,7 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
 		UNION ALL
 	    SELECT trip.trip_id, trip.route_id,trip.trip_headsign, trip.direction_id,trip.trip_short_name,
                route.route_long_name,route.route_short_name,
+               route.route_type AS route_type,
                start_station.stop_id as origin_stop_id,
                start_station.stop_name as origin_stop_name,
                start_station.stop_timezone as origin_stop_timezone,
@@ -408,6 +481,7 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
                 "line": line,
                 "limit": limit,
                 "route_type": route_type,
+                **name_params,
             },
         )
         rows = result.fetchall()
@@ -580,6 +654,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
     timetable_upcoming_trips = []
     timetable_upcoming_arrivals = []
     timetable_upcoming_durations = []
+    timetable_upcoming_route_types = []
     for key, value in sorted(timetable.items()):
         upcoming = datetime.datetime.strptime(key[0], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone)
         upcoming_arrival = datetime.datetime.combine(
@@ -609,7 +684,12 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
             timetable_upcoming_durations.append(
                 round((upcoming_arrival - upcoming).total_seconds() / 60)
             )
-            
+            # a train line may list a coach among its departures: each one
+            # says what rides it, so a card can draw a bus for that one
+            timetable_upcoming_route_types.append(
+                departure_route_type(value.get("route_type"), value.get("origin_stop_id"))
+            )
+
     #_LOGGER.debug(
     #    "Timetable Remaining Departures on this Start/Stop, per line: %s",
     #    timetable_remaining_line,
@@ -720,8 +800,9 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
         "next_departures_trip_id": timetable_upcoming_trips,
         "next_departures_destination_arrival_times": timetable_upcoming_arrivals,
         "next_departures_durations": timetable_upcoming_durations,
+        "next_departures_route_types": timetable_upcoming_route_types,
     }
-    
+
     return data_returned
 
 
@@ -774,6 +855,8 @@ def get_next_departure(hass, _data):
         route_type, _data["origin"], _data["destination"], include_tomorrow,
         now, now_date, yesterday, tomorrow, tomorrow_date, schedule,
         direction=direction, route=route, line=line,
+        origin_names=entry_stations(_data, "origin"),
+        destination_names=entry_stations(_data, "destination"),
     )
 
     return _interpret_departure_rows(
@@ -1628,13 +1711,20 @@ def has_trip_between(schedule, route_id, origin_id, destination_id, direction=No
 
 
 def has_train_trip_between(schedule, origin_name, destination_name, line=None):
-    """Whether any rail trip serves both stations, in this order.
+    """Whether any rail trip serves both ends, in this order.
 
     The train path works with station names rather than stop ids, matched
-    the way get_next_departure does: on the name's prefix, since a feed
-    splits a station into several platform stops sharing it. Held to one
-    line when the flow picked one, like the departures themselves.
+    the way get_next_departure does: on the exact name, at any of the
+    stations the entry ticked at each end. Each end is a name or a list of
+    them. Held to one line when the flow picked one, like the departures
+    themselves.
     """
+    origin_names = [origin_name] if isinstance(origin_name, str) else origin_name
+    destination_names = ([destination_name] if isinstance(destination_name, str)
+                         else destination_name)
+    origin_in, params = station_names_in("origin", origin_names)
+    dest_in, dest_params = station_names_in("dest", destination_names)
+    params.update(dest_params)
     line_where = "and r.route_short_name = :line" if line else ""
     sql = f"""
     SELECT 1
@@ -1645,20 +1735,16 @@ def has_train_trip_between(schedule, origin_name, destination_name, line=None):
     inner join stop_times d on d.trip_id = t.trip_id
     inner join stops sd on sd.stop_id = d.stop_id
     where r.route_type in (2,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117)
-      and so.stop_name like :origin_name
-      and sd.stop_name like :destination_name
+      and so.stop_name in {origin_in}
+      and sd.stop_name in {dest_in}
       and o.stop_sequence < d.stop_sequence
       {line_where}
     limit 1
-    """
+    """  # noqa: S608
     with schedule.engine.connect() as conn:
-        row = conn.execute(text(sql), {
-            "origin_name": origin_name + "%",
-            "destination_name": destination_name + "%",
-            "line": line,
-        }).fetchone()
+        row = conn.execute(text(sql), {**params, "line": line}).fetchone()
     _LOGGER.debug("Train trip between %s and %s (line %s): %s",
-                  origin_name, destination_name, line, bool(row))
+                  origin_names, destination_names, line, bool(row))
     return bool(row)
 
 
@@ -1689,6 +1775,36 @@ def get_station_list(schedule, route_id=None):
     stations = [r[0] for r in rows if r[0]]
     _LOGGER.debug("Stations returned: %s", len(stations))
     return stations
+
+
+def get_station_modes(schedule, route_id):
+    """{station name: {"train", "coach"}} for the stations a rail route calls
+    at, when its trips mix trains and coaches; {} on a line of one mode.
+
+    The train flow offers names, and a coach station the feed names on its
+    own ("Paris-Austerlitz Routiere") does not read as one, nor does a name
+    both modes share ("Orleans") say that coaches call there too. The mode is
+    read from the stop, the only place the feed says it (COACH_STOP_PREFIX).
+    """
+    if not route_id:
+        return {}
+    sql = """
+    SELECT distinct s.stop_name, s.stop_id
+    from trips t
+    inner join stop_times st on st.trip_id = t.trip_id
+    inner join stops s on s.stop_id = st.stop_id
+    where t.route_id = :route_id
+    """
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql), {"route_id": str(route_id)}).fetchall()
+    modes = {}
+    for name, stop_id in rows:
+        if name:
+            modes.setdefault(name, set()).add(
+                "coach" if str(stop_id).startswith(COACH_STOP_PREFIX) else "train")
+    mixed = set().union(*modes.values()) == {"train", "coach"} if modes else False
+    _LOGGER.debug("Station modes for route %s: %s", route_id, modes if mixed else "one mode")
+    return modes if mixed else {}
 
 
 # The trips of one direction ride a handful of distinct stop patterns, a

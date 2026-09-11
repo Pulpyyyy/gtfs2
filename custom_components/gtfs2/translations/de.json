@@ -125,7 +125,7 @@
         "data": {
           "origin": "Starthaltestelle"
         },
-        "description": "Ab wo sollen die Abfahrten gezählt werden?\n\n[Dokumentation]({docu_new_route})",
+        "description": "Linie **{route}**, Richtung **{direction}**.\n\nAb wo sollen die Abfahrten gezählt werden?\n\n[Dokumentation]({docu_new_route})",
         "data_description": {
           "origin": "Ab hier werden die Abfahrten gezählt. Die Liste folgt der Fahrtrichtung; eine Zahl unterscheidet zwei gleichnamige Bahnsteige."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Zielhaltestelle"
         },
-        "description": "Wo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_new_route})",
+        "description": "Linie **{route}**, Richtung **{direction}**.\n\nWo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_new_route})",
         "data_description": {
           "destination": "Nur die Haltestellen, die eine Fahrt von dort tatsächlich erreicht, werden angeboten, in Fahrtrichtung. Auf der Endhaltestelle belassen, um alles zu sehen."
         }
@@ -158,10 +158,10 @@
           "destination": "Zielbahnhof",
           "include_tomorrow": "Am Betriebsschluss auch die Abfahrten von morgen anzeigen"
         },
-        "description": "Der Sensor zeigt die nächsten Züge zwischen zwei Bahnhöfen.\n\n[Dokumentation]({docu_setup_train})",
+        "description": "Linie **{route}**, Richtung **{direction}**.\n\nDer Sensor zeigt die nächsten Abfahrten zwischen zwei Bahnhöfen.\n\n[Dokumentation]({docu_setup_train})",
         "data_description": {
-          "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt.",
-          "destination": "Dieselbe Liste. Wählen Sie Ihr Ziel.",
+          "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt. Mischt die Linie Züge und Busse, zeigt jeder Bahnhof, welche dort halten. Mehrere können gewählt werden, etwa der Bahnhof und der Busbahnhof, von dem die Busse abfahren.",
+          "destination": "Dieselbe Liste, auch hier sind mehrere möglich. Wählen Sie Ihr Ziel.",
           "include_tomorrow": "Ohne dies bleibt der Sensor zwischen der letzten Abfahrt des Tages und der ersten des nächsten leer."
         }
       },
@@ -471,6 +471,8 @@
     }
   },
   "common": {
+    "mode_train": "Zug",
+    "mode_coach": "Bus",
     "extract_ready_title": "GTFS: {file} ist bereit",
     "extract_ready": "Die Quelle enthält **{routes}** Linien und **{stops}** Haltestellen.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
     "extract_failed_title": "GTFS: {file} konnte nicht entpackt werden",

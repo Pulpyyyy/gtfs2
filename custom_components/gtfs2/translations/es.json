@@ -125,7 +125,7 @@
         "data": {
           "origin": "Parada de salida"
         },
-        "description": "¿Desde dónde contar las salidas?\n\n[documentación]({docu_new_route})",
+        "description": "Línea **{route}**, sentido **{direction}**.\n\n¿Desde dónde contar las salidas?\n\n[documentación]({docu_new_route})",
         "data_description": {
           "origin": "Las salidas se cuentan desde aquí. La lista sigue el sentido de circulación; un número distingue dos andenes con el mismo nombre."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Parada de llegada"
         },
-        "description": "¿Dónde termina el viaje desde **{origin}**?\n\n[documentación]({docu_new_route})",
+        "description": "Línea **{route}**, sentido **{direction}**.\n\n¿Dónde termina el viaje desde **{origin}**?\n\n[documentación]({docu_new_route})",
         "data_description": {
           "destination": "Solo se proponen las paradas a las que un viaje llega realmente desde allí, en el sentido de circulación. Déjelo en el final de línea para ver todo lo que pasa."
         }
@@ -158,10 +158,10 @@
           "destination": "Estación de llegada",
           "include_tomorrow": "Mostrar también las salidas de mañana al final del servicio del día"
         },
-        "description": "El sensor mostrará los próximos trenes entre dos estaciones.\n\n[documentación]({docu_setup_train})",
+        "description": "Línea **{route}**, sentido **{direction}**.\n\nEl sensor mostrará las próximas salidas entre dos estaciones.\n\n[documentación]({docu_setup_train})",
         "data_description": {
-          "origin": "Estaciones servidas por esta línea. Una estación aparece una sola vez, aunque la fuente la divida en varias paradas.",
-          "destination": "La misma lista. Elija su destino.",
+          "origin": "Estaciones servidas por esta línea. Una estación aparece una sola vez, aunque la fuente la divida en varias paradas. Cuando la línea mezcla trenes y autobuses, cada estación indica cuáles paran en ella. Puede marcar varias, por ejemplo la estación y la terminal de la que salen los autobuses.",
+          "destination": "La misma lista, aquí también puede marcar varias. Elija su destino.",
           "include_tomorrow": "Sin esto, el sensor queda vacío entre la última salida del día y la primera del siguiente."
         }
       },
@@ -471,6 +471,8 @@
     }
   },
   "common": {
+    "mode_train": "tren",
+    "mode_coach": "autobús",
     "extract_ready_title": "GTFS: {file} está lista",
     "extract_ready": "La fuente contiene **{routes}** líneas y **{stops}** paradas.\n\nAjustes > Dispositivos y servicios > GTFS2 > Añadir entrada, luego **Añadir un trayecto entre dos paradas** para continuar.",
     "extract_failed_title": "GTFS: no se ha podido descomprimir {file}",

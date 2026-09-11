@@ -23,6 +23,12 @@ Trains (route_type 2) ride their own path in get_next_departure, matched by
 stop name with no direction: for them the pairs are checked by name, the
 answer must stay on the asked line, and a swapped pair is legitimate, it is
 the return journey, so only `pairs` and `next_service` are checked, by name.
+A train entry may also tick several stations at one end, the station and the
+coach station its replacement coaches leave from:
+
+    stations    two stations ticked answer every departure each one gives
+                alone, and each departure's route type is a replacement bus
+                (714) exactly when it leaves from a coach stop
 
 One test per fixture, route, direction and promise; its message lists every
 pair that broke the promise. The promises are about what the sensors say,
@@ -68,7 +74,7 @@ get_next_service_date = gtfs_helper.get_next_service_date
 FIXTURES = Path(__file__).parent / "fixtures"
 KINDS = ("stop_list", "destinations", "next_service", "pairs", "swapped",
          "midnight")
-TRAIN_KINDS = ("pairs", "next_service")
+TRAIN_KINDS = ("pairs", "next_service", "stations")
 
 
 class Fixture:
@@ -914,6 +920,9 @@ def check_train_route(check, fx, route_id, direction, kind):
                 pairs.append((fx.stop_names[pattern[o]], fx.stop_names[pattern[d]]))
         check_next_service(check, fx, "2", pairs)
         return
+    if kind == "stations":
+        check_train_stations(check, fx, route_id, direction)
+        return
     with freeze_time(fx.instant_on("1970-01-01")) as clock:
         for pattern, trip_ids in sorted(grouped.items()):
             day = service_date(schedule, trip_ids)
@@ -947,3 +956,123 @@ def check_train_route(check, fx, route_id, direction, kind):
                                  short_name, None)
                 got = got_of(result, by_name=True)
                 check.note(ok, answered(asked, got), asked=asked, got=got)
+
+
+def _train_data(fx, short_name, origins, destinations):
+    """A train entry that ticked these stations at each end."""
+    return {
+        "schedule": fx.schedule,
+        "gtfs_dir": ".", "file": "fixture",
+        "route_type": "2",
+        "origin": origins[0], "destination": destinations[0],
+        "origin_stations": list(origins),
+        "destination_stations": list(destinations),
+        "direction": 0, "route": "train",
+        "line": short_name,
+        "offset": 0, "include_tomorrow": False,
+    }
+
+
+def first_call_at(schedule, trip_id, names):
+    """The stop_id at which a trip first calls at one of these stations."""
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(
+            "SELECT st.stop_id, s.stop_name FROM stop_times st "
+            "INNER JOIN stops s ON s.stop_id = st.stop_id "
+            "WHERE st.trip_id = :t ORDER BY st.stop_sequence"),
+            {"t": trip_id}).fetchall()
+    return next((stop_id for stop_id, name in rows if name in names), "")
+
+
+def check_train_stations(check, fx, route_id, direction):
+    """Several stations ticked at one end, the way a rider ticks the station
+    and the coach station its replacement coaches leave from (SNCF K8+:
+    Paris Austerlitz and Paris-Austerlitz Routiere). The two ends of each
+    pattern are paired with the same end of every other pattern: where the
+    coaches and the trains start apart, or end apart (P8 leaves Orleans on
+    one name for both, and reaches Paris on two). The answer must be every
+    departure each pairing gives alone, no more, no less; the next service
+    date the earliest of theirs; the return test true when one of them is.
+    And each departure says what rides it: a replacement bus (714) exactly
+    when it leaves from a coach stop, the line's own type otherwise. On a
+    line that has coach stops, at least one coach departure must have been
+    read, or the check proved nothing."""
+    schedule = fx.schedule
+    short_name = fx.route_short_names[route_id]
+    line_type = fx.route_types[route_id]
+    hass = fx.hass()
+    grouped = patterns_of(schedule, route_id, direction)
+    firsts = list(dict.fromkeys(fx.stop_names[p[0]] for p in sorted(grouped)))
+    lasts = list(dict.fromkeys(fx.stop_names[p[-1]] for p in sorted(grouped)))
+    prefix = gtfs_helper.COACH_STOP_PREFIX
+    coach_line = any(stop.startswith(prefix) for p in grouped for stop in p)
+    coaches_read = 0
+    with freeze_time(fx.instant_on("1970-01-01")) as clock:
+        for pattern, trip_ids in sorted(grouped.items()):
+            day = service_date(schedule, trip_ids)
+            if day is None:
+                check.note(False, "no service date for a pattern")
+                continue
+            clock.move_to(fx.instant_on(day))
+            name_o = fx.stop_names[pattern[0]]
+            name_d = fx.stop_names[pattern[-1]]
+            if name_o == name_d:
+                continue
+            # (the stations ticked at the origin, at the destination, and the
+            # single pairings they stand for)
+            tickings = [([name_o, other], [name_d], [([name_o], [name_d]), ([other], [name_d])])
+                        for other in firsts if other not in (name_o, name_d)]
+            tickings += [([name_o], [name_d, other], [([name_o], [name_d]), ([name_o], [other])])
+                         for other in lasts if other not in (name_o, name_d)]
+            for origins, destinations, singles in tickings:
+                where = f"{' + '.join(origins)} -> {' + '.join(destinations)} on {day}"
+                alone = [get_next_departure(hass, _train_data(fx, short_name, o, d))
+                         for o, d in singles]
+                both = get_next_departure(hass, _train_data(fx, short_name, origins, destinations))
+                trips = (both or {}).get("next_departures_trip_id", [])
+                expected = set().union(*(set((a or {}).get("next_departures_trip_id", []))
+                                         for a in alone))
+                check.note(set(trips) == expected,
+                           f"{where}: {len(set(trips))} trips, the stations alone "
+                           f"give {len(expected)}")
+
+                kinds = (both or {}).get("next_departures_route_types", [])
+                wanted = [gtfs_helper.RAIL_REPLACEMENT_BUS
+                          if first_call_at(schedule, t, origins).startswith(prefix)
+                          else line_type for t in trips]
+                check.note(kinds == wanted,
+                           f"{where}: route types {kinds}, expected {wanted}")
+                coaches_read += wanted.count(gtfs_helper.RAIL_REPLACEMENT_BUS)
+
+                dates = [get_next_service_date(schedule, o[0], d[0], day, "2",
+                                               line=short_name) for o, d in singles]
+                date = get_next_service_date(schedule, origins[0], destinations[0], day, "2",
+                                             line=short_name, origin_names=origins,
+                                             dest_names=destinations)
+                earliest = min((d for d in dates if d), default=None)
+                check.note(date == earliest,
+                           f"{where}: next service {date}, the stations alone "
+                           f"give {dates}")
+
+                single = [gtfs_helper.has_train_trip_between(schedule, o, d, short_name)
+                          for o, d in singles]
+                multi = gtfs_helper.has_train_trip_between(schedule, origins, destinations,
+                                                           short_name)
+                check.note(multi == any(single),
+                           f"{where}: trip test {multi}, the stations alone give {single}")
+    if coach_line:
+        check.note(coaches_read > 0,
+                   "the line has coach stops but no departure read left from one")
+
+    # the picker's labels: every station of the route with the modes calling
+    # there, both directions, when the route mixes them; nothing otherwise
+    called = {}
+    for d in directions_of(schedule, route_id):
+        for pattern in patterns_of(schedule, route_id, d):
+            for stop in pattern:
+                called.setdefault(fx.stop_names[stop], set()).add(
+                    "coach" if stop.startswith(prefix) else "train")
+    mixed = set().union(*called.values()) == {"train", "coach"} if called else False
+    modes = gtfs_helper.get_station_modes(schedule, route_id)
+    check.note(modes == (called if mixed else {}),
+               f"station modes {modes}, the trips call at {called}")

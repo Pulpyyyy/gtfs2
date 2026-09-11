@@ -84,6 +84,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             "schedule": self._pygtfs,
             "origin": data["origin"],
             "destination": data["destination"],
+            # a train entry's every station at each end, only on the entries
+            # that ticked them: the others keep the shape they always had
+            **{key: data[key] for key in ("origin_stations", "destination_stations")
+               if data.get(key)},
             "offset": options["offset"] if "offset" in options else 0,
             # entries created before this key was always written are still out
             # there, and a KeyError here fails the whole sensor platform
@@ -163,6 +167,9 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                         (dt_util.now() + timedelta(
                             minutes=self._data.get("offset", 0) or 0)).strftime("%Y-%m-%d"),
                         data["route_type"],
+                        line=data.get("line"),
+                        origin_names=data.get("origin_stations"),
+                        dest_names=data.get("destination_stations"),
                     )
                 except Exception as ex:  # pylint: disable=broad-except
                     # only enriches an attribute: never fail the update over it
