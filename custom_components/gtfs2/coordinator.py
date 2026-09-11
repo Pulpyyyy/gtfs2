@@ -86,6 +86,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             "file": data["file"],
             "route_type": data["route_type"],
             "route": data["route"],
+            "direction": data.get("direction"),
+            "line": data.get("line"),
             "extracting": False,
             "next_departure": {},
             "next_departure_realtime_attr": {},
