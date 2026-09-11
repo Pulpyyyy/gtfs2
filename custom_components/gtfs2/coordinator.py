@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
+from functools import partial
 import logging
 import os
 import re
@@ -162,7 +163,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 # same thing as a line resting for days: the sensor tells the
                 # two apart by whether the date it gets back is today's.
                 try:
-                    self._data["next_service_date"] = await self.hass.async_add_executor_job(
+                    # async_add_executor_job takes positional arguments only:
+                    # the keywords ride in a partial, or the call raises and
+                    # the date is lost on every refresh
+                    self._data["next_service_date"] = await self.hass.async_add_executor_job(partial(
                         get_next_service_date, self._pygtfs,
                         data["origin"].split(": ")[0], data["destination"].split(": ")[0],
                         (dt_util.now() + timedelta(
@@ -171,7 +175,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                         line=data.get("line"),
                         origin_names=data.get("origin_stations"),
                         dest_names=data.get("destination_stations"),
-                    )
+                    ))
                 except Exception as ex:  # pylint: disable=broad-except
                     # only enriches an attribute: never fail the update over it
                     _LOGGER.warning("Could not get next service date: %s", ex)
