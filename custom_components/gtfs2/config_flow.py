@@ -1052,10 +1052,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         vol.Required(
                             CONF_NAME, default=previous.get(CONF_NAME, suggested)
                         ): str,
-                        vol.Optional(
-                            CONF_INCLUDE_TOMORROW,
-                            default=previous.get(CONF_INCLUDE_TOMORROW, False),
-                        ): selector.BooleanSelector(),
                         **({vol.Optional(
                             CONF_ADD_RETURN, default=True
                         ): selector.BooleanSelector()} if self._return_trip else {}),
@@ -1074,9 +1070,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # only used to branch, it must not end up in the entry
         add_return = user_input.pop(CONF_ADD_RETURN, False)
-        # an unticked BooleanSelector is simply absent from user_input, and the
-        # coordinator reads data["include_tomorrow"] directly
-        user_input.setdefault(CONF_INCLUDE_TOMORROW, False)
+        # no longer asked: a sensor always reaches the next day
+        user_input[CONF_INCLUDE_TOMORROW] = True
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Sensor: {self._user_inputs}")
         # the arrival was offered from the trips that ride it from the
@@ -1256,7 +1251,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     {
                         vol.Required(CONF_ORIGIN, default=_picked_stations(previous.get(CONF_ORIGIN))): station_select,
                         vol.Required(CONF_DESTINATION, default=_picked_stations(previous.get(CONF_DESTINATION))): station_select,
-                        vol.Optional(CONF_INCLUDE_TOMORROW, default=previous.get(CONF_INCLUDE_TOMORROW, False)): selector.BooleanSelector(),
                     },
                 ),
                 description_placeholders=self._journey_placeholders(),
@@ -1270,8 +1264,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not origins or not destinations:
             errors["base"] = "stop_incorrect"
             return _show(errors, user_input)
-        # an unticked BooleanSelector is simply absent from user_input
-        user_input.setdefault(CONF_INCLUDE_TOMORROW, False)
+        # no longer asked: a sensor always reaches the next day
+        user_input[CONF_INCLUDE_TOMORROW] = True
         self._user_inputs.update(user_input)
         # the first station ticked names the entry and stands for it wherever
         # one name is read; the departures read them all

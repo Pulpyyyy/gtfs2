@@ -142,12 +142,10 @@
       "sensor": {
         "data": {
           "name": "Nom du capteur",
-          "include_tomorrow": "Afficher aussi les départs de demain à la fin du service de la journée",
           "add_return": "Créer aussi le trajet retour"
         },
         "data_description": {
           "name": "Proposé à partir de la ligne et des deux arrêts. Affiché sur votre tableau de bord, et il fixe l'identifiant de l'entité : un capteur recréé plus tard sous un autre nom est une nouvelle entité, et les cartes qui pointent vers celui-ci devront être mises à jour.",
-          "include_tomorrow": "Sans cela, le capteur reste vide entre le dernier départ de la journée et le premier du lendemain.",
           "add_return": "Un second capteur pour **{return_trip}**, la même ligne dans l'autre sens."
         },
         "description": "Le capteur affichera les prochains départs pour **{trip}**.\n\n[documentation]({docu_new_route})"
@@ -166,14 +164,12 @@
       "stops_train": {
         "data": {
           "origin": "Gare de départ",
-          "destination": "Gare d'arrivée",
-          "include_tomorrow": "Afficher aussi les départs de demain à la fin du service de la journée"
+          "destination": "Gare d'arrivée"
         },
         "description": "Ligne **{route}**, sens **{direction}**.\n\nLe capteur affichera les prochains départs entre deux gares.\n\n[documentation]({docu_setup_train})",
         "data_description": {
           "origin": "Les gares desservies par cette ligne. Une gare n'apparaît qu'une fois, même quand la source la découpe en plusieurs arrêts. Quand la ligne mêle trains et cars, chaque gare indique lesquels la desservent. Vous pouvez en cocher plusieurs, par exemple la gare et la gare routière d'où partent les cars.",
-          "destination": "La même liste, où vous pouvez aussi en cocher plusieurs. Choisissez où vous allez.",
-          "include_tomorrow": "Sans cela, le capteur reste vide entre le dernier départ de la journée et le premier du lendemain."
+          "destination": "La même liste, où vous pouvez aussi en cocher plusieurs. Choisissez où vous allez."
         }
       },
       "remove": {
@@ -424,20 +420,6 @@
         "entity_id": {
           "name": "Capteur",
           "description": "Le capteur départ/arrivée dont lire le trajet en cours"
-        }
-      }
-    },
-    "set_include_tomorrow": {
-      "name": "Afficher les départs de demain",
-      "description": "Active ou désactive les départs de demain sur des capteurs existants, sans les recréer.",
-      "fields": {
-        "enabled": {
-          "name": "Activé",
-          "description": "Activé pour continuer d'afficher des départs une fois le service du jour terminé"
-        },
-        "entry_id": {
-          "name": "Une seule entrée",
-          "description": "Laissez vide pour appliquer à tous les capteurs départ/arrivée"
         }
       }
     },

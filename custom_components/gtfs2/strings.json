@@ -142,12 +142,10 @@
       "sensor": {
         "data": {
           "name": "Sensor name",
-          "include_tomorrow": "Also show tomorrow's departures at the end of the day's service",
           "add_return": "Also create the return journey"
         },
         "data_description": {
           "name": "Suggested from the line and the two stops. Shown on your dashboard, and it sets the entity id: a sensor created later under another name is a new entity, and the cards pointing at this one will need updating.",
-          "include_tomorrow": "Without this, the sensor is empty between the last departure of the day and the first of the next.",
           "add_return": "A second sensor for **{return_trip}**, the same line the other way."
         },
         "description": "The sensor will show the next departures for **{trip}**.\n\n[documentation]({docu_new_route})"
@@ -166,14 +164,12 @@
       "stops_train": {
         "data": {
           "origin": "Departure station",
-          "destination": "Arrival station",
-          "include_tomorrow": "Also show tomorrow's departures at the end of the day's service"
+          "destination": "Arrival station"
         },
         "description": "Line **{route}**, direction **{direction}**.\n\nThe sensor will show the next departures between two stations.\n\n[documentation]({docu_setup_train})",
         "data_description": {
           "origin": "Stations served by this route. A station appears once here, even when the feed splits it into several stops. When the line mixes trains and coaches, each station says which of them call there. Several can be ticked, for instance the station and the coach station the coaches leave from.",
-          "destination": "Same list, several can be ticked here too. Pick where you travel to.",
-          "include_tomorrow": "Without this, the sensor is empty between the last departure of the day and the first of the next."
+          "destination": "Same list, several can be ticked here too. Pick where you travel to."
         }
       },
       "remove": {
@@ -424,20 +420,6 @@
         "entity_id": {
           "name": "Sensor",
           "description": "The start/end sensor to read the current trip from"
-        }
-      }
-    },
-    "set_include_tomorrow": {
-      "name": "Show tomorrow's departures",
-      "description": "Turns tomorrow's departures on or off on existing sensors, without recreating them.",
-      "fields": {
-        "enabled": {
-          "name": "Enabled",
-          "description": "On to keep showing departures once the day's service is over"
-        },
-        "entry_id": {
-          "name": "One entry only",
-          "description": "Leave empty to apply to every start/end sensor"
         }
       }
     },

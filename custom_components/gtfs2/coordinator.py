@@ -89,9 +89,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             **{key: data[key] for key in ("origin_stations", "destination_stations")
                if data.get(key)},
             "offset": options["offset"] if "offset" in options else 0,
-            # entries created before this key was always written are still out
-            # there, and a KeyError here fails the whole sensor platform
-            "include_tomorrow": data.get("include_tomorrow", False),
+            # every sensor reaches the next day, whatever the entry holds:
+            # entries created with the old checkbox unticked still say False,
+            # and upstream is dropping the today/tomorrow cut altogether
+            "include_tomorrow": True,
             "gtfs_dir": DEFAULT_PATH,
             "name": data["name"],
             "file": data["file"],
