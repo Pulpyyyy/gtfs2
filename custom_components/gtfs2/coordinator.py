@@ -112,6 +112,9 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         if not run_static:
             # do nothing awaiting refresh interval and use existing data
             self._data = previous_data
+            # reaching this point means check_extracting said no, so clear the flag
+            # rather than carrying over the one previous_data was left with
+            self._data["extracting"] = False
         else:
             check_index = await self.hass.async_add_executor_job(
                     check_datasource_index, self.hass, self._pygtfs, self.hass.config.path(DEFAULT_PATH), data["file"]
