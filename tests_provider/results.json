@@ -17793,6 +17793,4206 @@
     {
       "checks": [
         {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "stop": "3979684"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, stop 3979684: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:41:19+02:00",
+            "stop": "3979684"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:41, stop 3979684: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3979739"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3979739: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:37+02:00",
+            "stop": "3979739"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, stop 3979739: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3979766"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3979766: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:22:00+02:00",
+            "stop": "3979766"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:22, stop 3979766: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3979810"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3979810: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:32:42+02:00",
+            "stop": "3979810"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:32, stop 3979810: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3979843"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3979843: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:34:00+02:00",
+            "stop": "3979843"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:34, stop 3979843: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3979852"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3979852: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:06:21+02:00",
+            "stop": "3979852"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:06, stop 3979852: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3979937"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3979937: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:00:53+02:00",
+            "stop": "3979937"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:00, stop 3979937: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3979970"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3979970: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:44:39+02:00",
+            "stop": "3979970"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:44, stop 3979970: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980012"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980012: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:00:30+02:00",
+            "stop": "3980012"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:00, stop 3980012: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980043"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980043: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:00:30+02:00",
+            "stop": "3980043"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:00, stop 3980043: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980062"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980062: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:04:11+02:00",
+            "stop": "3980062"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:04, stop 3980062: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980106"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980106: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:46:42+02:00",
+            "stop": "3980106"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:46, stop 3980106: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980122"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980122: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:02:08+02:00",
+            "stop": "3980122"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:02, stop 3980122: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980162"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980162: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:37:40+02:00",
+            "stop": "3980162"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:37, stop 3980162: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3980183"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3980183: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:43:45+02:00",
+            "stop": "3980183"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:43, stop 3980183: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980220"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980220: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:27:28+02:00",
+            "stop": "3980220"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:27, stop 3980220: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980246"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980246: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:43:30+02:00",
+            "stop": "3980246"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:43, stop 3980246: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980254"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980254: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:24:00+02:00",
+            "stop": "3980254"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:24, stop 3980254: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980295"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980295: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:00:30+02:00",
+            "stop": "3980295"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:00, stop 3980295: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "stop": "3980379"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, stop 3980379: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:49:30+02:00",
+            "stop": "3980379"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:49, stop 3980379: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980464"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980464: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980464"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980464: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980484"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980484: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:00:30+02:00",
+            "stop": "3980484"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:00, stop 3980484: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980544"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980544: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980544"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980544: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980590"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980590: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:06:57+02:00",
+            "stop": "3980590"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:06, stop 3980590: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980598"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980598: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:07:10+02:00",
+            "stop": "3980598"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:07, stop 3980598: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980629"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980629: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:36:29+02:00",
+            "stop": "3980629"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:36, stop 3980629: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980663"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980663: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980663"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980663: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980711"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980711: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:40:20+02:00",
+            "stop": "3980711"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:40, stop 3980711: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980743"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980743: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:40:42+02:00",
+            "stop": "3980743"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:40, stop 3980743: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980794"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980794: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:35:30+02:00",
+            "stop": "3980794"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:35, stop 3980794: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980806"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980806: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:30:38+02:00",
+            "stop": "3980806"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:30, stop 3980806: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980854"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980854: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:06:24+02:00",
+            "stop": "3980854"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:06, stop 3980854: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980919"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980919: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:23:11+02:00",
+            "stop": "3980919"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:23, stop 3980919: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980974"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980974: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:36:55+02:00",
+            "stop": "3980974"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:36, stop 3980974: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3981021"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3981021: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:25:58+02:00",
+            "stop": "3981021"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:25, stop 3981021: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3981110"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3981110: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:28:28+02:00",
+            "stop": "3981110"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:28, stop 3981110: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981165"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981165: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:39:00+02:00",
+            "stop": "3981165"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:39, stop 3981165: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3981217"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3981217: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:38:38+02:00",
+            "stop": "3981217"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:38, stop 3981217: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981287"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981287: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:02:00+02:00",
+            "stop": "3981287"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:02, stop 3981287: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3981380"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3981380: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:19:49+02:00",
+            "stop": "3981380"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:19, stop 3981380: the feed has 1 in the next 60 min, got 1"
+        }
+      ],
+      "fixture": "gvb",
+      "id": "gvb-local_stop-calendar",
+      "outcome": "passed",
+      "promise": "local_stop",
+      "reason": null,
+      "shape": "calendar"
+    },
+    {
+      "checks": [
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "stop": "3979684"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, stop 3979684: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:41:19+02:00",
+            "stop": "3979684"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:41, stop 3979684: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3979739"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3979739: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:37+02:00",
+            "stop": "3979739"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, stop 3979739: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3979766"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3979766: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:22:00+02:00",
+            "stop": "3979766"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:22, stop 3979766: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3979810"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3979810: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:32:42+02:00",
+            "stop": "3979810"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:32, stop 3979810: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3979843"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3979843: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:34:00+02:00",
+            "stop": "3979843"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:34, stop 3979843: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3979852"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3979852: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:06:21+02:00",
+            "stop": "3979852"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:06, stop 3979852: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3979937"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3979937: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:00:53+02:00",
+            "stop": "3979937"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:00, stop 3979937: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3979970"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3979970: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:44:39+02:00",
+            "stop": "3979970"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:44, stop 3979970: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980012"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980012: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:00:30+02:00",
+            "stop": "3980012"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:00, stop 3980012: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980043"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980043: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:00:30+02:00",
+            "stop": "3980043"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:00, stop 3980043: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980062"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980062: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:04:11+02:00",
+            "stop": "3980062"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:04, stop 3980062: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980106"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980106: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:46:42+02:00",
+            "stop": "3980106"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:46, stop 3980106: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980122"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980122: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:02:08+02:00",
+            "stop": "3980122"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:02, stop 3980122: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980162"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980162: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:37:40+02:00",
+            "stop": "3980162"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:37, stop 3980162: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3980183"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3980183: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:43:45+02:00",
+            "stop": "3980183"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:43, stop 3980183: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980220"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980220: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:27:28+02:00",
+            "stop": "3980220"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:27, stop 3980220: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980246"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980246: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:43:30+02:00",
+            "stop": "3980246"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:43, stop 3980246: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980254"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980254: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:24:00+02:00",
+            "stop": "3980254"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:24, stop 3980254: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980295"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980295: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:00:30+02:00",
+            "stop": "3980295"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:00, stop 3980295: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "stop": "3980379"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, stop 3980379: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:49:30+02:00",
+            "stop": "3980379"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:49, stop 3980379: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980464"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980464: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980464"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980464: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980484"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980484: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:00:30+02:00",
+            "stop": "3980484"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:00, stop 3980484: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980544"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980544: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980544"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980544: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980590"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980590: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:06:57+02:00",
+            "stop": "3980590"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:06, stop 3980590: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980598"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980598: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:07:10+02:00",
+            "stop": "3980598"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:07, stop 3980598: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980629"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980629: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:36:29+02:00",
+            "stop": "3980629"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:36, stop 3980629: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980663"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980663: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980663"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980663: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980711"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980711: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:40:20+02:00",
+            "stop": "3980711"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:40, stop 3980711: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980743"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980743: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:40:42+02:00",
+            "stop": "3980743"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:40, stop 3980743: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980794"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980794: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:35:30+02:00",
+            "stop": "3980794"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:35, stop 3980794: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980806"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980806: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:30:38+02:00",
+            "stop": "3980806"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:30, stop 3980806: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980854"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980854: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:06:24+02:00",
+            "stop": "3980854"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:06, stop 3980854: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980919"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980919: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:23:11+02:00",
+            "stop": "3980919"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:23, stop 3980919: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980974"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980974: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:36:55+02:00",
+            "stop": "3980974"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:36, stop 3980974: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3981021"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3981021: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:25:58+02:00",
+            "stop": "3981021"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:25, stop 3981021: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3981110"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3981110: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:28:28+02:00",
+            "stop": "3981110"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:28, stop 3981110: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981165"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981165: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:39:00+02:00",
+            "stop": "3981165"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:39, stop 3981165: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3981217"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3981217: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:38:38+02:00",
+            "stop": "3981217"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:38, stop 3981217: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981287"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981287: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:02:00+02:00",
+            "stop": "3981287"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:02, stop 3981287: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3981380"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3981380: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:19:49+02:00",
+            "stop": "3981380"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:19, stop 3981380: the feed has 1 in the next 60 min, got 1"
+        }
+      ],
+      "fixture": "gvb",
+      "id": "gvb-local_stop-calendar_dates",
+      "outcome": "passed",
+      "promise": "local_stop",
+      "reason": null,
+      "shape": "calendar_dates"
+    },
+    {
+      "checks": [
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3979966",
+            "origin": "3979684"
+          },
+          "got": {
+            "departure": "2026-09-30T22:51:19+00:00",
+            "trip": "380856953"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3979684 -> 3979966: the feed leaves 10-01 00:51:19, got 10-01 00:51:19"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:41:19+02:00",
+            "destination": "3979966",
+            "origin": "3979684"
+          },
+          "got": {
+            "departure": "2026-09-30T22:51:19+00:00",
+            "trip": "380856953"
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:41, 3979684 -> 3979966: the feed leaves 10-01 00:51:19, got 10-01 00:51:19"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980994",
+            "origin": "3979739"
+          },
+          "got": {
+            "departure": "2026-08-31T21:55:37+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3979739 -> 3980994: the feed leaves 08-31 23:55:37, got 08-31 23:55:37"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:37+02:00",
+            "destination": "3980994",
+            "origin": "3979739"
+          },
+          "got": {
+            "departure": "2026-08-31T22:13:37+00:00",
+            "trip": "380806755"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, 3979739 -> 3980994: the feed leaves 09-01 00:13:37, got 09-01 00:13:37"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3980498",
+            "origin": "3979766"
+          },
+          "got": {
+            "departure": "2026-09-06T22:32:00+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3979766 -> 3980498: the feed leaves 09-07 00:32:00, got 09-07 00:32:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:22:00+02:00",
+            "destination": "3980498",
+            "origin": "3979766"
+          },
+          "got": {
+            "departure": "2026-09-06T22:32:00+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:22, 3979766 -> 3980498: the feed leaves 09-07 00:32:00, got 09-07 00:32:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3980235",
+            "origin": "3979838"
+          },
+          "got": {
+            "departure": "2026-09-20T22:41:11+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3979838 -> 3980235: the feed leaves 09-21 00:41:11, got 09-21 00:41:11"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:31:11+02:00",
+            "destination": "3980235",
+            "origin": "3979838"
+          },
+          "got": {
+            "departure": "2026-09-20T22:41:11+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:31, 3979838 -> 3980235: the feed leaves 09-21 00:41:11, got 09-21 00:41:11"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3981181",
+            "origin": "3979846"
+          },
+          "got": {
+            "departure": "2026-09-06T22:27:42+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3979846 -> 3981181: the feed leaves 09-07 00:27:42, got 09-07 00:27:42"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:17:42+02:00",
+            "destination": "3981181",
+            "origin": "3979846"
+          },
+          "got": {
+            "departure": "2026-09-06T22:27:42+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:17, 3979846 -> 3981181: the feed leaves 09-07 00:27:42, got 09-07 00:27:42"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980469",
+            "origin": "3979897"
+          },
+          "got": {
+            "departure": "2026-09-14T22:24:12+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3979897 -> 3980469: the feed leaves 09-15 00:24:12, got 09-15 00:24:12"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:14:12+02:00",
+            "destination": "3980469",
+            "origin": "3979897"
+          },
+          "got": {
+            "departure": "2026-09-14T22:24:12+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:14, 3979897 -> 3980469: the feed leaves 09-15 00:24:12, got 09-15 00:24:12"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3979684",
+            "origin": "3979948"
+          },
+          "got": {
+            "departure": "2026-09-30T22:49:30+00:00",
+            "trip": "380856953"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3979948 -> 3979684: the feed leaves 10-01 00:49:30, got 10-01 00:49:30"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:39:30+02:00",
+            "destination": "3979684",
+            "origin": "3979948"
+          },
+          "got": {
+            "departure": "2026-09-30T22:49:30+00:00",
+            "trip": "380856953"
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:39, 3979948 -> 3979684: the feed leaves 10-01 00:49:30, got 10-01 00:49:30"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3979897",
+            "origin": "3980004"
+          },
+          "got": {
+            "departure": "2026-09-14T22:22:34+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980004 -> 3979897: the feed leaves 09-15 00:22:34, got 09-15 00:22:34"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:12:34+02:00",
+            "destination": "3979897",
+            "origin": "3980004"
+          },
+          "got": {
+            "departure": "2026-09-14T22:22:34+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:12, 3980004 -> 3979897: the feed leaves 09-15 00:22:34, got 09-15 00:22:34"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980831",
+            "origin": "3980013"
+          },
+          "got": {
+            "departure": "2026-08-31T22:35:55+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980013 -> 3980831: the feed leaves 09-01 00:35:55, got 09-01 00:35:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:25:55+02:00",
+            "destination": "3980831",
+            "origin": "3980013"
+          },
+          "got": {
+            "departure": "2026-08-31T22:35:55+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:25, 3980013 -> 3980831: the feed leaves 09-01 00:35:55, got 09-01 00:35:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980231",
+            "origin": "3980050"
+          },
+          "got": {
+            "departure": "2026-09-14T22:39:29+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980050 -> 3980231: the feed leaves 09-15 00:39:29, got 09-15 00:39:29"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:29:29+02:00",
+            "destination": "3980231",
+            "origin": "3980050"
+          },
+          "got": {
+            "departure": "2026-09-14T22:39:29+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:29, 3980050 -> 3980231: the feed leaves 09-15 00:39:29, got 09-15 00:39:29"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980062",
+            "origin": "3980090"
+          },
+          "got": {
+            "departure": "2026-09-26T22:12:00+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980090 -> 3980062: the feed leaves 09-27 00:12:00, got 09-27 00:12:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:02:00+02:00",
+            "destination": "3980062",
+            "origin": "3980090"
+          },
+          "got": {
+            "departure": "2026-09-26T22:12:00+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:02, 3980090 -> 3980062: the feed leaves 09-27 00:12:00, got 09-27 00:12:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3981217",
+            "origin": "3980113"
+          },
+          "got": {
+            "departure": "2026-09-14T22:47:27+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980113 -> 3981217: the feed leaves 09-15 00:47:27, got 09-15 00:47:27"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:37:27+02:00",
+            "destination": "3981217",
+            "origin": "3980113"
+          },
+          "got": {
+            "departure": "2026-09-14T22:47:27+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:37, 3980113 -> 3981217: the feed leaves 09-15 00:47:27, got 09-15 00:47:27"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980268",
+            "origin": "3980128"
+          },
+          "got": {
+            "departure": "2026-08-31T22:10:51+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980128 -> 3980268: the feed leaves 09-01 00:10:51, got 09-01 00:10:51"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:51+02:00",
+            "destination": "3980268",
+            "origin": "3980128"
+          },
+          "got": {
+            "departure": "2026-08-31T22:10:51+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, 3980128 -> 3980268: the feed leaves 09-01 00:10:51, got 09-01 00:10:51"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3981380",
+            "origin": "3980180"
+          },
+          "got": {
+            "departure": "2026-09-14T22:28:00+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980180 -> 3981380: the feed leaves 09-15 00:28:00, got 09-15 00:28:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:18:00+02:00",
+            "destination": "3981380",
+            "origin": "3980180"
+          },
+          "got": {
+            "departure": "2026-09-14T22:28:00+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:18, 3980180 -> 3981380: the feed leaves 09-15 00:28:00, got 09-15 00:28:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3980180",
+            "origin": "3980182"
+          },
+          "got": {
+            "departure": "2026-09-30T22:33:35+00:00",
+            "trip": "380856955"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3980182 -> 3980180: the feed leaves 10-01 00:33:35, got 10-01 00:33:35"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:23:35+02:00",
+            "destination": "3980180",
+            "origin": "3980182"
+          },
+          "got": {
+            "departure": "2026-09-30T22:33:35+00:00",
+            "trip": "380856955"
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:23, 3980182 -> 3980180: the feed leaves 10-01 00:33:35, got 10-01 00:33:35"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3979851",
+            "origin": "3980204"
+          },
+          "got": {
+            "departure": "2026-09-14T22:44:18+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980204 -> 3979851: the feed leaves 09-15 00:44:18, got 09-15 00:44:18"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:34:18+02:00",
+            "destination": "3979851",
+            "origin": "3980204"
+          },
+          "got": {
+            "departure": "2026-09-14T22:44:18+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:34, 3980204 -> 3979851: the feed leaves 09-15 00:44:18, got 09-15 00:44:18"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3981140",
+            "origin": "3980235"
+          },
+          "got": {
+            "departure": "2026-09-20T22:42:51+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3980235 -> 3981140: the feed leaves 09-21 00:42:51, got 09-21 00:42:51"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:32:51+02:00",
+            "destination": "3981140",
+            "origin": "3980235"
+          },
+          "got": {
+            "departure": "2026-09-20T22:42:51+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:32, 3980235 -> 3981140: the feed leaves 09-21 00:42:51, got 09-21 00:42:51"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980246",
+            "origin": "3980252"
+          },
+          "got": {
+            "departure": "2026-08-31T22:51:13+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980252 -> 3980246: the feed leaves 09-01 00:51:13, got 09-01 00:51:13"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:41:13+02:00",
+            "destination": "3980246",
+            "origin": "3980252"
+          },
+          "got": {
+            "departure": "2026-08-31T22:51:13+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:41, 3980252 -> 3980246: the feed leaves 09-01 00:51:13, got 09-01 00:51:13"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980701",
+            "origin": "3980268"
+          },
+          "got": {
+            "departure": "2026-08-31T22:13:00+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980268 -> 3980701: the feed leaves 09-01 00:13:00, got 09-01 00:13:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:00+02:00",
+            "destination": "3980701",
+            "origin": "3980268"
+          },
+          "got": {
+            "departure": "2026-08-31T22:13:00+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, 3980268 -> 3980701: the feed leaves 09-01 00:13:00, got 09-01 00:13:00"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3981052",
+            "origin": "3980349"
+          },
+          "got": {
+            "departure": "2026-08-31T22:19:19+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980349 -> 3981052: the feed leaves 09-01 00:19:19, got 09-01 00:19:19"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:09:19+02:00",
+            "destination": "3981052",
+            "origin": "3980349"
+          },
+          "got": {
+            "departure": "2026-08-31T22:19:19+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:09, 3980349 -> 3981052: the feed leaves 09-01 00:19:19, got 09-01 00:19:19"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980250",
+            "origin": "3980438"
+          },
+          "got": {
+            "departure": "2026-08-31T22:31:05+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980438 -> 3980250: the feed leaves 09-01 00:31:05, got 09-01 00:31:05"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:21:05+02:00",
+            "destination": "3980250",
+            "origin": "3980438"
+          },
+          "got": {
+            "departure": "2026-08-31T22:31:05+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:21, 3980438 -> 3980250: the feed leaves 09-01 00:31:05, got 09-01 00:31:05"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980605",
+            "origin": "3980480"
+          },
+          "got": {
+            "departure": "2026-09-26T22:42:30+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980480 -> 3980605: the feed leaves 09-27 00:42:30, got 09-27 00:42:30"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:32:30+02:00",
+            "destination": "3980605",
+            "origin": "3980480"
+          },
+          "got": {
+            "departure": "2026-09-26T22:42:30+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:32, 3980480 -> 3980605: the feed leaves 09-27 00:42:30, got 09-27 00:42:30"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3981110",
+            "origin": "3980498"
+          },
+          "got": {
+            "departure": "2026-09-26T22:36:40+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980498 -> 3981110: the feed leaves 09-27 00:36:40, got 09-27 00:36:40"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:26:40+02:00",
+            "destination": "3981110",
+            "origin": "3980498"
+          },
+          "got": {
+            "departure": "2026-09-26T22:36:40+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:26, 3980498 -> 3981110: the feed leaves 09-27 00:36:40, got 09-27 00:36:40"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3980418",
+            "origin": "3980562"
+          },
+          "got": {
+            "departure": "2026-09-06T22:49:50+00:00",
+            "trip": "380816285"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3980562 -> 3980418: the feed leaves 09-07 00:49:50, got 09-07 00:49:50"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:39:50+02:00",
+            "destination": "3980418",
+            "origin": "3980562"
+          },
+          "got": {
+            "departure": "2026-09-06T22:49:50+00:00",
+            "trip": "380816285"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:39, 3980562 -> 3980418: the feed leaves 09-07 00:49:50, got 09-07 00:49:50"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980752",
+            "origin": "3980593"
+          },
+          "got": {
+            "departure": "2026-09-26T22:18:00+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980593 -> 3980752: the feed leaves 09-27 00:18:00, got 09-27 00:18:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:08:00+02:00",
+            "destination": "3980752",
+            "origin": "3980593"
+          },
+          "got": {
+            "departure": "2026-09-26T22:18:00+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:08, 3980593 -> 3980752: the feed leaves 09-27 00:18:00, got 09-27 00:18:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3979725",
+            "origin": "3980601"
+          },
+          "got": {
+            "departure": "2026-09-20T22:46:55+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3980601 -> 3979725: the feed leaves 09-21 00:46:55, got 09-21 00:46:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:36:55+02:00",
+            "destination": "3979725",
+            "origin": "3980601"
+          },
+          "got": {
+            "departure": "2026-09-20T22:46:55+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:36, 3980601 -> 3979725: the feed leaves 09-21 00:46:55, got 09-21 00:46:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980992",
+            "origin": "3980629"
+          },
+          "got": {
+            "departure": "2026-09-26T22:46:29+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980629 -> 3980992: the feed leaves 09-27 00:46:29, got 09-27 00:46:29"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:36:29+02:00",
+            "destination": "3980992",
+            "origin": "3980629"
+          },
+          "got": {
+            "departure": "2026-09-26T22:46:29+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:36, 3980629 -> 3980992: the feed leaves 09-27 00:46:29, got 09-27 00:46:29"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3979841",
+            "origin": "3980663"
+          },
+          "got": {
+            "departure": "2026-08-31T22:00:00+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980663 -> 3979841: the feed leaves 09-01 00:00:00, got 09-01 00:00:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "destination": "3979841",
+            "origin": "3980663"
+          },
+          "got": {
+            "departure": "2026-08-31T22:18:00+00:00",
+            "trip": "380806755"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, 3980663 -> 3979841: the feed leaves 09-01 00:18:00, got 09-01 00:18:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980743",
+            "origin": "3980711"
+          },
+          "got": {
+            "departure": "2026-09-14T22:50:20+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980711 -> 3980743: the feed leaves 09-15 00:50:20, got 09-15 00:50:20"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:40:20+02:00",
+            "destination": "3980743",
+            "origin": "3980711"
+          },
+          "got": {
+            "departure": "2026-09-14T22:50:20+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:40, 3980711 -> 3980743: the feed leaves 09-15 00:50:20, got 09-15 00:50:20"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980596",
+            "origin": "3980752"
+          },
+          "got": {
+            "departure": "2026-09-26T22:19:22+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980752 -> 3980596: the feed leaves 09-27 00:19:22, got 09-27 00:19:22"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:09:22+02:00",
+            "destination": "3980596",
+            "origin": "3980752"
+          },
+          "got": {
+            "departure": "2026-09-26T22:19:22+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:09, 3980752 -> 3980596: the feed leaves 09-27 00:19:22, got 09-27 00:19:22"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980806",
+            "origin": "3980798"
+          },
+          "got": {
+            "departure": "2026-08-31T22:38:38+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980798 -> 3980806: the feed leaves 09-01 00:38:38, got 09-01 00:38:38"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:28:38+02:00",
+            "destination": "3980806",
+            "origin": "3980798"
+          },
+          "got": {
+            "departure": "2026-08-31T22:38:38+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:28, 3980798 -> 3980806: the feed leaves 09-01 00:38:38, got 09-01 00:38:38"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3981021",
+            "origin": "3980814"
+          },
+          "got": {
+            "departure": "2026-09-06T22:34:26+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3980814 -> 3981021: the feed leaves 09-07 00:34:26, got 09-07 00:34:26"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:24:26+02:00",
+            "destination": "3981021",
+            "origin": "3980814"
+          },
+          "got": {
+            "departure": "2026-09-06T22:34:26+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:24, 3980814 -> 3981021: the feed leaves 09-07 00:34:26, got 09-07 00:34:26"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980590",
+            "origin": "3980882"
+          },
+          "got": {
+            "departure": "2026-08-31T22:15:22+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980882 -> 3980590: the feed leaves 09-01 00:15:22, got 09-01 00:15:22"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:05:22+02:00",
+            "destination": "3980590",
+            "origin": "3980882"
+          },
+          "got": {
+            "departure": "2026-08-31T22:15:22+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:05, 3980882 -> 3980590: the feed leaves 09-01 00:15:22, got 09-01 00:15:22"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "4149767",
+            "origin": "3980919"
+          },
+          "got": {
+            "departure": "2026-09-30T22:41:30+00:00",
+            "trip": "380856955"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3980919 -> 4149767: the feed leaves 10-01 00:41:30, got 10-01 00:41:30"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:31:30+02:00",
+            "destination": "4149767",
+            "origin": "3980919"
+          },
+          "got": {
+            "departure": "2026-09-30T22:41:30+00:00",
+            "trip": "380856955"
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:31, 3980919 -> 4149767: the feed leaves 10-01 00:41:30, got 10-01 00:41:30"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980162",
+            "origin": "3980974"
+          },
+          "got": {
+            "departure": "2026-08-31T22:46:55+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980974 -> 3980162: the feed leaves 09-01 00:46:55, got 09-01 00:46:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:36:55+02:00",
+            "destination": "3980162",
+            "origin": "3980974"
+          },
+          "got": {
+            "departure": "2026-08-31T22:46:55+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:36, 3980974 -> 3980162: the feed leaves 09-01 00:46:55, got 09-01 00:46:55"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3981133",
+            "origin": "3981052"
+          },
+          "got": {
+            "departure": "2026-08-31T22:21:13+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981052 -> 3981133: the feed leaves 09-01 00:21:13, got 09-01 00:21:13"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:11:13+02:00",
+            "destination": "3981133",
+            "origin": "3981052"
+          },
+          "got": {
+            "departure": "2026-08-31T22:21:13+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:11, 3981052 -> 3981133: the feed leaves 09-01 00:21:13, got 09-01 00:21:13"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "4015596",
+            "origin": "3981110"
+          },
+          "got": {
+            "departure": "2026-09-26T22:38:28+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3981110 -> 4015596: the feed leaves 09-27 00:38:28, got 09-27 00:38:28"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:28:28+02:00",
+            "destination": "4015596",
+            "origin": "3981110"
+          },
+          "got": {
+            "departure": "2026-09-26T22:38:28+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:28, 3981110 -> 4015596: the feed leaves 09-27 00:38:28, got 09-27 00:38:28"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980252",
+            "origin": "3981165"
+          },
+          "got": {
+            "departure": "2026-08-31T22:49:00+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981165 -> 3980252: the feed leaves 09-01 00:49:00, got 09-01 00:49:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:39:00+02:00",
+            "destination": "3980252",
+            "origin": "3981165"
+          },
+          "got": {
+            "departure": "2026-08-31T22:49:00+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:39, 3981165 -> 3980252: the feed leaves 09-01 00:49:00, got 09-01 00:49:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980711",
+            "origin": "3981217"
+          },
+          "got": {
+            "departure": "2026-09-14T22:48:38+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3981217 -> 3980711: the feed leaves 09-15 00:48:38, got 09-15 00:48:38"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:38:38+02:00",
+            "destination": "3980711",
+            "origin": "3981217"
+          },
+          "got": {
+            "departure": "2026-09-14T22:48:38+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:38, 3981217 -> 3980711: the feed leaves 09-15 00:48:38, got 09-15 00:48:38"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980320",
+            "origin": "3981287"
+          },
+          "got": {
+            "departure": "2026-08-31T21:54:00+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981287 -> 3980320: the feed leaves 08-31 23:54:00, got 08-31 23:54:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:02:00+02:00",
+            "destination": "3980320",
+            "origin": "3981287"
+          },
+          "got": {
+            "departure": "2026-08-31T22:12:00+00:00",
+            "trip": "380806755"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:02, 3981287 -> 3980320: the feed leaves 09-01 00:12:00, got 09-01 00:12:00"
+        }
+      ],
+      "fixture": "gvb",
+      "id": "gvb-route-calendar",
+      "outcome": "passed",
+      "promise": "route",
+      "reason": null,
+      "shape": "calendar"
+    },
+    {
+      "checks": [
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3979966",
+            "origin": "3979684"
+          },
+          "got": {
+            "departure": "2026-09-30T22:51:19+00:00",
+            "trip": "380856953"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3979684 -> 3979966: the feed leaves 10-01 00:51:19, got 10-01 00:51:19"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:41:19+02:00",
+            "destination": "3979966",
+            "origin": "3979684"
+          },
+          "got": {
+            "departure": "2026-09-30T22:51:19+00:00",
+            "trip": "380856953"
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:41, 3979684 -> 3979966: the feed leaves 10-01 00:51:19, got 10-01 00:51:19"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980994",
+            "origin": "3979739"
+          },
+          "got": {
+            "departure": "2026-08-31T21:55:37+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3979739 -> 3980994: the feed leaves 08-31 23:55:37, got 08-31 23:55:37"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:37+02:00",
+            "destination": "3980994",
+            "origin": "3979739"
+          },
+          "got": {
+            "departure": "2026-08-31T22:13:37+00:00",
+            "trip": "380806755"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, 3979739 -> 3980994: the feed leaves 09-01 00:13:37, got 09-01 00:13:37"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3980498",
+            "origin": "3979766"
+          },
+          "got": {
+            "departure": "2026-09-06T22:32:00+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3979766 -> 3980498: the feed leaves 09-07 00:32:00, got 09-07 00:32:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:22:00+02:00",
+            "destination": "3980498",
+            "origin": "3979766"
+          },
+          "got": {
+            "departure": "2026-09-06T22:32:00+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:22, 3979766 -> 3980498: the feed leaves 09-07 00:32:00, got 09-07 00:32:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3980235",
+            "origin": "3979838"
+          },
+          "got": {
+            "departure": "2026-09-20T22:41:11+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3979838 -> 3980235: the feed leaves 09-21 00:41:11, got 09-21 00:41:11"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:31:11+02:00",
+            "destination": "3980235",
+            "origin": "3979838"
+          },
+          "got": {
+            "departure": "2026-09-20T22:41:11+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:31, 3979838 -> 3980235: the feed leaves 09-21 00:41:11, got 09-21 00:41:11"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3981181",
+            "origin": "3979846"
+          },
+          "got": {
+            "departure": "2026-09-06T22:27:42+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3979846 -> 3981181: the feed leaves 09-07 00:27:42, got 09-07 00:27:42"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:17:42+02:00",
+            "destination": "3981181",
+            "origin": "3979846"
+          },
+          "got": {
+            "departure": "2026-09-06T22:27:42+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:17, 3979846 -> 3981181: the feed leaves 09-07 00:27:42, got 09-07 00:27:42"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980469",
+            "origin": "3979897"
+          },
+          "got": {
+            "departure": "2026-09-14T22:24:12+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3979897 -> 3980469: the feed leaves 09-15 00:24:12, got 09-15 00:24:12"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:14:12+02:00",
+            "destination": "3980469",
+            "origin": "3979897"
+          },
+          "got": {
+            "departure": "2026-09-14T22:24:12+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:14, 3979897 -> 3980469: the feed leaves 09-15 00:24:12, got 09-15 00:24:12"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3979684",
+            "origin": "3979948"
+          },
+          "got": {
+            "departure": "2026-09-30T22:49:30+00:00",
+            "trip": "380856953"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3979948 -> 3979684: the feed leaves 10-01 00:49:30, got 10-01 00:49:30"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:39:30+02:00",
+            "destination": "3979684",
+            "origin": "3979948"
+          },
+          "got": {
+            "departure": "2026-09-30T22:49:30+00:00",
+            "trip": "380856953"
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:39, 3979948 -> 3979684: the feed leaves 10-01 00:49:30, got 10-01 00:49:30"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3979897",
+            "origin": "3980004"
+          },
+          "got": {
+            "departure": "2026-09-14T22:22:34+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980004 -> 3979897: the feed leaves 09-15 00:22:34, got 09-15 00:22:34"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:12:34+02:00",
+            "destination": "3979897",
+            "origin": "3980004"
+          },
+          "got": {
+            "departure": "2026-09-14T22:22:34+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:12, 3980004 -> 3979897: the feed leaves 09-15 00:22:34, got 09-15 00:22:34"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980831",
+            "origin": "3980013"
+          },
+          "got": {
+            "departure": "2026-08-31T22:35:55+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980013 -> 3980831: the feed leaves 09-01 00:35:55, got 09-01 00:35:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:25:55+02:00",
+            "destination": "3980831",
+            "origin": "3980013"
+          },
+          "got": {
+            "departure": "2026-08-31T22:35:55+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:25, 3980013 -> 3980831: the feed leaves 09-01 00:35:55, got 09-01 00:35:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980231",
+            "origin": "3980050"
+          },
+          "got": {
+            "departure": "2026-09-14T22:39:29+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980050 -> 3980231: the feed leaves 09-15 00:39:29, got 09-15 00:39:29"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:29:29+02:00",
+            "destination": "3980231",
+            "origin": "3980050"
+          },
+          "got": {
+            "departure": "2026-09-14T22:39:29+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:29, 3980050 -> 3980231: the feed leaves 09-15 00:39:29, got 09-15 00:39:29"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980062",
+            "origin": "3980090"
+          },
+          "got": {
+            "departure": "2026-09-26T22:12:00+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980090 -> 3980062: the feed leaves 09-27 00:12:00, got 09-27 00:12:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:02:00+02:00",
+            "destination": "3980062",
+            "origin": "3980090"
+          },
+          "got": {
+            "departure": "2026-09-26T22:12:00+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:02, 3980090 -> 3980062: the feed leaves 09-27 00:12:00, got 09-27 00:12:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3981217",
+            "origin": "3980113"
+          },
+          "got": {
+            "departure": "2026-09-14T22:47:27+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980113 -> 3981217: the feed leaves 09-15 00:47:27, got 09-15 00:47:27"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:37:27+02:00",
+            "destination": "3981217",
+            "origin": "3980113"
+          },
+          "got": {
+            "departure": "2026-09-14T22:47:27+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:37, 3980113 -> 3981217: the feed leaves 09-15 00:47:27, got 09-15 00:47:27"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980268",
+            "origin": "3980128"
+          },
+          "got": {
+            "departure": "2026-08-31T22:10:51+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980128 -> 3980268: the feed leaves 09-01 00:10:51, got 09-01 00:10:51"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:51+02:00",
+            "destination": "3980268",
+            "origin": "3980128"
+          },
+          "got": {
+            "departure": "2026-08-31T22:10:51+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, 3980128 -> 3980268: the feed leaves 09-01 00:10:51, got 09-01 00:10:51"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3981380",
+            "origin": "3980180"
+          },
+          "got": {
+            "departure": "2026-09-14T22:28:00+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980180 -> 3981380: the feed leaves 09-15 00:28:00, got 09-15 00:28:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:18:00+02:00",
+            "destination": "3981380",
+            "origin": "3980180"
+          },
+          "got": {
+            "departure": "2026-09-14T22:28:00+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:18, 3980180 -> 3981380: the feed leaves 09-15 00:28:00, got 09-15 00:28:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3980180",
+            "origin": "3980182"
+          },
+          "got": {
+            "departure": "2026-09-30T22:33:35+00:00",
+            "trip": "380856955"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3980182 -> 3980180: the feed leaves 10-01 00:33:35, got 10-01 00:33:35"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:23:35+02:00",
+            "destination": "3980180",
+            "origin": "3980182"
+          },
+          "got": {
+            "departure": "2026-09-30T22:33:35+00:00",
+            "trip": "380856955"
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:23, 3980182 -> 3980180: the feed leaves 10-01 00:33:35, got 10-01 00:33:35"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3979851",
+            "origin": "3980204"
+          },
+          "got": {
+            "departure": "2026-09-14T22:44:18+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980204 -> 3979851: the feed leaves 09-15 00:44:18, got 09-15 00:44:18"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:34:18+02:00",
+            "destination": "3979851",
+            "origin": "3980204"
+          },
+          "got": {
+            "departure": "2026-09-14T22:44:18+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:34, 3980204 -> 3979851: the feed leaves 09-15 00:44:18, got 09-15 00:44:18"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3981140",
+            "origin": "3980235"
+          },
+          "got": {
+            "departure": "2026-09-20T22:42:51+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3980235 -> 3981140: the feed leaves 09-21 00:42:51, got 09-21 00:42:51"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:32:51+02:00",
+            "destination": "3981140",
+            "origin": "3980235"
+          },
+          "got": {
+            "departure": "2026-09-20T22:42:51+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:32, 3980235 -> 3981140: the feed leaves 09-21 00:42:51, got 09-21 00:42:51"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980246",
+            "origin": "3980252"
+          },
+          "got": {
+            "departure": "2026-08-31T22:51:13+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980252 -> 3980246: the feed leaves 09-01 00:51:13, got 09-01 00:51:13"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:41:13+02:00",
+            "destination": "3980246",
+            "origin": "3980252"
+          },
+          "got": {
+            "departure": "2026-08-31T22:51:13+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:41, 3980252 -> 3980246: the feed leaves 09-01 00:51:13, got 09-01 00:51:13"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980701",
+            "origin": "3980268"
+          },
+          "got": {
+            "departure": "2026-08-31T22:13:00+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980268 -> 3980701: the feed leaves 09-01 00:13:00, got 09-01 00:13:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:00+02:00",
+            "destination": "3980701",
+            "origin": "3980268"
+          },
+          "got": {
+            "departure": "2026-08-31T22:13:00+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, 3980268 -> 3980701: the feed leaves 09-01 00:13:00, got 09-01 00:13:00"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3981052",
+            "origin": "3980349"
+          },
+          "got": {
+            "departure": "2026-08-31T22:19:19+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980349 -> 3981052: the feed leaves 09-01 00:19:19, got 09-01 00:19:19"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:09:19+02:00",
+            "destination": "3981052",
+            "origin": "3980349"
+          },
+          "got": {
+            "departure": "2026-08-31T22:19:19+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:09, 3980349 -> 3981052: the feed leaves 09-01 00:19:19, got 09-01 00:19:19"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980250",
+            "origin": "3980438"
+          },
+          "got": {
+            "departure": "2026-08-31T22:31:05+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980438 -> 3980250: the feed leaves 09-01 00:31:05, got 09-01 00:31:05"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:21:05+02:00",
+            "destination": "3980250",
+            "origin": "3980438"
+          },
+          "got": {
+            "departure": "2026-08-31T22:31:05+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:21, 3980438 -> 3980250: the feed leaves 09-01 00:31:05, got 09-01 00:31:05"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980605",
+            "origin": "3980480"
+          },
+          "got": {
+            "departure": "2026-09-26T22:42:30+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980480 -> 3980605: the feed leaves 09-27 00:42:30, got 09-27 00:42:30"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:32:30+02:00",
+            "destination": "3980605",
+            "origin": "3980480"
+          },
+          "got": {
+            "departure": "2026-09-26T22:42:30+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:32, 3980480 -> 3980605: the feed leaves 09-27 00:42:30, got 09-27 00:42:30"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3981110",
+            "origin": "3980498"
+          },
+          "got": {
+            "departure": "2026-09-26T22:36:40+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980498 -> 3981110: the feed leaves 09-27 00:36:40, got 09-27 00:36:40"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:26:40+02:00",
+            "destination": "3981110",
+            "origin": "3980498"
+          },
+          "got": {
+            "departure": "2026-09-26T22:36:40+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:26, 3980498 -> 3981110: the feed leaves 09-27 00:36:40, got 09-27 00:36:40"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3980418",
+            "origin": "3980562"
+          },
+          "got": {
+            "departure": "2026-09-06T22:49:50+00:00",
+            "trip": "380816285"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3980562 -> 3980418: the feed leaves 09-07 00:49:50, got 09-07 00:49:50"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:39:50+02:00",
+            "destination": "3980418",
+            "origin": "3980562"
+          },
+          "got": {
+            "departure": "2026-09-06T22:49:50+00:00",
+            "trip": "380816285"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:39, 3980562 -> 3980418: the feed leaves 09-07 00:49:50, got 09-07 00:49:50"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980752",
+            "origin": "3980593"
+          },
+          "got": {
+            "departure": "2026-09-26T22:18:00+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980593 -> 3980752: the feed leaves 09-27 00:18:00, got 09-27 00:18:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:08:00+02:00",
+            "destination": "3980752",
+            "origin": "3980593"
+          },
+          "got": {
+            "departure": "2026-09-26T22:18:00+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:08, 3980593 -> 3980752: the feed leaves 09-27 00:18:00, got 09-27 00:18:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3979725",
+            "origin": "3980601"
+          },
+          "got": {
+            "departure": "2026-09-20T22:46:55+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3980601 -> 3979725: the feed leaves 09-21 00:46:55, got 09-21 00:46:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:36:55+02:00",
+            "destination": "3979725",
+            "origin": "3980601"
+          },
+          "got": {
+            "departure": "2026-09-20T22:46:55+00:00",
+            "trip": "380832272"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:36, 3980601 -> 3979725: the feed leaves 09-21 00:46:55, got 09-21 00:46:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980992",
+            "origin": "3980629"
+          },
+          "got": {
+            "departure": "2026-09-26T22:46:29+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980629 -> 3980992: the feed leaves 09-27 00:46:29, got 09-27 00:46:29"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:36:29+02:00",
+            "destination": "3980992",
+            "origin": "3980629"
+          },
+          "got": {
+            "departure": "2026-09-26T22:46:29+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:36, 3980629 -> 3980992: the feed leaves 09-27 00:46:29, got 09-27 00:46:29"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3979841",
+            "origin": "3980663"
+          },
+          "got": {
+            "departure": "2026-08-31T22:00:00+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980663 -> 3979841: the feed leaves 09-01 00:00:00, got 09-01 00:00:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "destination": "3979841",
+            "origin": "3980663"
+          },
+          "got": {
+            "departure": "2026-08-31T22:18:00+00:00",
+            "trip": "380806755"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, 3980663 -> 3979841: the feed leaves 09-01 00:18:00, got 09-01 00:18:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980743",
+            "origin": "3980711"
+          },
+          "got": {
+            "departure": "2026-09-14T22:50:20+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980711 -> 3980743: the feed leaves 09-15 00:50:20, got 09-15 00:50:20"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:40:20+02:00",
+            "destination": "3980743",
+            "origin": "3980711"
+          },
+          "got": {
+            "departure": "2026-09-14T22:50:20+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:40, 3980711 -> 3980743: the feed leaves 09-15 00:50:20, got 09-15 00:50:20"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980596",
+            "origin": "3980752"
+          },
+          "got": {
+            "departure": "2026-09-26T22:19:22+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980752 -> 3980596: the feed leaves 09-27 00:19:22, got 09-27 00:19:22"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:09:22+02:00",
+            "destination": "3980596",
+            "origin": "3980752"
+          },
+          "got": {
+            "departure": "2026-09-26T22:19:22+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:09, 3980752 -> 3980596: the feed leaves 09-27 00:19:22, got 09-27 00:19:22"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980806",
+            "origin": "3980798"
+          },
+          "got": {
+            "departure": "2026-08-31T22:38:38+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980798 -> 3980806: the feed leaves 09-01 00:38:38, got 09-01 00:38:38"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:28:38+02:00",
+            "destination": "3980806",
+            "origin": "3980798"
+          },
+          "got": {
+            "departure": "2026-08-31T22:38:38+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:28, 3980798 -> 3980806: the feed leaves 09-01 00:38:38, got 09-01 00:38:38"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3981021",
+            "origin": "3980814"
+          },
+          "got": {
+            "departure": "2026-09-06T22:34:26+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3980814 -> 3981021: the feed leaves 09-07 00:34:26, got 09-07 00:34:26"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:24:26+02:00",
+            "destination": "3981021",
+            "origin": "3980814"
+          },
+          "got": {
+            "departure": "2026-09-06T22:34:26+00:00",
+            "trip": "380816082"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:24, 3980814 -> 3981021: the feed leaves 09-07 00:34:26, got 09-07 00:34:26"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980590",
+            "origin": "3980882"
+          },
+          "got": {
+            "departure": "2026-08-31T22:15:22+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980882 -> 3980590: the feed leaves 09-01 00:15:22, got 09-01 00:15:22"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:05:22+02:00",
+            "destination": "3980590",
+            "origin": "3980882"
+          },
+          "got": {
+            "departure": "2026-08-31T22:15:22+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:05, 3980882 -> 3980590: the feed leaves 09-01 00:15:22, got 09-01 00:15:22"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "4149767",
+            "origin": "3980919"
+          },
+          "got": {
+            "departure": "2026-09-30T22:41:30+00:00",
+            "trip": "380856955"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3980919 -> 4149767: the feed leaves 10-01 00:41:30, got 10-01 00:41:30"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:31:30+02:00",
+            "destination": "4149767",
+            "origin": "3980919"
+          },
+          "got": {
+            "departure": "2026-09-30T22:41:30+00:00",
+            "trip": "380856955"
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:31, 3980919 -> 4149767: the feed leaves 10-01 00:41:30, got 10-01 00:41:30"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980162",
+            "origin": "3980974"
+          },
+          "got": {
+            "departure": "2026-08-31T22:46:55+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980974 -> 3980162: the feed leaves 09-01 00:46:55, got 09-01 00:46:55"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:36:55+02:00",
+            "destination": "3980162",
+            "origin": "3980974"
+          },
+          "got": {
+            "departure": "2026-08-31T22:46:55+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:36, 3980974 -> 3980162: the feed leaves 09-01 00:46:55, got 09-01 00:46:55"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3981133",
+            "origin": "3981052"
+          },
+          "got": {
+            "departure": "2026-08-31T22:21:13+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981052 -> 3981133: the feed leaves 09-01 00:21:13, got 09-01 00:21:13"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:11:13+02:00",
+            "destination": "3981133",
+            "origin": "3981052"
+          },
+          "got": {
+            "departure": "2026-08-31T22:21:13+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:11, 3981052 -> 3981133: the feed leaves 09-01 00:21:13, got 09-01 00:21:13"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "4015596",
+            "origin": "3981110"
+          },
+          "got": {
+            "departure": "2026-09-26T22:38:28+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3981110 -> 4015596: the feed leaves 09-27 00:38:28, got 09-27 00:38:28"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:28:28+02:00",
+            "destination": "4015596",
+            "origin": "3981110"
+          },
+          "got": {
+            "departure": "2026-09-26T22:38:28+00:00",
+            "trip": "380786522"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:28, 3981110 -> 4015596: the feed leaves 09-27 00:38:28, got 09-27 00:38:28"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980252",
+            "origin": "3981165"
+          },
+          "got": {
+            "departure": "2026-08-31T22:49:00+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981165 -> 3980252: the feed leaves 09-01 00:49:00, got 09-01 00:49:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:39:00+02:00",
+            "destination": "3980252",
+            "origin": "3981165"
+          },
+          "got": {
+            "departure": "2026-08-31T22:49:00+00:00",
+            "trip": "380806753"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:39, 3981165 -> 3980252: the feed leaves 09-01 00:49:00, got 09-01 00:49:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980711",
+            "origin": "3981217"
+          },
+          "got": {
+            "departure": "2026-09-14T22:48:38+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3981217 -> 3980711: the feed leaves 09-15 00:48:38, got 09-15 00:48:38"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:38:38+02:00",
+            "destination": "3980711",
+            "origin": "3981217"
+          },
+          "got": {
+            "departure": "2026-09-14T22:48:38+00:00",
+            "trip": "380877388"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:38, 3981217 -> 3980711: the feed leaves 09-15 00:48:38, got 09-15 00:48:38"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980320",
+            "origin": "3981287"
+          },
+          "got": {
+            "departure": "2026-08-31T21:54:00+00:00",
+            "trip": "380806754"
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981287 -> 3980320: the feed leaves 08-31 23:54:00, got 08-31 23:54:00"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:02:00+02:00",
+            "destination": "3980320",
+            "origin": "3981287"
+          },
+          "got": {
+            "departure": "2026-08-31T22:12:00+00:00",
+            "trip": "380806755"
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:02, 3981287 -> 3980320: the feed leaves 09-01 00:12:00, got 09-01 00:12:00"
+        }
+      ],
+      "fixture": "gvb",
+      "id": "gvb-route-calendar_dates",
+      "outcome": "passed",
+      "promise": "route",
+      "reason": null,
+      "shape": "calendar_dates"
+    },
+    {
+      "checks": [
+        {
           "ok": true,
           "origin": "HDV08A",
           "text": "a destination is offered twice from HDV08A Hôtel de Ville - Pantiero",
@@ -31604,6 +35804,1014 @@
       "outcome": "passed",
       "reason": null,
       "route": "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"
+    },
+    {
+      "checks": [
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582478"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582478: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:00:30+01:00",
+            "stop": "StopPoint:OCECar TER-87582478"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:00, stop StopPoint:OCECar TER-87582478: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582601"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582601: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:00:30+01:00",
+            "stop": "StopPoint:OCECar TER-87582601"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:00, stop StopPoint:OCECar TER-87582601: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582619"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582619: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:10:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582619"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:10, stop StopPoint:OCECar TER-87582619: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582635"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582635: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:20:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582635"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:20, stop StopPoint:OCECar TER-87582635: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582643"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582643: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:26:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582643"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:26, stop StopPoint:OCECar TER-87582643: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582668"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582668: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:38:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582668"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:38, stop StopPoint:OCECar TER-87582668: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611004"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611004: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T07:03:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611004"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 07:03, stop StopPoint:OCEINTERCITES de nuit-87611004: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611343"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611343: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:05:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611343"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:05, stop StopPoint:OCEINTERCITES de nuit-87611343: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611368"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611368: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T07:49:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611368"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 07:49, stop StopPoint:OCEINTERCITES de nuit-87611368: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611384"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611384: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T07:35:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611384"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 07:35, stop StopPoint:OCEINTERCITES de nuit-87611384: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611483"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611483: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T10:00:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611483"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 10:00, stop StopPoint:OCEINTERCITES de nuit-87611483: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611509"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611509: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T09:43:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611509"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 09:43, stop StopPoint:OCEINTERCITES de nuit-87611509: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611517"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611517: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T09:35:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611517"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 09:35, stop StopPoint:OCEINTERCITES de nuit-87611517: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611525"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611525: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T09:20:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611525"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 09:20, stop StopPoint:OCEINTERCITES de nuit-87611525: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611533"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611533: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T09:07:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611533"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 09:07, stop StopPoint:OCEINTERCITES de nuit-87611533: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611558"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611558: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:56:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611558"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:56, stop StopPoint:OCEINTERCITES de nuit-87611558: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611574"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611574: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:48:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611574"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:48, stop StopPoint:OCEINTERCITES de nuit-87611574: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611590"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611590: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:37:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611590"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:37, stop StopPoint:OCEINTERCITES de nuit-87611590: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611616"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611616: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:20:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611616"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:20, stop StopPoint:OCEINTERCITES de nuit-87611616: the feed has 1 in the next 60 min, got 1"
+        }
+      ],
+      "fixture": "sncf",
+      "id": "sncf-local_stop-calendar",
+      "outcome": "passed",
+      "promise": "local_stop",
+      "reason": null,
+      "shape": "calendar"
+    },
+    {
+      "checks": [
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582478"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582478: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:00:30+01:00",
+            "stop": "StopPoint:OCECar TER-87582478"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:00, stop StopPoint:OCECar TER-87582478: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582601"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582601: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:00:30+01:00",
+            "stop": "StopPoint:OCECar TER-87582601"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:00, stop StopPoint:OCECar TER-87582601: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582619"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582619: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:10:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582619"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:10, stop StopPoint:OCECar TER-87582619: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582635"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582635: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:20:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582635"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:20, stop StopPoint:OCECar TER-87582635: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582643"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582643: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:26:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582643"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:26, stop StopPoint:OCECar TER-87582643: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-04T23:50:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582668"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582668: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-12-05T00:38:00+01:00",
+            "stop": "StopPoint:OCECar TER-87582668"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-12-05 00:38, stop StopPoint:OCECar TER-87582668: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611004"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611004: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T07:03:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611004"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 07:03, stop StopPoint:OCEINTERCITES de nuit-87611004: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611343"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611343: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:05:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611343"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:05, stop StopPoint:OCEINTERCITES de nuit-87611343: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611368"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611368: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T07:49:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611368"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 07:49, stop StopPoint:OCEINTERCITES de nuit-87611368: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611384"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611384: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T07:35:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611384"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 07:35, stop StopPoint:OCEINTERCITES de nuit-87611384: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611483"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611483: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T10:00:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611483"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 10:00, stop StopPoint:OCEINTERCITES de nuit-87611483: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611509"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611509: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T09:43:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611509"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 09:43, stop StopPoint:OCEINTERCITES de nuit-87611509: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611517"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611517: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T09:35:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611517"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 09:35, stop StopPoint:OCEINTERCITES de nuit-87611517: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611525"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611525: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T09:20:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611525"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 09:20, stop StopPoint:OCEINTERCITES de nuit-87611525: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611533"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611533: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T09:07:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611533"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 09:07, stop StopPoint:OCEINTERCITES de nuit-87611533: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611558"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611558: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:56:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611558"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:56, stop StopPoint:OCEINTERCITES de nuit-87611558: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611574"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611574: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:48:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611574"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:48, stop StopPoint:OCEINTERCITES de nuit-87611574: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611590"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611590: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:37:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611590"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:37, stop StopPoint:OCEINTERCITES de nuit-87611590: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-25T23:50:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611616"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611616: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-08-26T08:20:00+02:00",
+            "stop": "StopPoint:OCEINTERCITES de nuit-87611616"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-08-26 08:20, stop StopPoint:OCEINTERCITES de nuit-87611616: the feed has 1 in the next 60 min, got 1"
+        }
+      ],
+      "fixture": "sncf",
+      "id": "sncf-local_stop-calendar_dates",
+      "outcome": "passed",
+      "promise": "local_stop",
+      "reason": null,
+      "shape": "calendar_dates"
     },
     {
       "checks": [
