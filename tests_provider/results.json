@@ -1170,10 +1170,10 @@
             "direction": 0,
             "origin": "3980938",
             "route": "152323",
-            "trip": "380877660"
+            "trip": "380816082"
           },
           "ok": true,
-          "text": "asked 3980938 -> 3979810 on 152323 d0 (stop 14 to stop 27 of a 27-stop ride): got 3980938 -> 3979810 on 152323 d0, trip 380877660"
+          "text": "asked 3980938 -> 3979810 on 152323 d0 (stop 14 to stop 27 of a 27-stop ride): got 3980938 -> 3979810 on 152323 d0, trip 380816082"
         },
         {
           "asked": {
@@ -1190,19 +1190,19 @@
             "direction": 0,
             "origin": "3980938",
             "route": "152323",
-            "trip": "380877660"
+            "trip": "380816082"
           },
           "ok": true,
           "shape": {
-            "departures": 8,
-            "duration": 24,
+            "departures": 9,
+            "duration": 22,
             "durations_sane": true,
             "lengths": {
-              "next_departures_destination_arrival_times": 8,
-              "next_departures_durations": 8,
-              "next_departures_headsign": 8,
-              "next_departures_lines": 8,
-              "next_departures_trip_id": 8
+              "next_departures_destination_arrival_times": 9,
+              "next_departures_durations": 9,
+              "next_departures_headsign": 9,
+              "next_departures_lines": 9,
+              "next_departures_trip_id": 9
             },
             "lines": [
               "1"
@@ -1212,7 +1212,7 @@
             "ordered": true,
             "parallel": true
           },
-          "text": "asked 3980938 -> 3979810 on 152323: 8 departures, one line 1, duration 24 min"
+          "text": "asked 3980938 -> 3979810 on 152323: 9 departures, one line 1, duration 22 min"
         },
         {
           "asked": {
@@ -1229,10 +1229,10 @@
             "direction": 0,
             "origin": "3980938",
             "route": "152323",
-            "trip": "380877660"
+            "trip": "380816082"
           },
           "ok": true,
-          "text": "asked d0 on 152323: trip 380877660 rides d0"
+          "text": "asked d0 on 152323: trip 380816082 rides d0"
         },
         {
           "asked": {
@@ -14015,10 +14015,10 @@
             "direction": 1,
             "origin": "3981271",
             "route": "152324",
-            "trip": "380815266"
+            "trip": "380816285"
           },
           "ok": true,
-          "text": "asked 3981271 -> 3980714 on 152324 d1 (stop 1 to stop 13 of a 24-stop ride): got 3981271 -> 3980714 on 152324 d1, trip 380815266"
+          "text": "asked 3981271 -> 3980714 on 152324 d1 (stop 1 to stop 13 of a 24-stop ride): got 3981271 -> 3980714 on 152324 d1, trip 380816285"
         },
         {
           "asked": {
@@ -14035,19 +14035,19 @@
             "direction": 1,
             "origin": "3981271",
             "route": "152324",
-            "trip": "380815266"
+            "trip": "380816285"
           },
           "ok": true,
           "shape": {
-            "departures": 5,
-            "duration": 19,
+            "departures": 6,
+            "duration": 21,
             "durations_sane": true,
             "lengths": {
-              "next_departures_destination_arrival_times": 5,
-              "next_departures_durations": 5,
-              "next_departures_headsign": 5,
-              "next_departures_lines": 5,
-              "next_departures_trip_id": 5
+              "next_departures_destination_arrival_times": 6,
+              "next_departures_durations": 6,
+              "next_departures_headsign": 6,
+              "next_departures_lines": 6,
+              "next_departures_trip_id": 6
             },
             "lines": [
               "17"
@@ -14057,7 +14057,7 @@
             "ordered": true,
             "parallel": true
           },
-          "text": "asked 3981271 -> 3980714 on 152324: 5 departures, one line 17, duration 19 min"
+          "text": "asked 3981271 -> 3980714 on 152324: 6 departures, one line 17, duration 21 min"
         },
         {
           "asked": {
@@ -14074,10 +14074,10 @@
             "direction": 1,
             "origin": "3981271",
             "route": "152324",
-            "trip": "380815266"
+            "trip": "380816285"
           },
           "ok": true,
-          "text": "asked d1 on 152324: trip 380815266 rides d1"
+          "text": "asked d1 on 152324: trip 380816285 rides d1"
         },
         {
           "asked": {
