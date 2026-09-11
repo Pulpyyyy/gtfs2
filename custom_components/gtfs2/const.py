@@ -310,5 +310,5 @@ DEFAULT_DIRECTION = "0"
 DEFAULT_API_KEY_NAME = "api_key"
 
 TIME_STR_FORMAT = "%H:%M"
-
-
+ATTR_NEXT_SERVICE_DATE = "next_service_date"
+ATTR_NEXT_SERVICE_IN_DAYS = "next_service_in_days"
