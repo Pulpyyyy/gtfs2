@@ -66,7 +66,8 @@ get_destination_stop_list = gtfs_helper.get_destination_stop_list
 get_next_service_date = gtfs_helper.get_next_service_date
 
 FIXTURES = Path(__file__).parent / "fixtures"
-KINDS = ("stop_list", "destinations", "next_service", "pairs", "swapped")
+KINDS = ("stop_list", "destinations", "next_service", "pairs", "swapped",
+         "midnight")
 TRAIN_KINDS = ("pairs", "next_service")
 
 
@@ -104,10 +105,11 @@ class Fixture:
             path=lambda *parts: str(self.path.joinpath(*parts)),
             time_zone=self.agency_tz))
 
-    def instant_on(self, date_iso: str) -> datetime.datetime:
-        """00:05 wall time of the agency's zone on that day."""
+    def instant_on(self, date_iso: str,
+                   at: datetime.time = datetime.time(0, 5)) -> datetime.datetime:
+        """A wall time of the agency's zone on that day, 00:05 by default."""
         return datetime.datetime.combine(
-            datetime.date.fromisoformat(date_iso), datetime.time(0, 5),
+            datetime.date.fromisoformat(date_iso), at,
             zoneinfo.ZoneInfo(self.agency_tz))
 
     def station_of(self, stop_id):
@@ -193,11 +195,13 @@ def service_date(schedule, trip_ids):
     return row[0]
 
 
-def pair_service_days(schedule, origin, destination, route_type):
+def pair_service_days(schedule, origin, destination, route_type,
+                      route_id=None, direction=None):
     """Every day the feed says some trip rides origin before destination,
     as sorted ISO dates: calendar_dates additions, and calendar windows
     expanded by weekday minus their removals. The stops are matched the way
-    the sensor matches them, by id, or by name prefix for a train."""
+    the sensor matches them, by id, or by name prefix for a train. Any trip
+    counts unless a route, and a direction on it, is named."""
     if route_type == "2":
         o_where = "o.stop_id IN (SELECT stop_id FROM stops WHERE stop_name LIKE :o)"
         x_where = "x.stop_id IN (SELECT stop_id FROM stops WHERE stop_name LIKE :x)"
@@ -205,11 +209,18 @@ def pair_service_days(schedule, origin, destination, route_type):
     else:
         o_where, x_where = "o.stop_id = :o", "x.stop_id = :x"
         params = {"o": origin, "x": destination}
+    on_route = ""
+    if route_id is not None:
+        on_route = " AND t.route_id = :route"
+        params["route"] = route_id
+        if direction is not None:
+            on_route += " AND t.direction_id = :direction"
+            params["direction"] = direction
     serving = f"""
     SELECT DISTINCT t.service_id FROM trips t
     INNER JOIN stop_times o ON o.trip_id = t.trip_id
     INNER JOIN stop_times x ON x.trip_id = t.trip_id
-    WHERE {o_where} AND {x_where} AND o.stop_sequence < x.stop_sequence
+    WHERE {o_where} AND {x_where} AND o.stop_sequence < x.stop_sequence{on_route}
     """  # noqa: S608
     days = set()
     with schedule.engine.connect() as conn:
@@ -234,6 +245,69 @@ def pair_service_days(schedule, origin, destination, route_type):
                     days.add(day.isoformat())
                 day += datetime.timedelta(days=1)
     return sorted(days)
+
+
+def services_on(schedule, day_iso):
+    """The service_ids the feed runs on that day: calendar windows by
+    weekday minus their removals, plus calendar_dates additions."""
+    day = datetime.date.fromisoformat(day_iso)
+    running = set()
+    with schedule.engine.connect() as conn:
+        exceptions = conn.execute(text(
+            "SELECT service_id, date, exception_type FROM calendar_dates")).fetchall()
+        removed = {s for s, d, k in exceptions if k == 2 and str(d)[:10] == day_iso}
+        running |= {s for s, d, k in exceptions if k == 1 and str(d)[:10] == day_iso}
+        for row in conn.execute(text(
+                "SELECT service_id, monday, tuesday, wednesday, thursday, "
+                "friday, saturday, sunday, start_date, end_date FROM calendar")):
+            if not row[8] or not row[9]:
+                continue
+            start = datetime.date.fromisoformat(str(row[8])[:10])
+            end = datetime.date.fromisoformat(str(row[9])[:10])
+            if start <= day <= end and row[1 + day.weekday()]:
+                running.add(row[0])
+    return running - removed
+
+
+def gtfs_seconds(value):
+    """Seconds since the service day's midnight. GTFS hours pass 24; the db
+    stores such a time on 1970-01-02, so a date in front counts as days."""
+    value = str(value)
+    days = 0
+    if " " in value:
+        date, value = value.split(" ", 1)
+        days = (datetime.date.fromisoformat(date) - datetime.date(1970, 1, 1)).days
+    h, m, s = (int(float(part)) for part in value.split(":"))
+    return days * 86400 + h * 3600 + m * 60 + s
+
+
+def late_departures(schedule, route_id, direction, origins, destinations,
+                    day_iso, since="23:50:00"):
+    """Departure times at the origin, on that day's service, of the trips
+    of this route and direction that ride one of the origin's records before
+    one of the destination's and leave at or after `since`. Hours past 24
+    are that day's trips running into the next one."""
+    running = services_on(schedule, day_iso)
+    where = ("t.route_id = :route AND o.stop_id IN :origins "
+             "AND x.stop_id IN :destinations AND o.stop_sequence < x.stop_sequence")
+    params = {"route": route_id, "origins": list(origins),
+              "destinations": list(destinations)}
+    if direction is not None:
+        where += " AND t.direction_id = :direction"
+        params["direction"] = direction
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(
+            "SELECT t.service_id, o.departure_time FROM trips t "
+            "INNER JOIN stop_times o ON o.trip_id = t.trip_id "
+            "INNER JOIN stop_times x ON x.trip_id = t.trip_id "
+            f"WHERE {where}"  # noqa: S608
+        ).bindparams(bindparam("origins", expanding=True),
+                     bindparam("destinations", expanding=True)),
+            params).fetchall()
+    return sorted((str(dep) for service, dep in rows
+                   if service in running
+                   and gtfs_seconds(dep) >= gtfs_seconds(since)),
+                  key=gtfs_seconds)
 
 
 def next_of(days, from_iso, horizon=90):
@@ -543,6 +617,11 @@ def check_route(check, fx, route_id, direction, kind):
             if day is None:
                 check.note(False, "no service date for a pattern")
                 continue
+            if kind == "midnight":
+                check_midnight(check, fx, clock, hass, route_id, route_type,
+                               direction, query_direction, pattern, entries,
+                               stood_for)
+                continue
             clock.move_to(fx.instant_on(day))
             for o, d in sample_pairs(pattern):
                 data = _data_for(schedule, route_id, route_type, entries,
@@ -561,6 +640,20 @@ def check_route(check, fx, route_id, direction, kind):
                     asked = asked_of(pattern, o, d, route_id, query_direction)
                     got = got_of(result)
                     check.note(ok, answered(asked, got), asked=asked, got=got)
+                    if result:
+                        # the answer is the entry's own line, listed in
+                        # time order with one item per list per departure
+                        shape = shape_of(result, fx.route_short_names[route_id])
+                        check.note(shape["ok"], shaped(asked, shape),
+                                   asked=asked, got=got, shape=shape)
+                        # and it rides the asked direction, not merely
+                        # the asked stops in the asked order
+                        if direction is not None:
+                            rode = str(result.get("trip_direction_id"))
+                            check.note(rode == str(query_direction),
+                                       f"asked d{query_direction} on {route_id}: "
+                                       f"trip {got['trip']} rides d{rode}",
+                                       asked=asked, got=got)
                 else:
                     swapped = dict(data, origin=data["destination"],
                                    destination=data["origin"])
@@ -585,6 +678,124 @@ def check_route(check, fx, route_id, direction, kind):
                                      served=served)
                     got = got_of(result)
                     check.note(honest, answered(asked, got), asked=asked, got=got)
+
+
+PARALLEL = ("next_departures_lines", "next_departures_headsign",
+            "next_departures_trip_id",
+            "next_departures_destination_arrival_times",
+            "next_departures_durations")
+
+
+def shape_of(result, short_name):
+    """How the answer's lists hold together: departures in time order
+    without a repeat, every companion list one item per departure, one line
+    only and it is the entry's, durations that are whole minutes at or
+    above zero. Returned as fields so results.json keeps them."""
+    departures = result.get("next_departures") or []
+    lengths = {key: len(result.get(key) or []) for key in PARALLEL}
+    lines = sorted({item.rsplit(" (", 1)[-1].rstrip(")").split("/", 1)[0]
+                    for item in result.get("next_departures_lines") or []})
+    durations = result.get("next_departures_durations") or []
+    shape = {
+        "departures": len(departures),
+        "ordered": departures == sorted(departures) and len(set(departures)) == len(departures),
+        "parallel": all(n == len(departures) for n in lengths.values()),
+        "lengths": lengths,
+        "lines": lines,
+        "one_line": lines == [str(short_name)],
+        "duration": result.get("duration"),
+        "durations_sane": (isinstance(result.get("duration"), int)
+                           and result["duration"] >= 0
+                           and all(isinstance(d, int) and d >= 0 for d in durations)),
+    }
+    shape["ok"] = bool(departures) and all(
+        shape[key] for key in ("ordered", "parallel", "one_line", "durations_sane"))
+    return shape
+
+
+def shaped(asked, shape):
+    """The one line a reader sees for the answer's shape."""
+    head = (f"asked {asked['origin']} -> {asked['destination']} on "
+            f"{asked['route']}: {shape['departures']} departures")
+    faults = []
+    if not shape["departures"]:
+        faults.append("none listed")
+    if not shape["ordered"]:
+        faults.append("not in time order")
+    if not shape["parallel"]:
+        faults.append("lists of unequal length " + ", ".join(
+            f"{k.replace('next_departures_', '')} {n}" for k, n in shape["lengths"].items()))
+    if not shape["one_line"]:
+        faults.append(f"lines {shape['lines']}")
+    if not shape["durations_sane"]:
+        faults.append(f"duration {shape['duration']!r}")
+    if not faults:
+        return f"{head}, one line {shape['lines'][0]}, duration {shape['duration']} min"
+    return f"{head}: " + "; ".join(faults)
+
+
+def check_midnight(check, fx, clock, hass, route_id, route_type, direction,
+                   query_direction, pattern, entries, stood_for):
+    """Asked at 23:50 from the ends of the pattern, on a day the pair runs
+    (one followed by another such day when the feed has it): nothing already
+    gone is listed, and what the feed still has to offer is there. Without
+    include_tomorrow that is the day's own late trips, the ones timed past
+    24:00 included, since they leave after the clock turns; with it, the
+    next day's trips too. The expected side is read from stop_times and the
+    calendar tables, so a departure dropped at the day change shows up as a
+    missing crossing."""
+    schedule = fx.schedule
+    origin, destination = pattern[0], pattern[-1]
+    origins, destinations = fx.siblings_of(origin), fx.siblings_of(destination)
+    days = pair_service_days(schedule, origin, destination, route_type,
+                             route_id, direction)
+    who = f"{origin} -> {destination} on {route_id}"
+    if direction is not None:
+        who += f" d{query_direction}"
+    if not days:
+        check.note(False, f"no service day for {who}",
+                   origin=origin, destination=destination)
+        return
+    day = next((d for d in days if shifted(d, 1) in days), days[0])
+    tomorrow_runs = shifted(day, 1) in days
+    late = late_departures(schedule, route_id, direction, origins,
+                           destinations, day)
+    past_midnight = [t for t in late if gtfs_seconds(t) >= 24 * 3600]
+    now = fx.instant_on(day, datetime.time(23, 50))
+    clock.move_to(now)
+    zone = zoneinfo.ZoneInfo(fx.agency_tz)
+    day_date = datetime.date.fromisoformat(day)
+    for include_tomorrow in (False, True):
+        data = _data_for(schedule, route_id, route_type, entries, stood_for,
+                         origin, destination, query_direction,
+                         include_tomorrow=include_tomorrow)
+        result = get_next_departure(hass, data)
+        listed = sorted(
+            datetime.datetime.fromisoformat(iso).astimezone(zone)
+            for iso in (result.get("next_departures") if result else []) or [])
+        gone = [t for t in listed if t < now - datetime.timedelta(minutes=1)]
+        crossing = [t for t in listed if t.date() > day_date]
+        expect_some = bool(late) or (include_tomorrow and tomorrow_runs)
+        expect_crossing = bool(past_midnight) or (include_tomorrow and tomorrow_runs)
+        ok = (not gone
+              and (listed or not expect_some)
+              and (crossing or not expect_crossing))
+        asked = {"origin": origin, "destination": destination,
+                 "route": route_id, "direction": query_direction,
+                 "day": day, "at": "23:50", "include_tomorrow": include_tomorrow,
+                 "feed_late": late, "feed_past_midnight": len(past_midnight),
+                 "tomorrow_runs": tomorrow_runs}
+        got = {"listed": [t.isoformat() for t in listed],
+               "past_midnight": len(crossing), "gone": len(gone),
+               "trip": result.get("trip_id") if result else None}
+        check.note(ok, (
+            f"at 23:50 on {day}{' with tomorrow' if include_tomorrow else ''}, "
+            f"{who}: the feed keeps {len(late)} departures, {len(past_midnight)} "
+            f"past midnight, tomorrow {'runs' if tomorrow_runs else 'rests'}; "
+            f"got {len(listed)} listed, {len(crossing)} past midnight, "
+            f"{len(gone)} already gone"
+            + (f" (first {listed[0]:%Y-%m-%d %H:%M})" if listed else "")),
+            asked=asked, got=got)
 
 
 def check_next_service(check, fx, route_type, pairs):
@@ -677,7 +888,7 @@ def answered(asked, got):
 
 
 def _data_for(schedule, route_id, route_type, entries, position,
-              origin, destination, direction):
+              origin, destination, direction, include_tomorrow=False):
     return {
         "schedule": schedule,
         "gtfs_dir": ".", "file": "fixture",
@@ -687,7 +898,7 @@ def _data_for(schedule, route_id, route_type, entries, position,
         "direction": str(direction),
         "route": route_id,
         "offset": 0,
-        "include_tomorrow": False,
+        "include_tomorrow": include_tomorrow,
     }
 
 

@@ -1,6 +1,9 @@
-test_journeys.py case results -- 161 case(s)
+test_journeys.py case results -- 190 case(s)
 
 case: gvb-1-d0-destinations
+  result: PASSED
+
+case: gvb-1-d0-midnight
   result: PASSED
 
 case: gvb-1-d0-next_service
@@ -18,6 +21,9 @@ case: gvb-1-d0-swapped
 case: gvb-1-d1-destinations
   result: PASSED
 
+case: gvb-1-d1-midnight
+  result: PASSED
+
 case: gvb-1-d1-next_service
   result: PASSED
 
@@ -31,6 +37,9 @@ case: gvb-1-d1-swapped
   result: PASSED
 
 case: gvb-13-d0-destinations
+  result: PASSED
+
+case: gvb-13-d0-midnight
   result: PASSED
 
 case: gvb-13-d0-next_service
@@ -48,6 +57,9 @@ case: gvb-13-d0-swapped
 case: gvb-13-d1-destinations
   result: PASSED
 
+case: gvb-13-d1-midnight
+  result: PASSED
+
 case: gvb-13-d1-next_service
   result: PASSED
 
@@ -61,6 +73,9 @@ case: gvb-13-d1-swapped
   result: PASSED
 
 case: gvb-14-d0-destinations
+  result: PASSED
+
+case: gvb-14-d0-midnight
   result: PASSED
 
 case: gvb-14-d0-next_service
@@ -78,6 +93,9 @@ case: gvb-14-d0-swapped
 case: gvb-14-d1-destinations
   result: PASSED
 
+case: gvb-14-d1-midnight
+  result: PASSED
+
 case: gvb-14-d1-next_service
   result: PASSED
 
@@ -91,6 +109,9 @@ case: gvb-14-d1-swapped
   result: PASSED
 
 case: gvb-17-d0-destinations
+  result: PASSED
+
+case: gvb-17-d0-midnight
   result: PASSED
 
 case: gvb-17-d0-next_service
@@ -108,6 +129,9 @@ case: gvb-17-d0-swapped
 case: gvb-17-d1-destinations
   result: PASSED
 
+case: gvb-17-d1-midnight
+  result: PASSED
+
 case: gvb-17-d1-next_service
   result: PASSED
 
@@ -121,6 +145,9 @@ case: gvb-17-d1-swapped
   result: PASSED
 
 case: gvb-7-d0-destinations
+  result: PASSED
+
+case: gvb-7-d0-midnight
   result: PASSED
 
 case: gvb-7-d0-next_service
@@ -138,6 +165,9 @@ case: gvb-7-d0-swapped
 case: gvb-7-d1-destinations
   result: PASSED
 
+case: gvb-7-d1-midnight
+  result: PASSED
+
 case: gvb-7-d1-next_service
   result: PASSED
 
@@ -151,6 +181,9 @@ case: gvb-7-d1-swapped
   result: PASSED
 
 case: palmbus-21-d0-destinations
+  result: PASSED
+
+case: palmbus-21-d0-midnight
   result: PASSED
 
 case: palmbus-21-d0-next_service
@@ -168,6 +201,9 @@ case: palmbus-21-d0-swapped
 case: palmbus-22-d0-destinations
   result: PASSED
 
+case: palmbus-22-d0-midnight
+  result: PASSED
+
 case: palmbus-22-d0-next_service
   result: PASSED
 
@@ -181,6 +217,9 @@ case: palmbus-22-d0-swapped
   result: PASSED
 
 case: palmbus-22-d1-destinations
+  result: PASSED
+
+case: palmbus-22-d1-midnight
   result: PASSED
 
 case: palmbus-22-d1-next_service
@@ -198,6 +237,9 @@ case: palmbus-22-d1-swapped
 case: palmbus-A-d0-destinations
   result: PASSED
 
+case: palmbus-A-d0-midnight
+  result: PASSED
+
 case: palmbus-A-d0-next_service
   result: PASSED
 
@@ -211,6 +253,9 @@ case: palmbus-A-d0-swapped
   result: PASSED
 
 case: palmbus-A-d1-destinations
+  result: PASSED
+
+case: palmbus-A-d1-midnight
   result: PASSED
 
 case: palmbus-A-d1-next_service
@@ -228,6 +273,9 @@ case: palmbus-A-d1-swapped
 case: palmbus-B-d0-destinations
   result: PASSED
 
+case: palmbus-B-d0-midnight
+  result: PASSED
+
 case: palmbus-B-d0-next_service
   result: PASSED
 
@@ -241,6 +289,9 @@ case: palmbus-B-d0-swapped
   result: PASSED
 
 case: palmbus-B-d1-destinations
+  result: PASSED
+
+case: palmbus-B-d1-midnight
   result: PASSED
 
 case: palmbus-B-d1-next_service
@@ -306,6 +357,9 @@ case: sncf-journeys-P8(CDD3F95:)-d1-pairs
 case: tao-journeys-22-d0-destinations
   result: PASSED
 
+case: tao-journeys-22-d0-midnight
+  result: PASSED
+
 case: tao-journeys-22-d0-next_service
   result: PASSED
 
@@ -319,6 +373,9 @@ case: tao-journeys-22-d0-swapped
   result: PASSED
 
 case: tao-journeys-22-d1-destinations
+  result: PASSED
+
+case: tao-journeys-22-d1-midnight
   result: PASSED
 
 case: tao-journeys-22-d1-next_service
@@ -336,6 +393,9 @@ case: tao-journeys-22-d1-swapped
 case: tao-journeys-40-d0-destinations
   result: PASSED
 
+case: tao-journeys-40-d0-midnight
+  result: PASSED
+
 case: tao-journeys-40-d0-next_service
   result: PASSED
 
@@ -349,6 +409,9 @@ case: tao-journeys-40-d0-swapped
   result: PASSED
 
 case: tao-journeys-40-d1-destinations
+  result: PASSED
+
+case: tao-journeys-40-d1-midnight
   result: PASSED
 
 case: tao-journeys-40-d1-next_service
@@ -366,6 +429,9 @@ case: tao-journeys-40-d1-swapped
 case: tao-journeys-41-d0-destinations
   result: PASSED
 
+case: tao-journeys-41-d0-midnight
+  result: PASSED
+
 case: tao-journeys-41-d0-next_service
   result: PASSED
 
@@ -379,6 +445,9 @@ case: tao-journeys-41-d0-swapped
   result: PASSED
 
 case: tao-journeys-41-d1-destinations
+  result: PASSED
+
+case: tao-journeys-41-d1-midnight
   result: PASSED
 
 case: tao-journeys-41-d1-next_service
@@ -396,6 +465,9 @@ case: tao-journeys-41-d1-swapped
 case: tao-journeys-A-d0-destinations
   result: PASSED
 
+case: tao-journeys-A-d0-midnight
+  result: PASSED
+
 case: tao-journeys-A-d0-next_service
   result: PASSED
 
@@ -409,6 +481,9 @@ case: tao-journeys-A-d0-swapped
   result: PASSED
 
 case: tao-journeys-A-d1-destinations
+  result: PASSED
+
+case: tao-journeys-A-d1-midnight
   result: PASSED
 
 case: tao-journeys-A-d1-next_service
@@ -426,6 +501,9 @@ case: tao-journeys-A-d1-swapped
 case: tao-journeys-B-d0-destinations
   result: PASSED
 
+case: tao-journeys-B-d0-midnight
+  result: PASSED
+
 case: tao-journeys-B-d0-next_service
   result: PASSED
 
@@ -439,6 +517,9 @@ case: tao-journeys-B-d0-swapped
   result: PASSED
 
 case: tao-journeys-B-d1-destinations
+  result: PASSED
+
+case: tao-journeys-B-d1-midnight
   result: PASSED
 
 case: tao-journeys-B-d1-next_service
@@ -456,6 +537,9 @@ case: tao-journeys-B-d1-swapped
 case: tao-journeys-N-d0-destinations
   result: PASSED
 
+case: tao-journeys-N-d0-midnight
+  result: PASSED
+
 case: tao-journeys-N-d0-next_service
   result: PASSED
 
@@ -469,6 +553,9 @@ case: tao-journeys-N-d0-swapped
   result: PASSED
 
 case: tao-journeys-N-d1-destinations
+  result: PASSED
+
+case: tao-journeys-N-d1-midnight
   result: PASSED
 
 case: tao-journeys-N-d1-next_service
