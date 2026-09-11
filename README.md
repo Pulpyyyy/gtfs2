@@ -7,6 +7,7 @@
 - Shows next 10 departures on the same **route-start and route-end**, including alternative transport lines if applicable for the same start/end
 - Option to add gtfs **realtime trip updates** source/url
 - Option to add gtfs **realtime vehicle location** source/url, generates geojson file which can be used for tracking vehicle on map card
+- Exports the **route shape and its stops** as geojson for every sensor, from the static schedule alone: a map card can draw the journey with or without a realtime feed
 - Option to add gtfs **realtime alerts** source/url
 - Add local stops and next departures, based on your location as 'person' or 'zone', can be extended with realtime data 
 - A service to update the GTFS static datasource, e.g. for calling the service via automation
