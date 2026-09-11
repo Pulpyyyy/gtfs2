@@ -495,7 +495,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.debug(f"Removed gtfs data source: {removed}")
         except Exception as ex:
             _LOGGER.error("Error while deleting : %s", {ex})
-            return "generic_failure"
+            return self.async_abort(reason="generic_failure")
         return self.async_abort(reason="files_deleted")
         
     async def _fresh_source(self):

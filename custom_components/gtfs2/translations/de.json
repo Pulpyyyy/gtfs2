@@ -209,6 +209,7 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "files_deleted": "Datenquelle gelöscht, dies kann sich auf bestehende Routen auswirken",
+      "generic_failure": "Gesamtfehler, Protokolle prüfen",
       "stop_incorrect": "Start- und/oder Endziel falsch, möglicherweise kein Transport ‚heute‘ oder nicht in die gleiche Richtung, Protokolle prüfen",
       "no_stops": "Problem bei der Datenerfassung: wahrscheinlich keine Stops für die gewählte Route",
       "no_data_file": "Problem bei der Datenerfassung: URL falsch oder Dateiname nicht im richtigen Ordner",
