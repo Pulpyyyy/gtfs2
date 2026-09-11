@@ -408,6 +408,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
     timetable_remaining_headsign = []
     timetable_upcoming_trips = []
     timetable_upcoming_arrivals = []
+    timetable_upcoming_durations = []
     for key, value in sorted(timetable.items()):
         upcoming = datetime.datetime.strptime(key[0], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone)
         upcoming_arrival = datetime.datetime.combine(
@@ -430,6 +431,12 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
             )
             timetable_upcoming_arrivals.append(
                 dt_util.as_utc(upcoming_arrival).isoformat()
+            )
+            # both ends are known here, so serve the theoretical duration
+            # ready-made rather than leaving every card to subtract the
+            # paired lists themselves
+            timetable_upcoming_durations.append(
+                round((upcoming_arrival - upcoming).total_seconds() / 60)
             )
             
     #_LOGGER.debug(
@@ -529,6 +536,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
         "origin_stop_name": item["origin_stop_name"],
         "departure_time": depart_time,
         "arrival_time": arrival_time,
+        "duration": round((arrival_time - depart_time).total_seconds() / 60),
         "origin_stop_time": origin_stop_time,
         "origin_stop_timezone": item["origin_stop_timezone"],
         "destination_stop_time": destination_stop_time,
@@ -540,6 +548,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
         "next_departures_headsign": timetable_remaining_headsign,
         "next_departures_trip_id": timetable_upcoming_trips,
         "next_departures_destination_arrival_times": timetable_upcoming_arrivals,
+        "next_departures_durations": timetable_upcoming_durations,
     }
     
     return data_returned
