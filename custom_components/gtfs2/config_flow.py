@@ -75,6 +75,7 @@ from .gtfs_helper import (
     get_stop_list,
     get_station_list,
     has_trip_between,
+    get_destination_stop_list,
     has_train_trip_between,
     get_direction_labels,
     get_datasources,
@@ -127,6 +128,26 @@ def _stop_name(entry):
     Ids carry colons of their own, so cut from the right.
     """
     return entry.rsplit(": ", 1)[-1].rsplit(" (", 1)[0].strip()
+
+
+def _stop_options(stops):
+    """Picker options for "stop_id: Name (sequence)" entries.
+
+    The value must stay the entry, get_next_departure cuts the id back out of
+    it; only the label is the user's to read. Two platforms of one terminus
+    can share a name while being separate stops, so number those: they are
+    genuinely different departures.
+    """
+    names = [_stop_name(e) for e in stops]
+    nth = {}
+    options = []
+    for entry in stops:
+        name = _stop_name(entry)
+        if names.count(name) > 1:
+            nth[name] = nth.get(name, 0) + 1
+            name = f"{name} ({nth[name]})"
+        options.append(selector.SelectOptionDict(value=entry, label=name))
+    return options
 
 
 def _base_name(entry):
@@ -291,6 +312,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._created_name: str = ""
         # the mirror journey, worked out once the stops are known
         self._return_trip: dict | None = None
+        # carried back to the departure screen when nothing follows the stop
+        self._stops_error: str | None = None
         self._return_name: str = ""
         # what the realtime screen collected, while its key screen runs
         self._source_rt_inputs: dict = {}
@@ -1046,7 +1069,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self.async_step_stops()
 
     async def async_step_stops(self, user_input: dict | None = None) -> FlowResult:
-        """Pick the two stops of the journey."""
+        """Pick where the departures are counted from."""
         errors: dict[str, str] = {}
         try:
             stops = await self.hass.async_add_executor_job(
@@ -1065,37 +1088,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             _LOGGER.debug("No stops for route: %s", self._user_inputs.get(CONF_ROUTE))
             return self.async_abort(reason="no_stops")
 
-        # the value must stay "stop_id: Name (seq)": get_next_departure cuts
-        # the id back out of it. Only the label is the user's to read.
-        # Two platforms of one terminus can share a name while being separate
-        # stops, so number those: they are genuinely different departures.
-        _names = [_stop_name(e) for e in stops]
-        _nth = {}
-        stop_options = []
-        for entry in stops:
-            name = _stop_name(entry)
-            if _names.count(name) > 1:
-                _nth[name] = _nth.get(name, 0) + 1
-                name = f"{name} ({_nth[name]})"
-            stop_options.append(selector.SelectOptionDict(value=entry, label=name))
-
-        def _show(errors, previous=None):
-            """Render the form, keeping what was already picked."""
-            previous = previous or {}
+        if user_input is None:
+            default = stops[0]
+            if self._stops_error:
+                # back from the destination screen: keep the pick, say why
+                errors["base"], self._stops_error = self._stops_error, None
+                default = self._user_inputs.get(CONF_ORIGIN, default)
             return self.async_show_form(
                 step_id="stops",
                 data_schema=vol.Schema(
                     {
-                        vol.Required(
-                            CONF_ORIGIN, default=previous.get(CONF_ORIGIN, stops[0])
-                        ): selector.SelectSelector(
-                            selector.SelectSelectorConfig(options=stop_options)
-                        ),
-                        vol.Required(
-                            CONF_DESTINATION,
-                            default=previous.get(CONF_DESTINATION, stops[-1]),
-                        ): selector.SelectSelector(
-                            selector.SelectSelectorConfig(options=stop_options)
+                        vol.Required(CONF_ORIGIN, default=default): selector.SelectSelector(
+                            selector.SelectSelectorConfig(options=_stop_options(stops))
                         ),
                     },
                 ),
@@ -1103,19 +1107,54 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors=errors,
             )
 
-        if user_input is None:
-            return _show(errors)
+        self._user_inputs.update(user_input)
+        _LOGGER.debug(f"UserInputs Origin: {self._user_inputs}")
+        return await self.async_step_destination()
 
-        # get_stop_list returns the stops in travel order and
-        # get_next_departure only matches an origin before its destination, so
-        # an arrival picked above the departure can be rejected without a query
-        origin, destination = user_input[CONF_ORIGIN], user_input[CONF_DESTINATION]
-        if stops.index(destination) <= stops.index(origin):
-            errors["base"] = "stops_out_of_order"
-            return _show(errors, user_input)
+    async def async_step_destination(self, user_input: dict | None = None) -> FlowResult:
+        """Pick where the journey ends, among the stops a trip really reaches
+        from the departure stop: a pair no trip rides cannot be picked, so
+        nothing has to be rejected afterwards."""
+        errors: dict[str, str] = {}
+        origin = self._user_inputs[CONF_ORIGIN]
+        try:
+            destinations = await self.hass.async_add_executor_job(
+                get_destination_stop_list,
+                self._pygtfs,
+                self._user_inputs[CONF_ROUTE],
+                self._user_inputs[CONF_DIRECTION],
+                _stop_id(origin),
+            )
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Error reading the destinations from %s on route %s: %s",
+                          _stop_id(origin), self._user_inputs.get(CONF_ROUTE), ex)
+            return self.async_abort(reason="no_stops_read")
+        if not destinations:
+            # every trip through the departure stop ends there
+            self._stops_error = "no_destination"
+            return await self.async_step_stops()
+
+        if user_input is None:
+            return self.async_show_form(
+                step_id="destination",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_DESTINATION, default=destinations[-1]
+                        ): selector.SelectSelector(
+                            selector.SelectSelectorConfig(options=_stop_options(destinations))
+                        ),
+                    },
+                ),
+                description_placeholders={
+                    **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                    "origin": _base_name(origin),
+                },
+                errors=errors,
+            )
 
         self._user_inputs.update(user_input)
-        _LOGGER.debug(f"UserInputs Stops: {self._user_inputs}")
+        _LOGGER.debug(f"UserInputs Destination: {self._user_inputs}")
         return await self.async_step_sensor()
 
     async def async_step_sensor(self, user_input: dict | None = None) -> FlowResult:
@@ -1172,20 +1211,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         user_input.setdefault(CONF_INCLUDE_TOMORROW, False)
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Sensor: {self._user_inputs}")
-        # whether a bus is due right now is the coordinator's business: a
-        # sensor created in the evening, or on a day the line does not run,
-        # is still valid. Only ask whether the journey exists at all.
-        exists = await self.hass.async_add_executor_job(
-            has_trip_between,
-            self._pygtfs,
-            self._user_inputs[CONF_ROUTE],
-            _stop_id(origin),
-            _stop_id(destination),
-        )
-        if not exists:
-            errors["base"] = "no_trip_between"
-            return _show(errors, user_input)
-
+        # the arrival was offered from the trips that ride it from the
+        # departure, so the journey exists; whether a bus is due right now is
+        # the coordinator's business: a sensor created in the evening, or on
+        # a day the line does not run, is still valid
         if add_return:
             await self._create_return_trip()
         # async_create_entry ends the flow, so the sensor is created through a
