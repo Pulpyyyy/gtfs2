@@ -1,4 +1,4 @@
-test_journeys.py case results -- 206 case(s)
+provider case results -- 212 case(s)
 
 case: gvb-1-d0-destinations
   result: PASSED
@@ -178,6 +178,18 @@ case: gvb-7-d1-stop_list
   result: PASSED
 
 case: gvb-7-d1-swapped
+  result: PASSED
+
+case: gvb-local_stop-calendar
+  result: PASSED
+
+case: gvb-local_stop-calendar_dates
+  result: PASSED
+
+case: gvb-route-calendar
+  result: PASSED
+
+case: gvb-route-calendar_dates
   result: PASSED
 
 case: palmbus-21-d0-destinations
@@ -400,6 +412,12 @@ case: sncf-journeys-P8(CDD3F95:)-d1-pairs
   result: PASSED
 
 case: sncf-journeys-P8(CDD3F95:)-d1-stations
+  result: PASSED
+
+case: sncf-local_stop-calendar
+  result: PASSED
+
+case: sncf-local_stop-calendar_dates
   result: PASSED
 
 case: tao-journeys-22-d0-destinations
