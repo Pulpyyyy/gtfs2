@@ -834,14 +834,14 @@ def get_gtfs_rt(hass, path, data):
     file = data["file"] + ".rt"
     if data.get(CONF_API_KEY_LOCATION, None) == "query_string":
       if data.get(CONF_API_KEY, None):
-        url = url + "?" + data[CONF_API_KEY_NAME] + "=" + data[CONF_API_KEY]
+        url = url + "?" + data.get(CONF_API_KEY_NAME, "api_key") + "=" + data[CONF_API_KEY]
     # NOTE: Accept asks the server for a response format and the api key
     # authenticates, so they are unrelated, yet the header is only sent when
     # the key travels in a header. A feed that needs the header and takes its
     # key in the url, or one that needs it with no key at all, never gets it.
     # Left as is for now: changing it changes behaviour for existing setups.
     if data.get(CONF_API_KEY_LOCATION, None) == "header":
-        _headers = {data[CONF_API_KEY_NAME]: data[CONF_API_KEY]}
+        _headers = {data.get(CONF_API_KEY_NAME, "api_key"): data[CONF_API_KEY]}
         if data.get(CONF_ACCEPT_HEADER_PB, False):
             _headers["Accept"] = "application/x-protobuf"
     
