@@ -6,6 +6,7 @@ import logging
 import os
 import glob
 import json
+import re
 import requests
 import pygtfs
 from collections import Counter
@@ -994,12 +995,30 @@ def create_trip_geojson(self):
 
 
 def _fmt_gtfs_time(value):
-    """Render a pygtfs departure_time (seconds since midnight, may exceed 24h) as HH:MM:SS."""
-    try:
-        s = int(value)
-        return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
-    except (TypeError, ValueError):
-        return str(value) if value is not None else None
+    """Render a stop time as the clock the feed wrote: HH:MM:SS, past 24:00
+    after midnight.
+
+    pygtfs stores stop_times through SQLAlchemy's Interval, which SQLite
+    keeps as a datetime counted from 1970-01-01: a 01:15 departure after
+    midnight reads '1970-01-02 01:15:00', and a raw query hands that string
+    back as is. It is folded into the feed's own clock (25:15:00), which is
+    what the departure queries do with time() and date(); seconds since
+    midnight and plain clocks pass through.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime.timedelta):
+        seconds = int(value.total_seconds())
+    else:
+        try:
+            seconds = int(value)
+        except (TypeError, ValueError):
+            stored = re.match(r"^1970-01-(\d{2}) (\d{2}):(\d{2}):(\d{2})", str(value))
+            if not stored:
+                return str(value)
+            day, hours, minutes, secs = (int(g) for g in stored.groups())
+            seconds = ((day - 1) * 24 + hours) * 3600 + minutes * 60 + secs
+    return f"{seconds // 3600:02d}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
 
 
 def route_geojson_name(route_id, direction):
