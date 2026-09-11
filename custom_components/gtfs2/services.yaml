@@ -198,3 +198,22 @@ extract_trip_stops:
       selector:
         entity:
           integration: "gtfs2"
+
+set_include_tomorrow:
+  name: Set include_tomorrow
+  description: Enables/disables include_tomorrow on existing start/end entries (updates the config entry and reloads it), without recreating them
+  fields:
+    enabled:
+      name: Enabled
+      description: true to include tomorrow's departures after the last of the day
+      required: true
+      default: true
+      selector:
+        boolean:
+    entry_id:
+      name: Config entry id
+      description: Limit to one config entry (default, all start/end entries)
+      required: false
+      example: "01M0D312WVNW3VYW8CKQDFE0YE"
+      selector:
+        text:
