@@ -15,6 +15,7 @@ import csv
 import io
 import requests
 import pygtfs
+from collections import Counter
 from sqlalchemy.sql import text
 import multiprocessing
 from multiprocessing import Process
@@ -2059,6 +2060,112 @@ def _fmt_gtfs_time(value):
         return str(value) if value is not None else None
 
 
+def route_geojson_name(route_id, direction):
+    """File name of the route export, in one place because three callers need
+    the same answer: the writer, the sensor attribute and the removal on entry
+    deletion. A file nobody can name again is a file nobody can delete."""
+    return f"{safe_file_part(route_id)}_{safe_file_part(direction)}_route.json"
+
+
+def vehicle_positions_name(route_id, direction):
+    """Same, for the realtime positions file written by get_rt_vehicle_positions."""
+    return f"{safe_file_part(route_id)}_{safe_file_part(direction)}.json"
+
+
+def _calls_in_order(stops, origin_id, destination_id):
+    """Whether a trip's ordered stop_ids call at origin_id, then at
+    destination_id further on; either one may be None. The first call at the
+    origin is the earliest boarding, so a line that loops back through it is
+    still read right."""
+    start = 0
+    if origin_id:
+        if origin_id not in stops:
+            return False
+        start = stops.index(origin_id) + 1
+    return not destination_id or destination_id in stops[start:]
+
+
+def get_representative_trip(schedule, route_id, direction, origin_id=None, destination_id=None):
+    """The trip that stands for a route and direction on the map.
+
+    The route file draws its stops, and a card places the sensor's boarding
+    and alighting stops on them, so it has to be a trip the sensor rides.
+    Ranked by:
+
+    1. calling at origin_id, then at destination_id further on. The ids are
+       compared whole, never by name, station or part of the id, because a
+       change of mode is always another stop: the SNCF files its substitution
+       coaches under the train line, on stops of their own under the same
+       station, and at Orleans the two share the name and the UIC code, only
+       the prefix differs (StopPoint:OCETrain TER-87543009 and
+       StopPoint:OCECar TER-87543009). When no trip matches (a station
+       configured, ids the provider renamed), every trip stays in;
+    2. having a shape, as before;
+    3. the most stops, so not a short turn;
+    4. the stop sequence most trips follow: coaches and trains of the K8+
+       both call at 3 stops, and the SNCF files both ways of a line under
+       one direction_id with the same stop count (K5+ direction 1: 17 trips
+       Nevers -> Paris, 22 Paris -> Nevers);
+    5. the smallest trip_id, so a restart does not swap the drawn path. On
+       its own it drew the K8+ from a coach both ways: the coach trip_ids
+       sort before the train ones.
+
+    Without stop ids, 1 is skipped.
+    """
+    if not route_id:
+        return None
+    origin_id = str(origin_id) if origin_id else None
+    destination_id = str(destination_id) if destination_id else None
+    where = "t.route_id = :route_id"
+    params = {"route_id": str(route_id)}
+    # direction_id is optional in GTFS and gtfs2 stringifies a missing one
+    if direction not in (None, "", "None"):
+        where += " AND CAST(t.direction_id AS TEXT) = :direction"
+        params["direction"] = str(direction)
+    # ONE pass over stop_times, filtered by a subquery on trips, and never a
+    # join. pygtfs creates no index on stop_times at all, so joining it to a
+    # filtered trips set makes SQLite scan the whole table once per candidate
+    # trip: measured on a mid-sized city feed (680k stop_times, 1818 trips on
+    # the line) that was 17.3 SECONDS against 45 ms this way, for the same
+    # answer. The ranking needs every trip's stops in order, so the rows come
+    # back as they are and are ranked here. Which trips have a shape is a
+    # question for trips alone, indexed and small.
+    sql_shaped = f"SELECT t.trip_id FROM trips t WHERE {where} AND t.shape_id IS NOT NULL"
+    sql_calls = f"""
+    SELECT st.trip_id, st.stop_id, st.stop_sequence
+    FROM stop_times st
+    WHERE st.trip_id IN (SELECT t.trip_id FROM trips t WHERE {where})
+    """
+    calls = {}
+    try:
+        with schedule.engine.connect() as conn:
+            shaped = {row[0] for row in conn.execute(text(sql_shaped), params)}
+            for trip_id, stop_id, sequence in conn.execute(text(sql_calls), params):
+                calls.setdefault(trip_id, []).append((sequence, stop_id))
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.warning("Could not find a trip to draw route %s direction %s: %s", route_id, direction, ex)
+        return None
+    if not calls:
+        _LOGGER.debug("No trip at all for route %s direction %s", route_id, direction)
+        return None
+    stops = {trip_id: tuple(stop_id for _, stop_id in sorted(rows)) for trip_id, rows in calls.items()}
+    trips = list(stops)
+    if origin_id or destination_id:
+        ridden = [trip_id for trip_id in trips if _calls_in_order(stops[trip_id], origin_id, destination_id)]
+        if ridden:
+            trips = ridden
+        else:
+            _LOGGER.debug("No trip of route %s direction %s calls at %s then %s, drawing from all of them",
+                          route_id, direction, origin_id, destination_id)
+    trips = [trip_id for trip_id in trips if trip_id in shaped] or trips
+    most = max(len(stops[trip_id]) for trip_id in trips)
+    trips = [trip_id for trip_id in trips if len(stops[trip_id]) == most]
+    followed = Counter(stops[trip_id] for trip_id in trips)
+    trip_id = min(trips, key=lambda trip_id: (-followed[stops[trip_id]], trip_id))
+    _LOGGER.debug("Drawing route %s direction %s from trip: %s", route_id, direction, trip_id)
+    return trip_id
+
+
 def update_route_geojson(self):
     """Write the journey's ordered stops to www/gtfs2/<route>_<direction>_route.json.
 
@@ -2071,11 +2178,18 @@ def update_route_geojson(self):
     Rewritten only when the drawn trip changes (see coordinator).
     """
     schedule = self._data["schedule"]
-    departure = self._data.get("next_departure") or {}
-    trip_id = departure.get("trip_id", None)
-    route_id = departure.get("route_id", None)
-    direction = str(departure.get("trip_direction_id", ""))
-    if not trip_id or not route_id:
+    trip_id = (self._data.get("next_departure") or {}).get("trip_id", None)
+    if not trip_id:
+        # No departure left today is not the same as no line: a weekday route
+        # read on a Sunday, or a seasonal one out of season, still has a path
+        # worth drawing. Take a trip of this route and direction that calls
+        # at the sensor's stops, read from the entry since there is no
+        # departure to read them from.
+        trip_id = get_representative_trip(
+            schedule, self._route_id, self._direction,
+            (self._data.get("origin") or "").split(": ")[0],
+            (self._data.get("destination") or "").split(": ")[0])
+    if not trip_id:
         return
     sql_stops = """
     SELECT st.stop_id, s.stop_name, s.stop_lat, s.stop_lon, st.stop_sequence, st.departure_time
@@ -2095,7 +2209,9 @@ def update_route_geojson(self):
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": [row[3], row[2]]},
             "properties": {
-                "id": str(route_id) + "_" + direction + "_" + str(row[4]),
+                "id": str(self._route_id) + "_" + str(self._direction) + "_" + str(row[4]),
+                # the _stop suffix is what a customize_glob rule matches on to
+                # give the stop entity a picture, see upstream c666cb7
                 "title": row[1] + "_stop",
                 "trip_id": trip_id,
                 "stop_id": row[0],
@@ -2108,19 +2224,19 @@ def update_route_geojson(self):
     os.makedirs(geojson_dir, exist_ok=True)
     # the ids come out of the datasource, so they are not file names until
     # they are made ones: see safe_file_part
-    file = os.path.join(geojson_dir, f"{safe_file_part(route_id)}_{safe_file_part(direction)}_route.json")
+    file = os.path.join(geojson_dir, route_geojson_name(self._route_id, self._direction))
     _LOGGER.debug("Creating route geojson file: %s", file)
     with open(file, "w") as outfile:
         json.dump({
             "type": "FeatureCollection",
             "properties": {
                 "trip_id": trip_id,
-                "route_id": str(route_id),
-                "direction_id": direction,
+                "route_id": str(self._route_id),
+                "direction_id": str(self._direction),
             },
             "features": features,
         }, outfile)
-    
+
 def get_local_stop_list(hass, schedule, data):
     _LOGGER.debug("Getting local stops list with data: %s", data)
     device_tracker = hass.states.get(data['device_tracker_id'])
