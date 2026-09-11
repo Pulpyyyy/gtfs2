@@ -1,5 +1,5 @@
 """Support for GTFS."""
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import logging
 from typing import Any
 
@@ -19,6 +19,8 @@ from .const import (
     ATTR_DUE_IN,
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
+    ATTR_NEXT_SERVICE_DATE,
+    ATTR_NEXT_SERVICE_IN_DAYS,
     ATTR_DROP_OFF_DESTINATION,
     ATTR_DROP_OFF_ORIGIN,
     ATTR_FIRST,
@@ -187,16 +189,30 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         # Fetch trip and route details once, unless updated
         if not self._departure:
             self._trip = None
+            # The line is a property of the entry, not of its departures: it is
+            # still line 41 on a Sunday. Resolving it from the configured route
+            # keeps route_short_name, route_color and route_type published when
+            # no bus runs, so a card can still name and colour the line.
+            route_id = (self.coordinator.data.get("route") or "").split(": ")[0]
+            if route_id and not self.extracting and (
+                not self._route or self._route.route_id != route_id
+            ):
+                routes = self._pygtfs.routes_by_id(route_id)
+                self._route = routes[0] if routes else None
         else:
             trip_id = self._departure.get("trip_id")
             if not self.extracting and (not self._trip or self._trip.trip_id != trip_id):
                 _LOGGER.debug("Fetching trip details for %s", trip_id)
-                self._trip = self._pygtfs.trips_by_id(trip_id)[0]
+                # an id the datasource does not carry returns an empty list, and
+                # indexing it used to raise and abort the whole platform setup
+                trips = self._pygtfs.trips_by_id(trip_id)
+                self._trip = trips[0] if trips else None
 
             route_id = self._departure.get("route_id")
             if not self.extracting and (not self._route or self._route.route_id != route_id):
                 _LOGGER.debug("Fetching route details for %s", route_id)
-                self._route = self._pygtfs.routes_by_id(route_id)[0]
+                routes = self._pygtfs.routes_by_id(route_id)
+                self._route = routes[0] if routes else None
 
         # fetch next departures
         self._departure = self.coordinator.data["next_departure"]
@@ -293,13 +309,86 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         self._attributes[ATTR_OFFSET] = self._offset
 
         if self._state is None:
-            self._attributes[ATTR_INFO] = (
-                "No more departures or extracting new data"
-                if self._include_tomorrow
-                else "No more departures today or extracting new data"
-            )
-        elif ATTR_INFO in self._attributes:
-            del self._attributes[ATTR_INFO]
+            # Four situations, and the user needs to tell them apart. In order
+            # of how much is known:
+            #
+            #   nothing scheduled at all   no date to give, only say so
+            #   next one is days away      name the date, whatever the option
+            #   nothing today, some
+            #     tomorrow                 with the option on, the state above
+            #                              already carries them; with it off,
+            #                              name tomorrow rather than stay silent
+            #   departures today           not this branch, the state is set
+            #
+            # So: whenever a next date exists it is published, and the wording
+            # follows how far off it is. "no more departures" is kept for the
+            # only case where it is the whole truth.
+            next_service = self.coordinator.data.get("next_service_date")
+            delta = None
+            if next_service:
+                # How far off that is, so a card can say "tomorrow" or "Monday"
+                # without re-deriving it: the offset already applies to what
+                # counts as today here.
+                try:
+                    today = (dt_util.now() + timedelta(
+                        minutes=self._offset or 0)).date()
+                    delta = (date.fromisoformat(next_service) - today).days
+                except (TypeError, ValueError):
+                    delta = None
+            if next_service:
+                self._attributes[ATTR_NEXT_SERVICE_DATE] = next_service
+                self._attributes[ATTR_NEXT_SERVICE_IN_DAYS] = delta
+                if delta == 0:
+                    # today, but every departure is behind us
+                    self._attributes[ATTR_INFO] = "No more departures today"
+                elif delta == 1:
+                    self._attributes[ATTR_INFO] = (
+                        "Next departures tomorrow"
+                        if not self._include_tomorrow
+                        else f"No departures until {next_service}"
+                    )
+                else:
+                    self._attributes[ATTR_INFO] = f"No departures until {next_service}"
+            else:
+                if ATTR_NEXT_SERVICE_DATE in self._attributes:
+                    del self._attributes[ATTR_NEXT_SERVICE_DATE]
+                # nothing found within the search horizon: this line has no
+                # scheduled service left at all. -1 rather than a missing key,
+                # so a card can tell "never again" apart from "running now":
+                # both would otherwise be the absence of an attribute.
+                self._attributes[ATTR_NEXT_SERVICE_IN_DAYS] = -1
+                self._attributes[ATTR_INFO] = "No scheduled departures"
+        else:
+            # There is a departure, but is it today's? With include_tomorrow
+            # on, the query reaches J+1 and the state can carry tomorrow's
+            # first departure. The line is resting today all the same, and a
+            # card needs the machine-readable date for its badge, not only
+            # the sentence below: publish the same two attributes as when
+            # there is nothing to show at all, derived from the departure
+            # itself. Deleting them here was what kept a badge blank on a
+            # line whose next trip is tomorrow morning.
+            delta = None
+            if self._state:
+                try:
+                    today = (dt_util.now() + timedelta(
+                        minutes=self._offset or 0)).date()
+                    delta = (dt_util.as_local(self._state).date() - today).days
+                except (TypeError, ValueError):
+                    delta = None
+            if delta is not None and delta > 0:
+                shown = dt_util.as_local(self._state)
+                self._attributes[ATTR_NEXT_SERVICE_DATE] = shown.date().isoformat()
+                self._attributes[ATTR_NEXT_SERVICE_IN_DAYS] = delta
+                self._attributes[ATTR_INFO] = (
+                    f"Next departures tomorrow at {shown.strftime(TIME_STR_FORMAT)}"
+                    if delta == 1
+                    else f"No departures until {shown.date().isoformat()}")
+            else:
+                for k in (ATTR_NEXT_SERVICE_DATE, ATTR_NEXT_SERVICE_IN_DAYS):
+                    if k in self._attributes:
+                        del self._attributes[k]
+                if ATTR_INFO in self._attributes:
+                    del self._attributes[ATTR_INFO]
 
         # Add extra metadata
         key = "agency_id"
