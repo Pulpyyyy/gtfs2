@@ -538,7 +538,10 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
             if today_start is None:
                 today_start = row["origin_depart_date"]
                 extras["first"] = True
-            if today_start == row["origin_depart_date"]:
+            # a trip timed past 24:00 leaves tomorrow, its own date says so.
+            # The first row's date used to be the reference, which put every
+            # trip of a line running only after midnight a day early.
+            if row["origin_depart_date"] == "1970-01-01":
                 idx_prefix = now_date_local_tz
             else:
                 idx_prefix = tomorrow_date_local_tz
