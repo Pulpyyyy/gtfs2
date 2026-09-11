@@ -111,6 +111,12 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._name = coordinator.data["name"]
         self._attributes: dict[str, Any] = {}
+        # _update_attrs returns early when the source is extracting or broken,
+        # before it reaches the line that sets the icon: everything a property
+        # serves must already exist here, or adding the entity raises and the
+        # sensor never appears at all
+        self._icon = ICON
+        self._state: datetime.datetime | None = None
 
         self._attr_unique_id = f"gtfs-{self._name}"
         self._attr_device_info = DeviceInfo(
@@ -120,7 +126,10 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
             manufacturer="GTFS",
             model=self._name,
         )
-        self._attributes = self._update_attrs()
+        # _update_attrs fills self._attributes in place and returns None on
+        # its early paths: assigning its return here replaced the dict with
+        # None, and the next update crashed writing into it
+        self._update_attrs()
         self._attr_extra_state_attributes = self._attributes
 
     @callback
@@ -650,7 +659,9 @@ class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
             model=name,
         )
         self._stop = stop
-        self._attributes = self._update_attrs()
+        # same as the departures sensor: keep the dict when the first update
+        # returns early because the source is still extracting
+        self._update_attrs()
         self._attr_extra_state_attributes = self._attributes
 
     @property
