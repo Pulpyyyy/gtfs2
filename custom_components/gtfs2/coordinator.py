@@ -78,7 +78,9 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             "origin": data["origin"],
             "destination": data["destination"],
             "offset": options["offset"] if "offset" in options else 0,
-            "include_tomorrow": data["include_tomorrow"],
+            # entries created before this key was always written are still out
+            # there, and a KeyError here fails the whole sensor platform
+            "include_tomorrow": data.get("include_tomorrow", False),
             "gtfs_dir": DEFAULT_PATH,
             "name": data["name"],
             "file": data["file"],
