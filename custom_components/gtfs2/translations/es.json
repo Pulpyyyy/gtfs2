@@ -125,7 +125,7 @@
         "data": {
           "origin": "Parada de salida"
         },
-        "description": "¿Desde dónde contar las salidas?\n\n[documentación]({docu_new_route})",
+        "description": "Línea **{route}**, sentido **{direction}**.\n\n¿Desde dónde contar las salidas?\n\n[documentación]({docu_new_route})",
         "data_description": {
           "origin": "Las salidas se cuentan desde aquí. La lista sigue el sentido de circulación; un número distingue dos andenes con el mismo nombre."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Parada de llegada"
         },
-        "description": "¿Dónde termina el viaje desde **{origin}**?\n\n[documentación]({docu_new_route})",
+        "description": "Línea **{route}**, sentido **{direction}**.\n\n¿Dónde termina el viaje desde **{origin}**?\n\n[documentación]({docu_new_route})",
         "data_description": {
           "destination": "Solo se proponen las paradas a las que un viaje llega realmente desde allí, en el sentido de circulación. Déjelo en el final de línea para ver todo lo que pasa."
         }
@@ -142,27 +142,30 @@
       "sensor": {
         "data": {
           "name": "Nombre del sensor",
-          "include_tomorrow": "Mostrar también las salidas de mañana al final del servicio del día",
           "add_return": "Crear también el trayecto de vuelta"
         },
         "data_description": {
           "name": "Propuesto a partir de la línea y las dos paradas. Se muestra en su panel y fija el identificador de la entidad: un sensor creado más tarde con otro nombre es una entidad nueva, y las tarjetas que apuntan a este deberán actualizarse.",
-          "include_tomorrow": "Sin esto, el sensor queda vacío entre la última salida del día y la primera del siguiente.",
           "add_return": "Un segundo sensor para **{return_trip}**, la misma línea en sentido contrario."
         },
         "description": "El sensor mostrará las próximas salidas de **{trip}**.\n\n[documentación]({docu_new_route})"
       },
       "stops_train": {
         "data": {
-          "origin": "Estación de salida",
-          "destination": "Estación de llegada",
-          "include_tomorrow": "Mostrar también las salidas de mañana al final del servicio del día"
+          "origin": "Estación de salida"
         },
-        "description": "El sensor mostrará los próximos trenes entre dos estaciones.\n\n[documentación]({docu_setup_train})",
+        "description": "Línea **{route}**.\n\nEl sensor mostrará las próximas salidas entre dos estaciones, en uno u otro sentido.\n\n[documentación]({docu_setup_train})",
         "data_description": {
-          "origin": "Estaciones servidas por esta línea. Una estación aparece una sola vez, aunque la fuente la divida en varias paradas.",
-          "destination": "La misma lista. Elija su destino.",
-          "include_tomorrow": "Sin esto, el sensor queda vacío entre la última salida del día y la primera del siguiente."
+          "origin": "Estaciones servidas por esta línea. Una estación aparece una sola vez, aunque la fuente la divida en varias paradas. Cuando la línea mezcla trenes y autobuses, cada estación indica cuáles paran en ella: una terminal de autobuses con nombre propio se elige sola, para un trayecto aparte."
+        }
+      },
+      "destination_train": {
+        "data": {
+          "destination": "Estación de llegada"
+        },
+        "description": "Línea **{route}**.\n\n¿Dónde termina el viaje desde **{origin}**?\n\n[documentación]({docu_setup_train})",
+        "data_description": {
+          "destination": "Solo se proponen las estaciones a las que un viaje de esta línea llega realmente desde allí. Cuando la línea mezcla trenes y autobuses, cada estación indica cuáles llegan a ella desde su salida."
         }
       },
       "sensor_train": {
@@ -170,7 +173,7 @@
           "name": "Nombre del sensor",
           "add_return": "Crear también el trayecto de vuelta"
         },
-        "description": "El sensor mostrará los próximos trenes para **{trip}**.",
+        "description": "El sensor mostrará las próximas salidas para **{trip}**.",
         "data_description": {
           "name": "Propuesto a partir de la línea y las estaciones, puede cambiarlo libremente.",
           "add_return": "Un segundo sensor para **{return_trip}**, el mismo trayecto en sentido contrario."
@@ -189,6 +192,7 @@
         "title": "Sensor creado",
         "description": "**{name}** está listo y aparecerá en su panel.\n\nLa mayoría de las redes necesitan varios trayectos: una línea en cada sentido, o dos o tres líneas. Añadirlos ahora reutiliza la fuente que acaba de elegir.\n\n[documentación]({docu_new_route})",
         "menu_options": {
+          "same_line": "Otro trayecto en esta línea",
           "start_end": "Añadir otro trayecto",
           "optimise": "Liberar espacio en disco",
           "finish": "Eso es todo por ahora"
@@ -503,20 +507,6 @@
         }
       }
     },
-    "set_include_tomorrow": {
-      "name": "Mostrar las salidas de mañana",
-      "description": "Activa o desactiva las salidas de mañana en sensores existentes, sin recrearlos.",
-      "fields": {
-        "enabled": {
-          "name": "Activado",
-          "description": "Activado para seguir mostrando salidas cuando termine el servicio del día"
-        },
-        "entry_id": {
-          "name": "Una sola entrada",
-          "description": "Déjelo vacío para aplicarlo a todos los sensores de salida/llegada"
-        }
-      }
-    },
     "prune_datasource": {
       "name": "Reducir una fuente a las líneas en uso",
       "description": "Elimina los horarios de las líneas que ningún sensor lee y recupera el espacio. Las líneas siguen listadas, así que el asistente las muestra todas. Ejecute update_gtfs para restaurar la fuente completa.",
@@ -547,6 +537,8 @@
     }
   },
   "common": {
+    "mode_train": "tren",
+    "mode_coach": "autobús",
     "extract_ready_title": "GTFS: {file} está lista",
     "extract_ready": "La fuente contiene **{routes}** líneas y **{stops}** paradas.\n\nAjustes > Dispositivos y servicios > GTFS2 > Añadir entrada, luego **Añadir un trayecto entre dos paradas** para continuar.",
     "extract_failed_title": "GTFS: no se ha podido descomprimir {file}",

@@ -82,6 +82,10 @@
     'next_departures_durations': [
       23,
       22
+    ],
+    'next_departures_route_types': [
+      None,
+      None
     ]
   },
   'next_departure_realtime_attr': {

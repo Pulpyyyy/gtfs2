@@ -125,7 +125,7 @@
         "data": {
           "origin": "Starthaltestelle"
         },
-        "description": "Ab wo sollen die Abfahrten gezählt werden?\n\n[Dokumentation]({docu_new_route})",
+        "description": "Linie **{route}**, Richtung **{direction}**.\n\nAb wo sollen die Abfahrten gezählt werden?\n\n[Dokumentation]({docu_new_route})",
         "data_description": {
           "origin": "Ab hier werden die Abfahrten gezählt. Die Liste folgt der Fahrtrichtung; eine Zahl unterscheidet zwei gleichnamige Bahnsteige."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Zielhaltestelle"
         },
-        "description": "Wo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_new_route})",
+        "description": "Linie **{route}**, Richtung **{direction}**.\n\nWo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_new_route})",
         "data_description": {
           "destination": "Nur die Haltestellen, die eine Fahrt von dort tatsächlich erreicht, werden angeboten, in Fahrtrichtung. Auf der Endhaltestelle belassen, um alles zu sehen."
         }
@@ -142,27 +142,30 @@
       "sensor": {
         "data": {
           "name": "Name des Sensors",
-          "include_tomorrow": "Am Betriebsschluss auch die Abfahrten von morgen anzeigen",
           "add_return": "Auch die Gegenrichtung anlegen"
         },
         "data_description": {
           "name": "Aus der Linie und den beiden Haltestellen vorgeschlagen. Auf Ihrem Dashboard angezeigt, und er legt die Entitäts-ID fest: ein später unter anderem Namen angelegter Sensor ist eine neue Entität, und Karten, die auf diesen zeigen, müssen angepasst werden.",
-          "include_tomorrow": "Ohne dies bleibt der Sensor zwischen der letzten Abfahrt des Tages und der ersten des nächsten leer.",
           "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Linie in Gegenrichtung."
         },
         "description": "Der Sensor zeigt die nächsten Abfahrten für **{trip}**.\n\n[Dokumentation]({docu_new_route})"
       },
       "stops_train": {
         "data": {
-          "origin": "Abfahrtsbahnhof",
-          "destination": "Zielbahnhof",
-          "include_tomorrow": "Am Betriebsschluss auch die Abfahrten von morgen anzeigen"
+          "origin": "Abfahrtsbahnhof"
         },
-        "description": "Der Sensor zeigt die nächsten Züge zwischen zwei Bahnhöfen.\n\n[Dokumentation]({docu_setup_train})",
+        "description": "Linie **{route}**.\n\nDer Sensor zeigt die nächsten Abfahrten zwischen zwei Bahnhöfen, in beiden Richtungen.\n\n[Dokumentation]({docu_setup_train})",
         "data_description": {
-          "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt.",
-          "destination": "Dieselbe Liste. Wählen Sie Ihr Ziel.",
-          "include_tomorrow": "Ohne dies bleibt der Sensor zwischen der letzten Abfahrt des Tages und der ersten des nächsten leer."
+          "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt. Mischt die Linie Züge und Busse, zeigt jeder Bahnhof, welche dort halten: ein Busbahnhof mit eigenem Namen wird für sich gewählt, für eine eigene Fahrt."
+        }
+      },
+      "destination_train": {
+        "data": {
+          "destination": "Zielbahnhof"
+        },
+        "description": "Linie **{route}**.\n\nWo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_setup_train})",
+        "data_description": {
+          "destination": "Nur die Bahnhöfe, die eine Fahrt dieser Linie von dort tatsächlich erreicht, werden angeboten. Mischt die Linie Züge und Busse, zeigt jeder Bahnhof, welche ihn von Ihrem Abfahrtsbahnhof aus erreichen."
         }
       },
       "sensor_train": {
@@ -170,7 +173,7 @@
           "name": "Sensorname",
           "add_return": "Auch die Rückfahrt anlegen"
         },
-        "description": "Der Sensor zeigt die nächsten Züge für **{trip}**.",
+        "description": "Der Sensor zeigt die nächsten Abfahrten für **{trip}**.",
         "data_description": {
           "name": "Aus der Linie und den Bahnhöfen vorgeschlagen, frei änderbar.",
           "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Fahrt in der Gegenrichtung."
@@ -189,6 +192,7 @@
         "title": "Sensor erstellt",
         "description": "**{name}** ist bereit und erscheint auf Ihrem Dashboard.\n\nDie meisten Netze brauchen mehrere Fahrten: eine Linie je Richtung oder zwei bis drei Linien. Sie jetzt hinzuzufügen nutzt die eben gewählte Quelle weiter.\n\n[Dokumentation]({docu_new_route})",
         "menu_options": {
+          "same_line": "Weitere Fahrt auf dieser Linie",
           "start_end": "Weitere Fahrt hinzufügen",
           "optimise": "Speicherplatz freigeben",
           "finish": "Das war es fürs Erste"
@@ -503,20 +507,6 @@
         }
       }
     },
-    "set_include_tomorrow": {
-      "name": "Abfahrten von morgen anzeigen",
-      "description": "Schaltet die Abfahrten von morgen an bestehenden Sensoren ein oder aus, ohne sie neu anzulegen.",
-      "fields": {
-        "enabled": {
-          "name": "Aktiviert",
-          "description": "An, um nach Betriebsschluss weiter Abfahrten zu zeigen"
-        },
-        "entry_id": {
-          "name": "Nur ein Eintrag",
-          "description": "Leer lassen, um alle Start/Ziel-Sensoren zu erfassen"
-        }
-      }
-    },
     "prune_datasource": {
       "name": "Datenquelle auf die genutzten Linien kürzen",
       "description": "Entfernt die Fahrpläne der Linien, die kein Sensor liest, und gibt den Platz frei. Die Linien bleiben gelistet, der Konfigurationsdialog zeigt weiterhin alle. update_gtfs stellt den vollen Feed wieder her.",
@@ -547,6 +537,8 @@
     }
   },
   "common": {
+    "mode_train": "Zug",
+    "mode_coach": "Bus",
     "extract_ready_title": "GTFS: {file} ist bereit",
     "extract_ready": "Die Quelle enthält **{routes}** Linien und **{stops}** Haltestellen.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
     "extract_failed_title": "GTFS: {file} konnte nicht entpackt werden",

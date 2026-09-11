@@ -611,6 +611,13 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
             self._attributes["next_departures_durations"] = self._departure[
                 "next_departures_durations"][:10]
 
+        # Add next departures route types: a rail line may list a coach
+        prefix = "next_departures_route_types"
+        self._attributes["next_departures_route_types"] = []
+        if self._next_departures:
+            self._attributes["next_departures_route_types"] = self._departure.get(
+                "next_departures_route_types", [])[:10]
+
       
         self._attributes["gtfs_updated_at"] = self.coordinator.data[
             "gtfs_updated_at"]

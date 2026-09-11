@@ -74,9 +74,12 @@ from .gtfs_helper import (
     get_route_list,
     get_stop_list,
     get_station_list,
+    get_station_modes,
     has_trip_between,
     get_destination_stop_list,
     has_train_trip_between,
+    get_train_destination_list,
+    _async_text,
     get_direction_labels,
     get_datasources,
     get_zipfiles,
@@ -116,6 +119,15 @@ CONF_NEEDS_API_KEY = "needs_api_key"
 CONF_ADD_RETURN = "add_return"
 # other pruned lines to bring back in the same import, never saved
 CONF_ALSO_RELOAD = "also_reload"
+
+def _station_label(name, modes, words):
+    """A station as the picker shows it. On a line that mixes trains and
+    coaches every station says which of them call there, "Orléans (train,
+    coach)", so a coach station reads as one; elsewhere the plain name."""
+    if not modes:
+        return name
+    return f"{name} ({', '.join(words[m] for m in ('train', 'coach') if m in modes)})"
+
 
 def _stop_id(entry):
     """The stop_id of a "stop_id: Name (sequence)" entry."""
@@ -302,6 +314,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._extract_task = None
         self._extract_next_step: str | None = None
         self._route_label: str = ""
+        # the directions as the direction screen offered them, and the one
+        # picked, recalled on the screens that follow
+        self._direction_labels: dict = {}
+        self._direction_label: str = ""
         # how big the database has grown, shown while it is being built
         self._extract_size: str = "0 MB"
         # the import running behind the progress screen, and its routes
@@ -317,6 +333,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._return_name: str = ""
         # what the realtime screen collected, while its key screen runs
         self._source_rt_inputs: dict = {}
+        # the line and direction picked, where another journey on the same
+        # line starts from once this one is created
+        self._line: dict | None = None
 
     async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
         """Handle the source."""
@@ -1033,14 +1052,40 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._user_inputs[CONF_FILE])
         return await self.async_step_direction()
 
+    def _journey_placeholders(self, **extra):
+        """The line and the direction picked so far, recalled at the top of
+        the screens that pick the stops: once past the direction screen,
+        nothing said which way the list ran."""
+        return {
+            **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+            "route": self._route_label or str(self._user_inputs.get(CONF_ROUTE, "")),
+            "direction": self._direction_label or str(self._user_inputs.get(CONF_DIRECTION, "")),
+            **extra,
+        }
+
     async def async_step_direction(self, user_input: dict | None = None) -> FlowResult:
-        """Pick the direction, labelled with where the vehicle actually goes."""
+        """Pick the direction, labelled with where the vehicle actually goes.
+
+        Not asked on a rail line: the train path reads both directions (the
+        stations by name, the arrivals from the departure, the departures
+        matched by name with no direction), so the choice had no effect, and
+        its label came from whichever trip is longest, a replacement coach on
+        the SNCF K8+ ("Paris-Austerlitz Routiere → Orléans"). GTFS route_type
+        2 is rail: those feeds rarely have usable stop ids, so they are
+        matched on station names instead of picked from a list.
+        """
         errors: dict[str, str] = {}
+        if self._user_inputs.get(CONF_ROUTE_TYPE) == "2":
+            self._user_inputs[CONF_DIRECTION] = "0"
+            self._direction_label = ""
+            self._keep_line()
+            return await self.async_step_stops_train()
         if user_input is None:
             # direction_id alone means nothing to the user, so show the first
             # and last stop of each one
             labels = await self.hass.async_add_executor_job(
                 get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE])
+            self._direction_labels = labels
             options = [
                 selector.SelectOptionDict(value=k, label=labels[k])
                 for k in sorted(labels)
@@ -1061,12 +1106,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors=errors,
             )
         self._user_inputs.update(user_input)
+        picked = str(user_input.get(CONF_DIRECTION, ""))
+        self._direction_label = self._direction_labels.get(picked, picked)
+        self._keep_line()
         _LOGGER.debug(f"UserInputs Direction: {self._user_inputs}")
-        # GTFS route_type 2 is rail: those feeds rarely have usable stop ids,
-        # so they are matched on city names instead of picked from a list
-        if self._user_inputs[CONF_ROUTE_TYPE] == "2":
-            return await self.async_step_stops_train()
         return await self.async_step_stops()
+
+    def _keep_line(self):
+        """Remember the line and direction picked: another journey on the
+        same line starts from there, offered once this one is created."""
+        self._line = {
+            "inputs": dict(self._user_inputs),
+            "route_label": self._route_label,
+            "direction_label": self._direction_label,
+        }
 
     async def async_step_stops(self, user_input: dict | None = None) -> FlowResult:
         """Pick where the departures are counted from."""
@@ -1103,7 +1156,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                     },
                 ),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                description_placeholders=self._journey_placeholders(),
                 errors=errors,
             )
 
@@ -1146,10 +1199,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                     },
                 ),
-                description_placeholders={
-                    **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                    "origin": _base_name(origin),
-                },
+                description_placeholders=self._journey_placeholders(
+                    origin=_base_name(origin)),
                 errors=errors,
             )
 
@@ -1184,10 +1235,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         vol.Required(
                             CONF_NAME, default=previous.get(CONF_NAME, suggested)
                         ): str,
-                        vol.Optional(
-                            CONF_INCLUDE_TOMORROW,
-                            default=previous.get(CONF_INCLUDE_TOMORROW, False),
-                        ): selector.BooleanSelector(),
                         **({vol.Optional(
                             CONF_ADD_RETURN, default=True
                         ): selector.BooleanSelector()} if self._return_trip else {}),
@@ -1206,9 +1253,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # only used to branch, it must not end up in the entry
         add_return = user_input.pop(CONF_ADD_RETURN, False)
-        # an unticked BooleanSelector is simply absent from user_input, and the
-        # coordinator reads data["include_tomorrow"] directly
-        user_input.setdefault(CONF_INCLUDE_TOMORROW, False)
+        # no longer asked: a sensor always reaches the next day
+        user_input[CONF_INCLUDE_TOMORROW] = True
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Sensor: {self._user_inputs}")
         # the arrival was offered from the trips that ride it from the
@@ -1252,13 +1298,31 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return self.async_show_menu(
                 step_id="finished",
-                menu_options=["start_end", "optimise", "finish"],
+                menu_options=(["same_line"] if self._line else [])
+                + ["start_end", "optimise", "finish"],
                 description_placeholders={
                     **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                     "name": self._created_name,
                 },
             )
         return await self.async_step_finish()
+
+    async def async_step_same_line(self, user_input: dict | None = None) -> FlowResult:
+        """Another journey on the line just used: the source, the line and
+        the direction stay, and the departure screen opens.
+
+        A train line's replacement coaches can leave from a coach station the
+        feed names on its own, "Paris-Austerlitz Routiere" beside "Paris
+        Austerlitz" on the SNCF K8+: a journey of its own reads them, picked
+        from that station.
+        """
+        self._reset_for_next_journey()
+        self._user_inputs.update(self._line["inputs"])
+        self._route_label = self._line["route_label"]
+        self._direction_label = self._line["direction_label"]
+        if self._user_inputs.get(CONF_ROUTE_TYPE) == "2":
+            return await self.async_step_stops_train()
+        return await self.async_step_stops()
 
     def _reset_for_next_journey(self):
         """Forget the journey just created, keep the datasource.
@@ -1352,56 +1416,126 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def async_step_stops_train(self, user_input: dict | None = None) -> FlowResult:
-        """Handle the stops when train, as often impossible to select ID"""
-        errors: dict[str, str] = {}
+    async def _station_options(self, names, modes):
+        """Picker options for station names. On a line that mixes trains and
+        coaches each one says which of them it is for; the value stays the
+        plain name, which is what the queries match."""
+        words = {mode: await _async_text(self.hass, f"mode_{mode}", mode)
+                 for mode in ("train", "coach")}
+        return [selector.SelectOptionDict(
+            value=name, label=_station_label(name, modes.get(name), words))
+            for name in names]
 
-        # a station is several stops in GTFS, so offer the distinct names
-        # rather than ids, and let a name be typed for feeds that list none
+    async def async_step_stops_train(self, user_input: dict | None = None) -> FlowResult:
+        """Pick the departure station of a train journey.
+
+        Rail feeds rarely have stop ids a rider can use, and a station is
+        several stops in GTFS, so the distinct names are offered, and a name
+        can be typed for feeds that list none. One station only: an operator
+        can run the coaches that replace its trains from a coach station the
+        feed files under a name of its own (SNCF K8+: "Paris-Austerlitz
+        Routiere" beside "Paris Austerlitz"), and nothing in the feed ties the
+        two together. That coach station is the departure of a journey of its
+        own, which the closing screen offers to add on the same line.
+        """
+        errors: dict[str, str] = {}
+        route_id = self._user_inputs.get(CONF_ROUTE)
         stations = await self.hass.async_add_executor_job(
-            get_station_list, self._pygtfs, self._user_inputs.get(CONF_ROUTE))
+            get_station_list, self._pygtfs, route_id)
         if not stations:
             stations = await self.hass.async_add_executor_job(
                 get_station_list, self._pygtfs)
-        station_select = selector.SelectSelector(
-            selector.SelectSelectorConfig(options=stations, custom_value=True)
-        )
+        # a line that mixes trains and coaches says which one calls where:
+        # "Paris-Austerlitz Routiere" alone does not read as a coach station
+        modes = await self.hass.async_add_executor_job(
+            get_station_modes, self._pygtfs, route_id)
 
-        def _show(errors, previous=None):
-            """Render the form, keeping the city names already picked."""
-            previous = previous or {}
+        if user_input is None:
+            picked = None
+            if self._stops_error:
+                # back from the arrival screen: keep the pick, say why
+                errors["base"], self._stops_error = self._stops_error, None
+                picked = self._user_inputs.get(CONF_ORIGIN)
             return self.async_show_form(
                 step_id="stops_train",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(CONF_ORIGIN, default=previous.get(CONF_ORIGIN, "")): station_select,
-                        vol.Required(CONF_DESTINATION, default=previous.get(CONF_DESTINATION, "")): station_select,
-                        vol.Optional(CONF_INCLUDE_TOMORROW, default=previous.get(CONF_INCLUDE_TOMORROW, False)): selector.BooleanSelector(),
-                    },
-                ),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                data_schema=vol.Schema({
+                    vol.Required(CONF_ORIGIN, default=picked or vol.UNDEFINED):
+                        selector.SelectSelector(selector.SelectSelectorConfig(
+                            options=await self._station_options(stations, modes),
+                            custom_value=True)),
+                }),
+                description_placeholders=self._journey_placeholders(),
+                errors=errors,
+            )
+
+        self._user_inputs[CONF_ORIGIN] = str(user_input.get(CONF_ORIGIN, "")).strip()
+        _LOGGER.debug(f"UserInputs Stops Train: {self._user_inputs}")
+        return await self.async_step_destination_train()
+
+    async def async_step_destination_train(self, user_input: dict | None = None) -> FlowResult:
+        """Pick the arrival station, among the ones a trip of the line really
+        reaches from the departure station.
+
+        A trip rides one mode from end to end, so a train station leads to the
+        train arrivals and a coach station to the coach ones: a pair no trip
+        rides cannot be picked, and nothing has to be rejected afterwards.
+        """
+        errors: dict[str, str] = {}
+        origin = self._user_inputs.get(CONF_ORIGIN, "")
+        route_id = self._user_inputs.get(CONF_ROUTE)
+        try:
+            reached = await self.hass.async_add_executor_job(
+                get_train_destination_list, self._pygtfs, route_id, origin,
+                self._route_label or None)
+            mixed = await self.hass.async_add_executor_job(
+                get_station_modes, self._pygtfs, route_id)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Error reading the destinations from %s on route %s: %s",
+                          origin, route_id, ex)
+            return self.async_abort(reason="no_stops_read")
+        if not reached:
+            # a terminus, or a typed name no trip of the line calls at
+            self._stops_error = "no_destination"
+            return await self.async_step_stops_train()
+        options = await self._station_options(list(reached), reached if mixed else {})
+
+        def _show(errors, picked=None):
+            return self.async_show_form(
+                step_id="destination_train",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_DESTINATION, default=picked or vol.UNDEFINED):
+                        selector.SelectSelector(
+                            selector.SelectSelectorConfig(options=options)),
+                }),
+                description_placeholders=self._journey_placeholders(origin=origin),
                 errors=errors,
             )
 
         if user_input is None:
             return _show(errors)
-        # an unticked BooleanSelector is simply absent from user_input
-        user_input.setdefault(CONF_INCLUDE_TOMORROW, False)
-        self._user_inputs.update(user_input)
+        destination = user_input[CONF_DESTINATION]
+        data = {
+            **self._user_inputs,
+            CONF_DESTINATION: destination,
+            # no longer asked: a sensor always reaches the next day
+            CONF_INCLUDE_TOMORROW: True,
+            # the picked line's code: the departures hold to that line
+            "line": self._route_label,
+        }
+        check_config = await self._check_config(data)
+        # the arrival was offered from the trips that ride it from the
+        # departure, so the journey exists; whether one is due in the next
+        # hours is the coordinator's business: a sensor created on a day the
+        # trains give way to coaches is still valid
+        if check_config and check_config != "stop_incorrect":
+            _LOGGER.debug(f"CheckConfig: {check_config}")
+            errors["base"] = check_config
+            return _show(errors, destination)
+        self._user_inputs.update(data)
         self._user_inputs[CONF_DIRECTION] = 0
         self._user_inputs[CONF_ROUTE] = "train"
-        # the picked line's code: the departures hold to that line
-        self._user_inputs["line"] = self._route_label
-        _LOGGER.debug(f"UserInputs Stops Train: {self._user_inputs}")
-        check_config = await self._check_config(self._user_inputs)
-        if check_config:
-            _LOGGER.debug(f"CheckConfig: {check_config}")
-            # city names are typed by hand here: re-show the form with the message
-            # instead of closing the flow on a typo.
-            errors["base"] = check_config
-            return _show(errors, user_input)
-        else:
-            return await self.async_step_sensor_train()
+        _LOGGER.debug(f"UserInputs Destination Train: {self._user_inputs}")
+        return await self.async_step_sensor_train()
 
     async def async_step_sensor_train(self, user_input: dict | None = None) -> FlowResult:
         """Name the train sensor, suggested from the line and both stations."""
@@ -1463,12 +1597,23 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = "name_taken"
             return _show(errors, user_input)
         if add_return:
-            # spawned as its own flow, before this one closes on the entry
+            # spawned as its own flow, like the outward below
             await self._create_return_trip()
         self._user_inputs.update(user_input)
-        return self.async_create_entry(
-            title=user_input[CONF_NAME], data=self._user_inputs
+        # async_create_entry ends the flow, so the sensor is created through a
+        # second flow, like the bus sensor. That leaves this one alive to offer
+        # what comes next, another journey on the same line among it.
+        result = await self.hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_IMPORT},
+            data=dict(self._user_inputs),
         )
+        if result.get("type") != data_entry_flow.FlowResultType.CREATE_ENTRY:
+            _LOGGER.error("The sensor was not created: %s", result.get("reason"))
+            errors["base"] = "not_created"
+            return _show(errors, user_input)
+        self._created_name = user_input[CONF_NAME]
+        return await self.async_step_finished()
 
     async def async_step_import(self, import_data: dict) -> FlowResult:
         """Create an entry from data built by the flow, with no screens.

@@ -196,5 +196,30 @@
     32,
     25,
     23
+  ],
+  'next_departures_route_types': [
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None
   ]
 }

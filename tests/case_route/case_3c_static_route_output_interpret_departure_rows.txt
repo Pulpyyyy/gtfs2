@@ -88,5 +88,12 @@
     23,
     22,
     22
+  ],
+  'next_departures_route_types': [
+    None,
+    None,
+    None,
+    None,
+    None
   ]
 }
