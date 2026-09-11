@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import glob
 import os
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
@@ -13,7 +14,7 @@ from .const import DOMAIN, PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PAT
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
-from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops, route_geojson_name, vehicle_positions_name, async_notify_line_orphaned
+from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops, route_geojson_name, vehicle_positions_name, leg_geojson_pattern, async_notify_line_orphaned
 from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
 
@@ -350,6 +351,17 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
     so two entries on the same line share them: only remove them when no
     other entry still needs them.
     """
+    # www/gtfs2, where the export writes them, not the datasource folder
+    geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
+    # the leg file is this entry's own, nobody else writes or reads it; found
+    # by its entry part, the line part being the departure's, not the entry's
+    if entry.data.get("name"):
+        for leg in glob.glob(os.path.join(geojson_dir, leg_geojson_pattern(entry.data["name"]))):
+            try:
+                os.remove(leg)
+                _LOGGER.info("Removed %s", leg)
+            except OSError as ex:
+                _LOGGER.warning("Could not remove %s: %s", leg, ex)
     route = (entry.data.get("route") or "").split(": ")[0]
     direction = entry.data.get("direction")
     if not route or direction is None:
@@ -364,8 +376,6 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
         _LOGGER.debug("Keeping geojson for route %s direction %s, another entry uses it",
                       route, direction)
         return
-    # www/gtfs2, where the export writes them, not the datasource folder
-    geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     names = [vehicle_positions_name(route, direction), route_geojson_name(route, direction)]
     # the files written before the ids were sanitised carry the raw name and
     # nothing else would ever remove them; an id that is not a plain file name

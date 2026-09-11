@@ -14,6 +14,7 @@ import hashlib
 import json
 import csv
 import io
+import unicodedata
 import requests
 import pygtfs
 from collections import Counter
@@ -2334,13 +2335,40 @@ def create_trip_geojson(self):
     return None
 
 
-def _fmt_gtfs_time(value):
-    """Render a pygtfs departure_time (seconds since midnight, may exceed 24h) as HH:MM:SS."""
+def _gtfs_seconds(value):
+    """Seconds since the service day's midnight of a stored stop time, or None.
+
+    pygtfs stores stop_times through SQLAlchemy's Interval, which SQLite
+    keeps as a datetime counted from 1970-01-01: a 01:15 departure after
+    midnight reads '1970-01-02 01:15:00', and a raw query hands that string
+    back as is. Seconds and timedeltas pass through.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime.timedelta):
+        return int(value.total_seconds())
     try:
-        s = int(value)
-        return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
+        return int(value)
     except (TypeError, ValueError):
+        stored = re.match(r"^1970-01-(\d{2}) (\d{2}):(\d{2}):(\d{2})", str(value))
+        if not stored:
+            return None
+        day, hours, minutes, secs = (int(g) for g in stored.groups())
+        return ((day - 1) * 24 + hours) * 3600 + minutes * 60 + secs
+
+
+def _fmt_gtfs_time(value):
+    """Render a stored stop time as the clock the feed wrote in stop_times.txt:
+    HH:MM:SS, past 24:00 after midnight (SNCF writes 24:36:00 there). The
+    line file has no service day to pin a date on, so it keeps the feed's
+    own convention; the leg file, which has one, carries datetimes instead.
+    """
+    seconds = _gtfs_seconds(value)
+    if seconds is None:
         return str(value) if value is not None else None
+    return f"{seconds // 3600:02d}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
+
+
 
 
 def route_geojson_name(route_id, direction):
@@ -2449,29 +2477,33 @@ def get_representative_trip(schedule, route_id, direction, origin_id=None, desti
     return trip_id
 
 
-def update_route_geojson(self):
-    """Write the journey's ordered stops to www/gtfs2/<route>_<direction>_route.json.
+def update_route_geojson(self, trip_id=None):
+    """Write the line's ordered stops to www/gtfs2/<route>_<direction>_route.json.
 
     Companion file to the vehicle-positions geojson. Points only: the geojson
     integration reads nothing else, and since the import strips shapes.txt a
     LineString could only duplicate the stops; a map card rebuilds the path by
     joining the points in stop_sequence order. Each point carries an id and a
     title the way the geojson integration expects, plus the trip_id; what
-    describes the whole journey sits on the FeatureCollection.
-    Rewritten only when the drawn trip changes (see coordinator).
+    describes the whole line sits on the FeatureCollection.
+
+    The line drawn is the whole line: its fullest trip in this direction, not
+    the trip of the next departure. That one is a short turn often enough
+    (TAO tram B runs 110 of them a day) to leave a map showing half a line
+    at the wrong hour, and it moves at every departure while the line does
+    not. What the next departure rides, and when, is the leg file's business
+    (update_leg_geojson). Rewritten only when the fullest trip changes, that
+    is when the feed does (see coordinator).
     """
     schedule = self._data["schedule"]
-    trip_id = (self._data.get("next_departure") or {}).get("trip_id", None)
     if not trip_id:
-        # No departure left today is not the same as no line: a weekday route
-        # read on a Sunday, or a seasonal one out of season, still has a path
-        # worth drawing. Take a trip of this route and direction that calls
-        # at the sensor's stops, read from the entry since there is no
-        # departure to read them from.
+        # a trip the sensor rides: its stops come from the next departure,
+        # from the entry once the last one of the day is gone
+        departure = self._data.get("next_departure") or {}
         trip_id = get_representative_trip(
             schedule, self._route_id, self._direction,
-            (self._data.get("origin") or "").split(": ")[0],
-            (self._data.get("destination") or "").split(": ")[0])
+            departure.get("origin_stop_id") or (self._data.get("origin") or "").split(": ")[0],
+            departure.get("destination_stop_id") or (self._data.get("destination") or "").split(": ")[0])
     if not trip_id:
         return
     sql_stops = """
@@ -2516,9 +2548,250 @@ def update_route_geojson(self):
                 "trip_id": trip_id,
                 "route_id": str(self._route_id),
                 "direction_id": str(self._direction),
+                # the trip stands for the line, it is not the one about to leave
+                "representative": True,
             },
             "features": features,
         }, outfile)
+
+
+# how many of the listed departures the leg file times stop by stop: a board
+# shows a handful, and a day's worth of runs on a busy line is a file
+# rewritten every minute for nothing
+LEG_TRIPS_MAX = 20
+
+
+def entry_file_part(name) -> str:
+    """An entry's name, made a readable file name part: accents dropped to
+    their base letter (Orléans reads orleans, not orl_ans), then the same
+    rule as the ids, then the stray dashes an arrow or a long dash leaves
+    behind ("_-_") folded away."""
+    plain = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode()
+    return re.sub(r"_+", "_", safe_file_part(plain).replace("-", "_")).strip("_")
+
+
+def leg_geojson_name(route_id, direction, name):
+    """File name of the leg export: the line and direction first, so a
+    folder listing reads a line's files together, then the entry's name,
+    since it describes what THIS sensor rides and two entries of one line
+    must not overwrite each other's. Kept in one place, like the other
+    two, so the writer and the sensor attribute agree; the removal finds
+    it back by its entry part alone (see leg_geojson_pattern)."""
+    return f"{safe_file_part(route_id)}_{safe_file_part(direction)}_leg_{entry_file_part(name)}.json"
+
+
+def leg_geojson_pattern(name) -> str:
+    """The glob that finds an entry's leg file whatever line it was written
+    under: a train entry's departure may name a route the entry does not."""
+    return f"*_leg_{glob.escape(entry_file_part(name))}.json"
+
+
+def _leg_timezone(schedule, route_id, departure, hass):
+    """The zone the line's clocks are written in: the agency's, as the
+    departure query reads it, else the origin stop's, else Home Assistant's."""
+    name = None
+    try:
+        with schedule.engine.connect() as conn:
+            row = conn.execute(text(
+                "SELECT agency.agency_timezone FROM routes "
+                "JOIN agency ON agency.agency_id = routes.agency_id "
+                "WHERE routes.route_id = :route"), {"route": route_id}).fetchone()
+            if not row or not row[0]:
+                row = conn.execute(text("SELECT agency_timezone FROM agency LIMIT 1")).fetchone()
+            name = row[0] if row else None
+    except Exception:  # pylint: disable=broad-except
+        name = None
+    name = name or departure.get("origin_stop_timezone") or hass.config.time_zone
+    return dt_util.get_time_zone(name) or datetime.timezone.utc
+
+
+def update_leg_geojson(self, feed_entities=None):
+    """Write www/gtfs2/<entry>_leg.json: the trip the next departure rides,
+    stop by stop, and for every listed departure when its trip calls at
+    every stop, scheduled and, where the feed says, expected.
+
+    The route file draws the line; this one times a ride. A card chaining
+    legs into a journey needs, for a stop in the middle of the ride, when
+    THIS run gets there: the scheduled time of each listed trip answers it
+    without guessing from the origin, and the trip updates the coordinator
+    already fetched give the realtime at every stop the feed covers, where
+    the sensor itself only reads the origin's.
+
+    Every time is a datetime, the way the sensor's own departures are: the
+    stored clock is laid on the service day of the departure the sensor
+    lists for that trip, in the agency's zone, so a stop past midnight
+    lands on the next calendar day rather than on a clock past 24:00.
+
+    Keyed by trip_id. A frequency-based trip the feed reports several times
+    keeps its scheduled entry under the bare id and gets one realtime entry
+    per run, keyed trip_id@start_time. A stop update carrying no time and a
+    zero delay is left out: protobuf reads an absent field as zero, so that
+    one cannot be told from "on time".
+    """
+    schedule = self._data["schedule"]
+    name = self._data.get("name") or ""
+    departure = self._data.get("next_departure") or {}
+    trip_id = str(departure.get("trip_id") or "") or None
+    trip_ids = []
+    for t in [trip_id] + list(departure.get("next_departures_trip_id") or []):
+        if t and str(t) not in trip_ids:
+            trip_ids.append(str(t))
+    trip_ids = trip_ids[:LEG_TRIPS_MAX]
+    # when each listed trip leaves the origin, as the sensor says it
+    leaves = {}
+    for t, when in zip(departure.get("next_departures_trip_id") or [], departure.get("next_departures") or []):
+        leaves.setdefault(str(t), when)
+    if trip_id and departure.get("departure_time"):
+        first = departure["departure_time"]
+        leaves.setdefault(trip_id, first.isoformat() if hasattr(first, "isoformat") else str(first))
+    route_id = str(departure.get("route_id") or (self._data.get("route") or "").split(": ")[0])
+    direction = str(departure.get("trip_direction_id", self._data.get("direction")))
+    origin_id = str(departure.get("origin_stop_id") or (self._data.get("origin") or "").split(": ")[0])
+    stops_by_trip = {}
+    origin_parent = None
+    if trip_ids:
+        params = {f"t{i}": t for i, t in enumerate(trip_ids)}
+        sql = f"""
+        SELECT st.trip_id, st.stop_id, s.stop_name, s.stop_lat, s.stop_lon,
+               st.stop_sequence, st.arrival_time, st.departure_time, s.parent_station
+        FROM stop_times st
+        JOIN stops s ON s.stop_id = st.stop_id
+        WHERE st.trip_id IN ({", ".join(":" + k for k in params)})
+        ORDER BY st.trip_id, st.stop_sequence
+        """  # noqa: S608
+        with schedule.engine.connect() as conn:
+            for row in conn.execute(text(sql), params).fetchall():
+                stops_by_trip.setdefault(str(row[0]), []).append(row)
+            parent = conn.execute(text("SELECT parent_station FROM stops WHERE stop_id = :s"),
+                                  {"s": origin_id}).fetchone()
+            origin_parent = parent[0] if parent and parent[0] else None
+    zone = _leg_timezone(schedule, route_id, departure, self.hass)
+
+    def midnight_of(t, rows):
+        """The service day's midnight of that trip, in the line's zone: the
+        origin's departure, as listed, minus the origin's stored clock. The
+        origin is the entry's record, else a platform of the same station
+        (the trip may serve a sibling record), else the trip's first stop."""
+        when = leaves.get(t)
+        if not when:
+            return None
+        origin_row = next((r for r in rows if str(r[1]) == origin_id), None)
+        if origin_row is None and origin_parent:
+            origin_row = next((r for r in rows if r[8] == origin_parent), None)
+        if origin_row is None:
+            origin_row = rows[0]
+        seconds = _gtfs_seconds(origin_row[7])
+        if seconds is None:
+            return None
+        try:
+            local = datetime.datetime.fromisoformat(str(when)).astimezone(zone)
+        except ValueError:
+            return None
+        return (local - datetime.timedelta(seconds=seconds)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    def at(midnight, stored):
+        seconds = _gtfs_seconds(stored)
+        if midnight is None or seconds is None:
+            return None
+        return (midnight + datetime.timedelta(seconds=seconds)).astimezone(datetime.timezone.utc).isoformat()
+
+    trips = {}
+    features = []
+    for t in trip_ids:
+        rows = stops_by_trip.get(t)
+        if not rows:
+            continue
+        midnight = midnight_of(t, rows)
+        stops = {}
+        for r in rows:
+            stops[str(r[1])] = {
+                "sequence": r[5],
+                "scheduled_arrival": at(midnight, r[6]),
+                "scheduled": at(midnight, r[7]),
+            }
+        trips[t] = {"stops": stops}
+        if t == trip_id:
+            for r in rows:
+                features.append({
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [r[4], r[3]]},
+                    "properties": {
+                        "id": f"{route_id}_{direction}_{r[5]}",
+                        "title": r[2] + "_stop",
+                        "trip_id": trip_id,
+                        "stop_id": r[1],
+                        "stop_name": r[2],
+                        "stop_sequence": r[5],
+                        "scheduled_arrival": stops[str(r[1])]["scheduled_arrival"],
+                        "scheduled": stops[str(r[1])]["scheduled"],
+                    },
+                })
+    # the realtime of every listed trip, at every stop the feed covers
+    updates = {}
+    for entity in feed_entities or []:
+        trip_update = entity.get("trip_update") if isinstance(entity, dict) else None
+        if not trip_update:
+            continue
+        t = str((trip_update.get("trip") or {}).get("trip_id") or "")
+        if t in trips:
+            updates.setdefault(t, []).append(trip_update)
+    realtime = False
+    for t, trip_updates in updates.items():
+        by_sequence = {v["sequence"]: sid for sid, v in trips[t]["stops"].items()}
+        if len(trip_updates) == 1:
+            keyed = [(t, trips[t], trip_updates[0])]
+        else:
+            keyed = []
+            for i, trip_update in enumerate(trip_updates):
+                start = (trip_update.get("trip") or {}).get("start_time") or str(i)
+                run = {"stops": {sid: dict(v) for sid, v in trips[t]["stops"].items()}}
+                trips[f"{t}@{start}"] = run
+                keyed.append((f"{t}@{start}", run, trip_update))
+        for key, run, trip_update in keyed:
+            start = (trip_update.get("trip") or {}).get("start_time")
+            if start:
+                run["start_time"] = start
+            for update in trip_update.get("stop_time_update") or []:
+                stop_id = str(update.get("stop_id") or "") or by_sequence.get(update.get("stop_sequence"))
+                stop = run["stops"].get(stop_id) if stop_id else None
+                if stop is None:
+                    continue
+                arrival = update.get("arrival") or {}
+                departure_update = update.get("departure") or {}
+                when = departure_update.get("time") or arrival.get("time") or 0
+                delay = departure_update.get("delay") if (departure_update.get("time") or departure_update.get("delay")) else arrival.get("delay")
+                if when:
+                    stop["expected"] = datetime.datetime.fromtimestamp(int(when), datetime.timezone.utc).isoformat()
+                if when and not delay and stop.get("scheduled"):
+                    # a feed that gives times without delays (TAO, Palm Bus):
+                    # the delay is the gap to the schedule
+                    delay = int((datetime.datetime.fromisoformat(stop["expected"])
+                                 - datetime.datetime.fromisoformat(stop["scheduled"])).total_seconds())
+                if delay or when:
+                    stop["delay"] = int(delay or 0)
+                    realtime = True
+    geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)
+    os.makedirs(geojson_dir, exist_ok=True)
+    file = os.path.join(geojson_dir, leg_geojson_name(route_id, direction, name))
+    _LOGGER.debug("Creating leg geojson file: %s", file)
+    with open(file, "w") as outfile:
+        json.dump({
+            "type": "FeatureCollection",
+            "properties": {
+                "name": name,
+                "route_id": route_id,
+                "direction_id": direction,
+                "trip_id": trip_id,
+                "origin_stop_id": departure.get("origin_stop_id"),
+                "destination_stop_id": departure.get("destination_stop_id"),
+                "timezone": str(zone),
+                "realtime": realtime,
+                "updated_at": dt_util.utcnow().isoformat(),
+            },
+            "features": features,
+            "trips": trips,
+        }, outfile)
+
 
 def get_local_stop_list(hass, schedule, data):
     _LOGGER.debug("Getting local stops list with data: %s", data)
