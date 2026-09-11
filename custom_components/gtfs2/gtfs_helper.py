@@ -2121,8 +2121,9 @@ async def _async_notify(hass, key, notification_id, **values):
 
     A notification is read outside any config flow, so it cannot lean on the
     placeholders Home Assistant fills there: the strings are fetched and
-    formatted here. They live under a "notification" section of strings.json,
-    alongside the flow's own, so translating the integration covers them too.
+    formatted here. They live under the "common" section of strings.json,
+    alongside the flow's own, so translating the integration covers them too
+    (hassfest knows no "notification" section, and rejects one).
 
     Falls back to the key itself when a translation is missing, which is
     visible without being fatal.
@@ -2138,11 +2139,11 @@ async def _async_text(hass, name, default, **values):
     """One notification string, in the user's language, placeholders filled."""
     try:
         strings = await async_get_translations(
-            hass, hass.config.language, "notification", {DOMAIN})
+            hass, hass.config.language, "common", {DOMAIN})
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not load notification strings: %s", ex)
         strings = {}
-    raw = strings.get(f"component.{DOMAIN}.notification.{name}", default)
+    raw = strings.get(f"component.{DOMAIN}.common.{name}", default)
     try:
         return raw.format(**values)
     except (KeyError, IndexError):
