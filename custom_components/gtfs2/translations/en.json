@@ -307,9 +307,9 @@
           "needs_api_key": "This requires an API key"
         },
         "data_description": {
-          "trip_update_url": "The real delay on your sensor, instead of the timetable.\n`https://example.org/gtfs/`**`trip-updates`**",
-          "vehicle_position_url": "Where the vehicles are, for a map card. Leave empty if you do not want it.\n`https://example.org/gtfs/`**`vehicle-positions`**",
-          "alerts_url": "Disruption messages from the operator. Leave empty if you do not want it.\n`https://example.org/gtfs/`**`service-alerts`**",
+          "trip_update_url": "The real delay on your sensor, instead of the timetable.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Where the vehicles are, for a map card. Leave empty if you do not want it.\n`…/`**`vehicle-positions`**",
+          "alerts_url": "Disruption messages from the operator. Leave empty if you do not want it.\n`…/`**`service-alerts`**",
           "needs_api_key": "Tick this if the provider gave you a key to read these feeds."
         }
       },
@@ -367,6 +367,12 @@
     }
   },
   "selector": {
+    "extract_from": {
+      "options": {
+        "zip": "ZIP: expects a file in gtfs2-folder with below name, without extension .zip",
+        "url": "URL: uses your URL below, leave 'na' if using zip"
+      }
+    },
     "api_key_location": {
       "options": {
         "not_applicable": "No key needed (most sources)",
@@ -540,7 +546,7 @@
       }
     }
   },
-  "notification": {
+  "common": {
     "extract_ready_title": "GTFS: {file} is ready",
     "extract_ready": "The source holds **{routes}** lines and **{stops}** stops.\n\nSettings > Devices & services > GTFS2 > Add entry, then **Add a journey between two stops** to carry on.",
     "extract_failed_title": "GTFS: {file} could not be unpacked",
