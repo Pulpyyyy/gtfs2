@@ -615,9 +615,11 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         self._attributes["gtfs_updated_at"] = self.coordinator.data[
             "gtfs_updated_at"]
 
-        # the drawn journey, exported with or without realtime
+        # the drawn line and the timed ride, exported with or without realtime
         if self.coordinator.data.get("route_geojson_file", None):
             self._attributes["route_geojson_file"] = self.coordinator.data["route_geojson_file"]
+        if self.coordinator.data.get("leg_geojson_file", None):
+            self._attributes["leg_geojson_file"] = self.coordinator.data["leg_geojson_file"]
         if self.coordinator.data.get("vehicle_positions_file", None):
             self._attributes["vehicle_positions_file"] = self.coordinator.data["vehicle_positions_file"]
 
