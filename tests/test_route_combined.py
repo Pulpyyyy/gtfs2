@@ -21,6 +21,10 @@ value each one produces, nothing about how it's used afterward:
     update_route_geojson     -- writes a file to disk using real DB
                                  stop data; doesn't touch coordinator
                                  data at all
+    get_representative_trip  -- picks the trip that draws the line, by
+                                 SQL; the export is patched out anyway
+    update_leg_geojson       -- writes the leg file to disk from real DB
+                                 stop data and the feed entities
     get_rt_alerts            -- live network fetch; out of scope here,
                                  returns {} (matches a real capture
                                  with no active alerts)
@@ -267,6 +271,8 @@ def test_coordinator_case(case_id: str, case_dir: Path):
              patch.object(coordinator_mod, "get_next_departure", return_value=precomputed_next_departure), \
              patch.object(coordinator_mod, "check_datasource_index", return_value=None), \
              patch.object(coordinator_mod, "update_route_geojson", return_value=None), \
+             patch.object(coordinator_mod, "get_representative_trip", return_value="fullest_trip"), \
+             patch.object(coordinator_mod, "update_leg_geojson", return_value=None), \
              patch.object(coordinator_mod, "get_rt_alerts", return_value={}), \
              patch.object(gtfs_rt_helper_mod, "get_gtfs_feed_entities", return_value=feed_entities):
             result = asyncio.run(coord._async_update_data())

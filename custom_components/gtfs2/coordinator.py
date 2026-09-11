@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime
 from datetime import timedelta
 import logging
+import os
 import re
 
 from homeassistant.config_entries import ConfigEntry
@@ -13,7 +14,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 import homeassistant.util.dt as dt_util
 
 from .const import (
-    DEFAULT_PATH, 
+    DEFAULT_PATH_GEOJSON,
+    DEFAULT_PATH,
     DEFAULT_REFRESH_INTERVAL, 
     DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
     DEFAULT_LOCAL_STOP_TIMERANGE,
@@ -29,7 +31,7 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson, route_geojson_name, vehicle_positions_name
+from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson, route_geojson_name, vehicle_positions_name, get_representative_trip, update_leg_geojson, leg_geojson_name
 from .gtfs_rt_helper import get_next_services, get_rt_alerts
 
 _LOGGER = logging.getLogger(__name__)
@@ -112,6 +114,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             run_static = True
             _LOGGER.debug("Run static refresh: sensor without gtfs data OR refresh for name: %s", data["name"])
         
+        # the trip updates of this refresh, when realtime reads them below
+        rt_feed = None
         if not run_static:
             # do nothing awaiting refresh interval and use existing data
             self._data = previous_data
@@ -185,6 +189,9 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 except Exception as ex:  # pylint: disable=broad-except
                   _LOGGER.error("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
                   return self._data
+                # the trip updates just read, kept for the leg file below:
+                # they carry the realtime of every stop, the sensor reads one
+                rt_feed = getattr(self, "_feed_entities", None)
                 if self._vehicle_position_url:
                     # let map cards locate the geojson written by get_rt_vehicle_positions
                     self._data["vehicle_positions_file"] = vehicle_positions_name(self._route_id, self._direction)
@@ -196,17 +203,24 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         else:
             _LOGGER.debug("GTFS RT: RealTime not selected in entity options")
 
+        # the leg file follows every clock that can move: the list of
+        # departures on a static refresh, their realtime on a realtime one
+        if run_static or rt_feed is not None:
+            await self._export_leg(data, rt_feed)
+
         return self._data
 
     async def _export_route_shape(self, data) -> None:
-        """Write the geojson of the journey the sensor is following.
+        """Write the geojson of the line the sensor rides.
 
         Shape and stops are read from the schedule, so this owes nothing to
         realtime: an entry without a vehicle feed, or with realtime switched
         off entirely, still gets its line drawn on a map card. Nor does it owe
-        anything to there being a departure today. Rewritten only when the
-        drawn trip changes, which is what makes it cheap enough to sit on
-        every static refresh.
+        anything to there being a departure today: the line drawn is the
+        fullest trip that calls at the sensor's stops, the same at night and
+        on a Sunday. Rewritten only when that trip changes, that is when the
+        feed does, which is what makes it cheap enough to sit on every static
+        refresh.
         """
         departure = self._data.get("next_departure") or {}
         route_id = departure.get("route_id", None) or (data.get("route") or "").split(": ")[0]
@@ -217,21 +231,54 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         # before the first write rather than a refresh later
         if route_id and direction not in ("None", ""):
             self._data["route_geojson_file"] = route_geojson_name(route_id, direction)
-        # No departure to point at (last one of the day gone, or a line resting
-        # for days) is not a reason to leave the map empty: the export then
-        # picks a representative trip of the same route and direction. Keyed
-        # so it is written once, and rewritten as soon as a real trip is back.
-        trip_id = departure.get("trip_id", None)
-        export_key = trip_id or f"resting:{route_id}_{direction}"
-        if not route_id or export_key == self._route_export_trip:
+        if not route_id:
+            return
+        # the trip drawn has to be one the sensor rides, or a card places its
+        # stops where nothing it lists calls: the stops of the next
+        # departure, the entry's once the last one of the day is gone
+        origin_id = departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0]
+        destination_id = departure.get("destination_stop_id") or (data.get("destination") or "").split(": ")[0]
+        try:
+            trip_id = await self.hass.async_add_executor_job(
+                get_representative_trip, self._data["schedule"], route_id, direction,
+                origin_id, destination_id)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Error picking the trip to draw route %s: %s", route_id, ex)
+            return
+        export_key = f"{route_id}_{direction}:{trip_id}"
+        if not trip_id:
+            return
+        # rewritten when the trip changes, and when the file is gone: a folder
+        # cleaned by hand must not leave the map without its line until the
+        # next restart
+        file = os.path.join(self.hass.config.path(DEFAULT_PATH_GEOJSON), route_geojson_name(route_id, direction))
+        if export_key == self._route_export_trip and await self.hass.async_add_executor_job(os.path.exists, file):
             return
         self._route_id = route_id
         self._direction = direction
         try:
-            await self.hass.async_add_executor_job(update_route_geojson, self)
+            await self.hass.async_add_executor_job(update_route_geojson, self, trip_id)
             self._route_export_trip = export_key
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Error writing route geojson: %s", ex)
+
+    async def _export_leg(self, data, feed_entities) -> None:
+        """Write the leg file: the ride of the next departure, and the clocks
+        of every listed departure at every stop, realtime included when the
+        trip updates of this refresh carry it.
+
+        Named after the entry, not the line: it is this sensor's ride. The
+        attribute is set before the write, so a card can name the file even
+        when the first write fails.
+        """
+        departure = self._data.get("next_departure") or {}
+        route_id = str(departure.get("route_id") or (data.get("route") or "").split(": ")[0])
+        direction = str(departure.get("trip_direction_id", data.get("direction")))
+        self._data["leg_geojson_file"] = leg_geojson_name(route_id, direction, data["name"])
+        try:
+            await self.hass.async_add_executor_job(update_leg_geojson, self, feed_entities)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Error writing leg geojson: %s", ex)
     def _cleanup_stale_vehicle_markers(self) -> None:
         """One-shot removal of the stale vehicle markers of this route.
 
