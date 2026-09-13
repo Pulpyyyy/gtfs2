@@ -125,7 +125,7 @@
         "data": {
           "origin": "Departure stop"
         },
-        "description": "Line **{route}**, direction **{direction}**.\n\nWhere should the departures be counted from?\n\n[documentation]({docu_new_route})",
+        "description": "Line **{route}**.\n\nWhere should the departures be counted from?\n\n[documentation]({docu_new_route})",
         "data_description": {
           "origin": "Departures are counted from here. The list follows the direction of travel; a number tells apart two platforms sharing a name."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Arrival stop"
         },
-        "description": "Line **{route}**, direction **{direction}**.\n\nWhere does the journey from **{origin}** end?\n\n[documentation]({docu_new_route})",
+        "description": "Line **{route}**.\n\nWhere does the journey from **{origin}** end?\n\n[documentation]({docu_new_route})",
         "data_description": {
           "destination": "Only the stops a trip really reaches from there are listed, in the direction of travel. Leave it on the end of the line to see everything passing by."
         }

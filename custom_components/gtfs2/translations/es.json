@@ -125,7 +125,7 @@
         "data": {
           "origin": "Parada de salida"
         },
-        "description": "Línea **{route}**, sentido **{direction}**.\n\n¿Desde dónde contar las salidas?\n\n[documentación]({docu_new_route})",
+        "description": "Línea **{route}**.\n\n¿Desde dónde contar las salidas?\n\n[documentación]({docu_new_route})",
         "data_description": {
           "origin": "Las salidas se cuentan desde aquí. La lista sigue el sentido de circulación; un número distingue dos andenes con el mismo nombre."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Parada de llegada"
         },
-        "description": "Línea **{route}**, sentido **{direction}**.\n\n¿Dónde termina el viaje desde **{origin}**?\n\n[documentación]({docu_new_route})",
+        "description": "Línea **{route}**.\n\n¿Dónde termina el viaje desde **{origin}**?\n\n[documentación]({docu_new_route})",
         "data_description": {
           "destination": "Solo se proponen las paradas a las que un viaje llega realmente desde allí, en el sentido de circulación. Déjelo en el final de línea para ver todo lo que pasa."
         }

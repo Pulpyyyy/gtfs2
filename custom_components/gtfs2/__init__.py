@@ -492,25 +492,30 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
                 _LOGGER.warning("Could not remove %s: %s", leg, ex)
     route = (entry.data.get("route") or "").split(": ")[0]
     direction = entry.data.get("direction")
-    if not route or direction is None:
+    if not route:
         return
-    still_used = any(
-        e.entry_id != entry.entry_id
-        and (e.data.get("route") or "").split(": ")[0] == route
-        and str(e.data.get("direction")) == str(direction)
-        for e in hass.config_entries.async_entries(DOMAIN)
-    )
-    if still_used:
-        _LOGGER.debug("Keeping geojson for route %s direction %s, another entry uses it",
-                      route, direction)
-        return
-    names = [vehicle_positions_name(route, direction), route_geojson_name(route, direction)]
-    # the files written before the ids were sanitised carry the raw name and
-    # nothing else would ever remove them; an id that is not a plain file name
-    # never wrote in this directory, so it is not looked for there
-    legacy = f"{route}_{direction}"
-    if os.path.basename(legacy) == legacy and ".." not in legacy:
-        names += [legacy + ".json", legacy + "_route.json"]
+    # an entry set up without a direction wrote its files under the
+    # direction of the departures it followed, either one
+    directions = [str(direction)] if direction is not None else ["0", "1"]
+    names = []
+    for d in directions:
+        still_used = any(
+            e.entry_id != entry.entry_id
+            and (e.data.get("route") or "").split(": ")[0] == route
+            and (e.data.get("direction") is None or str(e.data.get("direction")) == d)
+            for e in hass.config_entries.async_entries(DOMAIN)
+        )
+        if still_used:
+            _LOGGER.debug("Keeping geojson for route %s direction %s, another entry uses it",
+                          route, d)
+            continue
+        names += [vehicle_positions_name(route, d), route_geojson_name(route, d)]
+        # the files written before the ids were sanitised carry the raw name and
+        # nothing else would ever remove them; an id that is not a plain file name
+        # never wrote in this directory, so it is not looked for there
+        legacy = f"{route}_{d}"
+        if os.path.basename(legacy) == legacy and ".." not in legacy:
+            names += [legacy + ".json", legacy + "_route.json"]
     for name in dict.fromkeys(names):
         path = os.path.join(geojson_dir, name)
         if os.path.exists(path):

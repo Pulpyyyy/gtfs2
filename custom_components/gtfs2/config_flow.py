@@ -77,6 +77,7 @@ from .gtfs_helper import (
     get_station_modes,
     has_trip_between,
     get_destination_stop_list,
+    get_pair_direction,
     has_train_trip_between,
     get_train_destination_list,
     _async_text,
@@ -316,7 +317,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._route_label: str = ""
         # the directions as the direction screen offered them, and the one
         # picked, recalled on the screens that follow
-        self._direction_labels: dict = {}
         self._direction_label: str = ""
         # how big the database has grown, shown while it is being built
         self._extract_size: str = "0 MB"
@@ -1053,18 +1053,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self.async_step_direction()
 
     def _journey_placeholders(self, **extra):
-        """The line and the direction picked so far, recalled at the top of
-        the screens that pick the stops: once past the direction screen,
-        nothing said which way the list ran."""
+        """The line picked so far, recalled at the top of the screens that
+        pick the stops. No direction is picked any more; the key stays for a
+        translation that still reads it."""
         return {
             **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             "route": self._route_label or str(self._user_inputs.get(CONF_ROUTE, "")),
-            "direction": self._direction_label or str(self._user_inputs.get(CONF_DIRECTION, "")),
+            "direction": self._direction_label or str(self._user_inputs.get(CONF_DIRECTION) or ""),
             **extra,
         }
 
     async def async_step_direction(self, user_input: dict | None = None) -> FlowResult:
-        """Pick the direction, labelled with where the vehicle actually goes.
+        """Settle the direction before the stops, without asking for it.
 
         Not asked on a rail line: the train path reads both directions (the
         stations by name, the arrivals from the departure, the departures
@@ -1073,43 +1073,22 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         the SNCF K8+ ("Paris-Austerlitz Routiere → Orléans"). GTFS route_type
         2 is rail: those feeds rarely have usable stop ids, so they are
         matched on station names instead of picked from a list.
+
+        Not asked on any other line either: the rider picks where they are
+        and where they go, and the order of the stops on a trip says which
+        way that is. direction_id could not say it: GVB tram 1 files a third
+        of its trips under the other way's label, and Palm Bus B calls the
+        way into Cannes "outbound" while the line reads Mouans-Sartoux →
+        Cannes. The one pair a loop leaves open is settled once the
+        destination is known.
         """
-        errors: dict[str, str] = {}
+        self._direction_label = ""
         if self._user_inputs.get(CONF_ROUTE_TYPE) == "2":
             self._user_inputs[CONF_DIRECTION] = "0"
-            self._direction_label = ""
             self._keep_line()
             return await self.async_step_stops_train()
-        if user_input is None:
-            # direction_id alone means nothing to the user, so show the first
-            # and last stop of each one
-            labels = await self.hass.async_add_executor_job(
-                get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE])
-            self._direction_labels = labels
-            options = [
-                selector.SelectOptionDict(value=k, label=labels[k])
-                for k in sorted(labels)
-            ] or [
-                selector.SelectOptionDict(value="0", label="0"),
-                selector.SelectOptionDict(value="1", label="1"),
-            ]
-            return self.async_show_form(
-                step_id="direction",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(CONF_DIRECTION): selector.SelectSelector(
-                            selector.SelectSelectorConfig(options=options)
-                        ),
-                    },
-                ),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                errors=errors,
-            )
-        self._user_inputs.update(user_input)
-        picked = str(user_input.get(CONF_DIRECTION, ""))
-        self._direction_label = self._direction_labels.get(picked, picked)
+        self._user_inputs[CONF_DIRECTION] = None
         self._keep_line()
-        _LOGGER.debug(f"UserInputs Direction: {self._user_inputs}")
         return await self.async_step_stops()
 
     def _keep_line(self):
@@ -1129,7 +1108,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 get_stop_list,
                 self._pygtfs,
                 self._user_inputs[CONF_ROUTE],
-                self._user_inputs[CONF_DIRECTION],
+                self._user_inputs.get(CONF_DIRECTION),
             )
         except Exception as ex:  # pylint: disable=broad-except
             # a bare except here reported every failure as "no stops",
@@ -1175,7 +1154,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 get_destination_stop_list,
                 self._pygtfs,
                 self._user_inputs[CONF_ROUTE],
-                self._user_inputs[CONF_DIRECTION],
+                self._user_inputs.get(CONF_DIRECTION),
                 _stop_id(origin),
             )
         except Exception as ex:  # pylint: disable=broad-except
@@ -1205,6 +1184,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         self._user_inputs.update(user_input)
+        # the pair says which way the rider goes, except with a loop's
+        # terminus at one end: then the entry keeps the shorter rotation
+        self._user_inputs[CONF_DIRECTION] = await self.hass.async_add_executor_job(
+            get_pair_direction,
+            self._pygtfs,
+            self._user_inputs[CONF_ROUTE],
+            _stop_id(origin),
+            _stop_id(user_input[CONF_DESTINATION]),
+        )
         _LOGGER.debug(f"UserInputs Destination: {self._user_inputs}")
         return await self.async_step_sensor()
 
@@ -1322,6 +1310,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._direction_label = self._line["direction_label"]
         if self._user_inputs.get(CONF_ROUTE_TYPE) == "2":
             return await self.async_step_stops_train()
+        # the previous journey's loop rotation belongs to its own pair
+        self._user_inputs[CONF_DIRECTION] = None
         return await self.async_step_stops()
 
     def _reset_for_next_journey(self):
@@ -1719,74 +1709,35 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _find_return_trip(self, origin, destination):
         """Look for the same journey the other way round.
 
-        Both directions of a line share one route_id, so the mirror is the
-        same route with direction_id flipped. The stops are matched on name,
-        not id: a terminus often has one stop per platform, so the id differs
-        between directions even though the stop is the same place.
+        The entries are the line's places, both ways round, so the return is
+        the same two entries swapped, when some trip rides them in that order.
+        A loop's terminus at one end leaves the rotation open again, and the
+        return settles its own, the shorter one.
         """
         self._return_trip = {}
-        other = "0" if str(self._user_inputs.get(CONF_DIRECTION)) == "1" else "1"
+        route = self._user_inputs[CONF_ROUTE]
         try:
-            stops = await self.hass.async_add_executor_job(
-                get_stop_list, self._pygtfs, self._user_inputs[CONF_ROUTE], other
-            )
+            exists = await self.hass.async_add_executor_job(
+                has_trip_between, self._pygtfs, route,
+                _stop_id(destination), _stop_id(origin))
+            direction = await self.hass.async_add_executor_job(
+                get_pair_direction, self._pygtfs, route,
+                _stop_id(destination), _stop_id(origin)) if exists else None
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.debug("No return journey for %s: %s",
-                          self._user_inputs.get(CONF_ROUTE), ex)
+            _LOGGER.debug("No return journey for %s: %s", route, ex)
             return
-        by_name = {}
-        for entry in stops:
-            by_name.setdefault(_stop_name(entry), entry)
-        # the outward destination becomes the return origin, and the reverse
-        back_origin = by_name.get(_stop_name(destination))
-        back_destination = by_name.get(_stop_name(origin))
-        if not back_origin or not back_destination:
-            _LOGGER.debug("Return journey: one of the stops is not served the other way")
-            return
-        exists = await self.hass.async_add_executor_job(
-            has_trip_between,
-            self._pygtfs,
-            self._user_inputs[CONF_ROUTE],
-            _stop_id(back_origin),
-            _stop_id(back_destination),
-        )
-        trip = ""
         if not exists:
-            # circular line: the other rotation also leaves the shared
-            # terminus in the same stop order, so the mirrored pair is a
-            # journey nothing runs. The return is then the same pair the
-            # other way round the loop, held to that direction since the
-            # pair alone no longer implies it.
-            loop_origin = by_name.get(_stop_name(origin))
-            loop_destination = by_name.get(_stop_name(destination))
-            if loop_origin and loop_destination:
-                exists = await self.hass.async_add_executor_job(
-                    has_trip_between,
-                    self._pygtfs,
-                    self._user_inputs[CONF_ROUTE],
-                    _stop_id(loop_origin),
-                    _stop_id(loop_destination),
-                    other,
-                )
-            if not exists:
-                _LOGGER.debug("Return journey: no trip runs it")
-                return
-            back_origin, back_destination = loop_origin, loop_destination
-            # the plain ends would collide with the outward sensor's name:
-            # tell the rotations apart by where each heads first
-            labels = await self.hass.async_add_executor_job(
-                get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE]
-            )
-            trip = labels.get(other, "")
-        trip = trip or f"{_base_name(back_origin)} → {_base_name(back_destination)}"
+            _LOGGER.debug("Return journey: no trip runs it")
+            return
+        trip = f"{_base_name(destination)} → {_base_name(origin)}"
         line = self._route_label
         self._return_name = f"{line} {trip}".strip() if line else trip
         # only what differs: this runs when the screen opens, before the
         # options on it are answered, so the rest is merged at creation time
         self._return_trip = {
-            CONF_DIRECTION: other,
-            CONF_ORIGIN: back_origin,
-            CONF_DESTINATION: back_destination,
+            CONF_DIRECTION: direction,
+            CONF_ORIGIN: destination,
+            CONF_DESTINATION: origin,
             CONF_NAME: self._return_name,
         }
 

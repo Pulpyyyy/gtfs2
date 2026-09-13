@@ -125,7 +125,7 @@
         "data": {
           "origin": "Starthaltestelle"
         },
-        "description": "Linie **{route}**, Richtung **{direction}**.\n\nAb wo sollen die Abfahrten gezählt werden?\n\n[Dokumentation]({docu_new_route})",
+        "description": "Linie **{route}**.\n\nAb wo sollen die Abfahrten gezählt werden?\n\n[Dokumentation]({docu_new_route})",
         "data_description": {
           "origin": "Ab hier werden die Abfahrten gezählt. Die Liste folgt der Fahrtrichtung; eine Zahl unterscheidet zwei gleichnamige Bahnsteige."
         }
@@ -134,7 +134,7 @@
         "data": {
           "destination": "Zielhaltestelle"
         },
-        "description": "Linie **{route}**, Richtung **{direction}**.\n\nWo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_new_route})",
+        "description": "Linie **{route}**.\n\nWo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_new_route})",
         "data_description": {
           "destination": "Nur die Haltestellen, die eine Fahrt von dort tatsächlich erreicht, werden angeboten, in Fahrtrichtung. Auf der Endhaltestelle belassen, um alles zu sehen."
         }
