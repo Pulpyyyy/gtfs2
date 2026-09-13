@@ -49,8 +49,7 @@
       },
       "route": {
         "data": {
-          "route": "Name der Route",
-          "direction": "Haupt-/Anfangsrichtung des Fahrzeugs"
+          "route": "Name der Route"
         },
         "description": "Wählen Sie aus den Optionen unten [(docu)]({docu_new_route})"
       },

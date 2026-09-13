@@ -37,6 +37,7 @@ from .const import (
     CONF_ROUTE_TYPE,
     CONF_ROUTE,
     CONF_DIRECTION,
+    CONF_LOOP_DIRECTION,
     CONF_ORIGIN,
     CONF_DESTINATION,
     CONF_NAME,
@@ -57,6 +58,7 @@ from .gtfs_helper import (
     get_route_list,
     get_stop_list,
     get_destination_stop_list,
+    get_pair_direction,
     get_datasources,
     remove_datasource,
     check_datasource_index,
@@ -324,7 +326,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data_schema=vol.Schema(
                     {
                         vol.Required(CONF_ROUTE, default = ""): selector.SelectSelector(selector.SelectSelectorConfig(options=route_list, translation_key="route",custom_value=True)),
-                        vol.Required(CONF_DIRECTION): selector.SelectSelector(selector.SelectSelectorConfig(options=["0", "1"], translation_key="direction")),
                     },
                 ),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
@@ -333,12 +334,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         user_input[CONF_ROUTE_TYPE] = user_input.get(CONF_ROUTE).split('##')[0] 
         user_input[CONF_ROUTE] = user_input.get(CONF_ROUTE).split('##')[1].split(": (")[0]   
                
+        # no direction is asked: the rider picks where they are and where they
+        # go, and the order of the stops on a trip says which way that is
+        user_input[CONF_DIRECTION] = None
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Route: {self._user_inputs}")
         return await self.async_step_stops()
 
     async def async_step_stops(self, user_input: dict | None = None) -> FlowResult:
-        """Pick the origin: every stop the route rides in this direction."""
+        """Pick the origin: every place the line rides, both ways round."""
         errors: dict[str, str] = {}
         if user_input is None:
             try:
@@ -346,7 +350,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     get_stop_list,
                     self._pygtfs,
                     self._user_inputs[CONF_ROUTE],
-                    self._user_inputs[CONF_DIRECTION],
+                    None,
                 )
                 if not stops:
                     raise ValueError("no stops")
@@ -387,6 +391,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if data[CONF_ROUTE_TYPE] == '2':
                 data[CONF_ORIGIN] = _stop_name_of(data[CONF_ORIGIN])
                 data[CONF_DESTINATION] = _stop_name_of(data[CONF_DESTINATION])
+            else:
+                # the pair says which way the rider goes, except with a loop's
+                # terminus at one end: then the entry keeps the shorter rotation
+                data[CONF_LOOP_DIRECTION] = await self.hass.async_add_executor_job(
+                    get_pair_direction,
+                    self._pygtfs,
+                    data[CONF_ROUTE],
+                    data[CONF_ORIGIN].split(": ")[0],
+                    data[CONF_DESTINATION].split(": ")[0],
+                )
             _LOGGER.debug(f"UserInputs Destination: {data}")
             check_config = await self._check_config(data)
             if check_config == "stop_incorrect":
@@ -400,7 +414,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             get_destination_stop_list,
             self._pygtfs,
             self._user_inputs[CONF_ROUTE],
-            self._user_inputs[CONF_DIRECTION],
+            None,
             self._user_inputs[CONF_ORIGIN].split(": ")[0],
         )
         if not destinations:
