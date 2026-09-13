@@ -81,5 +81,10 @@
     None,
     None,
     None
+  ],
+  'next_departures_origin_stop_id': [
+    'origin_stop_id',
+    'origin_stop_id',
+    'origin_stop_id'
   ]
 }

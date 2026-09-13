@@ -10,6 +10,7 @@ import os
 import glob
 import re
 import sqlite3
+import statistics
 import hashlib
 import json
 import csv
@@ -162,8 +163,9 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
             line_where = "and r.route_short_name = :line"
             params["line"] = line
     else:
-        origin_where = "o.stop_id = :origin"
-        dest_where = "x.stop_id = :dest"
+        # the whole place at each end, as the departures are matched
+        origin_where = "o.stop_id in " + _place_group("origin")
+        dest_where = "x.stop_id in " + _place_group("dest")
         params = {"origin": origin_id, "dest": dest_id}
 
     sql = f"""
@@ -257,6 +259,7 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         route_where = ""
         # the train flow stores the picked line's code instead of a route id
         line_where = "AND route.route_short_name = :line" if line else ""
+        shortest_ride_where = ""
         _LOGGER.debug("Setting up TRAIN Route for start/end : %s / %s ", start_station_id, end_station_id)
     else:
         route_type_where = "1=1"
@@ -275,20 +278,29 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         # it under the same parent station. Nothing rides backwards for it:
         # the query still keeps the origin before the destination on the same
         # trip, and the entry's direction still holds. Matching on the name
-        # rather than on the declared parent was tried and dropped, it
-        # answered on a different stop that happened to share a name.
-        stop_group = """(
-            SELECT sibling.stop_id
-            FROM stops chosen, stops sibling
-            WHERE chosen.stop_id = :%s
-              AND (sibling.stop_id = chosen.stop_id
-                   OR (chosen.parent_station IS NOT NULL
-                       AND chosen.parent_station <> ''
-                       AND sibling.parent_station = chosen.parent_station)))"""
-        start_station_where = ("AND start_station.stop_id IN "
-                               + stop_group % "origin_station_id")
-        end_station_where = ("AND end_station.stop_id IN "
-                             + stop_group % "end_station_id")
+        # rather than on the declared parent across a whole feed was tried
+        # and dropped, it answered on a different stop that happened to share
+        # a name; the name is only read without a parent, and within a place's
+        # reach (_place_group).
+        origin_group = _place_group("origin_station_id")
+        end_group = _place_group("end_station_id")
+        start_station_where = "AND start_station.stop_id IN " + origin_group
+        end_station_where = "AND end_station.stop_id IN " + end_group
+        # Matching a whole place lets one trip offer the pair twice when it
+        # passes a place twice: Palm Bus 21 leaves Hotel de Ville, calls at
+        # Gare SNCF de Cannes at 06:45 on one side of the road, turns at
+        # Californie and calls there again at 07:09 on the other side before
+        # reaching Hotel de Ville at 07:13. Asked from the station, the 06:45
+        # call came first, a 28 minute ride from the pole across the road.
+        # The ride is the shortest one on the trip: no other call at either
+        # end between the two.
+        shortest_ride_where = f"""AND NOT EXISTS (
+            SELECT 1 FROM stop_times between_stop
+            WHERE between_stop.trip_id = trip.trip_id
+              AND between_stop.stop_sequence > origin_stop_time.stop_sequence
+              AND between_stop.stop_sequence < destination_stop_time.stop_sequence
+              AND (between_stop.stop_id IN {origin_group}
+                   OR between_stop.stop_id IN {end_group}))"""
         # A circular line runs both directions through the same stops in the
         # same order, so the stop pair alone does not tell them apart: also
         # hold the direction the entry was set up with. Trips without a
@@ -377,6 +389,7 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         {direction_where}
         {route_where}
         {line_where}
+        {shortest_ride_where}
         AND origin_stop_sequence < dest_stop_sequence
         AND calendar.start_date <= date('{now_date}')
         AND calendar.end_date >= date('{now_date}','-1 day')
@@ -436,6 +449,7 @@ def _fetch_departure_rows(route_type, origin, destination, include_tomorrow,
         {direction_where}
         {route_where}
         {line_where}
+        {shortest_ride_where}
 		AND origin_stop_sequence < dest_stop_sequence
         AND calendar_date_today.exception_type = 1
 		{tomorrow_calendar_date_where}
@@ -662,6 +676,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
     timetable_upcoming_arrivals = []
     timetable_upcoming_durations = []
     timetable_upcoming_route_types = []
+    timetable_upcoming_origin_stops = []
     for key, value in sorted(timetable.items()):
         upcoming = datetime.datetime.strptime(key[0], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone)
         upcoming_arrival = datetime.datetime.combine(
@@ -696,6 +711,9 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
             timetable_upcoming_route_types.append(
                 departure_route_type(value.get("route_type"), value.get("origin_stop_id"))
             )
+            # the record it leaves from: an entry's place may be served from
+            # either of its records, the vehicle calls at one
+            timetable_upcoming_origin_stops.append(str(value.get("origin_stop_id")))
 
     #_LOGGER.debug(
     #    "Timetable Remaining Departures on this Start/Stop, per line: %s",
@@ -808,6 +826,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
         "next_departures_destination_arrival_times": timetable_upcoming_arrivals,
         "next_departures_durations": timetable_upcoming_durations,
         "next_departures_route_types": timetable_upcoming_route_types,
+        "next_departures_origin_stop_id": timetable_upcoming_origin_stops,
     }
 
     return data_returned
@@ -1704,8 +1723,8 @@ def has_trip_between(schedule, route_id, origin_id, destination_id, direction=No
     inner join stop_times o on o.trip_id = t.trip_id
     inner join stop_times d on d.trip_id = t.trip_id
     where t.route_id = :route_id
-      and o.stop_id = :origin_id
-      and d.stop_id = :destination_id
+      and o.stop_id in {_place_group("origin_id")}
+      and d.stop_id in {_place_group("destination_id")}
       and o.stop_sequence < d.stop_sequence
       {direction_where}
     limit 1
@@ -1870,12 +1889,13 @@ _STOP_ROWS = """
         from trips t
         inner join stop_times st on st.trip_id = t.trip_id
         where t.route_id = :route_id
-        and (t.direction_id = :direction or t.direction_id is null)
+        and (:direction is null or t.direction_id = :direction or t.direction_id is null)
         group by t.trip_id
     ), sample as (
         select min(trip_id) as trip_id from ride group by stops
     )
-    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name
+    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name,
+           s.stop_lat, s.stop_lon
     from sample
     inner join stop_times st on st.trip_id = sample.trip_id
     inner join stops s on s.stop_id = st.stop_id
@@ -1883,94 +1903,184 @@ _STOP_ROWS = """
     order by st.trip_id, st.stop_sequence
 """
 
-# the records the feed groups with a stop under one parent station: two
-# platforms of one place, which the rider does not tell apart and the
-# departure query already matches as one
-_STOP_GROUP = """(
+# A place is what the rider waits at, whatever the feed writes it as. Most
+# feeds give each side of the road a record of its own, one per direction,
+# and some give one per platform: Zou files the two poles of Pont de la
+# Brague, 8 m apart, under one parent station, and half of the line's trips
+# are entered on the pole across the road from the way they drive. Picking a
+# record hid the trips entered on the other one. So a place is the parent
+# station when the feed has one; when it has none (TAO: 9 parents for 1359
+# poles), the records of the same name within PLACE_LAT / PLACE_LON of each
+# other, about 150 m, which gathered the three poles of Zenith, 107 m apart
+# at most, and keeps apart two villages' "Centre". The box is measured from
+# the record the entry holds, so the list and the queries agree on it.
+PLACE_LAT = 0.00135
+PLACE_LON = 0.002
+
+
+def _place_group(param):
+    """SQL "(...)" of every stop_id of the place of the stop bound to :param."""
+    return f"""(
     select sibling.stop_id
     from stops chosen, stops sibling
-    where chosen.stop_id = :origin
+    where chosen.stop_id = :{param}
       and (sibling.stop_id = chosen.stop_id
            or (chosen.parent_station is not null
                and chosen.parent_station <> ''
-               and sibling.parent_station = chosen.parent_station)))"""
+               and sibling.parent_station = chosen.parent_station)
+           or ((chosen.parent_station is null or chosen.parent_station = '')
+               and (sibling.parent_station is null or sibling.parent_station = '')
+               and sibling.stop_name = chosen.stop_name
+               and abs(sibling.stop_lat - chosen.stop_lat) <= {PLACE_LAT}
+               and abs(sibling.stop_lon - chosen.stop_lon) <= {PLACE_LON})))"""
+
+
+_STOP_GROUP = _place_group("origin")
+
+
+def _same_place(a, b):
+    """The rule of _place_group, on (name, parent, lat, lon) tuples."""
+    if a[1] or b[1]:
+        return bool(a[1]) and a[1] == b[1]
+    try:
+        return (a[0] == b[0]
+                and abs(float(a[2]) - float(b[2])) <= PLACE_LAT
+                and abs(float(a[3]) - float(b[3])) <= PLACE_LON)
+    except (TypeError, ValueError):
+        return False
+
+
+def _trips_of(rows):
+    """{trip_id: [(stop_id, stop_sequence)]} and {stop_id: (name, parent,
+    lat, lon, station_name)} out of _STOP_ROWS shaped rows."""
+    trips = {}
+    info = {}
+    for trip_id, stop_id, stop_name, stop_sequence, parent_station, station_name, lat, lon in rows:
+        trips.setdefault(trip_id, []).append((stop_id, stop_sequence))
+        info[stop_id] = (stop_name, parent_station or "", lat, lon, station_name)
+    return trips, info
+
+
+def _places_of(trips, info):
+    """{stop_id: place}, a place being named by the first of its records the
+    line calls at, fullest trip first: that record is what the entry keeps,
+    and the one the queries widen to the whole place again."""
+    place = {}
+    seeds = []
+    for _trip_id, trip_stops in sorted(trips.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        for stop_id, _seq in trip_stops:
+            if stop_id in place:
+                continue
+            # measured from the seed only, as the SQL box is from the entry's
+            # record: a chain of near records never drifts a place further
+            seed = next((s for s in seeds if _same_place(info[s], info[stop_id])), None)
+            if seed is None:
+                seeds.append(stop_id)
+                seed = stop_id
+            place[stop_id] = seed
+    return place
+
+
+def _segments_of(places):
+    """A trip read as places, cut where it comes back to a place it already
+    passed: the next piece starts from the last place, so pieces stay tied.
+    A racket (Palm Bus 21 out and back through Gare SNCF) or a loop (TAO 22,
+    Zenith to Zenith) gives two pieces, each passing a place once."""
+    pieces, current = [], []
+    for p in places:
+        if current and p == current[-1]:
+            continue
+        if p in current:
+            pieces.append(current)
+            current = [current[-1], p]
+        else:
+            current.append(p)
+    if len(current) > 1 or not pieces:
+        pieces.append(current)
+    return pieces
+
+
+def _chain_of(trips, place):
+    """One order of places for the whole line, both ways round.
+
+    direction_id cannot be trusted to split a line: on GVB tram 1 a third of
+    the trips carry the other way's label, and the spec itself keeps it for
+    publishing timetables, not for routing. The order of the stops can: the
+    fullest piece is laid first, and every other piece is read forward or
+    backward, whichever way the places it shares with the chain already
+    agree with, then its places are slotted in after the place preceding
+    them. A piece sharing nothing yet waits for the chain to grow.
+    """
+    pieces = {}
+    for _trip_id, trip_stops in trips.items():
+        for piece in _segments_of([place[s] for s, _seq in trip_stops]):
+            pieces.setdefault(tuple(piece), 0)
+            pieces[tuple(piece)] += 1
+    pending = sorted(pieces, key=lambda p: (-len(p), -pieces[p], p))
+    order = []
+    while pending:
+        waiting = []
+        for piece in pending:
+            position = {p: i for i, p in enumerate(order)}
+            shared = [position[p] for p in piece if p in position]
+            if not order:
+                forward = True
+            elif len(shared) < 2:
+                waiting.append(piece)
+                continue
+            else:
+                up = sum(1 for a, b in zip(shared, shared[1:]) if b > a)
+                down = sum(1 for a, b in zip(shared, shared[1:]) if b < a)
+                forward = up >= down
+            prev = -1
+            for p in (piece if forward else reversed(piece)):
+                if p in position:
+                    prev = order.index(p)
+                    continue
+                prev += 1
+                order.insert(prev, p)
+                position = {q: i for i, q in enumerate(order)}
+        if len(waiting) == len(pending):
+            # nothing left shares two places with the chain: keep them in
+            # riding order at the end rather than lose them
+            for piece in waiting:
+                order.extend(p for p in piece if p not in order)
+            break
+        pending = waiting
+    return order
 
 
 def _ride_of(rows):
-    """One stop per place, in riding order, out of (trip_id, stop_id,
-    stop_name, stop_sequence, parent_station, station_name) rows given by
-    trip and sequence.
+    """One entry per place, in riding order, out of _STOP_ROWS shaped rows.
 
-    Returns the kept [stop_id, name, sequence] and the station names by
-    stop_id, which the labels read.
+    Returns the kept [stop_id, name, sequence], stop_id being the record that
+    names the place, the station names by stop_id, which the labels read,
+    and the {stop_id: place} the entries were drawn from.
     """
-    trips = {}
-    names = {}
-    stations = {}
-    station_names = {}
-    for trip_id, stop_id, stop_name, stop_sequence, parent_station, station_name in rows:
-        trips.setdefault(trip_id, []).append((stop_id, stop_sequence))
-        names[stop_id] = stop_name
-        stations[stop_id] = parent_station
-        station_names[stop_id] = station_name
-    # Trips of one direction do not all run the full length, and a partial
-    # trip renumbers stop_sequence from 0, so sorting the union of all trips
-    # by stop_sequence interleaves the start of the route with its middle
-    # (TAO tram B: 110 short runs from mid-route). Walk the fullest trip
-    # first instead, it is the route as the rider rides it, then slot each
-    # stop it skips right after the stop preceding it on a trip that does
-    # serve it.
-    order = []
-    kept_seq = {}
-    for _trip_id, trip_stops in sorted(
-        trips.items(), key=lambda kv: (-len(kv[1]), kv[0])
-    ):
-        prev = -1
-        for stop_id, stop_sequence in trip_stops:
-            if stop_id in kept_seq:
-                prev = order.index(stop_id)
-                continue
-            prev += 1
-            order.insert(prev, stop_id)
-            kept_seq[stop_id] = stop_sequence
-    kept = [[stop_id, names[stop_id], kept_seq[stop_id]] for stop_id in order]
-    # A stop the feed writes once per platform is one place to the rider, who
-    # cannot tell which platform a given run will use and should not have to:
-    # offering both leaves two lines reading the same name, and picking either
-    # one hides the runs that use the other. A station is therefore offered
-    # once, by the first of its records the line calls at, and the departures
-    # of the others are reached through it.
-    # Only records the line calls at one after the other are folded together,
-    # because that is what two platforms of one place look like along a ride.
-    # Records of one station far apart in the list are not platforms of a
-    # stop, they are the two sides of a line that passes twice, a loop or a
-    # direction the feed fills with both ways round, and they stay apart:
-    # the labels are what tell those apart.
-    one_per_station = []
-    previous_station = None
-    for x in kept:
-        station = stations.get(x[0])
-        if station and station == previous_station:
-            continue
-        previous_station = station
-        one_per_station.append(x)
-    return one_per_station, station_names
+    trips, info = _trips_of(rows)
+    place = _places_of(trips, info)
+    order = _chain_of(trips, place)
+    first_seq = {}
+    for _trip_id, trip_stops in sorted(trips.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+        for stop_id, seq in trip_stops:
+            first_seq.setdefault(stop_id, seq)
+    kept = [[p, info[p][0], first_seq[p]] for p in order]
+    station_names = {stop_id: values[4] for stop_id, values in info.items()}
+    return kept, station_names, place
 
 
 def _labels_of(kept, station_names):
     """{stop_id: readable name} for the stops whose name the line meets
     more than once; a stop met once keeps its plain name.
 
-    A circular line calls at its terminus twice, under ids of its own: TAO
-    line 22 runs Zenith to Zenith and offers three stops all reading
-    "Zenith", which the user cannot tell apart. Two stops of the same name
-    can also be two different places, and there the feed usually knows what
-    tells them apart: on line 1 in Amsterdam one "Surinameplein" belongs to
-    the Surinameplein station and the other to Hoofdweg, two hundred metres
-    away. So a repeat carries its station when the station adds something,
-    and falls back on its rank in the order the line calls at them when it
-    does not. The value keeps the id untouched, only the readable part
-    changes.
+    Records of one place are already one entry, so a repeat left here is two
+    places of the same name. The feed sometimes knows what tells them apart:
+    on line 1 in Amsterdam one "Surinameplein" belongs to the Surinameplein
+    station and the other to Hoofdweg, two hundred metres away. Often it
+    does not: Zou 926 calls at five villages' "Centre". So a repeat carries
+    its station when the station adds something, and falls back on its rank
+    in the order the line calls at them when it does not. The value keeps
+    the id untouched, only the readable part changes.
     """
     by_name = {}
     for x in kept:
@@ -2000,30 +2110,43 @@ def _entries_of(kept, label):
     return [f"{x[0]}: {label.get(x[0], x[1])} ({x[2]})" for x in kept]
 
 
-def get_stop_list(schedule, route_id, direction):
-    """Every stop a route rides in one direction, one per place, in riding order."""
-    _LOGGER.debug("Getting stops list for route: %s", route_id)
+def _direction_param(direction):
+    """None for no direction (the whole line), else 0 or 1."""
+    if direction is None or str(direction) not in ("0", "1"):
+        return None
+    return int(direction)
+
+
+def get_stop_list(schedule, route_id, direction=None):
+    """Every place a route rides, one entry each, in riding order.
+
+    Without a direction, the whole line both ways round, which is what the
+    flow offers: the rider picks where they are, not a label of the feed.
+    A direction still narrows it to that direction's trips.
+    """
+    _LOGGER.debug("Getting stops list for route: %s direction: %s", route_id, direction)
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(_STOP_ROWS), {
-            "route_id": route_id, "direction": int(direction)}).fetchall()
-    kept, station_names = _ride_of(rows)
+            "route_id": route_id, "direction": _direction_param(direction)}).fetchall()
+    kept, station_names, _place = _ride_of(rows)
     stops = _entries_of(kept, _labels_of(kept, station_names))
     _LOGGER.debug(f"Route stops: {stops}")
     return stops
 
 
 def get_destination_stop_list(schedule, route_id, direction, origin_stop_id):
-    """The stops a trip really reaches from the departure stop, on this
-    route and direction.
+    """The places a trip really reaches from the departure place.
 
     Only the trips that call at the origin are read, and of each only the
     part after it, so every entry offered can be paired with the origin on
     at least one trip and nothing has to be rejected afterwards. Whether
     that trip runs today is the coordinator's business. The origin is
-    matched as a whole place, its platforms included, the way the departure
+    matched as a whole place, every record of it, the way the departure
     query matches it; a loop that calls at it twice is read from the first
-    call, which keeps the way back on offer. Same walk as get_stop_list and
-    the labels of the whole line, so a stop reads the same on both screens.
+    call, which keeps the way back on offer. Without a direction both ways
+    round are read, each in riding order from the origin. The entries are
+    the line's, records and labels, so a stop reads the same on both
+    screens; the origin's own place is not offered.
     """
     _LOGGER.debug("Getting destinations for route: %s direction: %s from: %s",
                   route_id, direction, origin_stop_id)
@@ -2039,12 +2162,13 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id):
         inner join stop_times st on st.trip_id = t.trip_id
             and st.stop_sequence > o.origin_sequence
         where t.route_id = :route_id
-        and (t.direction_id = :direction or t.direction_id is null)
+        and (:direction is null or t.direction_id = :direction or t.direction_id is null)
         group by t.trip_id
     ), sample as (
         select min(trip_id) as trip_id from ride group by stops
     )
-    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name
+    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name,
+           s.stop_lat, s.stop_lon
     from sample
     inner join through o on o.trip_id = sample.trip_id
     inner join stop_times st on st.trip_id = sample.trip_id
@@ -2053,15 +2177,175 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id):
     left join stops station on station.stop_id = s.parent_station
     order by st.trip_id, st.stop_sequence
     """  # noqa: S608
-    scope = {"route_id": route_id, "direction": int(direction)}
+    scope = {"route_id": route_id, "direction": _direction_param(direction)}
     with schedule.engine.connect() as conn:
         whole = conn.execute(text(_STOP_ROWS), scope).fetchall()
         rows = conn.execute(text(sql), {**scope, "origin": origin_stop_id}).fetchall()
-    line, station_names = _ride_of(whole)
-    kept, _ = _ride_of(rows)
+    line, station_names, place = _ride_of(whole)
+    position = {x[0]: i for i, x in enumerate(line)}
+    by_place = {x[0]: x for x in line}
+    trips, _info = _trips_of(rows)
+    origin_place = place.get(origin_stop_id, origin_stop_id)
+    # Riding order first: a place comes after every place some trip calls at
+    # just before it on its way from the origin, so two branches that meet
+    # again (GVB 1 reaches Leidseplein by Overtoom or by Jan Pieter
+    # Heijestraat) keep each ride's order. A later call at the origin starts
+    # the ride again (Palm Bus 21 passes Gare SNCF out and back), and a place
+    # met again on the same ride starts a new stretch rather than closing a
+    # circle. Among places no ride orders, nearest first: the fewest stops
+    # any trip takes to reach them, the line's far side of the origin before
+    # its near side. From a loop's terminus every stop is reached both ways
+    # round and the rides order nothing for good; the nearest is taken
+    # there, the shorter way round.
+    reach, before = {}, {}
+    for _trip_id, trip_stops in trips.items():
+        # the rows start right after the trip's first call at the origin
+        count, previous, stretch = 0, None, set()
+        for stop_id, _seq in trip_stops:
+            p = place.get(stop_id, stop_id)
+            if p == origin_place:
+                count, previous, stretch = 0, None, set()
+                continue
+            count += 1
+            reach[p] = min(reach.get(p, count), count)
+            before.setdefault(p, set())
+            if p in stretch:
+                stretch = {p}
+            elif previous is not None and previous != p:
+                before[p].add(previous)
+                stretch.add(p)
+            else:
+                stretch.add(p)
+            previous = p
+    home = position.get(origin_place, -1)
+
+    def nearest(p):
+        return (position.get(p, 0) < home, reach[p], position.get(p, 0))
+
+    order, placed = [], set()
+    while len(order) < len(reach):
+        ready = [p for p in reach if p not in placed and not (before[p] - placed)]
+        # nothing free: a loop's rotations order each other round, take the nearest
+        p = min(ready or [p for p in reach if p not in placed], key=nearest)
+        order.append(p)
+        placed.add(p)
+    kept = [by_place[p] for p in order if p in by_place]
     stops = _entries_of(kept, _labels_of(line, station_names))
     _LOGGER.debug(f"Destinations from {origin_stop_id}: {stops}")
     return stops
+
+
+def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id):
+    """The direction an entry must keep for this pair, or None.
+
+    The pair and the order of the stops on one trip say which way the
+    rider goes, whatever the labels. Only a loop leaves it open: TAO 22 runs
+    Zenith to Zenith both ways round, and a trip leaving Zenith reaches any
+    stop of the loop, the short way on one rotation and the long way on the
+    other; on that line the 29 pairs with Zenith at one end are the only
+    ones where this happens, out of 870: a trip calls at the terminus at
+    both ends, so it rides a pair with the terminus at one end whichever
+    way round it goes. Then the rotation with the fewest stops is kept,
+    when its trips agree on one direction.
+
+    Stops rather than minutes: on TAO 22 both pick the same rotation for 54
+    of the 58 pairs, the 2 that differ are 42 seconds apart, and Zou 989
+    gives every stop of a trip the same time, so minutes decide nothing
+    there. They settle a tie in stops (a stop halfway round), by the median
+    ride time of each rotation; a tie on both keeps no direction.
+    """
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(_STOP_ROWS), {"route_id": route_id, "direction": None}).fetchall()
+        labels = dict(conn.execute(text(
+            "select trip_id, direction_id from trips where route_id = :route_id"),
+            {"route_id": route_id}).fetchall())
+    trips, info = _trips_of(rows)
+    place = _places_of(trips, info)
+    origin = place.get(origin_stop_id, origin_stop_id)
+    destination = place.get(destination_stop_id, destination_stop_id)
+    termini = {place[s[0][0]] for s in trips.values() if place[s[0][0]] == place[s[-1][0]]}
+    if origin not in termini and destination not in termini:
+        return None
+    rides = []
+    for trip_id, trip_stops in trips.items():
+        seq = [place[s] for s, _ in trip_stops]
+        best = None
+        last_origin = None
+        for i, p in enumerate(seq):
+            if p == origin:
+                last_origin = i
+            elif p == destination and last_origin is not None:
+                if best is None or i - last_origin < best[1] - best[0]:
+                    best = (last_origin, i)
+                last_origin = None
+        if best:
+            rides.append((best[1] - best[0], labels.get(trip_id)))
+    if len({label for _length, label in rides}) < 2:
+        return None
+    fewest = min(length for length, _label in rides)
+    agreed = {str(label) for length, label in rides if length == fewest and label is not None}
+    if len(agreed) > 1:
+        agreed = _quickest_rotations(schedule, route_id, origin_stop_id,
+                                     destination_stop_id, agreed)
+    direction = agreed.pop() if len(agreed) == 1 else None
+    _LOGGER.debug("Pair %s -> %s on %s is served both ways round, keeping direction %s",
+                  origin_stop_id, destination_stop_id, route_id, direction)
+    return direction
+
+
+def _clock_seconds(value):
+    """Seconds into the service day of a stop_times time, as the database
+    holds it: "07:10:00", or a pygtfs datetime on 1970-01-01, the next day
+    for a time past midnight."""
+    text_value = str(value or "")
+    days = 0
+    if " " in text_value:
+        day, text_value = text_value.split(" ", 1)
+        days = max(0, int(day[-2:]) - 1)
+    hours, minutes, seconds = text_value.split(":")[:3]
+    return days * 86400 + int(hours) * 3600 + int(minutes) * 60 + int(float(seconds))
+
+
+def _quickest_rotations(schedule, route_id, origin_stop_id, destination_stop_id, candidates):
+    """Of the direction labels in candidates, the one whose shortest rides of
+    the pair take the least time, by the median over its trips; all of them
+    when that does not tell them apart."""
+    origin_group = _place_group("origin")
+    destination_group = _place_group("destination")
+    sql = f"""
+    select t.direction_id, o.departure_time, d.arrival_time
+    from trips t
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stop_times d on d.trip_id = t.trip_id
+    where t.route_id = :route_id
+      and o.stop_id in {origin_group}
+      and d.stop_id in {destination_group}
+      and o.stop_sequence < d.stop_sequence
+      and not exists (
+          select 1 from stop_times between_stop
+          where between_stop.trip_id = t.trip_id
+            and between_stop.stop_sequence > o.stop_sequence
+            and between_stop.stop_sequence < d.stop_sequence
+            and (between_stop.stop_id in {origin_group}
+                 or between_stop.stop_id in {destination_group}))
+    """  # noqa: S608
+    minutes = {}
+    try:
+        with schedule.engine.connect() as conn:
+            for label, departs, arrives in conn.execute(text(sql), {
+                    "route_id": route_id, "origin": origin_stop_id,
+                    "destination": destination_stop_id}):
+                if str(label) in candidates:
+                    minutes.setdefault(str(label), []).append(
+                        (_clock_seconds(arrives) - _clock_seconds(departs)) / 60)
+    except (TypeError, ValueError) as ex:
+        _LOGGER.debug("Could not time the rotations of %s -> %s: %s",
+                      origin_stop_id, destination_stop_id, ex)
+        return set(candidates)
+    medians = {label: statistics.median(values) for label, values in minutes.items() if values}
+    if len(medians) < 2 or len(set(medians.values())) < len(medians):
+        return set(candidates)
+    return {min(medians, key=medians.get)}
 
 
 def get_agency_list(schedule, data):

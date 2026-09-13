@@ -1,23 +1,27 @@
 """Every departure/arrival pair a fixture's routes offer must hold up.
 
-For each route named in a fixture's manifest and each direction it runs,
-three promises are checked against the real code, on a db built from the
-fixture zip, with the clock pinned to a day the trips actually run:
+For each route named in a fixture's manifest, the trips of each direction
+it runs are sampled, and the promises are checked against the real code, on
+a db built from the fixture zip, with the clock pinned to a day the trips
+actually run. The list and the queries are asked the way the flow asks them:
+one list per line, both ways round, a place per entry, and no direction but
+the rotation get_pair_direction keeps at a loop's terminus.
 
-    stop_list   each stop_id once, in an order every trip agrees with, and
-                one entry for two platforms of a place called one after the
-                other
+    stop_list   each place once (the records of a parent station, or of one
+                name close together), every stop a trip calls at stood for,
+                and every trip riding the list one way or the other
     destinations  from an origin, get_destination_stop_list offers every
-                stop a trip rides to after it, once, in riding order, and
+                place a trip rides to after it, once, in the order every
+                ride makes, nearest first where the rides leave it open, and
                 nothing no trip through that origin reaches
     next_service  get_next_service_date, asked on a day a pair runs, answers
                 that day; asked the day after, the next day the feed holds
                 within its horizon, or nothing
     pairs       origin before destination on some trip: get_next_departure
-                answers it, on the right stops, in riding order, arriving no
-                earlier than it departs
+                answers it, on the right places, in riding order, arriving no
+                earlier than it departs, on the shortest ride of its trip
     swapped     destination before origin: nothing, or a ride the line really
-                makes (a place served twice, once per platform, is one)
+                makes, either way round
 
 Trains (route_type 2) ride their own path in get_next_departure, matched by
 stop name with no direction: for them the pairs are checked by name, the
@@ -111,6 +115,7 @@ class Fixture:
         # row carries it), so the clock is pinned in that zone: 00:05 UTC is
         # 02:05 in Paris, past a night line's 00:30 departure
         self.agency_tz = agency_tz[0] if agency_tz else "UTC"
+        self._places = {}
 
     def hass(self):
         """What get_next_departure reads off hass, and nothing more."""
@@ -130,17 +135,29 @@ class Fixture:
         return self.stations.get(stop_id) or None
 
     def siblings_of(self, stop_id):
-        """Every record the feed groups with this one under a parent station.
+        """Every record of the place this one belongs to.
 
-        A stop written once per platform is one place to a rider, and since
-        the journey's ends are matched on whole stops, get_next_departure may
-        answer on any of their records: a pair is right when it lands on one
-        of these, not only on the record the pattern happened to carry.
+        A place is what a rider waits at: the records a feed groups under a
+        parent station, and without a parent, the records of one name close
+        together. The journey's ends are matched on whole places, so
+        get_next_departure may answer on any of their records: a pair is
+        right when it lands on one of these. The checkout's own rule is read
+        (_place_group), a parent-only reading when it has none.
         """
-        parent = self.station_of(stop_id)
-        if not parent:
-            return {stop_id}
-        return {stop_id} | {s for s, p in self.stations.items() if p == parent}
+        if stop_id in self._places:
+            return self._places[stop_id]
+        group = getattr(gtfs_helper, "_place_group", None)
+        if group:
+            with self.schedule.engine.connect() as conn:
+                found = {stop_id} | {row[0] for row in conn.execute(
+                    text("SELECT stop_id FROM stops WHERE stop_id IN " + group("s")),
+                    {"s": stop_id})}
+        else:
+            parent = self.station_of(stop_id)
+            found = {stop_id} | ({s for s, p in self.stations.items() if p == parent}
+                                 if parent else set())
+        self._places[stop_id] = found
+        return found
 
 
 def _repair_directions(schedule):
@@ -229,14 +246,18 @@ def pair_service_days(schedule, origin, destination, route_type,
     """Every day the feed says some trip rides origin before destination,
     as sorted ISO dates: calendar_dates additions, and calendar windows
     expanded by weekday minus their removals. The stops are matched the way
-    the sensor matches them, by id, or by name prefix for a train. Any trip
+    the sensor matches them, by place, or by name prefix for a train. Any trip
     counts unless a route, and a direction on it, is named."""
     if route_type == "2":
         o_where = "o.stop_id IN (SELECT stop_id FROM stops WHERE stop_name LIKE :o)"
         x_where = "x.stop_id IN (SELECT stop_id FROM stops WHERE stop_name LIKE :x)"
         params = {"o": origin + "%", "x": destination + "%"}
     else:
-        o_where, x_where = "o.stop_id = :o", "x.stop_id = :x"
+        group = getattr(gtfs_helper, "_place_group", None)
+        if group:
+            o_where, x_where = "o.stop_id IN " + group("o"), "x.stop_id IN " + group("x")
+        else:
+            o_where, x_where = "o.stop_id = :o", "x.stop_id = :x"
         params = {"o": origin, "x": destination}
     on_route = ""
     if route_id is not None:
@@ -353,39 +374,79 @@ def shifted(iso, days):
     return (datetime.date.fromisoformat(iso) + datetime.timedelta(days=days)).isoformat()
 
 
-def circular_like(grouped_by_dir):
-    """Both directions ride mostly the same stops in the same order.
-
-    That is a circular line whose two 'directions' are rotations (GVB line
-    14): its trips wrap around the loop, and no linear list can agree with
-    every wrap point, so the order check has to allow the one wrap.
-    """
-    if len(grouped_by_dir) != 2:
-        return False
-    chains = []
-    for grouped in grouped_by_dir.values():
-        if not grouped:
-            return False
-        maxlen = max(len(p) for p in grouped)
-        chains.append(max((p for p in grouped if len(p) == maxlen),
-                          key=lambda p: len(grouped[p])))
-    first, second = chains
-    pos = {stop: n for n, stop in enumerate(second)}
-    shared = [pos[stop] for stop in first if stop in pos]
-    if len(shared) <= 0.5 * len(first) or len(shared) < 2:
-        return False
-    inc = sum(1 for a, b in zip(shared, shared[1:]) if b > a)
-    return inc / (len(shared) - 1) > 0.8
-
-
 def served_between(patterns, origins, destinations):
-    """Some trip of this direction really rides from one set to the other."""
+    """Some trip of the line really rides from one set to the other."""
     for pattern in patterns:
         before = [i for i, stop in enumerate(pattern) if stop in origins]
         after = [i for i, stop in enumerate(pattern) if stop in destinations]
         if before and after and min(before) < max(after):
             return True
     return False
+
+
+def pieces_of(places):
+    """A ride read as list positions, cut where it comes back to a position
+    it already passed (a racket, a loop), repeats in a row dropped."""
+    pieces, current = [], []
+    for p in places:
+        if current and p == current[-1]:
+            continue
+        if p in current:
+            pieces.append(current)
+            current = [current[-1], p]
+        else:
+            current.append(p)
+    if len(current) > 1:
+        pieces.append(current)
+    return pieces
+
+
+def rides_in_order(piece, size, ends=(), ways=(True, False)):
+    """One way along the list, forward or backward.
+
+    A loop has no straight order: its seam, a step across more than half the
+    list, is allowed once. Nor has a terminus the two ways share: TAO 40 ends
+    Montesquieu, Cheques Postaux quai D, then quai C, and GVB 14 starts in the
+    turning loop at Flevopark, so one step against the way is allowed when it
+    touches the trip's own first or last stop (ends). A step against the way
+    in the middle of a ride still fails.
+    """
+    for forward in ways:
+        wraps = shuffles = 0
+        for a, b in zip(piece, piece[1:]):
+            step = b - a
+            if abs(step) > size / 2:
+                wraps += 1
+            elif (step > 0) != forward:
+                if a in ends or b in ends:
+                    shuffles += 1
+                else:
+                    break
+        else:
+            if wraps <= 1 and shuffles <= 1:
+                return True
+    return False
+
+
+def line_patterns(schedule, route_id):
+    """{stop pattern: [trip_id]} for the whole line, both ways round."""
+    patterns = {}
+    for direction in directions_of(schedule, route_id):
+        for pattern, trip_ids in patterns_of(schedule, route_id, direction).items():
+            patterns.setdefault(pattern, []).extend(trip_ids)
+    return patterns
+
+
+def rode_past_an_end(schedule, result, origins, destinations):
+    """The stops the answer's trip calls at between its two ends that are one
+    of those ends again: a shorter ride was on the same trip."""
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(
+            "SELECT stop_id FROM stop_times WHERE trip_id = :t "
+            "AND stop_sequence > :o AND stop_sequence < :d"),
+            {"t": result.get("trip_id"), "o": result["origin_stop_sequence"],
+             "d": result["destination_stop_time"]["Sequence"]}).fetchall()
+    return [r[0] for r in rows if r[0] in origins or r[0] in destinations]
 
 
 def sample_origins(pattern):
@@ -483,34 +544,25 @@ def test_journeys(record_property, fixture, route_id, direction, kind):
 
 
 def check_route(check, fx, route_id, direction, kind):
-    schedule = fx.schedule
-    directions = directions_of(schedule, route_id)
-    by_dir = {d: patterns_of(schedule, route_id, d) for d in directions}
-    circular = circular_like(by_dir)
-    grouped = by_dir[direction]
-    query_direction = 0 if direction is None else direction
-    entries = get_stop_list(schedule, route_id, query_direction)
-    ids = [entry.split(": ", 1)[0] for entry in entries]
-    position = {stop_id: n for n, stop_id in enumerate(ids)}
+    """The flow's promises on one line, the trips of one direction sampled.
 
-    # A trip's stop may not be in the list under its own record when the
-    # list offers a station once: the entry offered for its station stands
-    # for it, and that is the entry a user would pick. A station a line
-    # calls at twice keeps several offered records (GVB 14 lists Dam three
-    # times, outbound and both return platforms), so the stand-in is read
-    # along the ride, taking the offered record nearest to where the trip
-    # already is rather than any of them.
-    def place_of(stop_id, previous):
-        if stop_id in position:
-            return position[stop_id]
-        offered = [position[sibling]
-                   for sibling in fx.siblings_of(stop_id)
-                   if sibling in position]
-        if not offered:
-            return None
-        if previous is None:
-            return min(offered)
-        return min(offered, key=lambda n: (n < previous, abs(n - previous)))
+    The rider is offered one list per line, a place per entry, and picks
+    where they are, then where they go; no direction is asked, the pair and
+    the order of the stops on a trip say which way it is, and a loop's
+    terminus keeps the rotation get_pair_direction settles. So the list, the
+    destinations and the departures are asked the way the flow asks them,
+    with no direction; `direction` only says which trips are sampled.
+    """
+    schedule = fx.schedule
+    everything = line_patterns(schedule, route_id)
+    grouped = patterns_of(schedule, route_id, direction)
+    entries = get_stop_list(schedule, route_id, None)
+    ids = [entry.split(": ", 1)[0] for entry in entries]
+    # the entry that stands for each record: the one of its place
+    entry_of = {}
+    for n, stop_id in enumerate(ids):
+        for member in fx.siblings_of(stop_id):
+            entry_of.setdefault(member, n)
 
     if kind == "stop_list":
         # The entries read "STOP: Name (12)", the number being the
@@ -531,35 +583,30 @@ def check_route(check, fx, route_id, direction, kind):
         check.note(not repeated, text,
                    repeated={stop_id: places
                              for stop_id, places in repeated.items()})
-        # Two platforms of one place, called one after the other, are one
-        # entry: TAO line A offered Jules Verne twice and each choice hid
-        # half the trams. Two records of a station the line calls at twice,
-        # far apart in the ride, are not that case and stay offered.
+        # A place is one entry, whatever its records: TAO line A offered
+        # Jules Verne twice and each choice hid half the trams, Zou 653
+        # offered each pole of Pont de la Brague, one per side of the road.
+        twice = [(a, b) for i, a in enumerate(ids) for b in ids[i + 1:]
+                 if b in fx.siblings_of(a)]
+        text = "the list offers one place twice"
+        if twice:
+            text += ": " + listed([f"{named(fx, a)} and {named(fx, b)}" for a, b in twice])
+        # folded keeps what the check recorded when it only looked at two
+        # platforms of one station listed one after the other
         folded = [(a, b) for a, b in zip(ids, ids[1:])
                   if fx.station_of(a) and fx.station_of(a) == fx.station_of(b)]
-        text = "the list offers one station twice in a row"
-        if folded:
-            text += ": " + listed([f"{named(fx, a)} then {named(fx, b)}"
-                                   for a, b in folded])
-        check.note(not folded, text, folded=[list(pair) for pair in folded])
+        check.note(not twice, text, twice=[list(pair) for pair in twice],
+                   folded=[list(pair) for pair in folded])
         for pattern in grouped:
-            places = []
-            for stop in pattern:
-                previous = next((p for p in reversed(places) if p is not None), None)
-                places.append(place_of(stop, previous))
-            unoffered = [stop for stop, place in zip(pattern, places)
-                         if place is None]
+            unoffered = [stop for stop in pattern if stop not in entry_of]
             text = "a trip serves a stop the list does not offer"
             if unoffered:
                 text += (": " + listed([named(fx, stop) for stop in unoffered])
                          + f" (on the ride {pattern[0]} .. {pattern[-1]})")
             check.note(not unoffered, text, unoffered=list(unoffered))
-            known = [place for place in places if place is not None]
-            descents = sum(1 for a, b in zip(known, known[1:]) if a >= b)
-            # a rotation of a circular line reads k..n then 0..k-1: one
-            # descent, ending below its start, is the loop's own seam
-            ordered = descents == 0 or (
-                circular and descents == 1 and known[-1] < known[0])
+            known = [entry_of[stop] for stop in pattern if stop in entry_of]
+            ends = (known[0], known[-1]) if known else ()
+            ordered = all(rides_in_order(piece, len(ids), ends) for piece in pieces_of(known))
             check.note(ordered, "the list contradicts the riding order "
                                 f"{pattern[0]} .. {pattern[-1]}")
         return
@@ -567,16 +614,16 @@ def check_route(check, fx, route_id, direction, kind):
     route_type = str(fx.route_types.get(route_id))
     if kind == "destinations":
         # From an origin, the trips that call at it and the rest of their
-        # ride: the list must hold every such stop, once, in the order the
-        # ride makes, and no stop no trip through that origin reaches. A
-        # place is offered once whatever its platforms, so a pattern stop
-        # may be stood for by a sibling record, as in stop_list above.
+        # ride: the list must hold every place such a trip reaches, once, in
+        # the order the ride makes, and nothing no trip through that origin
+        # reaches, whichever way round the line it goes.
         for pattern in grouped:
             for o in sample_origins(pattern):
-                origin = pattern[o]
+                if pattern[o] not in entry_of:
+                    continue
+                origin = ids[entry_of[pattern[o]]]
                 offered = [entry.split(": ", 1)[0] for entry in
-                           get_destination_stop_list(schedule, route_id,
-                                                     query_direction, origin)]
+                           get_destination_stop_list(schedule, route_id, None, origin)]
                 at = {stop_id: n for n, stop_id in enumerate(offered)}
                 who = f"from {named(fx, origin)}"
                 twice = sorted({s for s in offered if offered.count(s) > 1})
@@ -584,43 +631,105 @@ def check_route(check, fx, route_id, direction, kind):
                 if twice:
                     text += ": " + listed([named(fx, s) for s in twice])
                 check.note(not twice, text, origin=origin, twice=twice)
-                after = []
-                for stop in pattern[o + 1:]:
-                    if stop not in after:
-                        after.append(stop)
-                missing = [s for s in after
-                           if not (fx.siblings_of(s) & set(offered))]
+                after = [stop for stop in pattern[o + 1:]
+                         if entry_of.get(stop) != entry_of[origin]]
+                missing = [s for s in dict.fromkeys(after)
+                           if s not in entry_of or ids[entry_of[s]] not in at]
                 text = f"a stop this ride reaches {who} is not offered"
                 if missing:
                     text += (": " + listed([named(fx, s) for s in missing])
                              + f" (on the ride {pattern[0]} .. {pattern[-1]})")
                 check.note(not missing, text, origin=origin, missing=missing)
                 reachable = set()
-                for other in grouped:
+                for other in everything:
                     hits = [i for i, s in enumerate(other)
-                            if s in fx.siblings_of(origin)]
+                            if entry_of.get(s) == entry_of[origin]]
                     if hits:
-                        reachable.update(other[hits[0] + 1:])
+                        reachable.update(ids[entry_of[s]] for s in other[hits[0] + 1:]
+                                         if s in entry_of)
                 stray = [s for s in offered if s not in reachable]
                 text = f"a destination no trip reaches {who} is offered"
                 if stray:
                     text += ": " + listed([named(fx, s) for s in stray])
                 check.note(not stray, text, origin=origin, stray=stray)
-                places = []
-                for stop in after:
-                    previous = next((p for p in reversed(places) if p is not None), None)
-                    offered_at = [at[s] for s in fx.siblings_of(stop) if s in at]
-                    if not offered_at:
-                        places.append(None)
-                    elif previous is None:
-                        places.append(min(offered_at))
+                # Riding order across every trip of the line, nearest first
+                # where the rides leave it open. Read from all the line's
+                # trips: a place follows the places any of them calls at just
+                # before it on its way from the origin (counted again from a
+                # later call at the origin, a place met again on a ride
+                # starting a new stretch); among the places free to come
+                # next, the nearest one by the fewest stops, the far side of
+                # the list before the near one; when none is free (a loop's
+                # terminus, reached both ways round), the nearest remaining.
+                fewest, before = {}, {}
+                for other in everything:
+                    count, previous, stretch = None, None, set()
+                    for s in other:
+                        if s not in entry_of:
+                            continue
+                        e = ids[entry_of[s]]
+                        if entry_of[s] == entry_of[origin]:
+                            count, previous, stretch = 0, None, set()
+                            continue
+                        if count is None:
+                            continue
+                        count += 1
+                        fewest[e] = min(fewest.get(e, count), count)
+                        before.setdefault(e, set())
+                        if e in stretch:
+                            stretch = {e}
+                        elif previous is not None and previous != e:
+                            before[e].add(previous)
+                            stretch.add(e)
+                        else:
+                            stretch.add(e)
+                        previous = e
+                home = entry_of[origin]
+
+                def nearest(e):
+                    return (ids.index(e) < home, fewest.get(e, 0), ids.index(e))
+
+                listed_before, ordered, first_break = set(), True, None
+                for e in offered:
+                    left = [x for x in offered if x not in listed_before]
+                    free = [x for x in left if not (before.get(x, set()) - listed_before)]
+                    expected = min(free or left, key=nearest)
+                    if e != expected and ordered:
+                        ordered, first_break = False, [e, expected]
+                    listed_before.add(e)
+                check.note(ordered, f"the destinations {who} are not in riding order, "
+                           f"nearest first where the rides leave it open"
+                           + (f" ({named(fx, first_break[0])} before {named(fx, first_break[1])})"
+                              if first_break else ""),
+                           origin=origin,
+                           order=[[s, ids.index(s) < home, fewest.get(s, 0)] for s in offered])
+                # And along this ride, the order it makes: counted again from
+                # a later call at the origin, one reshuffle allowed where it
+                # touches the ride's own last stop (a terminus's quays). From
+                # a loop's terminus every stop is reached both ways round, so
+                # there nearest first is the order and this one is recorded
+                # as not applying.
+                terminus = any(entry_of.get(other[0]) == entry_of[origin]
+                               and entry_of.get(other[-1]) == entry_of[origin]
+                               for other in everything)
+                along = True
+                ride = []
+                for stop in pattern[o + 1:] + (None,):
+                    if stop is None or entry_of.get(stop) == entry_of[origin]:
+                        known = [at[ids[entry_of[s]]] for s in ride
+                                 if s in entry_of and ids[entry_of[s]] in at]
+                        ends = (known[-1],) if known else ()
+                        along = along and all(
+                            rides_in_order(piece, len(offered) * 4, ends, ways=(True,))
+                            for piece in pieces_of(known))
+                        ride = []
                     else:
-                        places.append(min(offered_at, key=lambda n: (n < previous, abs(n - previous))))
-                known = [place for place in places if place is not None]
-                descents = sum(1 for a, b in zip(known, known[1:]) if a >= b)
-                check.note(descents == 0, f"the destinations {who} contradict "
-                           f"the riding order {pattern[0]} .. {pattern[-1]}",
-                           origin=origin)
+                        ride.append(stop)
+                check.note(along or terminus,
+                           f"the destinations {who} contradict the riding order "
+                           f"{pattern[0]} .. {pattern[-1]}"
+                           + (" (a loop's terminus: nearest first applies)" if terminus else ""),
+                           origin=origin, loop_terminus=terminus, along=along)
         return
 
     if kind == "next_service":
@@ -632,14 +741,7 @@ def check_route(check, fx, route_id, direction, kind):
     hass = fx.hass()
     with freeze_time(fx.instant_on("1970-01-01")) as clock:
         for pattern, trip_ids in sorted(grouped.items()):
-            # the same stand-in reading as above, so a pair asks for the
-            # entry a user would have picked for that stop
-            stood_for = {}
-            previous = None
-            for stop in pattern:
-                stood_for[stop] = place_of(stop, previous)
-                previous = stood_for[stop] if stood_for[stop] is not None else previous
-            if any(place is None for place in stood_for.values()):
+            if any(stop not in entry_of for stop in pattern):
                 check.note(False, "a pattern stop has no entry")
                 continue
             day = service_date(schedule, trip_ids)
@@ -648,25 +750,33 @@ def check_route(check, fx, route_id, direction, kind):
                 continue
             if kind == "midnight":
                 check_midnight(check, fx, clock, hass, route_id, route_type,
-                               direction, query_direction, pattern, entries,
-                               stood_for)
+                               direction, None, pattern, entries, entry_of)
                 continue
             clock.move_to(fx.instant_on(day))
             for o, d in sample_pairs(pattern):
+                origin, destination = ids[entry_of[pattern[o]]], ids[entry_of[pattern[d]]]
+                if origin == destination:
+                    # a racket or a loop from its terminus round to it: two
+                    # records of one place, which the list offers once, so no
+                    # entry can ask it; recorded, not asked
+                    asked = asked_of(pattern, o, d, route_id, None)
+                    check.note(True, f"asked {pattern[o]} -> {pattern[d]} on {route_id}: "
+                               f"one place ({named(fx, origin)}), not a journey the list offers",
+                               asked=asked, got=None, same_place=True)
+                    continue
+                kept = gtfs_helper.get_pair_direction(schedule, route_id, origin, destination)
                 data = _data_for(schedule, route_id, route_type, entries,
-                                 stood_for, pattern[o], pattern[d],
-                                 query_direction)
+                                 entry_of, pattern[o], pattern[d], kept)
+                origins, reached = fx.siblings_of(origin), fx.siblings_of(destination)
                 if kind == "pairs":
                     result = get_next_departure(hass, data)
                     ok = (isinstance(result, dict) and result
-                          and result.get("origin_stop_id")
-                          in fx.siblings_of(pattern[o])
-                          and result.get("destination_stop_id")
-                          in fx.siblings_of(pattern[d])
+                          and result.get("origin_stop_id") in origins
+                          and result.get("destination_stop_id") in reached
                           and result["origin_stop_sequence"]
                           < result["destination_stop_time"]["Sequence"]
                           and result["arrival_time"] >= result["departure_time"])
-                    asked = asked_of(pattern, o, d, route_id, query_direction)
+                    asked = asked_of(pattern, o, d, route_id, kept)
                     got = got_of(result)
                     check.note(ok, answered(asked, got), asked=asked, got=got)
                     if result:
@@ -675,36 +785,59 @@ def check_route(check, fx, route_id, direction, kind):
                         shape = shape_of(result, fx.route_short_names[route_id])
                         check.note(shape["ok"], shaped(asked, shape),
                                    asked=asked, got=got, shape=shape)
-                        # and it rides the asked direction, not merely
-                        # the asked stops in the asked order
-                        if direction is not None:
-                            rode = str(result.get("trip_direction_id"))
-                            check.note(rode == str(query_direction),
-                                       f"asked d{query_direction} on {route_id}: "
+                        # each departure names the record it leaves from, a
+                        # record of the asked place
+                        leaving = result.get("next_departures_origin_stop_id") or []
+                        elsewhere = [s for s in leaving if s not in origins]
+                        check.note(bool(leaving) and not elsewhere,
+                                   f"asked {origin} -> {destination} on {route_id}: "
+                                   f"{len(leaving)} departures leave from "
+                                   f"{sorted(set(leaving))}"
+                                   + (f", not the asked place: {sorted(set(elsewhere))}" if elsewhere else ""),
+                                   asked=asked, got=got, leaving=sorted(set(leaving)))
+                        # and it rides the direction the entry keeps, when it
+                        # keeps one (a loop's terminus); otherwise the pair
+                        # alone decides, and the direction ridden is recorded
+                        rode = str(result.get("trip_direction_id"))
+                        if kept is not None:
+                            check.note(rode == str(kept),
+                                       f"asked d{kept} on {route_id}: "
                                        f"trip {got['trip']} rides d{rode}",
                                        asked=asked, got=got)
+                        else:
+                            check.note(True,
+                                       f"asked no direction on {route_id}: "
+                                       f"trip {got['trip']} rides d{rode}",
+                                       asked=asked, got=got)
+                    if ok:
+                        # and it is the shortest ride on its trip: a trip
+                        # passing an end twice does not board the rider on
+                        # the pole across the road for the long way round
+                        past = rode_past_an_end(schedule, result, origins, reached)
+                        check.note(not past,
+                                   f"asked {origin} -> {destination} on {route_id}: "
+                                   f"trip {got['trip']} calls at an end again on the way"
+                                   + (f" ({listed(past)})" if past else ""),
+                                   asked=asked, got=got)
                 else:
                     swapped = dict(data, origin=data["destination"],
-                                   destination=data["origin"])
+                                   destination=data["origin"],
+                                   direction=str(gtfs_helper.get_pair_direction(
+                                       schedule, route_id, destination, origin)))
                     result = get_next_departure(hass, swapped)
-                    # A destination is matched on the whole stop, so the
-                    # reverse pair is answerable whenever this direction
-                    # really rides from the asked destination to one of the
-                    # records of the asked origin's stop, which happens on
-                    # the lines that serve a place twice, once per platform.
-                    # So the promise is not "nothing": it is that an answer,
-                    # when there is one, matches a ride the line actually
-                    # makes. Answering nothing stays acceptable, the pattern
-                    # that rides it may not run on the frozen day.
-                    served = served_between(grouped, fx.siblings_of(pattern[d]),
-                                            fx.siblings_of(pattern[o]))
+                    # Both ways round are offered, so the reverse pair is a
+                    # journey whenever some trip of the line rides it. The
+                    # promise is that an answer, when there is one, matches a
+                    # ride the line actually makes; answering nothing stays
+                    # acceptable, the pattern that rides it may not run on
+                    # the frozen day.
+                    served = served_between(everything, reached, origins)
                     honest = not result or (
                         served
                         and result["origin_stop_sequence"]
                         < result["destination_stop_time"]["Sequence"]
                         and result["arrival_time"] >= result["departure_time"])
-                    asked = asked_of(pattern, d, o, route_id, query_direction,
-                                     served=served)
+                    asked = asked_of(pattern, d, o, route_id, None, served=served)
                     got = got_of(result)
                     check.note(honest, answered(asked, got), asked=asked, got=got)
 
@@ -712,7 +845,8 @@ def check_route(check, fx, route_id, direction, kind):
 PARALLEL = ("next_departures_lines", "next_departures_headsign",
             "next_departures_trip_id",
             "next_departures_destination_arrival_times",
-            "next_departures_durations")
+            "next_departures_durations",
+            "next_departures_origin_stop_id")
 
 
 def shape_of(result, short_name):
@@ -776,10 +910,23 @@ def check_midnight(check, fx, clock, hass, route_id, route_type, direction,
     schedule = fx.schedule
     origin, destination = pattern[0], pattern[-1]
     origins, destinations = fx.siblings_of(origin), fx.siblings_of(destination)
+    if destination in origins:
+        # a racket or a loop ends where it starts: one place, which the list
+        # offers once, so no entry can ask it; recorded, not asked
+        for include_tomorrow in (False, True):
+            check.note(True, f"at 23:50{' with tomorrow' if include_tomorrow else ''}, "
+                       f"{origin} -> {destination} on {route_id}: one place "
+                       f"({named(fx, origin)}), not a journey the list offers",
+                       origin=origin, destination=destination, same_place=True,
+                       include_tomorrow=include_tomorrow)
+        return
+    ids = [entry.split(": ", 1)[0] for entry in entries]
+    query_direction = gtfs_helper.get_pair_direction(
+        schedule, route_id, ids[stood_for[origin]], ids[stood_for[destination]])
     days = pair_service_days(schedule, origin, destination, route_type,
-                             route_id, direction)
+                             route_id, query_direction)
     who = f"{origin} -> {destination} on {route_id}"
-    if direction is not None:
+    if query_direction is not None:
         who += f" d{query_direction}"
     if not days:
         check.note(False, f"no service day for {who}",
@@ -787,7 +934,7 @@ def check_midnight(check, fx, clock, hass, route_id, route_type, direction,
         return
     day = next((d for d in days if shifted(d, 1) in days), days[0])
     tomorrow_runs = shifted(day, 1) in days
-    late = late_departures(schedule, route_id, direction, origins,
+    late = late_departures(schedule, route_id, query_direction, origins,
                            destinations, day)
     past_midnight = [t for t in late if gtfs_seconds(t) >= 24 * 3600]
     now = fx.instant_on(day, datetime.time(23, 50))
