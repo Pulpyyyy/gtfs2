@@ -198,3 +198,53 @@ extract_trip_stops:
       selector:
         entity:
           integration: "gtfs2"
+
+
+prune_datasource:
+  name: Prune Datasource
+  description: >-
+    Removes the trips and stop_times of routes that no entry is configured for.
+    pygtfs loads the whole feed, so a datasource holds every route of the network;
+    pruning typically reclaims most of the file. Schema and routes are left intact,
+    so the config flow still lists every route. Re-run "update_gtfs" to restore the
+    full feed from the local zip.
+  fields:
+    file:
+      name: Datasources
+      description: Datasource names without extension, one or several. Leave empty to prune every configured datasource.
+      required: false
+      example: nl_openov
+      selector:
+        text:
+          multiple: true
+    dry_run:
+      name: Dry run
+      description: Report what would be removed without changing anything.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+intern_datasource:
+  name: Intern Datasource
+  description: >-
+    Replaces the long trip_id/stop_id strings of stop_times by integer keys and
+    re-exposes stop_times as a view, so queries keep working unchanged. Run this
+    after "prune_datasource". Not reversible in place: re-run "update_gtfs" to
+    rebuild the full datasource from the local zip.
+  fields:
+    file:
+      name: Datasources
+      description: Datasource names without extension, one or several. Leave empty to intern every configured datasource.
+      required: false
+      example: nl_openov
+      selector:
+        text:
+          multiple: true
+    dry_run:
+      name: Dry run
+      description: Report what would be interned without changing anything.
+      required: false
+      default: false
+      selector:
+        boolean:
