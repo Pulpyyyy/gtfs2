@@ -428,20 +428,6 @@
         }
       }
     },
-    "set_include_tomorrow": {
-      "name": "Mostrar las salidas de mañana",
-      "description": "Activa o desactiva las salidas de mañana en sensores existentes, sin recrearlos.",
-      "fields": {
-        "enabled": {
-          "name": "Activado",
-          "description": "Activado para seguir mostrando salidas cuando termine el servicio del día"
-        },
-        "entry_id": {
-          "name": "Una sola entrada",
-          "description": "Déjelo vacío para aplicarlo a todos los sensores de salida/llegada"
-        }
-      }
-    },
     "prune_datasource": {
       "name": "Reducir una fuente a las líneas en uso",
       "description": "Elimina los horarios de las líneas que ningún sensor lee y recupera el espacio. Las líneas siguen listadas, así que el asistente las muestra todas. Ejecute update_gtfs para restaurar la fuente completa.",

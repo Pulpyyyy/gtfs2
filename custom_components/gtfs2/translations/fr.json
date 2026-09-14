@@ -428,20 +428,6 @@
         }
       }
     },
-    "set_include_tomorrow": {
-      "name": "Afficher les départs de demain",
-      "description": "Active ou désactive les départs de demain sur des capteurs existants, sans les recréer.",
-      "fields": {
-        "enabled": {
-          "name": "Activé",
-          "description": "Activé pour continuer d'afficher des départs une fois le service du jour terminé"
-        },
-        "entry_id": {
-          "name": "Une seule entrée",
-          "description": "Laissez vide pour appliquer à tous les capteurs départ/arrivée"
-        }
-      }
-    },
     "prune_datasource": {
       "name": "Réduire une source aux lignes utilisées",
       "description": "Supprime les horaires des lignes qu'aucun capteur ne lit, puis récupère l'espace. Les lignes restent listées, le config flow les montre donc toutes. Lancez update_gtfs pour rétablir la source complète.",

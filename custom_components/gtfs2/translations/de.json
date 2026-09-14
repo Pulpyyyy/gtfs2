@@ -428,20 +428,6 @@
         }
       }
     },
-    "set_include_tomorrow": {
-      "name": "Abfahrten von morgen anzeigen",
-      "description": "Schaltet die Abfahrten von morgen an bestehenden Sensoren ein oder aus, ohne sie neu anzulegen.",
-      "fields": {
-        "enabled": {
-          "name": "Aktiviert",
-          "description": "An, um nach Betriebsschluss weiter Abfahrten zu zeigen"
-        },
-        "entry_id": {
-          "name": "Nur ein Eintrag",
-          "description": "Leer lassen, um alle Start/Ziel-Sensoren zu erfassen"
-        }
-      }
-    },
     "prune_datasource": {
       "name": "Datenquelle auf die genutzten Linien kürzen",
       "description": "Entfernt die Fahrpläne der Linien, die kein Sensor liest, und gibt den Platz frei. Die Linien bleiben gelistet, der Konfigurationsdialog zeigt weiterhin alle. update_gtfs stellt den vollen Feed wieder her.",

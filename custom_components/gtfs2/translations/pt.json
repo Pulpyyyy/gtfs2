@@ -428,20 +428,6 @@
         }
       }
     },
-    "set_include_tomorrow": {
-      "name": "Mostrar as partidas de amanhã",
-      "description": "Liga ou desliga as partidas de amanhã em sensores existentes, sem os recriar.",
-      "fields": {
-        "enabled": {
-          "name": "Ativado",
-          "description": "Ligado para continuar a mostrar partidas quando o serviço do dia terminar"
-        },
-        "entry_id": {
-          "name": "Apenas uma entrada",
-          "description": "Deixe vazio para aplicar a todos os sensores de partida/chegada"
-        }
-      }
-    },
     "prune_datasource": {
       "name": "Reduzir uma fonte às linhas em uso",
       "description": "Remove os horários das linhas que nenhum sensor lê e recupera o espaço. As linhas continuam listadas, pelo que o assistente as mostra todas. Execute update_gtfs para repor a fonte completa.",

@@ -428,20 +428,6 @@
         }
       }
     },
-    "set_include_tomorrow": {
-      "name": "Show tomorrow's departures",
-      "description": "Turns tomorrow's departures on or off on existing sensors, without recreating them.",
-      "fields": {
-        "enabled": {
-          "name": "Enabled",
-          "description": "On to keep showing departures once the day's service is over"
-        },
-        "entry_id": {
-          "name": "One entry only",
-          "description": "Leave empty to apply to every start/end sensor"
-        }
-      }
-    },
     "prune_datasource": {
       "name": "Trim a data source to the routes in use",
       "description": "Removes the timetables of routes no sensor reads, then reclaims the space. Routes stay listed, so the config flow still shows them all. Run update_gtfs to restore the full feed.",
