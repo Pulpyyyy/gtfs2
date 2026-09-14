@@ -1047,7 +1047,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                 },
             ),
-            description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+            description_placeholders=self._journey_placeholders(
+                origin=_base_name(self._user_inputs[CONF_ORIGIN])),
             errors=errors,
         )
 
