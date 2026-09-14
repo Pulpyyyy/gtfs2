@@ -32,6 +32,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import entity_registry as er
 
+from .direction_repair import repair_trip_directions
 from .const import (
     DEFAULT_PATH_GEOJSON,
     CONF_API_KEY,
@@ -657,6 +658,7 @@ def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file):
         return
     pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file))
     check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
+    repair_trip_directions(gtfs)
 
     
 def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
@@ -703,6 +705,10 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
         scratch = pygtfs.Schedule(conn)
         pygtfs.append_feed(scratch, feed_file)
         ok = bool(scratch.feeds)
+        if ok:
+            # routes are copied out of this file into the real database, so
+            # directions have to be right before the copy, not after
+            repair_trip_directions(scratch)
         # the session holds a connection the pool does not know about, so
         # closing only the engine leaves the file open until garbage
         # collection - long enough for the cleanup below to fail on Windows
