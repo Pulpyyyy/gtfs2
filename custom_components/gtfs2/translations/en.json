@@ -125,7 +125,7 @@
         "data": {
           "origin": "Departure stop"
         },
-        "description": "Line **{route}**, direction **{direction}**.\n\nWhere should the departures be counted from?\n\n[documentation]({docu_new_route})",
+        "description": "Line **{route}**.\n\nWhere should the departures be counted from?\n\n[documentation]({docu_new_route})",
         "data_description": {
           "origin": "Departures are counted from here. The list follows the direction of travel; a number tells apart two platforms sharing a name."
         }
@@ -197,13 +197,13 @@
         "data": {
           "towards": "Towards"
         },
-        "description": "Trips from this stop leave both ways: which way are you going? [(docu)]({docu_new_route})"
+        "description": "Line **{route}**.\n\nTrips from **{origin}** leave both ways: which way are you going?\n\n[documentation]({docu_new_route})"
       },
       "destination": {
         "data": {
           "destination": "Destination Stop"
         },
-        "description": "Select the destination among the stops a trip really rides to from the chosen origin [(docu)]({docu_new_route})"
+        "description": "Line **{route}**.\n\nWhere does the journey from **{origin}** end? Only the stops a trip really rides to from there are listed, in riding order.\n\n[documentation]({docu_new_route})"
       },
       "source_rt": {
         "description": "Realtime is set up once per source: every sensor reading this source shares these feeds. Enter only the ones you want, **departures** is the only one that switches realtime on. You can also leave everything empty and add the feeds later, from this source's entry in the integration page.\n\n[documentation]({docu_configuring_options})",

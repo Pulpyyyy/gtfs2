@@ -125,7 +125,7 @@
         "data": {
           "origin": "Parada de salida"
         },
-        "description": "¿Desde dónde deben contarse las salidas?\n\n[documentation]({docu_new_route})",
+        "description": "Línea **{route}**.\n\n¿Desde dónde deben contarse las salidas?\n\n[documentación]({docu_new_route})",
         "data_description": {
           "origin": "Las salidas se cuentan desde aquí. La lista sigue el sentido de circulación; un número distingue dos andenes con el mismo nombre."
         }
@@ -197,13 +197,13 @@
         "data": {
           "towards": "Dirección"
         },
-        "description": "Los viajes desde esta parada salen en ambos sentidos: ¿en qué dirección va? [(docu)]({docu_new_route})"
+        "description": "Línea **{route}**.\n\nLos viajes desde **{origin}** salen en ambos sentidos: ¿en qué sentido va?\n\n[documentación]({docu_new_route})"
       },
       "destination": {
         "data": {
           "destination": "Parada de destino"
         },
-        "description": "Seleccione el destino entre las paradas a las que un viaje llega realmente desde el origen elegido [(docu)]({docu_new_route})"
+        "description": "Línea **{route}**.\n\n¿Dónde termina el viaje desde **{origin}**? Solo se proponen las paradas a las que un viaje llega realmente desde allí, en orden de paso.\n\n[documentación]({docu_new_route})"
       },
       "source_rt": {
         "description": "El tiempo real se configura una vez por fuente: todos los sensores que la leen comparten estos feeds. Introduzca solo los que quiera, únicamente **departures** activa el tiempo real. También puede dejarlo todo vacío y añadir los feeds más tarde, desde la entrada de la fuente en la página de la integración.\n\n[documentation]({docu_configuring_options})",

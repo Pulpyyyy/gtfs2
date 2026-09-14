@@ -125,7 +125,7 @@
         "data": {
           "origin": "Arrêt de départ"
         },
-        "description": "D'où les départs doivent-ils être comptés ?\n\n[documentation]({docu_new_route})",
+        "description": "Ligne **{route}**.\n\nD'où les départs doivent-ils être comptés ?\n\n[documentation]({docu_new_route})",
         "data_description": {
           "origin": "Les départs sont comptés depuis cet arrêt. La liste suit le sens de circulation ; un numéro distingue deux quais portant le même nom."
         }
@@ -197,13 +197,13 @@
         "data": {
           "towards": "Direction"
         },
-        "description": "Les trajets partent de cet arrêt dans les deux sens : dans quelle direction allez-vous ? [(docu)]({docu_new_route})"
+        "description": "Ligne **{route}**.\n\nLes trajets partent de **{origin}** dans les deux sens : dans quel sens allez-vous ?\n\n[documentation]({docu_new_route})"
       },
       "destination": {
         "data": {
           "destination": "Arrêt de destination"
         },
-        "description": "Sélectionnez la destination parmi les arrêts qu'un trajet dessert réellement depuis l'origine choisie [(docu)]({docu_new_route})"
+        "description": "Ligne **{route}**.\n\nOù se termine le trajet depuis **{origin}** ? Seuls les arrêts qu'un trajet dessert réellement depuis là sont proposés, dans l'ordre de passage.\n\n[documentation]({docu_new_route})"
       },
       "source_rt": {
         "description": "Le temps réel se configure une fois par source : tous les capteurs qui la lisent partagent ces flux. Ne renseignez que ceux que vous voulez, seul **departures** active le temps réel. Vous pouvez aussi tout laisser vide et ajouter les flux plus tard, depuis l'entrée de la source dans la page de l'intégration.\n\n[documentation]({docu_configuring_options})",
