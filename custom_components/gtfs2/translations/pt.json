@@ -125,7 +125,7 @@
         "data": {
           "origin": "Paragem de partida"
         },
-        "description": "De onde devem ser contadas as partidas?\n\n[documentation]({docu_new_route})",
+        "description": "Linha **{route}**.\n\nDe onde devem ser contadas as partidas?\n\n[documentação]({docu_new_route})",
         "data_description": {
           "origin": "As partidas são contadas a partir daqui. A lista segue o sentido de circulação; um número distingue duas plataformas com o mesmo nome."
         }
@@ -191,13 +191,13 @@
         "data": {
           "towards": "Sentido"
         },
-        "description": "As viagens a partir desta paragem partem nos dois sentidos: em que sentido vai? [(docu)]({docu_new_route})"
+        "description": "Linha **{route}**.\n\nAs viagens a partir de **{origin}** partem nos dois sentidos: em que sentido vai?\n\n[documentação]({docu_new_route})"
       },
       "destination": {
         "data": {
           "destination": "Paragem de destino"
         },
-        "description": "Selecione o destino entre as paragens que uma viagem alcança realmente a partir da origem escolhida [(docu)]({docu_new_route})"
+        "description": "Linha **{route}**.\n\nOnde termina a viagem a partir de **{origin}**? Só são propostas as paragens que uma viagem alcança realmente a partir daí, pela ordem de passagem.\n\n[documentação]({docu_new_route})"
       }
     },
     "error": {

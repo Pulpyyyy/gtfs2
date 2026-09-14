@@ -887,6 +887,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_stops_train()
         return await self.async_step_stops()
 
+    def _line_placeholders(self, **extra):
+        """The line picked so far, recalled at the top of the screens that
+        pick the stops: no direction is picked any more, the stops say it."""
+        return {
+            **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+            "route": self._route_label or str(self._user_inputs.get(CONF_ROUTE, "")),
+            **extra,
+        }
+
     async def async_step_stops(self, user_input: dict | None = None) -> FlowResult:
         """Pick the origin: every place the line rides, both ways round."""
         errors: dict[str, str] = {}
@@ -916,7 +925,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                     },
                 ),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                description_placeholders=self._line_placeholders(),
                 errors=errors,
             )
 
@@ -947,7 +956,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         vol.Required("towards", default=ways[0][0]): vol.In(dict(ways)),
                     },
                 ),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                description_placeholders=self._line_placeholders(
+                    origin=_base_name(self._user_inputs[CONF_ORIGIN])),
             )
         self._towards = user_input["towards"]
         return await self.async_step_destination()
@@ -993,7 +1003,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                 },
             ),
-            description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+            description_placeholders=self._line_placeholders(
+                origin=_base_name(self._user_inputs[CONF_ORIGIN])),
             errors=errors,
         )
 
