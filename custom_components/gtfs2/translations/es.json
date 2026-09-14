@@ -125,7 +125,7 @@
         "data": {
           "origin": "Parada de salida"
         },
-        "description": "Línea **{route}**.\n\n¿Desde dónde deben contarse las salidas?\n\n[documentación]({docu_new_route})",
+        "description": "Línea **{route}**.\n\n[documentación]({docu_new_route})",
         "data_description": {
           "origin": "Las salidas se cuentan desde aquí. La lista sigue el sentido de circulación; un número distingue dos andenes con el mismo nombre."
         }

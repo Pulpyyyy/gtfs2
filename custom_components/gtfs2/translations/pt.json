@@ -125,7 +125,7 @@
         "data": {
           "origin": "Paragem de partida"
         },
-        "description": "Linha **{route}**.\n\nDe onde devem ser contadas as partidas?\n\n[documentação]({docu_new_route})",
+        "description": "Linha **{route}**.\n\n[documentação]({docu_new_route})",
         "data_description": {
           "origin": "As partidas são contadas a partir daqui. A lista segue o sentido de circulação; um número distingue duas plataformas com o mesmo nome."
         }

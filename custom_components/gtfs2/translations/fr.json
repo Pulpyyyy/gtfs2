@@ -125,7 +125,7 @@
         "data": {
           "origin": "Arrêt de départ"
         },
-        "description": "Ligne **{route}**.\n\nD'où les départs doivent-ils être comptés ?\n\n[documentation]({docu_new_route})",
+        "description": "Ligne **{route}**.\n\n[documentation]({docu_new_route})",
         "data_description": {
           "origin": "Les départs sont comptés depuis cet arrêt. La liste suit le sens de circulation ; un numéro distingue deux quais portant le même nom."
         }
