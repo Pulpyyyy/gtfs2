@@ -367,7 +367,6 @@ TRAIN = ("a train journey is matched by stop name prefix on any line, not "
 KNOWN = {
     "sncf-journeys-K8+-d0-pairs": TRAIN,
     "sncf-journeys-K8+-d1-pairs": TRAIN,
-    "sncf-journeys-P8(A594575:)-d1-pairs": TRAIN,
     "sncf-journeys-P8(CDD3F95:)-d1-pairs": TRAIN,
 }
 
