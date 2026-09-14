@@ -206,6 +206,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._extract_task = None
         self._extract_next_step: str | None = None
         self._route_label: str = ""
+        # the line as the route screen showed it, recalled on the stop screens
+        self._route_shown: str = ""
         # how big the database has grown, shown while it is being built
         self._extract_size: str = "0 MB"
         # the import running behind the progress screen, and its routes
@@ -688,6 +690,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         user_input[CONF_ROUTE] = _picked[1]
         # the readable part is only used to suggest a sensor name
         self._route_label = _picked[2].split(" : ")[0] if len(_picked) > 2 else ""
+        self._route_shown = _picked[2] if len(_picked) > 2 else ""
         was_pruned = len(_picked) > 3 and _picked[3] == "pruned"
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Route: {self._user_inputs}")
@@ -887,12 +890,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_stops_train()
         return await self.async_step_stops()
 
-    def _line_placeholders(self, **extra):
-        """The line picked so far, recalled at the top of the screens that
-        pick the stops: no direction is picked any more, the stops say it."""
+    def _journey_placeholders(self, **extra):
+        """The line picked on the route screen, as that screen showed it,
+        recalled at the top of the screens that pick the stops: no direction
+        is picked any more, the stops say it."""
         return {
             **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-            "route": self._route_label or str(self._user_inputs.get(CONF_ROUTE, "")),
+            "route": self._route_shown or self._route_label or str(self._user_inputs.get(CONF_ROUTE, "")),
             **extra,
         }
 
@@ -925,7 +929,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                     },
                 ),
-                description_placeholders=self._line_placeholders(),
+                description_placeholders=self._journey_placeholders(),
                 errors=errors,
             )
 
@@ -956,7 +960,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         vol.Required("towards", default=ways[0][0]): vol.In(dict(ways)),
                     },
                 ),
-                description_placeholders=self._line_placeholders(
+                description_placeholders=self._journey_placeholders(
                     origin=_base_name(self._user_inputs[CONF_ORIGIN])),
             )
         self._towards = user_input["towards"]
@@ -1003,7 +1007,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                 },
             ),
-            description_placeholders=self._line_placeholders(
+            description_placeholders=self._journey_placeholders(
                 origin=_base_name(self._user_inputs[CONF_ORIGIN])),
             errors=errors,
         )
@@ -1116,6 +1120,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                          CONF_API_KEY, CONF_API_KEY_NAME, CONF_API_KEY_LOCATION)}
         self._user_inputs = keep
         self._route_label = ""
+        self._route_shown = ""
         self._return_trip = None
         self._return_name = ""
 
