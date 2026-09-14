@@ -125,7 +125,7 @@
         "data": {
           "origin": "Starthaltestelle"
         },
-        "description": "Linie **{route}**.\n\n[Dokumentation]({docu_new_route})",
+        "description": "Linie **{route}**.\n\nWo ist der Startpunkt?\n\n[Dokumentation]({docu_new_route})",
         "data_description": {
           "origin": "Ab hier werden die Abfahrten gezählt. Die Liste folgt der Fahrtrichtung; eine Zahl unterscheidet zwei gleichnamige Bahnsteige."
         }
