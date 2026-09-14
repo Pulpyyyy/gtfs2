@@ -163,8 +163,9 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
             line_where = "and r.route_short_name = :line"
             params["line"] = line
     else:
-        origin_where = "o.stop_id = :origin"
-        dest_where = "x.stop_id = :dest"
+        # the whole place at each end, as the departures are matched
+        origin_where = "o.stop_id in " + _place_group("origin")
+        dest_where = "x.stop_id in " + _place_group("dest")
         params = {"origin": origin_id, "dest": dest_id}
 
     sql = f"""

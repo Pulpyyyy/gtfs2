@@ -884,7 +884,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return {
             **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             "route": self._route_label or str(self._user_inputs.get(CONF_ROUTE, "")),
-            "direction": self._direction_label or str(self._user_inputs.get(CONF_DIRECTION, "")),
+            "direction": self._direction_label or str(self._user_inputs.get(CONF_DIRECTION) or ""),
             **extra,
         }
 
@@ -964,12 +964,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         only, nearest first, and at a loop's terminus the answer is the
         rotation the entry keeps. At the end of a line, where every trip
         leaves the same way, nothing is asked."""
-        ways = await self.hass.async_add_executor_job(
-            get_towards,
-            self._pygtfs,
-            self._user_inputs[CONF_ROUTE],
-            self._user_inputs[CONF_ORIGIN].split(": ")[0],
-        )
+        origin = self._user_inputs[CONF_ORIGIN]
+        try:
+            ways = await self.hass.async_add_executor_job(
+                get_towards,
+                self._pygtfs,
+                self._user_inputs[CONF_ROUTE],
+                _stop_id(origin),
+            )
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Error reading the ways out of %s on route %s: %s",
+                          _stop_id(origin), self._user_inputs.get(CONF_ROUTE), ex)
+            return self.async_abort(reason="no_stops_read")
         if not ways:
             return await self.async_step_destination()
         if user_input is None:
@@ -980,7 +986,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         vol.Required("towards", default=ways[0][0]): vol.In(dict(ways)),
                     },
                 ),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                description_placeholders=self._journey_placeholders(
+                    origin=_base_name(origin)),
             )
         self._towards = user_input["towards"]
         return await self.async_step_destination()
@@ -1136,6 +1143,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         self._reset_for_next_journey()
         self._user_inputs.update(self._line["inputs"])
+        # the previous journey's loop rotation belongs to its own pair
+        self._user_inputs.pop(CONF_LOOP_DIRECTION, None)
+        self._user_inputs[CONF_DIRECTION] = None
         self._route_label = self._line["route_label"]
         self._direction_label = self._line["direction_label"]
         if self._user_inputs.get(CONF_ROUTE_TYPE) == "2":
