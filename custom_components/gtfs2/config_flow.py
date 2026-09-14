@@ -135,6 +135,18 @@ def _base_name(entry):
     return re.sub(r" #\d+$", "", _stop_name(entry))
 
 
+def _stop_options(stops):
+    """Picker options for "stop_id: Name (sequence)" entries.
+
+    The value must stay the entry, get_next_departure cuts the id back out of
+    it; only the readable part is the rider's to see. Two places of one name
+    already carry their station or their rank in it (gtfs_helper._labels_of),
+    so the label is that part alone, without the id and the sequence.
+    """
+    return [selector.SelectOptionDict(value=entry, label=_stop_name(entry))
+            for entry in stops]
+
+
 def _database_size(gtfs_dir, filename):
     """How big the datasource is right now, as a readable string.
 
@@ -946,7 +958,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="stops",
                 data_schema=vol.Schema(
                     {
-                        vol.Required(CONF_ORIGIN): vol.In(stops),
+                        vol.Required(CONF_ORIGIN): selector.SelectSelector(
+                            selector.SelectSelectorConfig(options=_stop_options(stops))
+                        ),
                     },
                 ),
                 description_placeholders=self._journey_placeholders(),
@@ -1028,7 +1042,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="destination",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_DESTINATION, default=destinations[-1]): vol.In(destinations),
+                    vol.Required(CONF_DESTINATION, default=destinations[-1]): selector.SelectSelector(
+                        selector.SelectSelectorConfig(options=_stop_options(destinations))
+                    ),
                 },
             ),
             description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
