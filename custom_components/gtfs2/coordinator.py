@@ -97,6 +97,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             "route": data["route"],
             # kept only at a loop's terminus, absent everywhere else
             "loop_direction": data.get("loop_direction"),
+            # a train entry's line code: its departures hold to that line
+            "line": data.get("line"),
             "extracting": False,
             "next_departure": {},
             "next_departure_realtime_attr": {},

@@ -9,6 +9,7 @@
   'route_type': '3',
   'route': 'route_id',
   'loop_direction': None,
+  'line': None,
   'extracting': False,
   'next_departure': {
     'trip_id': 'trip_id_1',
