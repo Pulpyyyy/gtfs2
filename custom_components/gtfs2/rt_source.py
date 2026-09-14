@@ -80,7 +80,12 @@ def datasource_entry(hass: HomeAssistant, file) -> ConfigEntry | None:
     """The datasource entry of a source, or None while it does not exist."""
     if not file:
         return None
-    for entry in hass.config_entries.async_entries(DOMAIN):
+    # a bare hass with no registry (upstream's synthetic suite hands the
+    # coordinator one) has no datasource entry either
+    registry = getattr(hass, "config_entries", None)
+    if registry is None:
+        return None
+    for entry in registry.async_entries(DOMAIN):
         if (entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE
                 and entry.data.get(CONF_FILE) == file):
             return entry
