@@ -231,17 +231,31 @@ def _night_calls(conn, promise):
     return calls[::step][:SAMPLE]
 
 
-def _first_ride(conn, days, origin, destination, zone, now):
-    """The first departure after now of a trip riding origin before
-    destination, any line: the stop ids are matched as the sensor matches
-    them, exactly."""
+_WHOLE_STOP = ("(SELECT sibling.stop_id FROM stops chosen, stops sibling "
+               "WHERE chosen.stop_id = :{0} AND (sibling.stop_id = chosen.stop_id "
+               "OR (chosen.parent_station IS NOT NULL AND chosen.parent_station <> '' "
+               "AND sibling.parent_station = chosen.parent_station)))")
+
+
+def _first_ride(conn, days, call, zone, now):
+    """The first departure after now of a trip riding the call's stop before
+    the next one, matched as the sensor matches them: on the entry's line and
+    direction (a trip without a direction_id still counts), each end on its
+    whole stop, the record and the platforms grouped with it."""
+    direction = str(call.direction_id)
+    on_direction = ("AND (t.direction_id = :direction OR t.direction_id IS NULL) "
+                    if direction in ("0", "1") else "")
     best = None
     for service_id, stored in conn.execute(text(
             "SELECT t.service_id, o.departure_time FROM trips t "
             "INNER JOIN stop_times o ON o.trip_id = t.trip_id "
             "INNER JOIN stop_times x ON x.trip_id = t.trip_id "
-            "WHERE o.stop_id = :o AND x.stop_id = :d "
-            "AND o.stop_sequence < x.stop_sequence"), {"o": origin, "d": destination}):
+            f"WHERE o.stop_id IN {_WHOLE_STOP.format('o')} "
+            f"AND x.stop_id IN {_WHOLE_STOP.format('d')} "
+            "AND o.stop_sequence < x.stop_sequence AND t.route_id = :route "
+            + on_direction),  # noqa: S608
+            {"o": call.stop_id, "d": call.next_stop, "route": call.route_id,
+             "direction": int(direction) if direction in ("0", "1") else None}):
         if stored is None:
             continue
         for day in _near(days.get(service_id, ()), now):
@@ -318,7 +332,7 @@ def check_route(conn, schedule, days, names, zone_name, zone, call, label, now):
             "destination": f"{call.next_stop}: {names.get(call.next_stop)}",
             "route": call.route_id, "direction": str(call.direction_id),
             "include_tomorrow": True}
-    want = _first_ride(conn, days, call.stop_id, call.next_stop, zone, now)
+    want = _first_ride(conn, days, call, zone, now)
     result = gtfs_helper.get_next_departure(_hass(zone_name), data)
     got = _instant(result.get("departure_time")) if result else None
     want = _instant(want)

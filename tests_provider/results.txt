@@ -1,6 +1,12 @@
-provider case results -- 183 case(s)
+provider case results -- 273 case(s)
 
 case: adelaide-GLNELG-d0-destinations
+  result: PASSED
+
+case: adelaide-GLNELG-d0-midnight
+  result: PASSED
+
+case: adelaide-GLNELG-d0-next_service
   result: PASSED
 
 case: adelaide-GLNELG-d0-pairs
@@ -18,6 +24,12 @@ case: adelaide-GLNELG-d0-towards
 case: adelaide-GLNELG-d1-destinations
   result: PASSED
 
+case: adelaide-GLNELG-d1-midnight
+  result: PASSED
+
+case: adelaide-GLNELG-d1-next_service
+  result: PASSED
+
 case: adelaide-GLNELG-d1-pairs
   result: PASSED
 
@@ -33,6 +45,12 @@ case: adelaide-GLNELG-d1-towards
 case: adelaide-N1-d0-destinations
   result: PASSED
 
+case: adelaide-N1-d0-midnight
+  result: PASSED
+
+case: adelaide-N1-d0-next_service
+  result: PASSED
+
 case: adelaide-N1-d0-pairs
   result: PASSED
 
@@ -46,6 +64,12 @@ case: adelaide-N1-d0-towards
   result: PASSED
 
 case: adelaide-N1-d1-destinations
+  result: PASSED
+
+case: adelaide-N1-d1-midnight
+  result: PASSED
+
+case: adelaide-N1-d1-next_service
   result: PASSED
 
 case: adelaide-N1-d1-pairs
@@ -75,6 +99,12 @@ case: adelaide-route-calendar_dates
 case: gvb-1-d0-destinations
   result: PASSED
 
+case: gvb-1-d0-midnight
+  result: PASSED
+
+case: gvb-1-d0-next_service
+  result: PASSED
+
 case: gvb-1-d0-pairs
   result: PASSED
 
@@ -88,6 +118,12 @@ case: gvb-1-d0-towards
   result: PASSED
 
 case: gvb-1-d1-destinations
+  result: PASSED
+
+case: gvb-1-d1-midnight
+  result: PASSED
+
+case: gvb-1-d1-next_service
   result: PASSED
 
 case: gvb-1-d1-pairs
@@ -105,6 +141,12 @@ case: gvb-1-d1-towards
 case: gvb-13-d0-destinations
   result: PASSED
 
+case: gvb-13-d0-midnight
+  result: PASSED
+
+case: gvb-13-d0-next_service
+  result: PASSED
+
 case: gvb-13-d0-pairs
   result: PASSED
 
@@ -118,6 +160,12 @@ case: gvb-13-d0-towards
   result: PASSED
 
 case: gvb-13-d1-destinations
+  result: PASSED
+
+case: gvb-13-d1-midnight
+  result: PASSED
+
+case: gvb-13-d1-next_service
   result: PASSED
 
 case: gvb-13-d1-pairs
@@ -135,6 +183,12 @@ case: gvb-13-d1-towards
 case: gvb-14-d0-destinations
   result: PASSED
 
+case: gvb-14-d0-midnight
+  result: PASSED
+
+case: gvb-14-d0-next_service
+  result: PASSED
+
 case: gvb-14-d0-pairs
   result: PASSED
 
@@ -148,6 +202,12 @@ case: gvb-14-d0-towards
   result: PASSED
 
 case: gvb-14-d1-destinations
+  result: PASSED
+
+case: gvb-14-d1-midnight
+  result: PASSED
+
+case: gvb-14-d1-next_service
   result: PASSED
 
 case: gvb-14-d1-pairs
@@ -165,6 +225,12 @@ case: gvb-14-d1-towards
 case: gvb-17-d0-destinations
   result: PASSED
 
+case: gvb-17-d0-midnight
+  result: PASSED
+
+case: gvb-17-d0-next_service
+  result: PASSED
+
 case: gvb-17-d0-pairs
   result: PASSED
 
@@ -178,6 +244,12 @@ case: gvb-17-d0-towards
   result: PASSED
 
 case: gvb-17-d1-destinations
+  result: PASSED
+
+case: gvb-17-d1-midnight
+  result: PASSED
+
+case: gvb-17-d1-next_service
   result: PASSED
 
 case: gvb-17-d1-pairs
@@ -195,6 +267,12 @@ case: gvb-17-d1-towards
 case: gvb-7-d0-destinations
   result: PASSED
 
+case: gvb-7-d0-midnight
+  result: PASSED
+
+case: gvb-7-d0-next_service
+  result: PASSED
+
 case: gvb-7-d0-pairs
   result: PASSED
 
@@ -208,6 +286,12 @@ case: gvb-7-d0-towards
   result: PASSED
 
 case: gvb-7-d1-destinations
+  result: PASSED
+
+case: gvb-7-d1-midnight
+  result: PASSED
+
+case: gvb-7-d1-next_service
   result: PASSED
 
 case: gvb-7-d1-pairs
@@ -237,6 +321,12 @@ case: gvb-route-calendar_dates
 case: palmbus-21-d0-destinations
   result: PASSED
 
+case: palmbus-21-d0-midnight
+  result: PASSED
+
+case: palmbus-21-d0-next_service
+  result: PASSED
+
 case: palmbus-21-d0-pairs
   result: PASSED
 
@@ -250,6 +340,12 @@ case: palmbus-21-d0-towards
   result: PASSED
 
 case: palmbus-22-d0-destinations
+  result: PASSED
+
+case: palmbus-22-d0-midnight
+  result: PASSED
+
+case: palmbus-22-d0-next_service
   result: PASSED
 
 case: palmbus-22-d0-pairs
@@ -267,6 +363,12 @@ case: palmbus-22-d0-towards
 case: palmbus-22-d1-destinations
   result: PASSED
 
+case: palmbus-22-d1-midnight
+  result: PASSED
+
+case: palmbus-22-d1-next_service
+  result: PASSED
+
 case: palmbus-22-d1-pairs
   result: PASSED
 
@@ -280,6 +382,12 @@ case: palmbus-22-d1-towards
   result: PASSED
 
 case: palmbus-A-d0-destinations
+  result: PASSED
+
+case: palmbus-A-d0-midnight
+  result: PASSED
+
+case: palmbus-A-d0-next_service
   result: PASSED
 
 case: palmbus-A-d0-pairs
@@ -297,6 +405,12 @@ case: palmbus-A-d0-towards
 case: palmbus-A-d1-destinations
   result: PASSED
 
+case: palmbus-A-d1-midnight
+  result: PASSED
+
+case: palmbus-A-d1-next_service
+  result: PASSED
+
 case: palmbus-A-d1-pairs
   result: PASSED
 
@@ -310,6 +424,12 @@ case: palmbus-A-d1-towards
   result: PASSED
 
 case: palmbus-B-d0-destinations
+  result: PASSED
+
+case: palmbus-B-d0-midnight
+  result: PASSED
+
+case: palmbus-B-d0-next_service
   result: PASSED
 
 case: palmbus-B-d0-pairs
@@ -327,6 +447,12 @@ case: palmbus-B-d0-towards
 case: palmbus-B-d1-destinations
   result: PASSED
 
+case: palmbus-B-d1-midnight
+  result: PASSED
+
+case: palmbus-B-d1-next_service
+  result: PASSED
+
 case: palmbus-B-d1-pairs
   result: PASSED
 
@@ -339,47 +465,101 @@ case: palmbus-B-d1-swapped
 case: palmbus-B-d1-towards
   result: PASSED
 
+case: sncf-journeys-K8+-d0-destinations
+  result: PASSED
+
+case: sncf-journeys-K8+-d0-next_service
+  result: PASSED
+
 case: sncf-journeys-K8+-d0-pairs
-  result: XFAILED
-  reason: a train journey is matched by stop name prefix on any line, not the asked one
-  detail:
-    asked Paris Austerlitz -> Les Aubrais on K8+ (stop 1 to stop 2 of a 2-stop ride): got Paris Austerlitz -> Les Aubrais on P8 d0, trip OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106
-    asked Paris Austerlitz -> Orléans on K8+ (stop 1 to stop 3 of a 3-stop ride): got Paris Austerlitz -> Orléans on P8 d0, trip OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106
-    asked Paris Austerlitz -> Les Aubrais on K8+ (stop 1 to stop 2 of a 3-stop ride): got Paris Austerlitz -> Les Aubrais on P8 d0, trip OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106
-    asked Les Aubrais -> Orléans on K8+ (stop 2 to stop 3 of a 3-stop ride): got Les Aubrais -> Orléans on P8 d0, trip OCESN860581F1187_F:TER:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87547000:87543009:13:720:20261106
+  result: PASSED
+
+case: sncf-journeys-K8+-d0-stations
+  result: PASSED
+
+case: sncf-journeys-K8+-d1-destinations
+  result: PASSED
+
+case: sncf-journeys-K8+-d1-next_service
+  result: PASSED
 
 case: sncf-journeys-K8+-d1-pairs
-  result: XFAILED
-  reason: a train journey is matched by stop name prefix on any line, not the asked one
-  detail:
-    asked Orléans -> Les Aubrais Gare Routière on K8+ (stop 1 to stop 2 of a 3-stop ride): got Orléans -> Les Aubrais Gare Routière on P8 d1, trip OCESN424586R1187_R:CTE:FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95::87543009:87543090:8:1350:20261211
+  result: PASSED
+
+case: sncf-journeys-K8+-d1-stations
+  result: PASSED
+
+case: sncf-journeys-P8(924A148:)-d0-destinations
+  result: PASSED
+
+case: sncf-journeys-P8(924A148:)-d0-next_service
+  result: PASSED
 
 case: sncf-journeys-P8(924A148:)-d0-pairs
+  result: PASSED
+
+case: sncf-journeys-P8(924A148:)-d0-stations
+  result: PASSED
+
+case: sncf-journeys-P8(924A148:)-d1-destinations
+  result: PASSED
+
+case: sncf-journeys-P8(924A148:)-d1-next_service
   result: PASSED
 
 case: sncf-journeys-P8(924A148:)-d1-pairs
   result: PASSED
 
+case: sncf-journeys-P8(924A148:)-d1-stations
+  result: PASSED
+
+case: sncf-journeys-P8(A594575:)-d0-destinations
+  result: PASSED
+
+case: sncf-journeys-P8(A594575:)-d0-next_service
+  result: PASSED
+
 case: sncf-journeys-P8(A594575:)-d0-pairs
+  result: PASSED
+
+case: sncf-journeys-P8(A594575:)-d0-stations
+  result: PASSED
+
+case: sncf-journeys-P8(A594575:)-d1-destinations
+  result: PASSED
+
+case: sncf-journeys-P8(A594575:)-d1-next_service
   result: PASSED
 
 case: sncf-journeys-P8(A594575:)-d1-pairs
   result: PASSED
 
+case: sncf-journeys-P8(A594575:)-d1-stations
+  result: PASSED
+
+case: sncf-journeys-P8(CDD3F95:)-d0-destinations
+  result: PASSED
+
+case: sncf-journeys-P8(CDD3F95:)-d0-next_service
+  result: PASSED
+
 case: sncf-journeys-P8(CDD3F95:)-d0-pairs
   result: PASSED
 
+case: sncf-journeys-P8(CDD3F95:)-d0-stations
+  result: PASSED
+
+case: sncf-journeys-P8(CDD3F95:)-d1-destinations
+  result: PASSED
+
+case: sncf-journeys-P8(CDD3F95:)-d1-next_service
+  result: PASSED
+
 case: sncf-journeys-P8(CDD3F95:)-d1-pairs
-  result: XFAILED
-  reason: a train journey is matched by stop name prefix on any line, not the asked one
-  detail:
-    asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 11 of a 11-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119
-    asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 12 of a 12-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119
-    asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 10 of a 10-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119
-    asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 9 of a 9-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119
-    asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 11 of a 11-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119
-    asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 8 of a 8-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119
-    asked Orléans -> Paris Austerlitz on P8 (stop 1 to stop 5 of a 5-stop ride): got Orléans -> Paris Austerlitz on K8+ d1, trip OCESN860500F1187_F:TER:FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532::87543009:87547000:3:608:20261119
+  result: PASSED
+
+case: sncf-journeys-P8(CDD3F95:)-d1-stations
+  result: PASSED
 
 case: sncf-local_stop-calendar
   result: PASSED
@@ -388,6 +568,12 @@ case: sncf-local_stop-calendar_dates
   result: PASSED
 
 case: tao-journeys-22-d0-destinations
+  result: PASSED
+
+case: tao-journeys-22-d0-midnight
+  result: PASSED
+
+case: tao-journeys-22-d0-next_service
   result: PASSED
 
 case: tao-journeys-22-d0-pairs
@@ -405,6 +591,12 @@ case: tao-journeys-22-d0-towards
 case: tao-journeys-22-d1-destinations
   result: PASSED
 
+case: tao-journeys-22-d1-midnight
+  result: PASSED
+
+case: tao-journeys-22-d1-next_service
+  result: PASSED
+
 case: tao-journeys-22-d1-pairs
   result: PASSED
 
@@ -418,6 +610,12 @@ case: tao-journeys-22-d1-towards
   result: PASSED
 
 case: tao-journeys-40-d0-destinations
+  result: PASSED
+
+case: tao-journeys-40-d0-midnight
+  result: PASSED
+
+case: tao-journeys-40-d0-next_service
   result: PASSED
 
 case: tao-journeys-40-d0-pairs
@@ -435,6 +633,12 @@ case: tao-journeys-40-d0-towards
 case: tao-journeys-40-d1-destinations
   result: PASSED
 
+case: tao-journeys-40-d1-midnight
+  result: PASSED
+
+case: tao-journeys-40-d1-next_service
+  result: PASSED
+
 case: tao-journeys-40-d1-pairs
   result: PASSED
 
@@ -448,6 +652,12 @@ case: tao-journeys-40-d1-towards
   result: PASSED
 
 case: tao-journeys-41-d0-destinations
+  result: PASSED
+
+case: tao-journeys-41-d0-midnight
+  result: PASSED
+
+case: tao-journeys-41-d0-next_service
   result: PASSED
 
 case: tao-journeys-41-d0-pairs
@@ -465,6 +675,12 @@ case: tao-journeys-41-d0-towards
 case: tao-journeys-41-d1-destinations
   result: PASSED
 
+case: tao-journeys-41-d1-midnight
+  result: PASSED
+
+case: tao-journeys-41-d1-next_service
+  result: PASSED
+
 case: tao-journeys-41-d1-pairs
   result: PASSED
 
@@ -478,6 +694,12 @@ case: tao-journeys-41-d1-towards
   result: PASSED
 
 case: tao-journeys-A-d0-destinations
+  result: PASSED
+
+case: tao-journeys-A-d0-midnight
+  result: PASSED
+
+case: tao-journeys-A-d0-next_service
   result: PASSED
 
 case: tao-journeys-A-d0-pairs
@@ -495,6 +717,12 @@ case: tao-journeys-A-d0-towards
 case: tao-journeys-A-d1-destinations
   result: PASSED
 
+case: tao-journeys-A-d1-midnight
+  result: PASSED
+
+case: tao-journeys-A-d1-next_service
+  result: PASSED
+
 case: tao-journeys-A-d1-pairs
   result: PASSED
 
@@ -508,6 +736,12 @@ case: tao-journeys-A-d1-towards
   result: PASSED
 
 case: tao-journeys-B-d0-destinations
+  result: PASSED
+
+case: tao-journeys-B-d0-midnight
+  result: PASSED
+
+case: tao-journeys-B-d0-next_service
   result: PASSED
 
 case: tao-journeys-B-d0-pairs
@@ -525,6 +759,12 @@ case: tao-journeys-B-d0-towards
 case: tao-journeys-B-d1-destinations
   result: PASSED
 
+case: tao-journeys-B-d1-midnight
+  result: PASSED
+
+case: tao-journeys-B-d1-next_service
+  result: PASSED
+
 case: tao-journeys-B-d1-pairs
   result: PASSED
 
@@ -540,6 +780,12 @@ case: tao-journeys-B-d1-towards
 case: tao-journeys-N-d0-destinations
   result: PASSED
 
+case: tao-journeys-N-d0-midnight
+  result: PASSED
+
+case: tao-journeys-N-d0-next_service
+  result: PASSED
+
 case: tao-journeys-N-d0-pairs
   result: PASSED
 
@@ -553,6 +799,12 @@ case: tao-journeys-N-d0-towards
   result: PASSED
 
 case: tao-journeys-N-d1-destinations
+  result: PASSED
+
+case: tao-journeys-N-d1-midnight
+  result: PASSED
+
+case: tao-journeys-N-d1-next_service
   result: PASSED
 
 case: tao-journeys-N-d1-pairs
