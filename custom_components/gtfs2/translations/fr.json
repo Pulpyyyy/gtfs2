@@ -492,7 +492,7 @@
       "fields": {
         "config_entry": {
           "name": "Itinéraire à partir duquel extraire",
-          "description": "Select your start/stop configuration"
+          "description": "Sélectionnez votre configuration départ/arrivée"
         },
         "from_time": {
           "name": "L'heure après laquelle les départs sont récupérés",
