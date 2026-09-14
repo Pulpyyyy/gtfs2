@@ -143,15 +143,20 @@
       },
       "stops_train": {
         "data": {
-          "origin": "Abfahrtsbahnhof",
-          "destination": "Zielbahnhof",
-          "name": "Name des Sensors"
+          "origin": "Abfahrtsbahnhof"
         },
-        "description": "Der Sensor zeigt die nächsten Züge zwischen zwei Bahnhöfen.\n\n[Dokumentation]({docu_setup_train})",
+        "description": "Linie **{route}**.\n\nDer Sensor zeigt die nächsten Abfahrten zwischen zwei Bahnhöfen, in beiden Richtungen.\n\n[Dokumentation]({docu_setup_train})",
         "data_description": {
-          "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt.",
-          "destination": "Dieselbe Liste. Wählen Sie Ihr Ziel.",
-          "name": "Auf Ihrem Dashboard angezeigt, zum Beispiel `Zug nach Lille`."
+          "origin": "Von dieser Linie bediente Bahnhöfe. Ein Bahnhof erscheint einmal, auch wenn die Quelle ihn in mehrere Haltestellen aufteilt. Mischt die Linie Züge und Busse, zeigt jeder Bahnhof, welche dort halten: ein Busbahnhof mit eigenem Namen wird für sich gewählt, für eine eigene Fahrt."
+        }
+      },
+      "destination_train": {
+        "data": {
+          "destination": "Zielbahnhof"
+        },
+        "description": "Linie **{route}**.\n\nWo endet die Fahrt ab **{origin}**?\n\n[Dokumentation]({docu_setup_train})",
+        "data_description": {
+          "destination": "Nur die Bahnhöfe, die eine Fahrt dieser Linie von dort tatsächlich erreicht, werden angeboten. Mischt die Linie Züge und Busse, zeigt jeder Bahnhof, welche ihn von Ihrem Abfahrtsbahnhof aus erreichen."
         }
       },
       "sensor_train": {
@@ -159,7 +164,7 @@
           "name": "Sensorname",
           "add_return": "Auch die Rückfahrt anlegen"
         },
-        "description": "Der Sensor zeigt die nächsten Züge für **{trip}**.",
+        "description": "Der Sensor zeigt die nächsten Abfahrten für **{trip}**.",
         "data_description": {
           "name": "Aus der Linie und den Bahnhöfen vorgeschlagen, frei änderbar.",
           "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Fahrt in der Gegenrichtung."
@@ -178,6 +183,7 @@
         "title": "Sensor erstellt",
         "description": "**{name}** ist bereit und erscheint auf Ihrem Dashboard.\n\nDie meisten Netze brauchen mehrere Fahrten: eine Linie je Richtung oder zwei bis drei Linien. Sie jetzt hinzuzufügen nutzt die eben gewählte Quelle weiter.\n\n[Dokumentation]({docu_new_route})",
         "menu_options": {
+          "same_line": "Weitere Fahrt auf dieser Linie",
           "start_end": "Weitere Fahrt hinzufügen",
           "optimise": "Speicherplatz freigeben",
           "finish": "Das war es fürs Erste"
@@ -458,6 +464,8 @@
     }
   },
   "common": {
+    "mode_train": "Zug",
+    "mode_coach": "Bus",
     "extract_ready_title": "GTFS: {file} ist bereit",
     "extract_ready": "Die Quelle enthält **{routes}** Linien und **{stops}** Haltestellen.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
     "extract_failed_title": "GTFS: {file} konnte nicht entpackt werden",

@@ -282,6 +282,10 @@ CONF_DIRECTION = "direction"
 CONF_LOOP_DIRECTION = "loop_direction"
 CONF_ORIGIN = "origin"
 CONF_DESTINATION = "destination"
+# a train entry may tick several stations at each end, the coach station of
+# its replacement coaches included; origin and destination keep the first
+CONF_ORIGIN_STATIONS = "origin_stations"
+CONF_DESTINATION_STATIONS = "destination_stations"
 CONF_NAME = "name"
 CONF_LOCAL_STOP_REFRESH_INTERVAL = "local_stop_refresh_interval"
 CONF_RADIUS = "radius"

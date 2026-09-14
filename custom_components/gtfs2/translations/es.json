@@ -143,15 +143,20 @@
       },
       "stops_train": {
         "data": {
-          "origin": "Estación de salida",
-          "destination": "Estación de llegada",
-          "name": "Nombre del sensor"
+          "origin": "Estación de salida"
         },
-        "description": "El sensor mostrará los próximos trenes entre dos estaciones.\n\n[documentación]({docu_setup_train})",
+        "description": "Línea **{route}**.\n\nEl sensor mostrará las próximas salidas entre dos estaciones, en uno u otro sentido.\n\n[documentación]({docu_setup_train})",
         "data_description": {
-          "origin": "Estaciones servidas por esta línea. Una estación aparece una sola vez, aunque la fuente la divida en varias paradas.",
-          "destination": "La misma lista. Elija su destino.",
-          "name": "Se muestra en su panel, por ejemplo `Tren a Lille`."
+          "origin": "Estaciones servidas por esta línea. Una estación aparece una sola vez, aunque la fuente la divida en varias paradas. Cuando la línea mezcla trenes y autobuses, cada estación indica cuáles paran en ella: una terminal de autobuses con nombre propio se elige sola, para un trayecto aparte."
+        }
+      },
+      "destination_train": {
+        "data": {
+          "destination": "Estación de llegada"
+        },
+        "description": "Línea **{route}**.\n\n¿Dónde termina el viaje desde **{origin}**?\n\n[documentación]({docu_setup_train})",
+        "data_description": {
+          "destination": "Solo se proponen las estaciones a las que un viaje de esta línea llega realmente desde allí. Cuando la línea mezcla trenes y autobuses, cada estación indica cuáles llegan a ella desde su salida."
         }
       },
       "sensor_train": {
@@ -159,7 +164,7 @@
           "name": "Nombre del sensor",
           "add_return": "Crear también el trayecto de vuelta"
         },
-        "description": "El sensor mostrará los próximos trenes para **{trip}**.",
+        "description": "El sensor mostrará las próximas salidas para **{trip}**.",
         "data_description": {
           "name": "Propuesto a partir de la línea y las estaciones, puede cambiarlo libremente.",
           "add_return": "Un segundo sensor para **{return_trip}**, el mismo trayecto en sentido contrario."
@@ -178,6 +183,7 @@
         "title": "Sensor creado",
         "description": "**{name}** está listo y aparecerá en su panel.\n\nLa mayoría de las redes necesitan varios trayectos: una línea en cada sentido, o dos o tres líneas. Añadirlos ahora reutiliza la fuente que acaba de elegir.\n\n[documentación]({docu_new_route})",
         "menu_options": {
+          "same_line": "Otro trayecto en esta línea",
           "start_end": "Añadir otro trayecto",
           "optimise": "Liberar espacio en disco",
           "finish": "Eso es todo por ahora"
@@ -458,6 +464,8 @@
     }
   },
   "common": {
+    "mode_train": "tren",
+    "mode_coach": "autobús",
     "extract_ready_title": "GTFS: {file} está lista",
     "extract_ready": "La fuente contiene **{routes}** líneas y **{stops}** paradas.\n\nAjustes > Dispositivos y servicios > GTFS2 > Añadir entrada, luego **Añadir un trayecto entre dos paradas** para continuar.",
     "extract_failed_title": "GTFS: no se ha podido descomprimir {file}",
