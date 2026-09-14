@@ -191,6 +191,28 @@ def get_next_services(self):
     _LOGGER.debug("Next services attributes: %s", attrs)
     return attrs
     
+def _same_route(configured, seen):
+    """Whether a realtime route_id designates the configured route.
+
+    Some feeds qualify their ids, so an exact match alone is too strict and a
+    plain substring test was used instead. That test makes "Line:1" swallow
+    "Line:11", and "Line:4" swallow 40, 41, 43 and 45: the sensor then reports
+    departures of a line the user never asked for.
+
+    A qualified id still has to end on the configured one, at a separator, so
+    a longer number cannot pass for a shorter one.
+    """
+    configured, seen = str(configured or ""), str(seen or "")
+    if not configured or not seen:
+        return False
+    if configured == seen:
+        return True
+    if not seen.endswith(configured):
+        return False
+    # the character before must be a separator, never a digit or a letter
+    return not seen[-len(configured) - 1].isalnum()
+
+
 def get_rt_route_trip_statuses(self, feed_entities=None):
     ''' Get next rt departure for route (multiple) or trip (single) '''
     # explanatory logic
@@ -264,7 +286,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                 if direction_id != "nn":
                     matched = (
                         str(direction_id) == str(self._direction)
-                        and (route_id == self._route_id or self._route_id in route_id)
+                        and _same_route(self._route_id, route_id)
                     )  or trip_id in self._trip_list
                 else:
                     matched = trip_id == self._trip_id or self._trip_id in trip_id or (trip_id in self._trip_list)
