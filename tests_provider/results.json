@@ -7763,6 +7763,51 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "6759",
+            "100002",
+            "6764",
+            "7068",
+            "7067",
+            "100658",
+            "7066",
+            "6757",
+            "7065",
+            "6767",
+            "7064",
+            "6756",
+            "7063",
+            "6766",
+            "6974",
+            "7062",
+            "6768",
+            "7061",
+            "7060",
+            "6755",
+            "100657",
+            "100656",
+            "100655",
+            "100654",
+            "100897",
+            "100899",
+            "100898",
+            "100896"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -18210,6 +18255,51 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "6759",
+            "100002",
+            "6764",
+            "7068",
+            "7067",
+            "100658",
+            "7066",
+            "6757",
+            "7065",
+            "6767",
+            "7064",
+            "6756",
+            "7063",
+            "6766",
+            "6974",
+            "7062",
+            "6768",
+            "7061",
+            "7060",
+            "6755",
+            "100657",
+            "100656",
+            "100655",
+            "100654",
+            "100897",
+            "100899",
+            "100898",
+            "100896"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -21454,6 +21544,63 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "3478",
+            "3463",
+            "3461",
+            "3452",
+            "3441",
+            "100083",
+            "2217",
+            "1426",
+            "1342",
+            "1266",
+            "1212",
+            "1130",
+            "1065",
+            "1034",
+            "980",
+            "940",
+            "902",
+            "100492",
+            "6914",
+            "100065",
+            "821",
+            "100066",
+            "779",
+            "100807",
+            "100491",
+            "913",
+            "933",
+            "986",
+            "1031",
+            "1067",
+            "1133",
+            "1206",
+            "1255",
+            "1336",
+            "1418",
+            "2220",
+            "7297",
+            "3446",
+            "3457",
+            "3473"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -22413,6 +22560,63 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "3478",
+            "3463",
+            "3461",
+            "3452",
+            "3441",
+            "100083",
+            "2217",
+            "1426",
+            "1342",
+            "1266",
+            "1212",
+            "1130",
+            "1065",
+            "1034",
+            "980",
+            "940",
+            "902",
+            "100492",
+            "6914",
+            "100065",
+            "821",
+            "100066",
+            "779",
+            "100807",
+            "100491",
+            "913",
+            "933",
+            "986",
+            "1031",
+            "1067",
+            "1133",
+            "1206",
+            "1255",
+            "1336",
+            "1418",
+            "2220",
+            "7297",
+            "3446",
+            "3457",
+            "3473"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -31869,6 +32073,62 @@
         },
         {
           "ok": true,
+          "shut": [
+            "4015830"
+          ],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [
+            "4015830"
+          ],
+          "text": "places nobody gets on at, left out of the origin list: 4015830 Amsterdam, Surinameplein"
+        },
+        {
+          "offered": [
+            "3981002",
+            "3980722",
+            "3980085",
+            "3979714",
+            "3981150",
+            "3980474",
+            "3980650",
+            "3979740",
+            "3981350",
+            "3980492",
+            "3980725",
+            "4055958",
+            "3980305",
+            "3980714",
+            "3980593",
+            "3980752",
+            "3980596",
+            "3979838",
+            "3979746",
+            "3980394",
+            "3980919",
+            "3981186",
+            "3981380",
+            "4138837",
+            "3980187",
+            "3979846",
+            "3981181",
+            "3979766",
+            "3980498",
+            "3980814",
+            "3981021",
+            "3981412",
+            "3980107",
+            "3980764",
+            "3979810"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -37084,6 +37344,62 @@
         },
         {
           "ok": true,
+          "shut": [
+            "4015830"
+          ],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [
+            "4015830"
+          ],
+          "text": "places nobody gets on at, left out of the origin list: 4015830 Amsterdam, Surinameplein"
+        },
+        {
+          "offered": [
+            "3981002",
+            "3980722",
+            "3980085",
+            "3979714",
+            "3981150",
+            "3980474",
+            "3980650",
+            "3979740",
+            "3981350",
+            "3980492",
+            "3980725",
+            "4055958",
+            "3980305",
+            "3980714",
+            "3980593",
+            "3980752",
+            "3980596",
+            "3979838",
+            "3979746",
+            "3980394",
+            "3980919",
+            "3981186",
+            "3981380",
+            "4138837",
+            "3980187",
+            "3979846",
+            "3981181",
+            "3979766",
+            "3980498",
+            "3980814",
+            "3981021",
+            "3981412",
+            "3980107",
+            "3980764",
+            "3979810"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -40944,6 +41260,53 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "3980106",
+            "3979744",
+            "3979970",
+            "3980246",
+            "3980252",
+            "3981165",
+            "3980162",
+            "3980974",
+            "3980794",
+            "3979843",
+            "3979733",
+            "3981282",
+            "3980806",
+            "3980798",
+            "3980831",
+            "3981334",
+            "3980128",
+            "3980013",
+            "3980379",
+            "3981063",
+            "3980938",
+            "3979966",
+            "3979684",
+            "3979948",
+            "3980254",
+            "3980250",
+            "3980438",
+            "3979903",
+            "3980052",
+            "3981133"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -44712,6 +45075,53 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "3980106",
+            "3979744",
+            "3979970",
+            "3980246",
+            "3980252",
+            "3981165",
+            "3980162",
+            "3980974",
+            "3980794",
+            "3979843",
+            "3979733",
+            "3981282",
+            "3980806",
+            "3980798",
+            "3980831",
+            "3981334",
+            "3980128",
+            "3980013",
+            "3980379",
+            "3981063",
+            "3980938",
+            "3979966",
+            "3979684",
+            "3979948",
+            "3980254",
+            "3980250",
+            "3980438",
+            "3979903",
+            "3980052",
+            "3981133"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -49371,6 +49781,44 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "3980163",
+            "3980679",
+            "3979712",
+            "3980296",
+            "4015485",
+            "4015594",
+            "4015630",
+            "3979799",
+            "3981356",
+            "3981124",
+            "3980499",
+            "3980549",
+            "3979768",
+            "3979886",
+            "3980771",
+            "3980239",
+            "3979798",
+            "3980213",
+            "3980489",
+            "3979826",
+            "4045456"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -54206,6 +54654,44 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "3980163",
+            "3980679",
+            "3979712",
+            "3980296",
+            "4015485",
+            "4015594",
+            "4015630",
+            "3979799",
+            "3981356",
+            "3981124",
+            "3980499",
+            "3980549",
+            "3979768",
+            "3979886",
+            "3980771",
+            "3980239",
+            "3979798",
+            "3980213",
+            "3980489",
+            "3979826",
+            "4045456"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -58640,6 +59126,50 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "4015830",
+            "3980351",
+            "3980728",
+            "3979971",
+            "3980240",
+            "3980933",
+            "3980231",
+            "3980050",
+            "3981436",
+            "3980220",
+            "3979725",
+            "3980601",
+            "3980714",
+            "3980593",
+            "3981140",
+            "3980235",
+            "3979838",
+            "3979746",
+            "3980126",
+            "3980180",
+            "3981406",
+            "3980183",
+            "3980418",
+            "3980562",
+            "3979806",
+            "3981370",
+            "3981271"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -62197,6 +62727,50 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "4015830",
+            "3980351",
+            "3980728",
+            "3979971",
+            "3980240",
+            "3980933",
+            "3980231",
+            "3980050",
+            "3981436",
+            "3980220",
+            "3979725",
+            "3980601",
+            "3980714",
+            "3980593",
+            "3981140",
+            "3980235",
+            "3979838",
+            "3979746",
+            "3980126",
+            "3980180",
+            "3981406",
+            "3980183",
+            "3980418",
+            "3980562",
+            "3979806",
+            "3981370",
+            "3981271"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -66781,6 +67355,57 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "3979878",
+            "3980195",
+            "3979951",
+            "3980163",
+            "3980679",
+            "3979712",
+            "3981051",
+            "4015485",
+            "4015594",
+            "4015630",
+            "3980915",
+            "3980899",
+            "3980631",
+            "3980004",
+            "3979897",
+            "3980469",
+            "3980379",
+            "3980013",
+            "3980831",
+            "3980235",
+            "3981140",
+            "3980593",
+            "3980270",
+            "3980060",
+            "3979816",
+            "3980149",
+            "3980176",
+            "3980413",
+            "3980572",
+            "3980564",
+            "3979909",
+            "3979969",
+            "3980825",
+            "3980102"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -70829,6 +71454,57 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "3979878",
+            "3980195",
+            "3979951",
+            "3980163",
+            "3980679",
+            "3979712",
+            "3981051",
+            "4015485",
+            "4015594",
+            "4015630",
+            "3980915",
+            "3980899",
+            "3980631",
+            "3980004",
+            "3979897",
+            "3980469",
+            "3980379",
+            "3980013",
+            "3980831",
+            "3980235",
+            "3981140",
+            "3980593",
+            "3980270",
+            "3980060",
+            "3979816",
+            "3980149",
+            "3980176",
+            "3980413",
+            "3980572",
+            "3980564",
+            "3979909",
+            "3979969",
+            "3980825",
+            "3980102"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -71901,8 +72577,8 @@
         },
         {
           "asked": {
-            "at": "2026-09-06T23:50:00+02:00",
-            "stop": "3979810"
+            "at": "2026-09-20T23:50:00+02:00",
+            "stop": "3979838"
           },
           "got": {
             "extra": 0,
@@ -71910,12 +72586,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-06 23:50, stop 3979810: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-20 23:50, stop 3979838: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
-            "at": "2026-09-07T00:32:42+02:00",
-            "stop": "3979810"
+            "at": "2026-09-21T00:31:11+02:00",
+            "stop": "3979838"
           },
           "got": {
             "extra": 0,
@@ -71923,285 +72599,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-07 00:32, stop 3979810: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3979843"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3979843: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:34:00+02:00",
-            "stop": "3979843"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:34, stop 3979843: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3979852"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3979852: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:06:21+02:00",
-            "stop": "3979852"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:06, stop 3979852: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3979937"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3979937: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:00:53+02:00",
-            "stop": "3979937"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:00, stop 3979937: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3979970"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3979970: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:44:39+02:00",
-            "stop": "3979970"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:44, stop 3979970: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980012"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980012: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-27T00:00:30+02:00",
-            "stop": "3980012"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-27 00:00, stop 3980012: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980043"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980043: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-27T00:00:30+02:00",
-            "stop": "3980043"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-27 00:00, stop 3980043: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980062"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980062: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-27T00:04:11+02:00",
-            "stop": "3980062"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-27 00:04, stop 3980062: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980106"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980106: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:46:42+02:00",
-            "stop": "3980106"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:46, stop 3980106: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980122"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980122: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:02:08+02:00",
-            "stop": "3980122"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:02, stop 3980122: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980162"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980162: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:37:40+02:00",
-            "stop": "3980162"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:37, stop 3980162: the feed has 2 in the next 60 min, got 2"
+          "text": "before the call on 2026-09-21 00:31, stop 3979838: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-06T23:50:00+02:00",
-            "stop": "3980183"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-06 23:50, stop 3980183: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-07T00:43:45+02:00",
-            "stop": "3980183"
+            "stop": "3979846"
           },
           "got": {
             "extra": 0,
@@ -72209,12 +72612,25 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-07 00:43, stop 3980183: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3979846: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:17:42+02:00",
+            "stop": "3979846"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:17, stop 3979846: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980220"
+            "stop": "3979897"
           },
           "got": {
             "extra": 0,
@@ -72222,12 +72638,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980220: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3979897: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
-            "at": "2026-09-15T00:27:28+02:00",
-            "stop": "3980220"
+            "at": "2026-09-15T00:14:12+02:00",
+            "stop": "3979897"
           },
           "got": {
             "extra": 0,
@@ -72235,90 +72651,272 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-15 00:27, stop 3980220: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980246"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980246: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:43:30+02:00",
-            "stop": "3980246"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:43, stop 3980246: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980254"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980254: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:24:00+02:00",
-            "stop": "3980254"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:24, stop 3980254: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980295"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980295: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:00:30+02:00",
-            "stop": "3980295"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:00, stop 3980295: the feed has 1 in the next 60 min, got 1"
+          "text": "before the call on 2026-09-15 00:14, stop 3979897: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-30T23:50:00+02:00",
-            "stop": "3980379"
+            "stop": "3979948"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, stop 3979948: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:39:30+02:00",
+            "stop": "3979948"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:39, stop 3979948: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980004"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980004: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:12:34+02:00",
+            "stop": "3980004"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:12, stop 3980004: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980013"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980013: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:25:55+02:00",
+            "stop": "3980013"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:25, stop 3980013: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980050"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980050: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:29:29+02:00",
+            "stop": "3980050"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:29, stop 3980050: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980090"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980090: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:02:00+02:00",
+            "stop": "3980090"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:02, stop 3980090: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980113"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980113: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:37:27+02:00",
+            "stop": "3980113"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:37, stop 3980113: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980128"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980128: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:51+02:00",
+            "stop": "3980128"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980128: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980182"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980182: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:15:17+02:00",
+            "stop": "3980182"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:15, stop 3980182: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980204"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980204: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:34:18+02:00",
+            "stop": "3980204"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:34, stop 3980204: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "stop": "3980235"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, stop 3980235: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:32:51+02:00",
+            "stop": "3980235"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:32, stop 3980235: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980252"
           },
           "got": {
             "extra": 0,
@@ -72326,25 +72924,25 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-30 23:50, stop 3980379: the feed has 0 in the next 60 min, got 0"
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980252: the feed has 0 in the next 60 min, got 0"
         },
         {
           "asked": {
-            "at": "2026-10-01T00:49:30+02:00",
-            "stop": "3980379"
+            "at": "2026-09-01T00:41:13+02:00",
+            "stop": "3980252"
           },
           "got": {
             "extra": 0,
-            "listed": 1,
+            "listed": 2,
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-10-01 00:49, stop 3980379: the feed has 1 in the next 60 min, got 1"
+          "text": "before the call on 2026-09-01 00:41, stop 3980252: the feed has 2 in the next 60 min, got 2"
         },
         {
           "asked": {
             "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980464"
+            "stop": "3980268"
           },
           "got": {
             "extra": 0,
@@ -72352,12 +72950,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980464: the feed has 2 in the next 60 min, got 2"
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980268: the feed has 2 in the next 60 min, got 2"
         },
         {
           "asked": {
-            "at": "2026-09-01T00:00:30+02:00",
-            "stop": "3980464"
+            "at": "2026-09-01T00:03:00+02:00",
+            "stop": "3980268"
           },
           "got": {
             "extra": 0,
@@ -72365,12 +72963,64 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-01 00:00, stop 3980464: the feed has 2 in the next 60 min, got 2"
+          "text": "before the call on 2026-09-01 00:03, stop 3980268: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980349"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980349: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:09:19+02:00",
+            "stop": "3980349"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:09, stop 3980349: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980438"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980438: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:21:05+02:00",
+            "stop": "3980438"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:21, stop 3980438: the feed has 2 in the next 60 min, got 2"
         },
         {
           "asked": {
             "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980484"
+            "stop": "3980480"
           },
           "got": {
             "extra": 0,
@@ -72378,12 +73028,194 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980484: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980480: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:32:30+02:00",
+            "stop": "3980480"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:32, stop 3980480: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980535"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980535: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:04:56+02:00",
+            "stop": "3980535"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:04, stop 3980535: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980579"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980579: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980579"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980579: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980596"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980596: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:11:09+02:00",
+            "stop": "3980596"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:11, stop 3980596: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980605"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980605: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:33:53+02:00",
+            "stop": "3980605"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:33, stop 3980605: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980651"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980651: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:05:45+02:00",
+            "stop": "3980651"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:05, stop 3980651: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980707"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980707: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980707"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980707: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980720"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980720: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-27T00:00:30+02:00",
-            "stop": "3980484"
+            "stop": "3980720"
           },
           "got": {
             "extra": 0,
@@ -72391,189 +73223,7 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-27 00:00, stop 3980484: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980544"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980544: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:00:30+02:00",
-            "stop": "3980544"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:00, stop 3980544: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980590"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980590: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:06:57+02:00",
-            "stop": "3980590"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:06, stop 3980590: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980598"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980598: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:07:10+02:00",
-            "stop": "3980598"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:07, stop 3980598: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980629"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980629: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-27T00:36:29+02:00",
-            "stop": "3980629"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-27 00:36, stop 3980629: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980663"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980663: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:00:30+02:00",
-            "stop": "3980663"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:00, stop 3980663: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980711"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980711: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:40:20+02:00",
-            "stop": "3980711"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:40, stop 3980711: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980743"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980743: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:40:42+02:00",
-            "stop": "3980743"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:40, stop 3980743: the feed has 1 in the next 60 min, got 1"
+          "text": "before the call on 2026-09-27 00:00, stop 3980720: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
@@ -72707,21 +73357,60 @@
         },
         {
           "asked": {
-            "at": "2026-09-06T23:50:00+02:00",
-            "stop": "3981021"
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981052"
           },
           "got": {
             "extra": 0,
-            "listed": 1,
+            "listed": 2,
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-06 23:50, stop 3981021: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981052: the feed has 2 in the next 60 min, got 2"
         },
         {
           "asked": {
-            "at": "2026-09-07T00:25:58+02:00",
-            "stop": "3981021"
+            "at": "2026-09-01T00:11:13+02:00",
+            "stop": "3981052"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:11, stop 3981052: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981133"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981133: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:15:00+02:00",
+            "stop": "3981133"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:15, stop 3981133: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3981181"
           },
           "got": {
             "extra": 0,
@@ -72729,12 +73418,103 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-07 00:25, stop 3981021: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3981181: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:19:39+02:00",
+            "stop": "3981181"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:19, stop 3981181: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3981271"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3981271: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:35:00+02:00",
+            "stop": "3981271"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:35, stop 3981271: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981334"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981334: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3981334"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3981334: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3981406"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3981406: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:44:32+02:00",
+            "stop": "3981406"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:44, stop 3981406: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3981110"
+            "stop": "4015596"
           },
           "got": {
             "extra": 0,
@@ -72742,12 +73522,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3981110: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-26 23:50, stop 4015596: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
-            "at": "2026-09-27T00:28:28+02:00",
-            "stop": "3981110"
+            "at": "2026-09-27T00:30:24+02:00",
+            "stop": "4015596"
           },
           "got": {
             "extra": 0,
@@ -72755,111 +73535,7 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-27 00:28, stop 3981110: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3981165"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3981165: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:39:00+02:00",
-            "stop": "3981165"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:39, stop 3981165: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3981217"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3981217: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:38:38+02:00",
-            "stop": "3981217"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:38, stop 3981217: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3981287"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3981287: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:02:00+02:00",
-            "stop": "3981287"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:02, stop 3981287: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3981380"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3981380: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:19:49+02:00",
-            "stop": "3981380"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:19, stop 3981380: the feed has 1 in the next 60 min, got 1"
+          "text": "before the call on 2026-09-27 00:30, stop 4015596: the feed has 1 in the next 60 min, got 1"
         }
       ],
       "fixture": "gvb",
@@ -72951,8 +73627,8 @@
         },
         {
           "asked": {
-            "at": "2026-09-06T23:50:00+02:00",
-            "stop": "3979810"
+            "at": "2026-09-20T23:50:00+02:00",
+            "stop": "3979838"
           },
           "got": {
             "extra": 0,
@@ -72960,12 +73636,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-06 23:50, stop 3979810: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-20 23:50, stop 3979838: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
-            "at": "2026-09-07T00:32:42+02:00",
-            "stop": "3979810"
+            "at": "2026-09-21T00:31:11+02:00",
+            "stop": "3979838"
           },
           "got": {
             "extra": 0,
@@ -72973,285 +73649,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-07 00:32, stop 3979810: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3979843"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3979843: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:34:00+02:00",
-            "stop": "3979843"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:34, stop 3979843: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3979852"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3979852: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:06:21+02:00",
-            "stop": "3979852"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:06, stop 3979852: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3979937"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3979937: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:00:53+02:00",
-            "stop": "3979937"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:00, stop 3979937: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3979970"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3979970: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:44:39+02:00",
-            "stop": "3979970"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:44, stop 3979970: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980012"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980012: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-27T00:00:30+02:00",
-            "stop": "3980012"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-27 00:00, stop 3980012: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980043"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980043: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-27T00:00:30+02:00",
-            "stop": "3980043"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-27 00:00, stop 3980043: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980062"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980062: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-27T00:04:11+02:00",
-            "stop": "3980062"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-27 00:04, stop 3980062: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980106"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980106: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:46:42+02:00",
-            "stop": "3980106"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:46, stop 3980106: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980122"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980122: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:02:08+02:00",
-            "stop": "3980122"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:02, stop 3980122: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980162"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980162: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:37:40+02:00",
-            "stop": "3980162"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:37, stop 3980162: the feed has 2 in the next 60 min, got 2"
+          "text": "before the call on 2026-09-21 00:31, stop 3979838: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-06T23:50:00+02:00",
-            "stop": "3980183"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-06 23:50, stop 3980183: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-07T00:43:45+02:00",
-            "stop": "3980183"
+            "stop": "3979846"
           },
           "got": {
             "extra": 0,
@@ -73259,12 +73662,25 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-07 00:43, stop 3980183: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3979846: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:17:42+02:00",
+            "stop": "3979846"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:17, stop 3979846: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980220"
+            "stop": "3979897"
           },
           "got": {
             "extra": 0,
@@ -73272,12 +73688,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980220: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3979897: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
-            "at": "2026-09-15T00:27:28+02:00",
-            "stop": "3980220"
+            "at": "2026-09-15T00:14:12+02:00",
+            "stop": "3979897"
           },
           "got": {
             "extra": 0,
@@ -73285,90 +73701,272 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-15 00:27, stop 3980220: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980246"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980246: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:43:30+02:00",
-            "stop": "3980246"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:43, stop 3980246: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980254"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980254: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:24:00+02:00",
-            "stop": "3980254"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:24, stop 3980254: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980295"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980295: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:00:30+02:00",
-            "stop": "3980295"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:00, stop 3980295: the feed has 1 in the next 60 min, got 1"
+          "text": "before the call on 2026-09-15 00:14, stop 3979897: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-30T23:50:00+02:00",
-            "stop": "3980379"
+            "stop": "3979948"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, stop 3979948: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:39:30+02:00",
+            "stop": "3979948"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:39, stop 3979948: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980004"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980004: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:12:34+02:00",
+            "stop": "3980004"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:12, stop 3980004: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980013"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980013: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:25:55+02:00",
+            "stop": "3980013"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:25, stop 3980013: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980050"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980050: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:29:29+02:00",
+            "stop": "3980050"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:29, stop 3980050: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980090"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980090: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:02:00+02:00",
+            "stop": "3980090"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:02, stop 3980090: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980113"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980113: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:37:27+02:00",
+            "stop": "3980113"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:37, stop 3980113: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980128"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980128: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:51+02:00",
+            "stop": "3980128"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980128: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980182"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980182: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:15:17+02:00",
+            "stop": "3980182"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:15, stop 3980182: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980204"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980204: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:34:18+02:00",
+            "stop": "3980204"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:34, stop 3980204: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "stop": "3980235"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, stop 3980235: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:32:51+02:00",
+            "stop": "3980235"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:32, stop 3980235: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980252"
           },
           "got": {
             "extra": 0,
@@ -73376,25 +73974,25 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-30 23:50, stop 3980379: the feed has 0 in the next 60 min, got 0"
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980252: the feed has 0 in the next 60 min, got 0"
         },
         {
           "asked": {
-            "at": "2026-10-01T00:49:30+02:00",
-            "stop": "3980379"
+            "at": "2026-09-01T00:41:13+02:00",
+            "stop": "3980252"
           },
           "got": {
             "extra": 0,
-            "listed": 1,
+            "listed": 2,
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-10-01 00:49, stop 3980379: the feed has 1 in the next 60 min, got 1"
+          "text": "before the call on 2026-09-01 00:41, stop 3980252: the feed has 2 in the next 60 min, got 2"
         },
         {
           "asked": {
             "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980464"
+            "stop": "3980268"
           },
           "got": {
             "extra": 0,
@@ -73402,12 +74000,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980464: the feed has 2 in the next 60 min, got 2"
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980268: the feed has 2 in the next 60 min, got 2"
         },
         {
           "asked": {
-            "at": "2026-09-01T00:00:30+02:00",
-            "stop": "3980464"
+            "at": "2026-09-01T00:03:00+02:00",
+            "stop": "3980268"
           },
           "got": {
             "extra": 0,
@@ -73415,12 +74013,64 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-01 00:00, stop 3980464: the feed has 2 in the next 60 min, got 2"
+          "text": "before the call on 2026-09-01 00:03, stop 3980268: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980349"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980349: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:09:19+02:00",
+            "stop": "3980349"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:09, stop 3980349: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980438"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980438: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:21:05+02:00",
+            "stop": "3980438"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:21, stop 3980438: the feed has 2 in the next 60 min, got 2"
         },
         {
           "asked": {
             "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980484"
+            "stop": "3980480"
           },
           "got": {
             "extra": 0,
@@ -73428,12 +74078,194 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980484: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980480: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:32:30+02:00",
+            "stop": "3980480"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:32, stop 3980480: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980535"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980535: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:04:56+02:00",
+            "stop": "3980535"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:04, stop 3980535: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980579"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980579: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980579"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980579: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980596"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980596: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:11:09+02:00",
+            "stop": "3980596"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:11, stop 3980596: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980605"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980605: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:33:53+02:00",
+            "stop": "3980605"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:33, stop 3980605: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "stop": "3980651"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, stop 3980651: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:05:45+02:00",
+            "stop": "3980651"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:05, stop 3980651: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3980707"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3980707: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3980707"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3980707: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "stop": "3980720"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, stop 3980720: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-27T00:00:30+02:00",
-            "stop": "3980484"
+            "stop": "3980720"
           },
           "got": {
             "extra": 0,
@@ -73441,189 +74273,7 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-27 00:00, stop 3980484: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980544"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980544: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:00:30+02:00",
-            "stop": "3980544"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:00, stop 3980544: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980590"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980590: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:06:57+02:00",
-            "stop": "3980590"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:06, stop 3980590: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980598"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980598: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:07:10+02:00",
-            "stop": "3980598"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:07, stop 3980598: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3980629"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3980629: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-27T00:36:29+02:00",
-            "stop": "3980629"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-27 00:36, stop 3980629: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3980663"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3980663: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:00:30+02:00",
-            "stop": "3980663"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:00, stop 3980663: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980711"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980711: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:40:20+02:00",
-            "stop": "3980711"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:40, stop 3980711: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3980743"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3980743: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:40:42+02:00",
-            "stop": "3980743"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:40, stop 3980743: the feed has 1 in the next 60 min, got 1"
+          "text": "before the call on 2026-09-27 00:00, stop 3980720: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
@@ -73757,21 +74407,60 @@
         },
         {
           "asked": {
-            "at": "2026-09-06T23:50:00+02:00",
-            "stop": "3981021"
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981052"
           },
           "got": {
             "extra": 0,
-            "listed": 1,
+            "listed": 2,
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-06 23:50, stop 3981021: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981052: the feed has 2 in the next 60 min, got 2"
         },
         {
           "asked": {
-            "at": "2026-09-07T00:25:58+02:00",
-            "stop": "3981021"
+            "at": "2026-09-01T00:11:13+02:00",
+            "stop": "3981052"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:11, stop 3981052: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981133"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981133: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:15:00+02:00",
+            "stop": "3981133"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:15, stop 3981133: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3981181"
           },
           "got": {
             "extra": 0,
@@ -73779,12 +74468,103 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-07 00:25, stop 3981021: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3981181: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:19:39+02:00",
+            "stop": "3981181"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:19, stop 3981181: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3981271"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3981271: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:35:00+02:00",
+            "stop": "3981271"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:35, stop 3981271: the feed has 1 in the next 60 min, got 1"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "stop": "3981334"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, stop 3981334: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "stop": "3981334"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 2,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, stop 3981334: the feed has 2 in the next 60 min, got 2"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "stop": "3981406"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 0,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, stop 3981406: the feed has 0 in the next 60 min, got 0"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:44:32+02:00",
+            "stop": "3981406"
+          },
+          "got": {
+            "extra": 0,
+            "listed": 1,
+            "missing": 0
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:44, stop 3981406: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
             "at": "2026-09-26T23:50:00+02:00",
-            "stop": "3981110"
+            "stop": "4015596"
           },
           "got": {
             "extra": 0,
@@ -73792,12 +74572,12 @@
             "missing": 0
           },
           "ok": true,
-          "text": "at 23:50 on 2026-09-26 23:50, stop 3981110: the feed has 1 in the next 60 min, got 1"
+          "text": "at 23:50 on 2026-09-26 23:50, stop 4015596: the feed has 1 in the next 60 min, got 1"
         },
         {
           "asked": {
-            "at": "2026-09-27T00:28:28+02:00",
-            "stop": "3981110"
+            "at": "2026-09-27T00:30:24+02:00",
+            "stop": "4015596"
           },
           "got": {
             "extra": 0,
@@ -73805,111 +74585,7 @@
             "missing": 0
           },
           "ok": true,
-          "text": "before the call on 2026-09-27 00:28, stop 3981110: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3981165"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3981165: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:39:00+02:00",
-            "stop": "3981165"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:39, stop 3981165: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3981217"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3981217: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:38:38+02:00",
-            "stop": "3981217"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:38, stop 3981217: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-31T23:50:00+02:00",
-            "stop": "3981287"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 2,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-31 23:50, stop 3981287: the feed has 2 in the next 60 min, got 2"
-        },
-        {
-          "asked": {
-            "at": "2026-09-01T00:02:00+02:00",
-            "stop": "3981287"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-01 00:02, stop 3981287: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-14T23:50:00+02:00",
-            "stop": "3981380"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-09-14 23:50, stop 3981380: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-09-15T00:19:49+02:00",
-            "stop": "3981380"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-09-15 00:19, stop 3981380: the feed has 1 in the next 60 min, got 1"
+          "text": "before the call on 2026-09-27 00:30, stop 4015596: the feed has 1 in the next 60 min, got 1"
         }
       ],
       "fixture": "gvb",
@@ -76738,6 +77414,44 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "HDV08A",
+            "GMA0AR",
+            "RSE0AA",
+            "GSNF0R",
+            "HSIM6A",
+            "PTRE6A",
+            "GAL01A",
+            "VOLT0A",
+            "CDTV6R",
+            "PGA01R",
+            "ZAM01R",
+            "PAL01R",
+            "CAP01R",
+            "NDPI01",
+            "PAR01A",
+            "LPE01A",
+            "GAZ01A",
+            "GAZ01B",
+            "ALE01A",
+            "CAL01A",
+            "CIR01R"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -79091,6 +79805,65 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "TRAY0R",
+            "PLA22R",
+            "MIR22D",
+            "POR22A",
+            "VIL22R",
+            "LOO22R",
+            "ROC22R",
+            "ESQ22R",
+            "CRX22R",
+            "GAL22R",
+            "CAM22R",
+            "ABE22R",
+            "SAN22A",
+            "THEC0A",
+            "ISL22R",
+            "THEG0A",
+            "RAG22R",
+            "MIN22R",
+            "PRA16A",
+            "PNA16A",
+            "RPO16A",
+            "PSIAGR",
+            "PLRO0R",
+            "BDMMBA",
+            "EROMAN",
+            "CMID0A",
+            "LMOR0A",
+            "KI310A",
+            "KI290A",
+            "VERR0A",
+            "PROC0A",
+            "MMER0A",
+            "MLEA0A",
+            "MCOL0A",
+            "MNAD0A",
+            "JHIB0A",
+            "MEDI8A",
+            "PMID0A",
+            "HDV08A",
+            "GMA0AR",
+            "RSE0AA",
+            "GSNF0R"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -81865,6 +82638,65 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "TRAY0R",
+            "PLA22R",
+            "MIR22D",
+            "POR22A",
+            "VIL22R",
+            "LOO22R",
+            "ROC22R",
+            "ESQ22R",
+            "CRX22R",
+            "GAL22R",
+            "CAM22R",
+            "ABE22R",
+            "SAN22A",
+            "THEC0A",
+            "ISL22R",
+            "THEG0A",
+            "RAG22R",
+            "MIN22R",
+            "PRA16A",
+            "PNA16A",
+            "RPO16A",
+            "PSIAGR",
+            "PLRO0R",
+            "BDMMBA",
+            "EROMAN",
+            "CMID0A",
+            "LMOR0A",
+            "KI310A",
+            "KI290A",
+            "VERR0A",
+            "PROC0A",
+            "MMER0A",
+            "MLEA0A",
+            "MCOL0A",
+            "MNAD0A",
+            "JHIB0A",
+            "MEDI8A",
+            "PMID0A",
+            "HDV08A",
+            "GMA0AR",
+            "RSE0AA",
+            "GSNF0R"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -83565,6 +84397,61 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "CCO15A",
+            "EDENPA",
+            "LEOS2A",
+            "CANS2R",
+            "RPES1A",
+            "THE15R",
+            "CHVI0A",
+            "GRM15R",
+            "CUL15R",
+            "EUC15R",
+            "MIR15A",
+            "PASS0A",
+            "CAP15B",
+            "RBR17R",
+            "LST17R",
+            "SOL17R",
+            "RPC17R",
+            "BLER0A",
+            "PAT17R",
+            "PPO20A",
+            "COU0AA",
+            "MGA0AA",
+            "SJE20A",
+            "PMA0AA",
+            "MAN0AA",
+            "STM0AA",
+            "MER0AA",
+            "BLE0AA",
+            "PPI0AA",
+            "BEA0AA",
+            "PSP0AA",
+            "VAL0AA",
+            "LRI0AA",
+            "RPO0AA",
+            "HDV08R",
+            "GMA0AA",
+            "RSE0AR",
+            "GSNF0A"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -84987,6 +85874,61 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "CCO15A",
+            "EDENPA",
+            "LEOS2A",
+            "CANS2R",
+            "RPES1A",
+            "THE15R",
+            "CHVI0A",
+            "GRM15R",
+            "CUL15R",
+            "EUC15R",
+            "MIR15A",
+            "PASS0A",
+            "CAP15B",
+            "RBR17R",
+            "LST17R",
+            "SOL17R",
+            "RPC17R",
+            "BLER0A",
+            "PAT17R",
+            "PPO20A",
+            "COU0AA",
+            "MGA0AA",
+            "SJE20A",
+            "PMA0AA",
+            "MAN0AA",
+            "STM0AA",
+            "MER0AA",
+            "BLE0AA",
+            "PPI0AA",
+            "BEA0AA",
+            "PSP0AA",
+            "VAL0AA",
+            "LRI0AA",
+            "RPO0AA",
+            "HDV08R",
+            "GMA0AA",
+            "RSE0AR",
+            "GSNF0A"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -88236,6 +89178,55 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "GSNF0R",
+            "PVA0AR",
+            "MEU0AR",
+            "MIL0AR",
+            "LCA0AR",
+            "PDO0AR",
+            "SEV06R",
+            "MADR6A",
+            "HOWA6R",
+            "NDAN6R",
+            "BDNO6R",
+            "MRO35R",
+            "PRO11R",
+            "LLA01R",
+            "LIC01R",
+            "OLI01R",
+            "LRO01A",
+            "CJA01R",
+            "VFE01R",
+            "BLAN0D",
+            "CABR0R",
+            "VAUM0R",
+            "CREM0R",
+            "CCAS0A",
+            "VALM0R",
+            "JUYE0R",
+            "CMOU0R",
+            "TOUR0R",
+            "STMARR",
+            "VICA0R",
+            "GOUR0R",
+            "MSCE0A"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -92879,6 +93870,55 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "GSNF0R",
+            "PVA0AR",
+            "MEU0AR",
+            "MIL0AR",
+            "LCA0AR",
+            "PDO0AR",
+            "SEV06R",
+            "MADR6A",
+            "HOWA6R",
+            "NDAN6R",
+            "BDNO6R",
+            "MRO35R",
+            "PRO11R",
+            "LLA01R",
+            "LIC01R",
+            "OLI01R",
+            "LRO01A",
+            "CJA01R",
+            "VFE01R",
+            "BLAN0D",
+            "CABR0R",
+            "VAUM0R",
+            "CREM0R",
+            "CCAS0A",
+            "VALM0R",
+            "JUYE0R",
+            "CMOU0R",
+            "TOUR0R",
+            "STMARR",
+            "VICA0R",
+            "GOUR0R",
+            "MSCE0A"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -101188,370 +102228,6 @@
           },
           "ok": true,
           "text": "before the call on 2026-12-05 00:26, stop StopPoint:OCECar TER-87582643: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-12-04T23:50:00+01:00",
-            "stop": "StopPoint:OCECar TER-87582668"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582668: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-12-05T00:38:00+01:00",
-            "stop": "StopPoint:OCECar TER-87582668"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-12-05 00:38, stop StopPoint:OCECar TER-87582668: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611004"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611004: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T07:03:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611004"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 07:03, stop StopPoint:OCEINTERCITES de nuit-87611004: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611343"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611343: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:05:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611343"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:05, stop StopPoint:OCEINTERCITES de nuit-87611343: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611368"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611368: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T07:49:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611368"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 07:49, stop StopPoint:OCEINTERCITES de nuit-87611368: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611384"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611384: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T07:35:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611384"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 07:35, stop StopPoint:OCEINTERCITES de nuit-87611384: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611483"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611483: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T10:00:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611483"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 10:00, stop StopPoint:OCEINTERCITES de nuit-87611483: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611509"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611509: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T09:43:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611509"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 09:43, stop StopPoint:OCEINTERCITES de nuit-87611509: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611517"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611517: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T09:35:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611517"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 09:35, stop StopPoint:OCEINTERCITES de nuit-87611517: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611525"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611525: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T09:20:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611525"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 09:20, stop StopPoint:OCEINTERCITES de nuit-87611525: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611533"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611533: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T09:07:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611533"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 09:07, stop StopPoint:OCEINTERCITES de nuit-87611533: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611558"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611558: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:56:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611558"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:56, stop StopPoint:OCEINTERCITES de nuit-87611558: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611574"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611574: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:48:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611574"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:48, stop StopPoint:OCEINTERCITES de nuit-87611574: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611590"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611590: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:37:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611590"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:37, stop StopPoint:OCEINTERCITES de nuit-87611590: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611616"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611616: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:20:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611616"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:20, stop StopPoint:OCEINTERCITES de nuit-87611616: the feed has 1 in the next 60 min, got 1"
         }
       ],
       "fixture": "sncf",
@@ -101692,370 +102368,6 @@
           },
           "ok": true,
           "text": "before the call on 2026-12-05 00:26, stop StopPoint:OCECar TER-87582643: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-12-04T23:50:00+01:00",
-            "stop": "StopPoint:OCECar TER-87582668"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-12-04 23:50, stop StopPoint:OCECar TER-87582668: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-12-05T00:38:00+01:00",
-            "stop": "StopPoint:OCECar TER-87582668"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-12-05 00:38, stop StopPoint:OCECar TER-87582668: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611004"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611004: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T07:03:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611004"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 07:03, stop StopPoint:OCEINTERCITES de nuit-87611004: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611343"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611343: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:05:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611343"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:05, stop StopPoint:OCEINTERCITES de nuit-87611343: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611368"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611368: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T07:49:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611368"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 07:49, stop StopPoint:OCEINTERCITES de nuit-87611368: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611384"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611384: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T07:35:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611384"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 07:35, stop StopPoint:OCEINTERCITES de nuit-87611384: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611483"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611483: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T10:00:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611483"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 10:00, stop StopPoint:OCEINTERCITES de nuit-87611483: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611509"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611509: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T09:43:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611509"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 09:43, stop StopPoint:OCEINTERCITES de nuit-87611509: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611517"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611517: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T09:35:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611517"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 09:35, stop StopPoint:OCEINTERCITES de nuit-87611517: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611525"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611525: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T09:20:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611525"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 09:20, stop StopPoint:OCEINTERCITES de nuit-87611525: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611533"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611533: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T09:07:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611533"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 09:07, stop StopPoint:OCEINTERCITES de nuit-87611533: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611558"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611558: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:56:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611558"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:56, stop StopPoint:OCEINTERCITES de nuit-87611558: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611574"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611574: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:48:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611574"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:48, stop StopPoint:OCEINTERCITES de nuit-87611574: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611590"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611590: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:37:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611590"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:37, stop StopPoint:OCEINTERCITES de nuit-87611590: the feed has 1 in the next 60 min, got 1"
-        },
-        {
-          "asked": {
-            "at": "2026-08-25T23:50:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611616"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 0,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "at 23:50 on 2026-08-25 23:50, stop StopPoint:OCEINTERCITES de nuit-87611616: the feed has 0 in the next 60 min, got 0"
-        },
-        {
-          "asked": {
-            "at": "2026-08-26T08:20:00+02:00",
-            "stop": "StopPoint:OCEINTERCITES de nuit-87611616"
-          },
-          "got": {
-            "extra": 0,
-            "listed": 1,
-            "missing": 0
-          },
-          "ok": true,
-          "text": "before the call on 2026-08-26 08:20, stop StopPoint:OCEINTERCITES de nuit-87611616: the feed has 1 in the next 60 min, got 1"
         }
       ],
       "fixture": "sncf",
@@ -102956,6 +103268,53 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:00052700",
+            "ORLEANS:StopArea:00020904",
+            "ORLEANS:StopArea:00052601",
+            "ORLEANS:StopArea:00052401",
+            "ORLEANS:StopArea:00052301",
+            "ORLEANS:StopArea:00052201",
+            "ORLEANS:StopArea:00052101",
+            "ORLEANS:StopArea:01079501",
+            "ORLEANS:StopArea:00034501",
+            "ORLEANS:StopArea:01052403",
+            "ORLEANS:StopArea:00012103",
+            "ORLEANS:StopArea:00000520",
+            "ORLEANS:StopArea:00033520",
+            "ORLEANS:StopArea:01042304",
+            "ORLEANS:StopArea:00039205",
+            "ORLEANS:StopArea:00027702",
+            "ORLEANS:StopArea:00030101",
+            "ORLEANS:StopArea:00027000",
+            "ORLEANS:StopArea:00008000",
+            "ORLEANS:StopArea:00026501",
+            "ORLEANS:StopArea:00010700",
+            "ORLEANS:StopArea:00027600",
+            "ORLEANS:StopArea:00003600",
+            "ORLEANS:StopArea:00023400",
+            "ORLEANS:StopArea:00048500",
+            "ORLEANS:StopArea:00027950",
+            "ORLEANS:StopArea:00046551",
+            "ORLEANS:StopArea:00040140",
+            "ORLEANS:StopArea:00022220",
+            "ORLEANS:StopArea:01001010"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -104185,6 +104544,53 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:00052700",
+            "ORLEANS:StopArea:00020904",
+            "ORLEANS:StopArea:00052601",
+            "ORLEANS:StopArea:00052401",
+            "ORLEANS:StopArea:00052301",
+            "ORLEANS:StopArea:00052201",
+            "ORLEANS:StopArea:00052101",
+            "ORLEANS:StopArea:01079501",
+            "ORLEANS:StopArea:00034501",
+            "ORLEANS:StopArea:01052403",
+            "ORLEANS:StopArea:00012103",
+            "ORLEANS:StopArea:00000520",
+            "ORLEANS:StopArea:00033520",
+            "ORLEANS:StopArea:01042304",
+            "ORLEANS:StopArea:00039205",
+            "ORLEANS:StopArea:00027702",
+            "ORLEANS:StopArea:00030101",
+            "ORLEANS:StopArea:00027000",
+            "ORLEANS:StopArea:00008000",
+            "ORLEANS:StopArea:00026501",
+            "ORLEANS:StopArea:00010700",
+            "ORLEANS:StopArea:00027600",
+            "ORLEANS:StopArea:00003600",
+            "ORLEANS:StopArea:00023400",
+            "ORLEANS:StopArea:00048500",
+            "ORLEANS:StopArea:00027950",
+            "ORLEANS:StopArea:00046551",
+            "ORLEANS:StopArea:00040140",
+            "ORLEANS:StopArea:00022220",
+            "ORLEANS:StopArea:01001010"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -106345,6 +106751,50 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:00035910",
+            "ORLEANS:StopArea:01088001",
+            "ORLEANS:StopArea:00001600",
+            "ORLEANS:StopArea:00016101",
+            "ORLEANS:StopArea:00043320",
+            "ORLEANS:StopArea:00007601",
+            "ORLEANS:StopArea:01077502",
+            "ORLEANS:StopArea:00010100",
+            "ORLEANS:StopArea:00049101",
+            "ORLEANS:StopArea:00003726",
+            "ORLEANS:StopArea:00007924",
+            "ORLEANS:StopArea:00007923",
+            "ORLEANS:StopArea:00034302",
+            "ORLEANS:StopArea:01036004",
+            "ORLEANS:StopArea:00004732",
+            "ORLEANS:StopArea:00039750",
+            "ORLEANS:StopArea:00047320",
+            "ORLEANS:StopArea:00047360",
+            "ORLEANS:StopArea:00005501",
+            "ORLEANS:StopArea:00026501",
+            "ORLEANS:StopArea:00038311",
+            "ORLEANS:StopArea:00045621",
+            "ORLEANS:StopArea:00001223",
+            "ORLEANS:StopArea:00005401",
+            "ORLEANS:StopArea:00019303",
+            "ORLEANS:StopArea:01017071",
+            "ORLEANS:StopArea:01001712"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -111372,6 +111822,50 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:00035910",
+            "ORLEANS:StopArea:01088001",
+            "ORLEANS:StopArea:00001600",
+            "ORLEANS:StopArea:00016101",
+            "ORLEANS:StopArea:00043320",
+            "ORLEANS:StopArea:00007601",
+            "ORLEANS:StopArea:01077502",
+            "ORLEANS:StopArea:00010100",
+            "ORLEANS:StopArea:00049101",
+            "ORLEANS:StopArea:00003726",
+            "ORLEANS:StopArea:00007924",
+            "ORLEANS:StopArea:00007923",
+            "ORLEANS:StopArea:00034302",
+            "ORLEANS:StopArea:01036004",
+            "ORLEANS:StopArea:00004732",
+            "ORLEANS:StopArea:00039750",
+            "ORLEANS:StopArea:00047320",
+            "ORLEANS:StopArea:00047360",
+            "ORLEANS:StopArea:00005501",
+            "ORLEANS:StopArea:00026501",
+            "ORLEANS:StopArea:00038311",
+            "ORLEANS:StopArea:00045621",
+            "ORLEANS:StopArea:00001223",
+            "ORLEANS:StopArea:00005401",
+            "ORLEANS:StopArea:00019303",
+            "ORLEANS:StopArea:01017071",
+            "ORLEANS:StopArea:01001712"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -113042,6 +113536,39 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:00043200",
+            "ORLEANS:StopArea:00004700",
+            "ORLEANS:StopArea:00004601",
+            "ORLEANS:StopArea:00010200",
+            "ORLEANS:StopArea:00051700",
+            "ORLEANS:StopArea:00013300",
+            "ORLEANS:StopArea:01035904",
+            "ORLEANS:StopArea:00002200",
+            "ORLEANS:StopArea:00005502",
+            "ORLEANS:StopArea:00026500",
+            "ORLEANS:StopArea:00038310",
+            "ORLEANS:StopArea:00045620",
+            "ORLEANS:StopArea:00001220",
+            "ORLEANS:StopArea:00005402",
+            "ORLEANS:StopArea:00019301",
+            "ORLEANS:StopArea:01001710"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -114129,6 +114656,39 @@
           "ok": true,
           "text": "the list offers one place twice",
           "twice": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:00043200",
+            "ORLEANS:StopArea:00004700",
+            "ORLEANS:StopArea:00004601",
+            "ORLEANS:StopArea:00010200",
+            "ORLEANS:StopArea:00051700",
+            "ORLEANS:StopArea:00013300",
+            "ORLEANS:StopArea:01035904",
+            "ORLEANS:StopArea:00002200",
+            "ORLEANS:StopArea:00005502",
+            "ORLEANS:StopArea:00026500",
+            "ORLEANS:StopArea:00038310",
+            "ORLEANS:StopArea:00045620",
+            "ORLEANS:StopArea:00001220",
+            "ORLEANS:StopArea:00005402",
+            "ORLEANS:StopArea:00019301",
+            "ORLEANS:StopArea:01001710"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
         },
         {
           "ok": true,
@@ -120151,6 +120711,50 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:THOPIT2",
+            "ORLEANS:StopArea:THOPAC1",
+            "ORLEANS:StopArea:TBOLIE1",
+            "ORLEANS:StopArea:TPOSTA1",
+            "ORLEANS:StopArea:TINDIE1",
+            "ORLEANS:StopArea:TFLORA1",
+            "ORLEANS:StopArea:TCAMPU1",
+            "ORLEANS:StopArea:TLORET1",
+            "ORLEANS:StopArea:TAULNA1",
+            "ORLEANS:StopArea:TLARRY1",
+            "ORLEANS:StopArea:TVHUGO1",
+            "ORLEANS:StopArea:TZENIT1",
+            "ORLEANS:StopArea:TCOMET1",
+            "ORLEANS:StopArea:TMOUIL1",
+            "ORLEANS:StopArea:TCSMAR1",
+            "ORLEANS:StopArea:TTOURE1",
+            "ORLEANS:StopArea:TROYAL1",
+            "ORLEANS:StopArea:TGAULA1",
+            "ORLEANS:StopArea:TREPUB1",
+            "ORLEANS:StopArea:TGARDO1",
+            "ORLEANS:StopArea:TLBRAL1",
+            "ORLEANS:StopArea:TCOLIG1",
+            "ORLEANS:StopArea:TLIBER1",
+            "ORLEANS:StopArea:TAUBRA1",
+            "ORLEANS:StopArea:TBUSTI1",
+            "ORLEANS:StopArea:TLAMBA1",
+            "ORLEANS:StopArea:TVERNE2"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -124832,6 +125436,50 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:THOPIT2",
+            "ORLEANS:StopArea:THOPAC1",
+            "ORLEANS:StopArea:TBOLIE1",
+            "ORLEANS:StopArea:TPOSTA1",
+            "ORLEANS:StopArea:TINDIE1",
+            "ORLEANS:StopArea:TFLORA1",
+            "ORLEANS:StopArea:TCAMPU1",
+            "ORLEANS:StopArea:TLORET1",
+            "ORLEANS:StopArea:TAULNA1",
+            "ORLEANS:StopArea:TLARRY1",
+            "ORLEANS:StopArea:TVHUGO1",
+            "ORLEANS:StopArea:TZENIT1",
+            "ORLEANS:StopArea:TCOMET1",
+            "ORLEANS:StopArea:TMOUIL1",
+            "ORLEANS:StopArea:TCSMAR1",
+            "ORLEANS:StopArea:TTOURE1",
+            "ORLEANS:StopArea:TROYAL1",
+            "ORLEANS:StopArea:TGAULA1",
+            "ORLEANS:StopArea:TREPUB1",
+            "ORLEANS:StopArea:TGARDO1",
+            "ORLEANS:StopArea:TLBRAL1",
+            "ORLEANS:StopArea:TCOLIG1",
+            "ORLEANS:StopArea:TLIBER1",
+            "ORLEANS:StopArea:TAUBRA1",
+            "ORLEANS:StopArea:TBUSTI1",
+            "ORLEANS:StopArea:TLAMBA1",
+            "ORLEANS:StopArea:TVERNE2"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -129023,6 +129671,48 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:TPOMPI2",
+            "ORLEANS:StopArea:TTFONT2",
+            "ORLEANS:StopArea:TMLKIN2",
+            "ORLEANS:StopArea:TTANGU2",
+            "ORLEANS:StopArea:TPEURO2",
+            "ORLEANS:StopArea:TPTDUN2",
+            "ORLEANS:StopArea:TBEAUM2",
+            "ORLEANS:StopArea:TMADEL2",
+            "ORLEANS:StopArea:TCXMOR2",
+            "ORLEANS:StopArea:TGAULB2",
+            "ORLEANS:StopArea:TJDARC2",
+            "ORLEANS:StopArea:TCAHDV2",
+            "ORLEANS:StopArea:THALMA2",
+            "ORLEANS:StopArea:TVIGNA2",
+            "ORLEANS:StopArea:TRIOBE2",
+            "ORLEANS:StopArea:TDRHOM2",
+            "ORLEANS:StopArea:TMOZAR2",
+            "ORLEANS:StopArea:TGVILL2",
+            "ORLEANS:StopArea:TAMBER2",
+            "ORLEANS:StopArea:TGAUBR2",
+            "ORLEANS:StopArea:TPTBOR2",
+            "ORLEANS:StopArea:TVERVI2",
+            "ORLEANS:StopArea:TCLARC2",
+            "ORLEANS:StopArea:TLBLUM2",
+            "ORLEANS:StopArea:THAMEA1"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -132662,6 +133352,48 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:TPOMPI2",
+            "ORLEANS:StopArea:TTFONT2",
+            "ORLEANS:StopArea:TMLKIN2",
+            "ORLEANS:StopArea:TTANGU2",
+            "ORLEANS:StopArea:TPEURO2",
+            "ORLEANS:StopArea:TPTDUN2",
+            "ORLEANS:StopArea:TBEAUM2",
+            "ORLEANS:StopArea:TMADEL2",
+            "ORLEANS:StopArea:TCXMOR2",
+            "ORLEANS:StopArea:TGAULB2",
+            "ORLEANS:StopArea:TJDARC2",
+            "ORLEANS:StopArea:TCAHDV2",
+            "ORLEANS:StopArea:THALMA2",
+            "ORLEANS:StopArea:TVIGNA2",
+            "ORLEANS:StopArea:TRIOBE2",
+            "ORLEANS:StopArea:TDRHOM2",
+            "ORLEANS:StopArea:TMOZAR2",
+            "ORLEANS:StopArea:TGVILL2",
+            "ORLEANS:StopArea:TAMBER2",
+            "ORLEANS:StopArea:TGAUBR2",
+            "ORLEANS:StopArea:TPTBOR2",
+            "ORLEANS:StopArea:TVERVI2",
+            "ORLEANS:StopArea:TCLARC2",
+            "ORLEANS:StopArea:TLBLUM2",
+            "ORLEANS:StopArea:THAMEA1"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -134299,6 +135031,55 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:01086001",
+            "ORLEANS:StopArea:00004730",
+            "ORLEANS:StopArea:00016001",
+            "ORLEANS:StopArea:00021201",
+            "ORLEANS:StopArea:01036203",
+            "ORLEANS:StopArea:00030404",
+            "ORLEANS:StopArea:00027352",
+            "ORLEANS:StopArea:00049161",
+            "ORLEANS:StopArea:00003482",
+            "ORLEANS:StopArea:00012103",
+            "ORLEANS:StopArea:01001304",
+            "ORLEANS:StopArea:00041801",
+            "ORLEANS:StopArea:01001407",
+            "ORLEANS:StopArea:01078701",
+            "ORLEANS:StopArea:00041910",
+            "ORLEANS:StopArea:00041020",
+            "ORLEANS:StopArea:00045601",
+            "ORLEANS:StopArea:00000004",
+            "ORLEANS:StopArea:00045620",
+            "ORLEANS:StopArea:00001220",
+            "ORLEANS:StopArea:00005402",
+            "ORLEANS:StopArea:00019301",
+            "ORLEANS:StopArea:00017070",
+            "ORLEANS:StopArea:00017072",
+            "ORLEANS:StopArea:00017065",
+            "ORLEANS:StopArea:00033421",
+            "ORLEANS:StopArea:00036501",
+            "ORLEANS:StopArea:01007704",
+            "ORLEANS:StopArea:00011101",
+            "ORLEANS:StopArea:00009700",
+            "ORLEANS:StopArea:01002005",
+            "ORLEANS:StopArea:01002004"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -135548,6 +136329,55 @@
         },
         {
           "ok": true,
+          "shut": [],
+          "text": "a place nobody gets on at is offered",
+          "wrongly": []
+        },
+        {
+          "ok": true,
+          "shut": [],
+          "text": "places nobody gets on at, left out of the origin list: none"
+        },
+        {
+          "offered": [
+            "ORLEANS:StopArea:01086001",
+            "ORLEANS:StopArea:00004730",
+            "ORLEANS:StopArea:00016001",
+            "ORLEANS:StopArea:00021201",
+            "ORLEANS:StopArea:01036203",
+            "ORLEANS:StopArea:00030404",
+            "ORLEANS:StopArea:00027352",
+            "ORLEANS:StopArea:00049161",
+            "ORLEANS:StopArea:00003482",
+            "ORLEANS:StopArea:00012103",
+            "ORLEANS:StopArea:01001304",
+            "ORLEANS:StopArea:00041801",
+            "ORLEANS:StopArea:01001407",
+            "ORLEANS:StopArea:01078701",
+            "ORLEANS:StopArea:00041910",
+            "ORLEANS:StopArea:00041020",
+            "ORLEANS:StopArea:00045601",
+            "ORLEANS:StopArea:00000004",
+            "ORLEANS:StopArea:00045620",
+            "ORLEANS:StopArea:00001220",
+            "ORLEANS:StopArea:00005402",
+            "ORLEANS:StopArea:00019301",
+            "ORLEANS:StopArea:00017070",
+            "ORLEANS:StopArea:00017072",
+            "ORLEANS:StopArea:00017065",
+            "ORLEANS:StopArea:00033421",
+            "ORLEANS:StopArea:00036501",
+            "ORLEANS:StopArea:01007704",
+            "ORLEANS:StopArea:00011101",
+            "ORLEANS:StopArea:00009700",
+            "ORLEANS:StopArea:01002005",
+            "ORLEANS:StopArea:01002004"
+          ],
+          "ok": true,
+          "text": "the origin list keeps the line's order"
+        },
+        {
+          "ok": true,
           "text": "a trip serves a stop the list does not offer",
           "unoffered": []
         },
@@ -135837,6 +136667,860 @@
       "outcome": "passed",
       "reason": null,
       "route": "ORLEANS:Line:N"
+    },
+    {
+      "checks": [
+        {
+          "expected": 0,
+          "got": 0,
+          "listed": [],
+          "ok": true,
+          "stop": "B",
+          "text": "departures listed at B in the next hour: expected 0, got 0"
+        },
+        {
+          "expected": 1,
+          "got": 1,
+          "listed": [
+            "T1"
+          ],
+          "ok": true,
+          "stop": "H",
+          "text": "departures listed at H in the next hour: expected 1, got 1"
+        },
+        {
+          "expected": 1,
+          "got": 1,
+          "listed": [
+            "T1"
+          ],
+          "ok": true,
+          "stop": "A",
+          "text": "departures listed at A in the next hour: expected 1, got 1"
+        }
+      ],
+      "fixture": "boarding",
+      "id": "tests_provider/test_boarding.py::test_a_stop_with_no_way_on_lists_no_local_departure",
+      "outcome": "passed",
+      "promise": "local_stop",
+      "reason": null
+    },
+    {
+      "checks": [
+        {
+          "expected": [
+            "B",
+            "C",
+            "H",
+            "E"
+          ],
+          "got": [
+            "B",
+            "C",
+            "H",
+            "E"
+          ],
+          "ok": true,
+          "origin": "A",
+          "text": "the destinations from A: expected ['B', 'C', 'H', 'E'], got ['B', 'C', 'H', 'E']"
+        },
+        {
+          "expected": [
+            "H",
+            "E"
+          ],
+          "got": [
+            "H",
+            "E"
+          ],
+          "ok": true,
+          "origin": "C",
+          "text": "the destinations from C: expected ['H', 'E'], got ['H', 'E']"
+        },
+        {
+          "expected": [
+            "E"
+          ],
+          "got": [
+            "E"
+          ],
+          "ok": true,
+          "origin": "H",
+          "text": "the destinations from H: expected ['E'], got ['E']"
+        },
+        {
+          "expected": [
+            "E"
+          ],
+          "got": [
+            "E"
+          ],
+          "ok": true,
+          "origin": "D",
+          "text": "the destinations from D: expected ['E'], got ['E']"
+        }
+      ],
+      "fixture": "boarding",
+      "id": "tests_provider/test_boarding.py::test_destinations_offer_the_places_with_a_way_off",
+      "outcome": "passed",
+      "promise": "destinations",
+      "reason": null
+    },
+    {
+      "checks": [
+        {
+          "destination": "B",
+          "expected": true,
+          "got": true,
+          "ok": true,
+          "origin": "A",
+          "text": "has_trip_between A -> B: expected True, got True"
+        },
+        {
+          "destination": "B",
+          "expected": "2026-06-15",
+          "got": "2026-06-15",
+          "ok": true,
+          "origin": "A",
+          "text": "next service date A -> B: expected '2026-06-15', got '2026-06-15'"
+        },
+        {
+          "destination": "C",
+          "expected": true,
+          "got": true,
+          "ok": true,
+          "origin": "A",
+          "text": "has_trip_between A -> C: expected True, got True"
+        },
+        {
+          "destination": "C",
+          "expected": "2026-06-15",
+          "got": "2026-06-15",
+          "ok": true,
+          "origin": "A",
+          "text": "next service date A -> C: expected '2026-06-15', got '2026-06-15'"
+        },
+        {
+          "destination": "C",
+          "expected": false,
+          "got": false,
+          "ok": true,
+          "origin": "B",
+          "text": "has_trip_between B -> C: expected False, got False"
+        },
+        {
+          "destination": "C",
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "origin": "B",
+          "text": "next service date B -> C: expected None, got None"
+        },
+        {
+          "destination": "D",
+          "expected": false,
+          "got": false,
+          "ok": true,
+          "origin": "A",
+          "text": "has_trip_between A -> D: expected False, got False"
+        },
+        {
+          "destination": "D",
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "origin": "A",
+          "text": "next service date A -> D: expected None, got None"
+        },
+        {
+          "destination": "H",
+          "expected": true,
+          "got": true,
+          "ok": true,
+          "origin": "C",
+          "text": "has_trip_between C -> H: expected True, got True"
+        },
+        {
+          "destination": "H",
+          "expected": "2026-06-15",
+          "got": "2026-06-15",
+          "ok": true,
+          "origin": "C",
+          "text": "next service date C -> H: expected '2026-06-15', got '2026-06-15'"
+        },
+        {
+          "destination": "E",
+          "expected": true,
+          "got": true,
+          "ok": true,
+          "origin": "H",
+          "text": "has_trip_between H -> E: expected True, got True"
+        },
+        {
+          "destination": "E",
+          "expected": "2026-06-15",
+          "got": "2026-06-15",
+          "ok": true,
+          "origin": "H",
+          "text": "next service date H -> E: expected '2026-06-15', got '2026-06-15'"
+        },
+        {
+          "destination": "E",
+          "expected": true,
+          "got": true,
+          "ok": true,
+          "origin": "D",
+          "text": "has_trip_between D -> E: expected True, got True"
+        },
+        {
+          "destination": "E",
+          "expected": "2026-06-15",
+          "got": "2026-06-15",
+          "ok": true,
+          "origin": "D",
+          "text": "next service date D -> E: expected '2026-06-15', got '2026-06-15'"
+        },
+        {
+          "destination": "E",
+          "expected": true,
+          "got": true,
+          "ok": true,
+          "origin": "A",
+          "text": "has_trip_between A -> E: expected True, got True"
+        },
+        {
+          "destination": "E",
+          "expected": "2026-06-15",
+          "got": "2026-06-15",
+          "ok": true,
+          "origin": "A",
+          "text": "next service date A -> E: expected '2026-06-15', got '2026-06-15'"
+        },
+        {
+          "destination": "B",
+          "expected": [
+            "T1",
+            "A",
+            "B"
+          ],
+          "got": [
+            "T1",
+            "A",
+            "B"
+          ],
+          "ok": true,
+          "origin": "A",
+          "text": "next departure A -> B: expected ('T1', 'A', 'B'), got ('T1', 'A', 'B')"
+        },
+        {
+          "destination": "B",
+          "expected": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "got": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "ok": true,
+          "origin": "A",
+          "text": "trips listed A -> B: expected ['T1', 'T2', 'T3'], got ['T1', 'T2', 'T3']"
+        },
+        {
+          "destination": "C",
+          "expected": [
+            "T1",
+            "A",
+            "C"
+          ],
+          "got": [
+            "T1",
+            "A",
+            "C"
+          ],
+          "ok": true,
+          "origin": "A",
+          "text": "next departure A -> C: expected ('T1', 'A', 'C'), got ('T1', 'A', 'C')"
+        },
+        {
+          "destination": "C",
+          "expected": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "got": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "ok": true,
+          "origin": "A",
+          "text": "trips listed A -> C: expected ['T1', 'T2', 'T3'], got ['T1', 'T2', 'T3']"
+        },
+        {
+          "destination": "C",
+          "expected": {},
+          "got": {},
+          "ok": true,
+          "origin": "B",
+          "text": "next departure B -> C: expected {}, got {}"
+        },
+        {
+          "destination": "D",
+          "expected": {},
+          "got": {},
+          "ok": true,
+          "origin": "A",
+          "text": "next departure A -> D: expected {}, got {}"
+        },
+        {
+          "destination": "H",
+          "expected": [
+            "T1",
+            "C",
+            "H"
+          ],
+          "got": [
+            "T1",
+            "C",
+            "H"
+          ],
+          "ok": true,
+          "origin": "C",
+          "text": "next departure C -> H: expected ('T1', 'C', 'H'), got ('T1', 'C', 'H')"
+        },
+        {
+          "destination": "H",
+          "expected": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "got": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "ok": true,
+          "origin": "C",
+          "text": "trips listed C -> H: expected ['T1', 'T2', 'T3'], got ['T1', 'T2', 'T3']"
+        },
+        {
+          "destination": "E",
+          "expected": [
+            "T1",
+            "H",
+            "E"
+          ],
+          "got": [
+            "T1",
+            "H",
+            "E"
+          ],
+          "ok": true,
+          "origin": "H",
+          "text": "next departure H -> E: expected ('T1', 'H', 'E'), got ('T1', 'H', 'E')"
+        },
+        {
+          "destination": "E",
+          "expected": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "got": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "ok": true,
+          "origin": "H",
+          "text": "trips listed H -> E: expected ['T1', 'T2', 'T3'], got ['T1', 'T2', 'T3']"
+        },
+        {
+          "destination": "E",
+          "expected": [
+            "T1",
+            "D",
+            "E"
+          ],
+          "got": [
+            "T1",
+            "D",
+            "E"
+          ],
+          "ok": true,
+          "origin": "D",
+          "text": "next departure D -> E: expected ('T1', 'D', 'E'), got ('T1', 'D', 'E')"
+        },
+        {
+          "destination": "E",
+          "expected": [
+            "T1",
+            "T3"
+          ],
+          "got": [
+            "T1",
+            "T3"
+          ],
+          "ok": true,
+          "origin": "D",
+          "text": "trips listed D -> E: expected ['T1', 'T3'], got ['T1', 'T3']"
+        },
+        {
+          "destination": "E",
+          "expected": [
+            "T1",
+            "A",
+            "E"
+          ],
+          "got": [
+            "T1",
+            "A",
+            "E"
+          ],
+          "ok": true,
+          "origin": "A",
+          "text": "next departure A -> E: expected ('T1', 'A', 'E'), got ('T1', 'A', 'E')"
+        },
+        {
+          "destination": "E",
+          "expected": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "got": [
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "ok": true,
+          "origin": "A",
+          "text": "trips listed A -> E: expected ['T1', 'T2', 'T3'], got ['T1', 'T2', 'T3']"
+        }
+      ],
+      "fixture": "boarding",
+      "id": "tests_provider/test_boarding.py::test_pairs_hold_to_the_feed",
+      "outcome": "passed",
+      "promise": "pairs",
+      "reason": null
+    },
+    {
+      "checks": [
+        {
+          "expected": [
+            "A",
+            "C",
+            "H",
+            "D"
+          ],
+          "got": [
+            "A",
+            "C",
+            "H",
+            "D"
+          ],
+          "ok": true,
+          "text": "the origin list: expected ['A', 'C', 'H', 'D'], got ['A', 'C', 'H', 'D']"
+        }
+      ],
+      "fixture": "boarding",
+      "id": "tests_provider/test_boarding.py::test_stop_list_offers_the_places_with_a_way_on",
+      "outcome": "passed",
+      "promise": "stop_list",
+      "reason": null
+    },
+    {
+      "checks": [
+        {
+          "expected": [
+            [
+              "A",
+              0,
+              1
+            ],
+            [
+              "B",
+              1,
+              0
+            ],
+            [
+              "C",
+              0,
+              0
+            ],
+            [
+              "H",
+              2,
+              2
+            ],
+            [
+              "D",
+              0,
+              1
+            ],
+            [
+              "E",
+              1,
+              0
+            ]
+          ],
+          "got": [
+            [
+              "A",
+              0,
+              1
+            ],
+            [
+              "B",
+              1,
+              0
+            ],
+            [
+              "C",
+              0,
+              0
+            ],
+            [
+              "H",
+              2,
+              2
+            ],
+            [
+              "D",
+              0,
+              1
+            ],
+            [
+              "E",
+              1,
+              0
+            ]
+          ],
+          "ok": true,
+          "text": "the route file's calls: expected [('A', 0, 1), ('B', 1, 0), ('C', 0, 0), ('H', 2, 2), ('D', 0, 1), ('E', 1, 0)], got [('A', 0, 1), ('B', 1, 0), ('C', 0, 0), ('H', 2, 2), ('D', 0, 1), ('E', 1, 0)]"
+        },
+        {
+          "expected": [
+            [
+              "A",
+              0,
+              1
+            ],
+            [
+              "B",
+              1,
+              0
+            ],
+            [
+              "C",
+              0,
+              0
+            ],
+            [
+              "H",
+              2,
+              2
+            ],
+            [
+              "D",
+              0,
+              1
+            ],
+            [
+              "E",
+              1,
+              0
+            ]
+          ],
+          "got": [
+            [
+              "A",
+              0,
+              1
+            ],
+            [
+              "B",
+              1,
+              0
+            ],
+            [
+              "C",
+              0,
+              0
+            ],
+            [
+              "H",
+              2,
+              2
+            ],
+            [
+              "D",
+              0,
+              1
+            ],
+            [
+              "E",
+              1,
+              0
+            ]
+          ],
+          "ok": true,
+          "text": "the leg file's calls, trip T1: expected [('A', 0, 1), ('B', 1, 0), ('C', 0, 0), ('H', 2, 2), ('D', 0, 1), ('E', 1, 0)], got [('A', 0, 1), ('B', 1, 0), ('C', 0, 0), ('H', 2, 2), ('D', 0, 1), ('E', 1, 0)]"
+        },
+        {
+          "expected": [
+            [
+              "A",
+              0,
+              1
+            ],
+            [
+              "B",
+              1,
+              0
+            ],
+            [
+              "C",
+              0,
+              0
+            ],
+            [
+              "H",
+              2,
+              2
+            ],
+            [
+              "D",
+              0,
+              1
+            ],
+            [
+              "E",
+              1,
+              0
+            ]
+          ],
+          "got": [
+            [
+              "A",
+              0,
+              1
+            ],
+            [
+              "B",
+              1,
+              0
+            ],
+            [
+              "C",
+              0,
+              0
+            ],
+            [
+              "H",
+              2,
+              2
+            ],
+            [
+              "D",
+              0,
+              1
+            ],
+            [
+              "E",
+              1,
+              0
+            ]
+          ],
+          "ok": true,
+          "text": "the leg file's stop features: expected [('A', 0, 1), ('B', 1, 0), ('C', 0, 0), ('H', 2, 2), ('D', 0, 1), ('E', 1, 0)], got [('A', 0, 1), ('B', 1, 0), ('C', 0, 0), ('H', 2, 2), ('D', 0, 1), ('E', 1, 0)]"
+        }
+      ],
+      "fixture": "boarding",
+      "id": "tests_provider/test_boarding.py::test_the_files_say_how_each_call_is_made",
+      "outcome": "passed",
+      "promise": "files",
+      "reason": null
+    },
+    {
+      "checks": [
+        {
+          "expected": [
+            "Les Aubrais",
+            "Paris Austerlitz"
+          ],
+          "got": [
+            "Les Aubrais",
+            "Paris Austerlitz"
+          ],
+          "ok": true,
+          "text": "the departure stations: expected ['Les Aubrais', 'Paris Austerlitz'], got ['Les Aubrais', 'Paris Austerlitz']"
+        },
+        {
+          "expected": 12,
+          "got": 12,
+          "ok": true,
+          "reached": [
+            "Andorre l'Hospitalet",
+            "Auterive",
+            "Ax-les-Thermes",
+            "Foix",
+            "Latour-de-Carol - Enveitg",
+            "Les Cabannes",
+            "Luzenac - Garanou",
+            "Mérens-les-Vals",
+            "Pamiers",
+            "Porté-Puymorens",
+            "Saverdun",
+            "Tarascon-sur-Ariège"
+          ],
+          "text": "how many arrival stations from Les Aubrais: expected 12, got 12"
+        },
+        {
+          "ok": true,
+          "reached": [
+            "Andorre l'Hospitalet",
+            "Auterive",
+            "Ax-les-Thermes",
+            "Foix",
+            "Latour-de-Carol - Enveitg",
+            "Les Cabannes",
+            "Luzenac - Garanou",
+            "Mérens-les-Vals",
+            "Pamiers",
+            "Porté-Puymorens",
+            "Saverdun",
+            "Tarascon-sur-Ariège"
+          ],
+          "text": "Toulouse, passed without a stop, is not an arrival"
+        },
+        {
+          "ok": true,
+          "reached": [
+            "Andorre l'Hospitalet",
+            "Auterive",
+            "Ax-les-Thermes",
+            "Foix",
+            "Latour-de-Carol - Enveitg",
+            "Les Cabannes",
+            "Luzenac - Garanou",
+            "Mérens-les-Vals",
+            "Pamiers",
+            "Porté-Puymorens",
+            "Saverdun",
+            "Tarascon-sur-Ariège"
+          ],
+          "text": "the morning stops, set-down only, are arrivals"
+        },
+        {
+          "expected": {},
+          "got": {},
+          "ok": true,
+          "text": "arrivals from Auterive, where nobody gets on: expected {}, got {}"
+        },
+        {
+          "destination": "Auterive",
+          "expected": true,
+          "got": true,
+          "ok": true,
+          "origin": "Les Aubrais",
+          "text": "has_train_trip_between Les Aubrais -> Auterive: expected True, got True"
+        },
+        {
+          "destination": "Auterive",
+          "expected": "2026-08-27",
+          "got": "2026-08-27",
+          "ok": true,
+          "origin": "Les Aubrais",
+          "text": "next service date Les Aubrais -> Auterive: expected '2026-08-27', got '2026-08-27'"
+        },
+        {
+          "destination": "Toulouse Matabiau",
+          "expected": false,
+          "got": false,
+          "ok": true,
+          "origin": "Les Aubrais",
+          "text": "has_train_trip_between Les Aubrais -> Toulouse Matabiau: expected False, got False"
+        },
+        {
+          "destination": "Toulouse Matabiau",
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "origin": "Les Aubrais",
+          "text": "next service date Les Aubrais -> Toulouse Matabiau: expected None, got None"
+        },
+        {
+          "destination": "Ax-les-Thermes",
+          "expected": false,
+          "got": false,
+          "ok": true,
+          "origin": "Auterive",
+          "text": "has_train_trip_between Auterive -> Ax-les-Thermes: expected False, got False"
+        },
+        {
+          "destination": "Ax-les-Thermes",
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "origin": "Auterive",
+          "text": "next service date Auterive -> Ax-les-Thermes: expected None, got None"
+        },
+        {
+          "destination": "Les Aubrais",
+          "expected": false,
+          "got": false,
+          "ok": true,
+          "origin": "Paris Austerlitz",
+          "text": "has_train_trip_between Paris Austerlitz -> Les Aubrais: expected False, got False"
+        },
+        {
+          "destination": "Les Aubrais",
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "origin": "Paris Austerlitz",
+          "text": "next service date Paris Austerlitz -> Les Aubrais: expected None, got None"
+        },
+        {
+          "destination": "Latour-de-Carol - Enveitg",
+          "expected": true,
+          "got": true,
+          "ok": true,
+          "origin": "Paris Austerlitz",
+          "text": "has_train_trip_between Paris Austerlitz -> Latour-de-Carol - Enveitg: expected True, got True"
+        },
+        {
+          "destination": "Latour-de-Carol - Enveitg",
+          "expected": "2026-08-27",
+          "got": "2026-08-27",
+          "ok": true,
+          "origin": "Paris Austerlitz",
+          "text": "next service date Paris Austerlitz -> Latour-de-Carol - Enveitg: expected '2026-08-27', got '2026-08-27'"
+        },
+        {
+          "expected": 3,
+          "got": 3,
+          "ok": true,
+          "text": "Les Aubrais -> Auterive departs on the night train: expected 3, got 3"
+        },
+        {
+          "expected": {},
+          "got": {},
+          "ok": true,
+          "text": "Auterive -> Ax-les-Thermes, where nobody gets on: expected {}, got {}"
+        }
+      ],
+      "fixture": "sncf",
+      "id": "tests_provider/test_boarding.py::test_train_stations_hold_to_the_feed",
+      "outcome": "passed",
+      "promise": "stations",
+      "reason": null
     }
   ]
 }
