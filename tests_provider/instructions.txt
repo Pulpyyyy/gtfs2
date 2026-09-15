@@ -1,7 +1,7 @@
 Provider tree, separate from tests/ on purpose.
 
 What it is:
-- real feeds cut down to a few routes, 24 to 88 KB each, under fixtures/: gvb, palmbus, sncf (with trip updates and alerts), sncf-journeys, tao-journeys
+- real feeds cut down to a few routes, 24 to 88 KB each, under fixtures/: gvb, palmbus, sncf (with trip updates and alerts), sncf-journeys, tao-journeys; and boarding, a made-up line whose calls carry pickup_type / drop_off_type rules (test_boarding.py)
 - manifest.json in each says where the bytes came from, what was kept and why; sncf also carries scenarios.json, the journeys its entities make testable
 - fixtures/build_fixture.py cuts any static zip down to named routes, a few trips per stop pattern
 - fixtures/capture_rt.py freezes a static + trip updates + alerts capture, SNCF by default, any feed with --static/--trip-updates/--alerts

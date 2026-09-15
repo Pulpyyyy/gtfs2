@@ -205,16 +205,21 @@ def _near(days, now):
 def _night_calls(conn, promise):
     """Calls past 24:00, one per stop (local_stop) or per stop and next stop
     (route, trains left out), spread over the fixture, at most SAMPLE."""
+    # a call is a departure when the rider can get on (pickup_type not 1:
+    # a terminus arrival is none), and the next stop is the next call the
+    # rider can get off at
     rows = conn.execute(text(
         "SELECT st.stop_id, st.departure_time, st.trip_id, t.service_id, "
         "t.route_id, t.direction_id, r.route_type, "
         "(SELECT nx.stop_id FROM stop_times nx WHERE nx.trip_id = st.trip_id "
-        " AND nx.stop_sequence > st.stop_sequence ORDER BY nx.stop_sequence LIMIT 1) "
+        " AND nx.stop_sequence > st.stop_sequence "
+        f" AND {_WAY_OFF.format('nx')} ORDER BY nx.stop_sequence LIMIT 1) "
         "AS next_stop "
         "FROM stop_times st "
         "INNER JOIN trips t ON t.trip_id = st.trip_id "
         "INNER JOIN routes r ON r.route_id = t.route_id "
         "WHERE st.departure_time >= '1970-01-02' "
+        f"AND {_WAY_ON.format('st')} "
         "ORDER BY st.stop_id, st.departure_time, st.trip_id")).fetchall()
     seen, calls = set(), []
     for row in rows:
@@ -230,6 +235,10 @@ def _night_calls(conn, promise):
     step = max(1, len(calls) // SAMPLE)
     return calls[::step][:SAMPLE]
 
+
+# the rule the queries hold to: a call with a way on, a call with a way off
+_WAY_ON = "coalesce(cast({0}.pickup_type as integer), 0) <> 1"
+_WAY_OFF = "coalesce(cast({0}.drop_off_type as integer), 0) <> 1"
 
 _WHOLE_STOP = ("(SELECT sibling.stop_id FROM stops chosen, stops sibling "
                "WHERE chosen.stop_id = :{0} AND (sibling.stop_id = chosen.stop_id "
@@ -253,6 +262,7 @@ def _first_ride(conn, days, call, zone, now):
             f"WHERE o.stop_id IN {_WHOLE_STOP.format('o')} "
             f"AND x.stop_id IN {_WHOLE_STOP.format('d')} "
             "AND o.stop_sequence < x.stop_sequence AND t.route_id = :route "
+            f"AND {_WAY_ON.format('o')} AND {_WAY_OFF.format('x')} "
             + on_direction),  # noqa: S608
             {"o": call.stop_id, "d": call.next_stop, "route": call.route_id,
              "direction": int(direction) if direction in ("0", "1") else None}):
@@ -266,12 +276,14 @@ def _first_ride(conn, days, call, zone, now):
 
 
 def _calls_within(conn, days, stop_id, zone, now):
-    """(instant, trip) of every call at the stop in the coming WINDOW."""
+    """(instant, trip) of every call at the stop in the coming WINDOW the
+    rider can get on at: a terminus arrival is no departure."""
     until = now + datetime.timedelta(minutes=WINDOW)
     found = set()
     for trip_id, service_id, stored in conn.execute(text(
             "SELECT st.trip_id, t.service_id, st.departure_time FROM stop_times st "
-            "INNER JOIN trips t ON t.trip_id = st.trip_id WHERE st.stop_id = :s"),
+            "INNER JOIN trips t ON t.trip_id = st.trip_id WHERE st.stop_id = :s "
+            f"AND {_WAY_ON.format('st')}"),  # noqa: S608
             {"s": stop_id}):
         if stored is None:
             continue

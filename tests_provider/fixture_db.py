@@ -44,7 +44,7 @@ PYGTFS_COLUMNS = {
     "stop_times": ("drop_off_type", "pickup_type", "shape_dist_traveled",
                    "stop_headsign", "timepoint"),
     "stops": ("stop_timezone", "parent_station", "location_type"),
-    "trips": ("direction_id", "trip_headsign", "trip_short_name"),
+    "trips": ("direction_id", "trip_headsign", "trip_short_name", "shape_id"),
     "routes": ("route_short_name", "route_long_name"),
     "agency": ("agency_timezone",),
 }
