@@ -610,13 +610,15 @@ _ALERTS_KEPT = 5
 
 
 def _alert_severity(item):
-    """Rank of one alert. An effect the feed never stated comes last: _alert_kind
-    drops UNKNOWN_EFFECT, so a missing key means the feed said nothing, not that
-    nothing is happening."""
+    """Rank of one alert. What concerns the next departure comes before what
+    names a later one only; then the effect, and an effect the feed never
+    stated comes last: _alert_kind drops UNKNOWN_EFFECT, so a missing key means
+    the feed said nothing, not that nothing is happening."""
+    later = 1 if item.get("later_only") else 0
     try:
-        return _ALERT_EFFECT_ORDER.index(item.get("effect"))
+        return (later, _ALERT_EFFECT_ORDER.index(item.get("effect")))
     except ValueError:
-        return len(_ALERT_EFFECT_ORDER)
+        return (later, len(_ALERT_EFFECT_ORDER))
 
 
 def _rank_alerts(items):
@@ -775,7 +777,7 @@ def _alert_text(translated, language):
 
 
 def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
-                 journey_ids=None):
+                 journey_ids=None, trip_ids=()):
     """Which end of this journey an alert names, over ALL its informed entities.
 
     The loop used to reassign stop_id and route_id on every turn and compare
@@ -789,18 +791,28 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
     read because an alert is not obliged to name a stop or a line at all: SNCF
     addresses 385 of its 440 alerts to trips alone, and looking only at stop_id
     and route_id made every one of them invisible.
+
+    trip_ids are the trips the entity lists behind the next one: an alert
+    naming the second departure of the board concerns the rider as much as
+    one naming the first, and reading the head alone hid it. hits["trips"]
+    says which of them, head first, so a card can hang the alert on the
+    right departure.
     """
     journey_ids = journey_ids or set()
     hits = {"origin": False, "destination": False, "route": False,
-            "trip": False, "journey": False}
+            "trip": False, "journey": False, "trips": []}
+    followed = [str(t) for t in [trip_id, *trip_ids] if t]
     for x in alert.informed_entity:
         e_stop = x.stop_id if x.HasField("stop_id") else None
         e_route = x.route_id if x.HasField("route_id") else None
         e_trip = x.trip.trip_id if x.HasField("trip") else None
         if e_route is not None and e_route != str(route_id):
             continue                      # an alert about another line
-        if e_trip and _same_trip(e_trip, str(trip_id or "")):
-            hits["trip"] = True
+        if e_trip:
+            for t in followed:
+                if _same_trip(e_trip, t) and t not in hits["trips"]:
+                    hits["trips"].append(t)
+                    hits["trip"] = True
         if e_stop is not None and e_stop in origin_ids:
             hits["origin"] = True
         elif e_stop is not None and e_stop in destination_ids:
@@ -835,6 +847,14 @@ def get_rt_alerts(self):
             destination_ids |= _stop_aliases(self, arrival)
         journey_ids = _journey_stops(self)
         language = _alert_language(self)
+        # the trips on the board: the next departure, then the ones listed
+        # behind it, so an alert naming any of them is read
+        head = str(getattr(self, "_trip_id", None) or "")
+        head = head if head and head != "no_trip_information" else None
+        listed = []
+        for t in getattr(self, "_trip_list", None) or []:
+            if t and str(t) != head and str(t) not in listed:
+                listed.append(str(t))
         origin_alerts = []
         destination_alerts = []
         for entity in feed_entities:
@@ -842,8 +862,7 @@ def get_rt_alerts(self):
                 continue
             alert = entity.alert
             hits = _alert_scope(alert, origin_ids, destination_ids,
-                                self._route_id, getattr(self, "_trip_id", None),
-                                journey_ids)
+                                self._route_id, head, journey_ids, listed)
             if not any(hits.values()):
                 continue
             # an alert with no readable header still carries its cause and its
@@ -851,6 +870,14 @@ def get_rt_alerts(self):
             # going on
             item = {"text": _alert_text(alert.header_text, language)}
             item.update(_alert_kind(alert))
+            if hits["trips"]:
+                # which departures of the board it names, head first
+                item["trips"] = list(hits["trips"])
+                if head not in hits["trips"] and not any(
+                        hits[k] for k in ("origin", "destination", "route", "journey")):
+                    # about a later departure only: kept, ranked after what
+                    # concerns the next one, so it never takes its sentence
+                    item["later_only"] = True
             _LOGGER.debug("RT Alert for route: %s, scope: %s, alert: %s", self._route_id, hits, alert.header_text)
             # an alert about the line, about the train itself, or about a stop
             # somewhere along the way speaks for the whole journey
