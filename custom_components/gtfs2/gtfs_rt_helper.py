@@ -36,6 +36,9 @@ from .const import (
     ATTR_NEXT_UP,
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
+    ATTR_NEXT_RT_TRIPS,
+    ATTR_RT_CANCELLED,
+    ATTR_RT_SKIPPED,
     ATTR_ICON,
     ATTR_UNIT_OF_MEASUREMENT,
     ATTR_DEVICE_CLASS,
@@ -192,7 +195,8 @@ def get_next_services(self):
     rt_departures = get_rt_route_trip_statuses(self)
     next_services = rt_departures.get(self._route, {}).get(self._direction, {}).get(self._stop, {}).get("departures", [])
     next_delays = rt_departures.get(self._route, {}).get(self._direction, {}).get(self._stop, {}).get("delays", [])
-    
+    next_trips = rt_departures.get(self._route, {}).get(self._direction, {}).get(self._stop, {}).get("trips", [])
+
     if next_services:
         _LOGGER.debug("Next services: %s", next_services)
     
@@ -216,7 +220,12 @@ def get_next_services(self):
         ATTR_TRIP: self._trip,
         ATTR_DIRECTION_ID: self._direction,
         ATTR_NEXT_RT: next_services,
-        ATTR_NEXT_RT_DELAYS: next_delays                                        
+        ATTR_NEXT_RT_DELAYS: next_delays,
+        ATTR_NEXT_RT_TRIPS: next_trips,
+        # what the feed struck out among the entity's trips: a card can
+        # say "cancelled" where the static list would have shown a time
+        ATTR_RT_CANCELLED: sorted(getattr(self, "_rt_cancelled", None) or {}),
+        ATTR_RT_SKIPPED: sorted(getattr(self, "_rt_skipped", None) or {}),
     }
     
     if len(next_services) > 0:
@@ -281,8 +290,14 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
     # in this case the trip still covers the direction
 
     departure_times = {}
-    
-    if self._vehicle_position_url:   
+    # what the feed struck out among the trips this entity follows:
+    # {trip_id: start_date or None}, the day being the service day the
+    # feed names (YYYYMMDD) when it names one. A trip cancelled today may
+    # well run tomorrow under the same id.
+    self._rt_cancelled = {}
+    self._rt_skipped = {}
+
+    if self._vehicle_position_url:
         vehicle_positions = get_rt_vehicle_positions(self)
 
     # feed_entities may be passed in by a caller that already fetched/parsed
@@ -355,7 +370,16 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
 
             if matched:
                 _LOGGER.debug("Entity found params - group: %s, route_id: %s, direction_id: %s, self_trip_id: %s, with rt trip: %s, rt id: %s", self._rt_group, route_id, direction_id, self._trip_id, entity["trip_update"]["trip"], entity_id)
-                
+
+                start_date = entity["trip_update"]["trip"].get("start_date") or None
+                relationship = trip_relationship(entity)
+                if relationship in CANCELLED_TRIP:
+                    # no departure at all: the stop updates it may still
+                    # carry (every stop SKIPPED, a delay left in) say nothing
+                    self._rt_cancelled[trip_id] = start_date
+                    _LOGGER.debug("Trip %s is %s on %s, not a departure", trip_id, relationship, start_date)
+                    continue
+
                 for stop in entity["trip_update"]["stop_time_update"]:
                     stop_id = stop["stop_id"]
                     stop_sequence = stop["stop_sequence"]
@@ -365,7 +389,18 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                         # this does not have to be always correct but best-guess
                         if stop_id == "":
                             stop_id = self._stop_id
-                        
+                        called = stop_relationship(stop)
+                        if called == SKIPPED_STOP:
+                            # the vehicle runs but does not call here
+                            self._rt_skipped[trip_id] = start_date
+                            _LOGGER.debug("Trip %s skips %s on %s, not a departure", trip_id, stop_id, start_date)
+                            continue
+                        if called == NO_DATA_STOP:
+                            # no prediction for this call: the timetable
+                            # stands, and a zero here is not "on time"
+                            _LOGGER.debug("Trip %s has no realtime at %s", trip_id, stop_id)
+                            continue
+
                         if self._route_id not in departure_times:
                             departure_times[self._route_id] = {}
                                                
@@ -385,7 +420,9 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                         ):                 
                             departure_times[self._route_id][direction_id][stop_id]["departures"] = []
                             departure_times[self._route_id][direction_id][stop_id]["delays"] = []
-                        
+                            # the trip behind each departure, same order
+                            departure_times[self._route_id][direction_id][stop_id]["trips"] = []
+
                         # the later of the two 'time' attributes is the one to announce
                         # e.g. at a terminus/layover where the vehicle stands several
                         # minutes at its bay
@@ -406,6 +443,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                             # that were dropped, so delays[n] described some
                             # other departure than departures[n]
                             departure_times[self._route_id][direction_id][stop_id]["delays"].append(delay)
+                            departure_times[self._route_id][direction_id][stop_id]["trips"].append(trip_id)
                             _LOGGER.debug("RT stoptime: %s, in utcfromtimestamp: %s", stop_time, departure_dt)
                         else:
                             _LOGGER.debug("Not using realtime stop data for old due-in-minutes: %s", due_in_minutes(departure_dt))
@@ -416,7 +454,14 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
         for direction in departure_times[route]:
             for stop in departure_times[route][direction]:
                 slot = departure_times[route][direction][stop]
-                if len(slot["delays"]) == len(slot["departures"]):
+                trips = slot.get("trips") or []
+                if len(slot["delays"]) == len(slot["departures"]) == len(trips):
+                    paired = sorted(zip(slot["departures"], slot["delays"], trips),
+                                    key=lambda p: p[0])
+                    slot["departures"] = [p[0] for p in paired]
+                    slot["delays"] = [p[1] for p in paired]
+                    slot["trips"] = [p[2] for p in paired]
+                elif len(slot["delays"]) == len(slot["departures"]):
                     paired = sorted(zip(slot["departures"], slot["delays"]),
                                     key=lambda p: p[0])
                     slot["departures"] = [p[0] for p in paired]
@@ -426,7 +471,25 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
 
     self.info = departure_times
     _LOGGER.debug("Departure times Route Trip: %s", departure_times)
-    return departure_times    
+    return departure_times
+
+
+def struck_trips(self):
+    """{trip_id: start_date or None} of the trips the feed struck out among
+    the ones this entity follows, as the last get_rt_route_trip_statuses
+    read them: cancelled, or skipping the entity's origin. The day is the
+    service day the feed names, None when it names none."""
+    struck = dict(getattr(self, "_rt_skipped", None) or {})
+    struck.update(getattr(self, "_rt_cancelled", None) or {})
+    return struck
+
+
+def on_service_day(start_date, service_day):
+    """Whether a feed's start_date (YYYYMMDD, or None for "unsaid") is the
+    service day (YYYY-MM-DD, or a datetime string starting with it)."""
+    if not start_date:
+        return True
+    return str(service_day or "")[:10].replace("-", "") == str(start_date)[:8]
 
 def get_rt_vehicle_positions(self):
     feed_entities = get_gtfs_feed_entities(
@@ -914,6 +977,40 @@ class LocalFileAdapter(requests.adapters.HTTPAdapter):
              verify=True, cert=None, proxies=None):
         return self.build_response_from_file(request)   
 
+# the names of the GTFS-RT enums, spelled out so a reader (and a card
+# reading the leg file) never sees a bare number; the SIRI path writes
+# none of them, so every reader takes SCHEDULED for a missing key
+CANCELLED_TRIP = ("CANCELED", "DELETED")
+SKIPPED_STOP = "SKIPPED"
+NO_DATA_STOP = "NO_DATA"
+
+
+def _trip_relationship(trip):
+    try:
+        return trip.ScheduleRelationship.Name(trip.schedule_relationship)
+    except (AttributeError, ValueError):
+        return "SCHEDULED"
+
+
+def _stop_relationship(stop_time_update):
+    try:
+        return stop_time_update.ScheduleRelationship.Name(stop_time_update.schedule_relationship)
+    except (AttributeError, ValueError):
+        return "SCHEDULED"
+
+
+def trip_relationship(entity):
+    """The trip's schedule_relationship out of a converted entity, SCHEDULED
+    when the feed (or the SIRI path) says nothing."""
+    return ((entity.get("trip_update") or {}).get("trip") or {}).get(
+        "schedule_relationship") or "SCHEDULED"
+
+
+def stop_relationship(stop_time_update):
+    """The stop update's schedule_relationship, SCHEDULED when unsaid."""
+    return (stop_time_update or {}).get("schedule_relationship") or "SCHEDULED"
+
+
 def convert_gtfs_realtime_to_json(gtfs_realtime_data):
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(gtfs_realtime_data)
@@ -945,10 +1042,22 @@ def convert_gtfs_realtime_to_json(gtfs_realtime_data):
         # trip; leave the key out instead so the reader falls back to "nn"
         if entity.trip_update.trip.HasField("direction_id"):
             entity_dict["trip_update"]["trip"]["direction_id"] = str(entity.trip_update.trip.direction_id)
+        # what the feed says of the trip as a whole: SCHEDULED (the
+        # default, so it is written even when the feed leaves it out),
+        # ADDED, CANCELED, DELETED, UNSCHEDULED, DUPLICATED. A cancelled
+        # trip keeps its stop updates in some feeds (the SNCF marks every
+        # stop SKIPPED, sometimes with a delay), so a reader must look here
+        # first. Measured 2026-09-15: NL cancels 18 % of its trips of the
+        # hour, the SNCF adds trains under ids the static feed has not.
+        entity_dict["trip_update"]["trip"]["schedule_relationship"] = _trip_relationship(
+            entity.trip_update.trip)
         for stop_time_update in entity.trip_update.stop_time_update:
             stop_time_update_dict = {
                 "stop_sequence": stop_time_update.stop_sequence,
                 "stop_id": stop_time_update.stop_id,
+                # SCHEDULED, SKIPPED (the vehicle does not call), NO_DATA
+                # (no prediction here, the timetable stands), UNSCHEDULED
+                "schedule_relationship": _stop_relationship(stop_time_update),
                 "arrival": {
                     "delay": stop_time_update.arrival.delay,
                     "time": stop_time_update.arrival.time
