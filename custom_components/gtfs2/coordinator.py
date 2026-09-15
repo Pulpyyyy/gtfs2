@@ -44,6 +44,19 @@ from .rt_window import rt_window_gate
 _LOGGER = logging.getLogger(__name__)
 
 
+def _route_export_state(zip_path, file):
+    """What decides whether the route file is written again: the edition of
+    the zip it is drawn from (size and modification time, changed by a
+    refresh and by an import that rewrites the zip in place) and whether
+    the file is still there. Two stats, made for the executor."""
+    try:
+        stat = os.stat(zip_path)
+        edition = f"{stat.st_size}:{stat.st_mtime_ns}"
+    except OSError:
+        edition = ""
+    return edition, os.path.exists(file)
+
+
 class GTFSUpdateCoordinator(DataUpdateCoordinator):
     """Data update coordinator for the GTFS integration."""
 
@@ -270,9 +283,12 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         off entirely, still gets its line drawn on a map card. Nor does it owe
         anything to there being a departure today: the line drawn is the
         fullest trip that calls at the sensor's stops, the same at night and
-        on a Sunday. Rewritten only when that trip changes, that is when the
-        feed does, which is what makes it cheap enough to sit on every static
-        refresh.
+        on a Sunday. Rewritten only when that trip changes or the zip is
+        replaced, that is when the feed does, which is what makes it cheap
+        enough to sit on every static refresh. The zip counts because the
+        line's polyline is read from it (see update_route_geojson): a new
+        edition that ships shapes.txt where the last did not, or moves a
+        shape, must reach the map even when the trip drawn keeps its id.
         """
         departure = self._data.get("next_departure") or {}
         route_id = departure.get("route_id", None) or (data.get("route") or "").split(": ")[0]
@@ -297,14 +313,16 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Error picking the trip to draw route %s: %s", route_id, ex)
             return
-        export_key = f"{route_id}_{direction}:{trip_id}"
         if not trip_id:
             return
-        # rewritten when the trip changes, and when the file is gone: a folder
-        # cleaned by hand must not leave the map without its line until the
-        # next restart
+        # rewritten when the trip changes, when the zip does, and when the
+        # file is gone: a folder cleaned by hand must not leave the map
+        # without its line until the next restart
         file = os.path.join(self.hass.config.path(DEFAULT_PATH_GEOJSON), route_geojson_name(route_id, direction))
-        if export_key == self._route_export_trip and await self.hass.async_add_executor_job(os.path.exists, file):
+        zip_path = os.path.join(self.hass.config.path(self._data["gtfs_dir"]), str(self._data["file"]) + ".zip")
+        edition, present = await self.hass.async_add_executor_job(_route_export_state, zip_path, file)
+        export_key = f"{route_id}_{direction}:{trip_id}:{edition}"
+        if export_key == self._route_export_trip and present:
             return
         self._route_id = route_id
         self._direction = direction
