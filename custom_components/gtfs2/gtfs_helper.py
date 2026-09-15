@@ -42,6 +42,7 @@ from .const import (
     TIME_STR_FORMAT
     )
 from .gtfs_rt_helper import get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities
+from .gtfs_shape import read_shape
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -1697,20 +1698,24 @@ def get_representative_trip(schedule, route_id, direction, origin_id=None, desti
 def update_route_geojson(self, trip_id=None):
     """Write the line's ordered stops to www/gtfs2/<route>_<direction>_route.json.
 
-    Companion file to the vehicle-positions geojson. Points only: the geojson
-    integration reads nothing else, and since the import strips shapes.txt a
-    LineString could only duplicate the stops; a map card rebuilds the path by
-    joining the points in stop_sequence order. Each point carries an id and a
-    title the way the geojson integration expects, plus the trip_id; what
-    describes the whole line sits on the FeatureCollection.
+    Companion file to the vehicle-positions geojson. The stops as Points,
+    each with an id and a title the way the geojson integration expects,
+    plus the trip_id; what describes the whole line sits on the
+    FeatureCollection. When the zip beside the database still holds
+    shapes.txt and the trip names a shape, its polyline comes first as a
+    LineString, in the trip's travel direction, so a map card draws the
+    street or the track rather than a straight line between stops: on the
+    tram A of Orleans the stops sit within 26 m of it. The polyline is read
+    from the zip, never from the database (see gtfs_shape). Without it, a
+    card joins the points in stop_sequence order, as before.
 
     The line drawn is the whole line: its fullest trip in this direction, not
     the trip of the next departure. That one is a short turn often enough
     (TAO tram B runs 110 of them a day) to leave a map showing half a line
     at the wrong hour, and it moves at every departure while the line does
     not. What the next departure rides, and when, is the leg file's business
-    (update_leg_geojson). Rewritten only when the fullest trip changes, that
-    is when the feed does (see coordinator).
+    (update_leg_geojson). Rewritten only when the fullest trip or the zip
+    changes, that is when the feed does (see coordinator).
     """
     schedule = self._data["schedule"]
     if not trip_id:
@@ -1732,10 +1737,30 @@ def update_route_geojson(self, trip_id=None):
     """
     with schedule.engine.connect() as conn:
         stop_rows = conn.execute(text(sql_stops), {"trip_id": trip_id}).fetchall()
+        # the shape is the trip's, and trips keep their shape_id even though
+        # the shapes themselves are never imported
+        shape_row = conn.execute(text("SELECT shape_id FROM trips WHERE trip_id = :trip_id"),
+                                 {"trip_id": trip_id}).fetchone()
     if not stop_rows:
         _LOGGER.debug("No stops found for trip: %s", trip_id)
         return
+    shape_id = shape_row[0] if shape_row and shape_row[0] else None
+    zip_path = os.path.join(self.hass.config.path(self._data["gtfs_dir"]), str(self._data["file"]) + ".zip")
+    shape = read_shape(zip_path, shape_id) if shape_id else None
     features = []
+    if shape and len(shape) >= 2:
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "LineString", "coordinates": shape},
+            "properties": {
+                "id": str(self._route_id) + "_" + str(self._direction) + "_shape",
+                "title": str(self._route_id) + "_shape",
+                "trip_id": trip_id,
+                "shape_id": str(shape_id),
+            },
+        })
+    else:
+        shape_id = None
     for row in stop_rows:
         features.append({
             "type": "Feature",
@@ -1767,6 +1792,8 @@ def update_route_geojson(self, trip_id=None):
                 "direction_id": str(self._direction),
                 # the trip stands for the line, it is not the one about to leave
                 "representative": True,
+                # the shape drawn, None when the stops alone draw the line
+                "shape_id": shape_id,
             },
             "features": features,
         }, outfile)
