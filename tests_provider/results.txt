@@ -1,4 +1,4 @@
-provider case results -- 183 case(s)
+provider case results -- 189 case(s)
 
 case: adelaide-GLNELG-d0-destinations
   result: PASSED
@@ -568,4 +568,22 @@ case: tao-journeys-N-d1-swapped
   result: PASSED
 
 case: tao-journeys-N-d1-towards
+  result: PASSED
+
+case: tests_provider/test_boarding.py::test_a_stop_with_no_way_on_lists_no_local_departure
+  result: PASSED
+
+case: tests_provider/test_boarding.py::test_destinations_offer_the_places_with_a_way_off
+  result: PASSED
+
+case: tests_provider/test_boarding.py::test_pairs_hold_to_the_feed
+  result: PASSED
+
+case: tests_provider/test_boarding.py::test_stop_list_offers_the_places_with_a_way_on
+  result: PASSED
+
+case: tests_provider/test_boarding.py::test_the_files_say_how_each_call_is_made
+  result: PASSED
+
+case: tests_provider/test_boarding.py::test_train_stations_hold_to_the_feed
   result: PASSED
