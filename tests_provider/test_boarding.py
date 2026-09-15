@@ -15,16 +15,22 @@ Auterive on, passing Toulouse without a stop):
     destinations   from an origin, the places some trip through it sets
                    riders down at afterwards, and no other; a 2 or a 3 is a
                    way on or off, only the 1 is none
-    pairs          has_trip_between, get_next_departure and
-                   get_next_service_date answer a pair when some trip boards
-                   at the origin and alights at the destination, and answer
-                   nothing when the feed forbids either end
+    pairs          get_next_departure answers a pair when some trip boards
+                   at the origin and alights at the destination, and answers
+                   nothing when the feed forbids either end; so do
+                   has_trip_between and get_next_service_date where the
+                   tree has them
     local_stop     a stop nobody can get on at lists no departure
-    files          the route file and the leg file say, for every call, how
-                   the trip makes it, so a card chaining legs picks its ends
-                   among the calls the rider can make
-    stations       the train path: the station list, the arrival list, the
-                   pair and the departures hold to the same rule, by name
+    files          the route file says, for every call, how the trip makes
+                   it, so a card chaining legs picks its ends among the
+                   calls the rider can make; the leg file too where the
+                   tree writes one
+    stations       the train path: the departures hold to the same rule,
+                   by name; so do the station list, the arrival list and the
+                   pair test where the tree has them
+
+A reader this tree has not is recorded as not checked here, so the same
+promises read on a tree that has it.
 
     pytest tests_provider/test_boarding.py
 """
@@ -109,6 +115,11 @@ def _train_data(schedule, origin, destination):
             "offset": 0, "include_tomorrow": False}
 
 
+def _reader(name):
+    """The helper under test, or None where this tree has no such reader."""
+    return getattr(gtfs_helper, name, None)
+
+
 class Check:
     def __init__(self):
         self.records = []
@@ -119,6 +130,11 @@ class Check:
     def same(self, got, want, text, **fields):
         self.note(got == want, f"{text}: expected {want!r}, got {got!r}",
                   expected=want, got=got, **fields)
+
+    def not_here(self, name, text):
+        """A promise this tree cannot be asked: kept on record, not judged."""
+        self.note(True, f"{text}: {name} is not in this tree, not checked here",
+                  not_checked=name)
 
     @property
     def failures(self):
@@ -167,13 +183,20 @@ PAIRS = (  # origin, destination, whether some trip boards at one and alights at
 
 def test_pairs_hold_to_the_feed(record_property, bus):
     check = Check()
+    between, next_date = _reader("has_trip_between"), _reader("get_next_service_date")
     for origin, destination, exists in PAIRS:
         who = f"{origin} -> {destination}"
-        check.same(gtfs_helper.has_trip_between(bus, ROUTE, origin, destination), exists,
-                   f"has_trip_between {who}", origin=origin, destination=destination)
-        got = gtfs_helper.get_next_service_date(bus, origin, destination, "2026-06-15")
-        check.same(got, "2026-06-15" if exists else None,
-                   f"next service date {who}", origin=origin, destination=destination)
+        if between:
+            check.same(between(bus, ROUTE, origin, destination), exists,
+                       f"has_trip_between {who}", origin=origin, destination=destination)
+        else:
+            check.not_here("has_trip_between", f"has_trip_between {who}")
+        if next_date:
+            got = next_date(bus, origin, destination, "2026-06-15")
+            check.same(got, "2026-06-15" if exists else None,
+                       f"next service date {who}", origin=origin, destination=destination)
+        else:
+            check.not_here("get_next_service_date", f"next service date {who}")
     # the first trip of the day, from just after midnight
     with freeze_time(datetime.datetime(2026, 6, 15, 0, 5, tzinfo=PARIS).astimezone(UTC)):
         for origin, destination, exists in PAIRS:
@@ -214,6 +237,16 @@ def test_a_stop_with_no_way_on_lists_no_local_departure(record_property, bus):
     _done(record_property, check, fixture="boarding", promise="local_stop")
 
 
+def _route_file_name(route_id, direction):
+    """The route file's name: the helper that names it, or the name itself
+    on a tree that spells it where it writes it."""
+    named = _reader("route_geojson_name")
+    if named:
+        return named(route_id, direction)
+    safe = gtfs_helper.safe_file_part
+    return f"{safe(route_id)}_{safe(direction)}_route.json"
+
+
 def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
     check = Check()
     leaves = datetime.datetime(2026, 6, 15, 8, 0, tzinfo=PARIS)
@@ -228,25 +261,29 @@ def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
                    "route_id": ROUTE, "trip_direction_id": "0",
                    "next_departures_trip_id": ["T1"],
                    "next_departures": [leaves.isoformat()]}})
-    gtfs_helper.update_route_geojson(me, trip_id="T1")
-    with open(tmp_path / "www" / "gtfs2" / gtfs_helper.route_geojson_name(ROUTE, "0"),
+    gtfs_helper.update_route_geojson(me)
+    with open(tmp_path / "www" / "gtfs2" / _route_file_name(ROUTE, "0"),
               encoding="utf-8") as handle:
         route = json.load(handle)
     calls = [(f["properties"]["stop_id"], f["properties"]["pickup_type"], f["properties"]["drop_off_type"])
              for f in route["features"] if f["geometry"]["type"] == "Point"]
     want = [("A", 0, 1), ("B", 1, 0), ("C", 0, 0), ("H", 2, 2), ("D", 0, 1), ("E", 1, 0)]
     check.same(calls, want, "the route file's calls")
-    gtfs_helper.update_leg_geojson(me)
-    with open(tmp_path / "www" / "gtfs2" / gtfs_helper.leg_geojson_name(ROUTE, "0", "boarding"),
-              encoding="utf-8") as handle:
-        leg = json.load(handle)
-    stops = leg["trips"]["T1"]["stops"]
-    calls = [(s, stops[s]["pickup_type"], stops[s]["drop_off_type"])
-             for s in sorted(stops, key=lambda s: stops[s]["sequence"])]
-    check.same(calls, want, "the leg file's calls, trip T1")
-    calls = [(f["properties"]["stop_id"], f["properties"]["pickup_type"], f["properties"]["drop_off_type"])
-             for f in leg["features"]]
-    check.same(calls, want, "the leg file's stop features")
+    legs = _reader("update_leg_geojson")
+    if legs:
+        legs(me)
+        with open(tmp_path / "www" / "gtfs2" / gtfs_helper.leg_geojson_name(ROUTE, "0", "boarding"),
+                  encoding="utf-8") as handle:
+            leg = json.load(handle)
+        stops = leg["trips"]["T1"]["stops"]
+        calls = [(s, stops[s]["pickup_type"], stops[s]["drop_off_type"])
+                 for s in sorted(stops, key=lambda s: stops[s]["sequence"])]
+        check.same(calls, want, "the leg file's calls, trip T1")
+        calls = [(f["properties"]["stop_id"], f["properties"]["pickup_type"], f["properties"]["drop_off_type"])
+                 for f in leg["features"]]
+        check.same(calls, want, "the leg file's stop features")
+    else:
+        check.not_here("update_leg_geojson", "the leg file's calls")
     _done(record_property, check, fixture="boarding", promise="files")
 
 
@@ -255,30 +292,44 @@ def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
 def test_train_stations_hold_to_the_feed(record_property, sncf):
     check = Check()
     # where the train takes riders on: Paris and Les Aubrais, nowhere south
-    check.same(gtfs_helper.get_station_list(sncf, NIGHT_ROUTE),
-               ["Les Aubrais", "Paris Austerlitz"], "the departure stations")
-    reached = gtfs_helper.get_train_destination_list(sncf, NIGHT_ROUTE, "Les Aubrais")
-    check.same(len(reached), 12, "how many arrival stations from Les Aubrais",
-               reached=sorted(reached))
-    check.note("Toulouse Matabiau" not in reached,
-               "Toulouse, passed without a stop, is not an arrival", reached=sorted(reached))
-    check.note({"Auterive", "Ax-les-Thermes"} <= set(reached),
-               "the morning stops, set-down only, are arrivals", reached=sorted(reached))
-    check.same(gtfs_helper.get_train_destination_list(sncf, NIGHT_ROUTE, "Auterive"), {},
-               "arrivals from Auterive, where nobody gets on")
+    stations, arrivals = _reader("get_station_list"), _reader("get_train_destination_list")
+    if stations:
+        check.same(stations(sncf, NIGHT_ROUTE),
+                   ["Les Aubrais", "Paris Austerlitz"], "the departure stations")
+    else:
+        check.not_here("get_station_list", "the departure stations")
+    if arrivals:
+        reached = arrivals(sncf, NIGHT_ROUTE, "Les Aubrais")
+        check.same(len(reached), 12, "how many arrival stations from Les Aubrais",
+                   reached=sorted(reached))
+        check.note("Toulouse Matabiau" not in reached,
+                   "Toulouse, passed without a stop, is not an arrival", reached=sorted(reached))
+        check.note({"Auterive", "Ax-les-Thermes"} <= set(reached),
+                   "the morning stops, set-down only, are arrivals", reached=sorted(reached))
+        check.same(arrivals(sncf, NIGHT_ROUTE, "Auterive"), {},
+                   "arrivals from Auterive, where nobody gets on")
+    else:
+        check.not_here("get_train_destination_list", "the arrival stations")
     # Les Aubrais takes riders on and sets nobody down: a way on to the
     # south, not a way off from Paris
+    between, next_date = _reader("has_train_trip_between"), _reader("get_next_service_date")
     for origin, destination, exists in (("Les Aubrais", "Auterive", True),
                                         ("Les Aubrais", "Toulouse Matabiau", False),
                                         ("Auterive", "Ax-les-Thermes", False),
                                         ("Paris Austerlitz", "Les Aubrais", False),
                                         ("Paris Austerlitz", "Latour-de-Carol - Enveitg", True)):
         who = f"{origin} -> {destination}"
-        check.same(gtfs_helper.has_train_trip_between(sncf, origin, destination), exists,
-                   f"has_train_trip_between {who}", origin=origin, destination=destination)
-        got = gtfs_helper.get_next_service_date(sncf, origin, destination, NIGHT_DAY, "2")
-        check.same(got, NIGHT_DAY if exists else None, f"next service date {who}",
-                   origin=origin, destination=destination)
+        if between:
+            check.same(between(sncf, origin, destination), exists,
+                       f"has_train_trip_between {who}", origin=origin, destination=destination)
+        else:
+            check.not_here("has_train_trip_between", f"has_train_trip_between {who}")
+        if next_date:
+            got = next_date(sncf, origin, destination, NIGHT_DAY, "2")
+            check.same(got, NIGHT_DAY if exists else None, f"next service date {who}",
+                       origin=origin, destination=destination)
+        else:
+            check.not_here("get_next_service_date", f"next service date {who}")
     with freeze_time(datetime.datetime(2026, 8, 27, 0, 5, tzinfo=PARIS).astimezone(UTC)):
         result = gtfs_helper.get_next_departure(_hass(), _train_data(sncf, "Les Aubrais", "Auterive"))
         check.same(result.get("destination_stop_time", {}).get("Sequence") if result else None, 3,

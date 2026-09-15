@@ -136846,6 +136846,98 @@
     {
       "checks": [
         {
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "text": "alerts on the quiet trip alone: expected None, got None"
+        },
+        {
+          "expected": 1,
+          "got": 1,
+          "ok": true,
+          "text": "alerts on the named trip as the next departure: expected 1, got 1"
+        },
+        {
+          "expected": [
+            [
+              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
+            ]
+          ],
+          "got": [
+            [
+              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
+            ]
+          ],
+          "ok": true,
+          "text": "the alert names that trip: expected [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']], got [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']]"
+        },
+        {
+          "expected": [
+            null
+          ],
+          "got": [
+            null
+          ],
+          "ok": true,
+          "text": "it concerns the next departure: expected [None], got [None]"
+        },
+        {
+          "expected": 1,
+          "got": 1,
+          "ok": true,
+          "text": "alerts with the named trip listed second: expected 1, got 1"
+        },
+        {
+          "expected": [
+            [
+              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
+            ]
+          ],
+          "got": [
+            [
+              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
+            ]
+          ],
+          "ok": true,
+          "text": "the alert names the listed trip: expected [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']], got [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']]"
+        },
+        {
+          "expected": [
+            true
+          ],
+          "got": [
+            true
+          ],
+          "ok": true,
+          "text": "it concerns a later departure only: expected [True], got [True]"
+        },
+        {
+          "ok": true,
+          "sentence": "Réservation vélo obligatoire",
+          "text": "the sentence is still published"
+        },
+        {
+          "expected": [
+            "now",
+            "later"
+          ],
+          "got": [
+            "now",
+            "later"
+          ],
+          "ok": true,
+          "text": "what concerns the next departure ranks first: expected ['now', 'later'], got ['now', 'later']"
+        }
+      ],
+      "fixture": "sncf",
+      "id": "tests_provider/test_alerts.py::test_alerts_reach_the_listed_trips",
+      "outcome": "passed",
+      "promise": "alerts",
+      "reason": null
+    },
+    {
+      "checks": [
+        {
           "expected": 0,
           "got": 0,
           "listed": [],
@@ -137716,98 +137808,6 @@
       "id": "tests_provider/test_realtime.py::test_a_cancelled_trip_is_not_a_local_departure",
       "outcome": "passed",
       "promise": "local_stop",
-      "reason": null
-    },
-    {
-      "checks": [
-        {
-          "expected": null,
-          "got": null,
-          "ok": true,
-          "text": "alerts on the quiet trip alone: expected None, got None"
-        },
-        {
-          "expected": 1,
-          "got": 1,
-          "ok": true,
-          "text": "alerts on the named trip as the next departure: expected 1, got 1"
-        },
-        {
-          "expected": [
-            [
-              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
-            ]
-          ],
-          "got": [
-            [
-              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
-            ]
-          ],
-          "ok": true,
-          "text": "the alert names that trip: expected [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']], got [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']]"
-        },
-        {
-          "expected": [
-            null
-          ],
-          "got": [
-            null
-          ],
-          "ok": true,
-          "text": "it concerns the next departure: expected [None], got [None]"
-        },
-        {
-          "expected": 1,
-          "got": 1,
-          "ok": true,
-          "text": "alerts with the named trip listed second: expected 1, got 1"
-        },
-        {
-          "expected": [
-            [
-              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
-            ]
-          ],
-          "got": [
-            [
-              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
-            ]
-          ],
-          "ok": true,
-          "text": "the alert names the listed trip: expected [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']], got [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']]"
-        },
-        {
-          "expected": [
-            true
-          ],
-          "got": [
-            true
-          ],
-          "ok": true,
-          "text": "it concerns a later departure only: expected [True], got [True]"
-        },
-        {
-          "ok": true,
-          "sentence": "Réservation vélo obligatoire",
-          "text": "the sentence is still published"
-        },
-        {
-          "expected": [
-            "now",
-            "later"
-          ],
-          "got": [
-            "now",
-            "later"
-          ],
-          "ok": true,
-          "text": "what concerns the next departure ranks first: expected ['now', 'later'], got ['now', 'later']"
-        }
-      ],
-      "fixture": "sncf",
-      "id": "tests_provider/test_realtime.py::test_alerts_reach_the_listed_trips",
-      "outcome": "passed",
-      "promise": "alerts",
       "reason": null
     },
     {
