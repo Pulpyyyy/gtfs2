@@ -15,6 +15,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 import homeassistant.util.dt as dt_util
 
 from .const import (
+    ATTR_RT_CANCELLED,
+    ATTR_RT_SKIPPED,
     DEFAULT_PATH_GEOJSON,
     DEFAULT_PATH,
     DEFAULT_REFRESH_INTERVAL, 
@@ -32,8 +34,8 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_helper import get_gtfs, get_next_departure, get_next_service_date, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson, route_geojson_name, vehicle_positions_name, get_representative_trip, update_leg_geojson, leg_geojson_name
-from .gtfs_rt_helper import get_next_services, get_rt_alerts
+from .gtfs_helper import get_gtfs, get_next_departure, get_next_service_date, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson, route_geojson_name, vehicle_positions_name, get_representative_trip, update_leg_geojson, leg_geojson_name, drop_departure_trips
+from .gtfs_rt_helper import get_next_services, get_rt_alerts, struck_trips
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -245,6 +247,42 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                     self._data["next_departure_realtime_attr"] = self._get_next_service
                     self._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
                     self._data["alert"] = self._get_rt_alerts
+                    # A trip the feed cancelled, or that skips the origin, is
+                    # no departure: the board moves on to the next one rather
+                    # than showing the struck one as on time. The departures
+                    # are read again from the rows of the last static refresh
+                    # without those trips, and the realtime attributes follow
+                    # the departure now shown.
+                    # What was struck is remembered until the next static
+                    # refresh: once dropped, a trip is no longer in the list
+                    # the feed is matched against, and the attribute would
+                    # forget it a minute later.
+                    if run_static:
+                        self._struck_cancelled, self._struck_skipped = {}, {}
+                    self._remember_struck()
+                    struck = {**self._struck_skipped, **self._struck_cancelled}
+                    departure = self._data.get("next_departure") or {}
+                    listed = {str(t) for t in departure.get("next_departures_trip_id") or []}
+                    listed.add(str(departure.get("trip_id")))
+                    if struck and listed & set(struck) and self._data.get("departure_rows"):
+                        _LOGGER.debug("GTFS RT: the feed struck %s out of the listed trips, reading the departures again", sorted(listed & set(struck)))
+                        self._data["next_departure"] = await self.hass.async_add_executor_job(
+                            drop_departure_trips, self.hass, self._data, struck)
+                        departure = self._data["next_departure"] or {}
+                        self._stop_id = departure.get("origin_stop_id", data["origin"]).split(": ")[0]
+                        self._stop_sequence = departure.get("origin_stop_sequence", None)
+                        self._trip_id = departure.get("trip_id", None) or "no_trip_information"
+                        self._trip_short_name = departure.get("trip_short_name", None)
+                        self._direction = str(departure.get("trip_direction_id", data["direction"]))
+                        self._trip_list = departure.get("next_departures_trip_id", [])[:10]
+                        self._get_next_service = await self.hass.async_add_executor_job(get_next_services, self)
+                        self._remember_struck()
+                        self._data["next_departure_realtime_attr"] = self._get_next_service
+                        self._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
+                    # the trips struck since the last static refresh, whichever
+                    # reading turned them up
+                    self._get_next_service[ATTR_RT_CANCELLED] = sorted(self._struck_cancelled)
+                    self._get_next_service[ATTR_RT_SKIPPED] = sorted(self._struck_skipped)
                 except Exception as ex:  # pylint: disable=broad-except
                   _LOGGER.error("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
                   return self._data
@@ -268,6 +306,15 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             await self._export_leg(data, rt_feed)
 
         return self._data
+
+    def _remember_struck(self) -> None:
+        """Fold what the last realtime reading struck out into what this
+        static period has seen: {trip_id: start_date or None}, cancelled
+        and skipping the origin kept apart."""
+        self._struck_cancelled = {**(getattr(self, "_struck_cancelled", None) or {}),
+                                  **(getattr(self, "_rt_cancelled", None) or {})}
+        self._struck_skipped = {**(getattr(self, "_struck_skipped", None) or {}),
+                                **(getattr(self, "_rt_skipped", None) or {})}
 
     async def _export_route_shape(self, data) -> None:
         """Write the geojson of the line the sensor rides.
