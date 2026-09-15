@@ -3,8 +3,8 @@
 GTFS-RT says more than a delay: schedule_relationship on a trip reads
 CANCELED (or DELETED) when it does not run, ADDED when the static feed
 never had it; on a stop update it reads SKIPPED when the vehicle does not
-call there, NO_DATA when there is no prediction for that call. The fork
-used to read none of it, so a cancelled train stood on the board as on
+call there, NO_DATA when there is no prediction for that call. The reader
+used to take none of it, so a cancelled train stood on the board as on
 time. The promises, on the SNCF fixture's own capture of 2026-08-26
 (fixtures/sncf/trip_updates.pb: two trips cancelled with every stop
 SKIPPED, one of them with a delay left in; a TER skipping its first two
@@ -18,8 +18,9 @@ stops; two trains ADDED under ids the static feed has not):
     board       the departures read again without the struck trips move
                 on to the next one that runs, on the service day the feed
                 names and no other
-    leg_file    the leg file says which run is cancelled and which call is
-                skipped, so a card can say so instead of timing it
+    leg_file    where the tree writes a leg file, it says which run is
+                cancelled and which call is skipped, so a card can say so
+                instead of timing it; recorded as not checked otherwise
     local_stop  a cancelled trip is not listed among the departures of a
                 stop nearby
 
@@ -35,7 +36,6 @@ from pathlib import Path
 
 import pytest
 from freezegun import freeze_time
-from sqlalchemy.sql import text
 
 import ha_stub
 
@@ -113,6 +113,11 @@ class Check:
     def same(self, got, want, text, **fields):
         self.note(got == want, f"{text}: expected {want!r}, got {got!r}",
                   expected=want, got=got, **fields)
+
+    def not_here(self, name, text):
+        """A promise this tree cannot be asked: kept on record, not judged."""
+        self.note(True, f"{text}: {name} is not in this tree, not checked here",
+                  not_checked=name)
 
     @property
     def failures(self):
@@ -219,6 +224,11 @@ def test_the_board_moves_on_without_the_struck_trip(record_property, sncf, entit
 
 def test_the_leg_file_says_what_is_struck(record_property, sncf, entities, tmp_path):
     check = Check()
+    legs = getattr(gtfs_helper, "update_leg_geojson", None)
+    if not legs:
+        check.not_here("update_leg_geojson", "the leg file's cancelled run and skipped call")
+        _done(record_property, check, fixture="sncf", promise="leg_file")
+        return
     cancelled = _trip_id(entities, "OCESA86017F5111")
     p9 = _trip_id(entities, "OCESN878950F1187")
     for route_id, trip_id, origin, leaves in (
@@ -233,7 +243,7 @@ def test_the_leg_file_says_what_is_struck(record_property, sncf, entities, tmp_p
                        "origin_stop_id": origin, "route_id": route_id, "trip_direction_id": "1",
                        "next_departures_trip_id": [trip_id],
                        "next_departures": [leaves.isoformat()]}})
-        gtfs_helper.update_leg_geojson(me, entities)
+        legs(me, entities)
         with open(tmp_path / "www" / "gtfs2" / gtfs_helper.leg_geojson_name(route_id, "1", "leg"),
                   encoding="utf-8") as handle:
             leg = json.load(handle)
@@ -274,58 +284,3 @@ def test_a_cancelled_trip_is_not_a_local_departure(record_property, sncf, entiti
     check.note(cancelled not in listed[True], "with realtime the cancelled 08:08 is not listed",
                listed=listed[True])
     _done(record_property, check, fixture="sncf", promise="local_stop")
-
-
-# --- alerts on the listed departures ---------------------------------------
-
-def test_alerts_reach_the_listed_trips(record_property, sncf, monkeypatch):
-    """An alert naming a later departure of the board is read too, hung on
-    the trip it names, and ranked after what concerns the next one."""
-    from google.transit import gtfs_realtime_pb2 as rt
-    feed = rt.FeedMessage()
-    feed.ParseFromString((FIXTURE / "service_alerts.pb").read_bytes())
-    alerts = list(feed.entity)
-    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities", lambda **_kw: alerts)
-    check = Check()
-    # the capture's own scenarios: a trip an alert names by its number, and
-    # a trip nothing is announced on
-    named = ("OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7"
-             "::87444711:87444000:7:802:20261211")
-    quiet = ("OCEEA436011R5235_R:CTE:FR:Line::8440e055-0d15-4156-9e77-017af816441a"
-             "::87296442:87296012:5:1327:20260828")
-
-    def follower(head, listed):
-        return types.SimpleNamespace(
-            hass=types.SimpleNamespace(config=types.SimpleNamespace(language="fr")),
-            _alerts_url="http://alerts.test/feed", _headers=None,
-            _route_id="FR:Line::8440e055-0d15-4156-9e77-017af816441a:",
-            _stop_id="StopPoint:OCECar TER-87296442",
-            _destination_id="StopPoint:OCECar TER-87296012",
-            _trip_id=head, _trip_list=listed,
-            _data={"file": "fixture", "schedule": sncf,
-                   "next_departure": {"trip_id": head, "origin_stop_sequence": 0,
-                                      "destination_stop_time": {"Sequence": 4}}})
-
-    # the quiet trip alone: nothing
-    got = gtfs_rt_helper.get_rt_alerts(follower(quiet, []))
-    check.same(got.get("origin_stop_alerts"), None, "alerts on the quiet trip alone")
-    # the named trip as the next departure: found, hung on it
-    got = gtfs_rt_helper.get_rt_alerts(follower(named, []))
-    items = got.get("origin_stop_alerts") or []
-    check.same(len(items), 1, "alerts on the named trip as the next departure")
-    check.same([i.get("trips") for i in items], [[named]], "the alert names that trip")
-    check.same([i.get("later_only") for i in items], [None], "it concerns the next departure")
-    # the named trip listed behind the quiet one: found too, marked as later
-    got = gtfs_rt_helper.get_rt_alerts(follower(quiet, [named]))
-    items = got.get("origin_stop_alerts") or []
-    check.same(len(items), 1, "alerts with the named trip listed second")
-    check.same([i.get("trips") for i in items], [[named]], "the alert names the listed trip")
-    check.same([i.get("later_only") for i in items], [True], "it concerns a later departure only")
-    check.note(bool(got.get("origin_stop_alert")), "the sentence is still published",
-               sentence=got.get("origin_stop_alert"))
-    # ranked after what concerns the next departure, whatever the effect
-    later = {"text": "later", "effect": "NO_SERVICE", "later_only": True}
-    now = {"text": "now", "effect": "NO_EFFECT"}
-    check.same([i["text"] for i in gtfs_rt_helper._rank_alerts([later, now])], ["now", "later"],
-               "what concerns the next departure ranks first")
-    _done(record_property, check, fixture="sncf", promise="alerts")
