@@ -39,7 +39,7 @@ _reports = []
 
 def pytest_runtest_logreport(report):
     if not any(f"{name}::" in report.nodeid
-               for name in ("test_journeys.py", "test_night.py")):
+               for name in ("test_journeys.py", "test_night.py", "test_alerts.py")):
         return
     if report.when == "call" or (report.when == "setup" and report.failed):
         _reports.append(report)
