@@ -105,6 +105,9 @@
     'Next Services RT Delays': [
       180
     ],
+    'Next Services RT Trips': ['trip_id_1'],
+    'Cancelled Trips RT': [],
+    'Skipped Trips RT': [],
     'Due at': '12:17',
     'Delay': 180,
     'device_class': 'timestamp',

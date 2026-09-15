@@ -19,6 +19,9 @@ from .const import (
     ATTR_DUE_IN,
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
+    ATTR_NEXT_RT_TRIPS,
+    ATTR_RT_CANCELLED,
+    ATTR_RT_SKIPPED,
     ATTR_DROP_OFF_DESTINATION,
     ATTR_DROP_OFF_ORIGIN,
     ATTR_FIRST,
@@ -479,6 +482,14 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
                 else:
                     self._attributes["next_delay_realtime"] = '-'
                     self._attributes["next_delays_realtime"] = '-'
+                # the trip behind each realtime departure, and what the feed
+                # struck out: a cancelled trip is no longer in the departure
+                # lists above, its id is here for a card to say so
+                for key, attr in ((ATTR_NEXT_RT_TRIPS, "next_departures_realtime_trips"),
+                                  (ATTR_RT_CANCELLED, "cancelled_trips_realtime"),
+                                  (ATTR_RT_SKIPPED, "skipped_trips_realtime")):
+                    if key in self._departure_rt:
+                        self._attributes[attr] = self._departure_rt[key]
             if ATTR_INFO_RT in self._attributes:
                 del self._attributes[ATTR_INFO_RT]    
         else:

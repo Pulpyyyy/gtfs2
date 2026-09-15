@@ -38,7 +38,9 @@ from .const import (
     DOMAIN,
     TIME_STR_FORMAT
     )
-from .gtfs_rt_helper import get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities
+from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities,
+                             trip_relationship, stop_relationship, struck_trips, on_service_day,
+                             CANCELLED_TRIP, SKIPPED_STOP, NO_DATA_STOP)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -423,6 +425,42 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
 
     return data_returned
 
+
+def _departure_clocks(_data):
+    """now (naive, offset applied), now in the local zone, its date and
+    the clock, the way the departures are read against them."""
+    offset = _data["offset"]
+    now = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset)
+    now_local_tz = dt_util.now() + datetime.timedelta(minutes=offset)
+    return (now, now_local_tz, now_local_tz.strftime(dt_util.DATE_STR_FORMAT),
+            now.strftime(TIME_STR_FORMAT))
+
+
+def drop_departure_trips(hass, _data, struck):
+    """The departures again, without the trips the realtime feed struck out.
+
+    struck is {trip_id: start_date or None} as struck_trips reads it: a
+    trip is dropped on the service day the feed names, and every day when
+    it names none. Read from the rows the last static refresh kept, so the
+    board moves on to the next trip that runs, with its own arrival,
+    headsign and duration, rather than losing the head fields. Returns
+    what get_next_departure would, {} when nothing is left.
+    """
+    rows = _data.get("departure_rows") or []
+    if not struck or not rows:
+        return _data.get("next_departure") or {}
+    kept = [row for row in rows
+            if str(row.get("trip_id")) not in struck
+            or not on_service_day(struck[str(row.get("trip_id"))], row.get("origin_depart_date"))]
+    if len(kept) == len(rows):
+        return _data.get("next_departure") or {}
+    _LOGGER.debug("Dropping %s struck departures out of %s", len(rows) - len(kept), len(rows))
+    now, now_local_tz, now_date_local_tz, now_time = _departure_clocks(_data)
+    return _interpret_departure_rows(
+        hass, kept, _data.get("departure_rows_origin"), now, now_local_tz,
+        now_date_local_tz, now_time)
+
+
 def get_next_departure(hass, _data):
     """Get next departures from data."""
     _LOGGER.debug("Get next departure with data: %s", _data)
@@ -433,12 +471,7 @@ def get_next_departure(hass, _data):
     schedule = _data["schedule"]
     route_type = _data["route_type"]
 
-    offset = _data["offset"]
-    now = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset)
-    now_local_tz = dt_util.now() + datetime.timedelta(minutes=offset)
-    now_date = now.strftime(dt_util.DATE_STR_FORMAT)
-    now_date_local_tz = now_local_tz.strftime(dt_util.DATE_STR_FORMAT)
-    now_time = now.strftime(TIME_STR_FORMAT)
+    now, now_local_tz, now_date_local_tz, now_time = _departure_clocks(_data)
 
     # Fetch all departures
 
@@ -447,6 +480,12 @@ def get_next_departure(hass, _data):
         direction=_data.get("loop_direction"),
         route=(_data.get("route") or "").split(": ")[0] or None,
     )
+    # kept beside the departures: a realtime refresh that learns of a
+    # cancelled trip reads them again without it (drop_departure_trips),
+    # rather than showing the struck trip as on time until the next
+    # static refresh
+    _data["departure_rows"] = rows
+    _data["departure_rows_origin"] = start_station_id
 
     return _interpret_departure_rows(
         hass, rows, start_station_id, now, now_local_tz,
@@ -1678,6 +1717,12 @@ def _build_local_stop_element(self, row, base_datetime,
         _LOGGER.debug("Find rt for local stop route: %s - direction: %s - stop: %s - stop_sequence: %s", self._route, self._direction, self._stop_id, self._stop_sequence)
         next_service = get_rt_route_trip_statuses(self, feed_entities)
         _LOGGER.debug("Next service: %s", next_service)
+        struck = struck_trips(self)
+        if self._trip_id in struck and on_service_day(struck[self._trip_id], base_datetime):
+            # cancelled, or not calling here: not a departure the rider can
+            # take, so not one to list
+            _LOGGER.debug("Trip %s at %s is struck out by the feed on %s", self._trip_id, self._stop_id, base_datetime)
+            return None
         if next_service:
             svc = next_service.get(self._route, {}).get(self._direction, {}).get(self._stop_id, [])
             delays = svc.get("delays", []) if svc else []

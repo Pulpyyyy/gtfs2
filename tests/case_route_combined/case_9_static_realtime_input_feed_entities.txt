@@ -1,0 +1,54 @@
+[
+  {
+    "id": "trip_id_1",
+    "trip_update": {
+      "trip": {
+        "route_id": "route_id",
+        "trip_id": "trip_id_1",
+        "direction_id": "0",
+        "schedule_relationship": "SCHEDULED"
+      },
+      "stop_time_update": [
+        {
+          "stop_id": "origin_stop_id",
+          "stop_sequence": 20,
+          "arrival": {
+            "time": 1788437820,
+            "delay": 180
+          },
+          "departure": {
+            "time": 1788437820,
+            "delay": 180
+          },
+          "schedule_relationship": "SKIPPED"
+        }
+      ]
+    }
+  },
+  {
+    "id": "trip_id_3",
+    "trip_update": {
+      "trip": {
+        "route_id": "route_id",
+        "trip_id": "trip_id_3",
+        "direction_id": "0",
+        "schedule_relationship": "SCHEDULED"
+      },
+      "stop_time_update": [
+        {
+          "stop_id": "origin_stop_id",
+          "stop_sequence": 20,
+          "arrival": {
+            "time": 0,
+            "delay": 0
+          },
+          "departure": {
+            "time": 0,
+            "delay": 0
+          },
+          "schedule_relationship": "NO_DATA"
+        }
+      ]
+    }
+  }
+]
