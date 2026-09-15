@@ -1,4 +1,7 @@
-provider case results -- 284 case(s)
+provider case results -- 291 case(s)
+
+case: adelaide
+  result: PASSED
 
 case: adelaide-GLNELG-d0-destinations
   result: PASSED
@@ -94,6 +97,12 @@ case: adelaide-route-calendar
   result: PASSED
 
 case: adelaide-route-calendar_dates
+  result: PASSED
+
+case: boarding
+  result: PASSED
+
+case: gvb
   result: PASSED
 
 case: gvb-1-d0-destinations
@@ -318,6 +327,9 @@ case: gvb-route-calendar
 case: gvb-route-calendar_dates
   result: PASSED
 
+case: palmbus
+  result: PASSED
+
 case: palmbus-21-d0-destinations
   result: PASSED
 
@@ -465,6 +477,12 @@ case: palmbus-B-d1-swapped
 case: palmbus-B-d1-towards
   result: PASSED
 
+case: sncf
+  result: PASSED
+
+case: sncf-journeys
+  result: PASSED
+
 case: sncf-journeys-K8+-d0-destinations
   result: PASSED
 
@@ -565,6 +583,9 @@ case: sncf-local_stop-calendar
   result: PASSED
 
 case: sncf-local_stop-calendar_dates
+  result: PASSED
+
+case: tao-journeys
   result: PASSED
 
 case: tao-journeys-22-d0-destinations

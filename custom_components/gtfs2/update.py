@@ -30,6 +30,7 @@ from .const import (
     ENTRY_KIND_DATASOURCE,
     STATIC_REFRESH_OFF,
 )
+from .feed_window import read_feed_window
 from .source_refresh import (
     SIGNAL_SOURCE_REFRESH,
     async_refresh_source,
@@ -85,6 +86,8 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         # answer from these, so a check costs the two reads it always did
         self._installed_meta = {}
         self._zip_meta = {}
+        # what the kept zip says of its validity (feed_window)
+        self._window = {}
         self._attr_unique_id = f"gtfs2_source_update_{self._file}"
         self._attr_title = f"GTFS static feed - {self._file}"
         # same device as the realtime diagnostic and switch, so the source
@@ -101,8 +104,9 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         """Re-read the sidecars; they are files, so never on the loop."""
         def _read():
             return (installed_meta(self.hass, self._file),
-                    source_meta(_zip_path(self.hass, self._file)))
-        self._installed_meta, self._zip_meta = (
+                    source_meta(_zip_path(self.hass, self._file)),
+                    read_feed_window(_zip_path(self.hass, self._file)))
+        self._installed_meta, self._zip_meta, self._window = (
             await self.hass.async_add_executor_job(_read))
         self._installed = version_label(self._installed_meta)
         self._zip_version = version_label(self._zip_meta)
@@ -206,6 +210,11 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
                                                     STATIC_REFRESH_OFF),
             "check_interval": check_interval(self._entry),
             "next_check": next_check,
+            # what the kept feed says of itself, and its last service day:
+            # the Timetable sensor of the source reads the same and says
+            # whether that day is past
+            "feed_version": (self._window or {}).get("feed_version"),
+            "last_service_day": (self._window or {}).get("last_service_day"),
         }
 
     async def async_install(self, version, backup: bool, **kwargs) -> None:

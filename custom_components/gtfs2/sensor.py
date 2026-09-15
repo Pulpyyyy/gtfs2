@@ -73,6 +73,9 @@ from .const import (
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 from .rt_source import has_rt_feed
 from .rt_window import window_state
+from .feed_window import read_feed_window, timetable_state
+from .source_refresh import SIGNAL_SOURCE_REFRESH, _zip_path
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,8 +87,11 @@ async def async_setup_entry(
     ) -> None:
     """Initialize the setup."""
     if config_entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
-        # the source's diagnostic entity: whether realtime runs, and why not
-        async_add_entities([GTFSDatasourceRTSensor(config_entry)])
+        # the source's diagnostic entities: whether realtime runs, and why
+        # not; and how long the timetable is good for
+        timetable = GTFSDatasourceTimetableSensor(hass, config_entry)
+        await timetable.async_load_window()
+        async_add_entities([GTFSDatasourceRTSensor(config_entry), timetable])
         return
     if config_entry.data.get('device_tracker_id',None):
         sensors = []
@@ -160,6 +166,74 @@ class GTFSDatasourceRTSensor(SensorEntity):
             "window_end": state.get("window_end"),
             "extended_until": state.get("extended_until"),
             "checked_at": state.get("checked_at"),
+        }
+
+
+class GTFSDatasourceTimetableSensor(SensorEntity):
+    """The last day the source's timetable runs, and how it stands today.
+
+    Past that day every sensor of the source shows nothing, and nothing
+    says why: the install looks broken when the feed merely ran out. The
+    state is the last service day read from the kept zip (feed_window),
+    the attributes what the feed says of itself and whether the timetable
+    reads valid, ending or expired today. Re-read whenever the source is
+    refreshed, since that is when the zip changes.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_has_entity_name = True
+    _attr_name = "Timetable"
+    _attr_icon = "mdi:calendar-clock"
+    _attr_device_class = SensorDeviceClass.DATE
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        self.hass = hass
+        self._entry = entry
+        self._file = entry.data.get(CONF_FILE)
+        self._window = {}
+        self._attr_unique_id = f"gtfs2_datasource_timetable_{self._file}"
+        self._attr_device_info = DeviceInfo(
+            name=f"GTFS - {self._file}",
+            entry_type=DeviceEntryType.SERVICE,
+            identifiers={(DOMAIN, f"GTFS datasource - {self._file}")},
+            manufacturer="GTFS",
+            model=self._file,
+        )
+
+    async def async_load_window(self) -> None:
+        """Read the zip; a file, so never on the loop."""
+        self._window = await self.hass.async_add_executor_job(
+            read_feed_window, _zip_path(self.hass, self._file)) or {}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.async_on_remove(async_dispatcher_connect(
+            self.hass, SIGNAL_SOURCE_REFRESH.format(self._file),
+            self._async_source_moved))
+
+    async def _async_source_moved(self) -> None:
+        await self.async_load_window()
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self):
+        last = self._window.get("last_service_day")
+        try:
+            return date.fromisoformat(last) if last else None
+        except ValueError:
+            return None
+
+    @property
+    def extra_state_attributes(self):
+        state, days_left = timetable_state(self._window, dt_util.now().date())
+        return {
+            "timetable": state,
+            "days_left": days_left,
+            "first_service_day": self._window.get("first_service_day"),
+            "feed_start_date": self._window.get("feed_start_date"),
+            "feed_end_date": self._window.get("feed_end_date"),
+            "feed_version": self._window.get("feed_version"),
+            "feed_publisher": self._window.get("feed_publisher_name"),
         }
 
 
