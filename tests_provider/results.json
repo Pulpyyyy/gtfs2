@@ -95463,7 +95463,7 @@
         },
         {
           "ok": true,
-          "text": "station modes {'Orléans': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais': {'train'}, 'Paris Austerlitz': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}, the trips call at {'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'coach', 'train'}, 'Paris Austerlitz': {'train'}, 'Les Aubrais': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}"
+          "text": "station modes {'Orléans': {'train', 'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais': {'train'}, 'Paris Austerlitz': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}, the trips call at {'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'train', 'coach'}, 'Paris Austerlitz': {'train'}, 'Les Aubrais': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}"
         }
       ],
       "direction": 0,
@@ -96322,7 +96322,7 @@
         },
         {
           "ok": true,
-          "text": "station modes {'Orléans': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais': {'train'}, 'Paris Austerlitz': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}, the trips call at {'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'coach', 'train'}, 'Paris Austerlitz': {'train'}, 'Les Aubrais': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}"
+          "text": "station modes {'Orléans': {'train', 'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais': {'train'}, 'Paris Austerlitz': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}, the trips call at {'Paris-Austerlitz Routiere': {'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'train', 'coach'}, 'Paris Austerlitz': {'train'}, 'Les Aubrais': {'train'}, \"Paris Bercy Bourg. Pays d'Auv.\": {'train'}}"
         }
       ],
       "direction": 1,
@@ -98246,7 +98246,7 @@
         },
         {
           "ok": true,
-          "text": "station modes {'Dole': {'coach', 'train'}, 'Mouchard': {'coach', 'train'}, 'Champagnole': {'coach', 'train'}, 'La Chaux-des-Crotenay': {'coach', 'train'}, 'La Chaumusse - Fort-du-Plasne': {'coach', 'train'}, 'Saint-Laurent-en-Grandvaux': {'coach', 'train'}, 'Morbier': {'coach', 'train'}, 'Morez': {'coach', 'train'}, 'Saint-Claude': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Andelot': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Montbarrey': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'coach', 'train'}, 'Mouchard': {'coach', 'train'}, 'Champagnole': {'coach', 'train'}, 'La Chaux-des-Crotenay': {'coach', 'train'}, 'La Chaumusse - Fort-du-Plasne': {'coach', 'train'}, 'Saint-Laurent-en-Grandvaux': {'coach', 'train'}, 'Morbier': {'coach', 'train'}, 'Morez': {'coach', 'train'}, 'Saint-Claude': {'coach', 'train'}, 'Andelot': {'coach', 'train'}, 'Montbarrey': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
+          "text": "station modes {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
         }
       ],
       "direction": 0,
@@ -100095,7 +100095,7 @@
         },
         {
           "ok": true,
-          "text": "station modes {'Dole': {'coach', 'train'}, 'Mouchard': {'coach', 'train'}, 'Champagnole': {'coach', 'train'}, 'La Chaux-des-Crotenay': {'coach', 'train'}, 'La Chaumusse - Fort-du-Plasne': {'coach', 'train'}, 'Saint-Laurent-en-Grandvaux': {'coach', 'train'}, 'Morbier': {'coach', 'train'}, 'Morez': {'coach', 'train'}, 'Saint-Claude': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Andelot': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Montbarrey': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'coach', 'train'}, 'Mouchard': {'coach', 'train'}, 'Champagnole': {'coach', 'train'}, 'La Chaux-des-Crotenay': {'coach', 'train'}, 'La Chaumusse - Fort-du-Plasne': {'coach', 'train'}, 'Saint-Laurent-en-Grandvaux': {'coach', 'train'}, 'Morbier': {'coach', 'train'}, 'Morez': {'coach', 'train'}, 'Saint-Claude': {'coach', 'train'}, 'Andelot': {'coach', 'train'}, 'Montbarrey': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
+          "text": "station modes {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
         }
       ],
       "direction": 1,
@@ -100921,7 +100921,7 @@
         },
         {
           "ok": true,
-          "text": "station modes {'Orléans': {'coach', 'train'}, 'Cercottes': {'coach', 'train'}, 'Chevilly': {'coach', 'train'}, 'Artenay': {'coach', 'train'}, 'Château-Gaillard': {'coach', 'train'}, 'Toury': {'coach', 'train'}, 'Angerville': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Les Aubrais': {'train'}, 'Boisseaux': {'train'}, 'Monnerville': {'train'}, 'Guillerval': {'train'}, 'Étampes': {'train'}, 'Paris Austerlitz': {'train'}}, the trips call at {'Angerville': {'coach', 'train'}, 'Toury': {'coach', 'train'}, 'Château-Gaillard': {'coach', 'train'}, 'Artenay': {'coach', 'train'}, 'Chevilly': {'coach', 'train'}, 'Cercottes': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'coach', 'train'}, 'Paris Austerlitz': {'train'}, 'Étampes': {'train'}, 'Guillerval': {'train'}, 'Monnerville': {'train'}, 'Boisseaux': {'train'}, 'Les Aubrais': {'train'}}"
+          "text": "station modes {'Orléans': {'train', 'coach'}, 'Cercottes': {'train', 'coach'}, 'Chevilly': {'train', 'coach'}, 'Artenay': {'train', 'coach'}, 'Château-Gaillard': {'train', 'coach'}, 'Toury': {'train', 'coach'}, 'Angerville': {'train', 'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Les Aubrais': {'train'}, 'Boisseaux': {'train'}, 'Monnerville': {'train'}, 'Guillerval': {'train'}, 'Étampes': {'train'}, 'Paris Austerlitz': {'train'}}, the trips call at {'Angerville': {'train', 'coach'}, 'Toury': {'train', 'coach'}, 'Château-Gaillard': {'train', 'coach'}, 'Artenay': {'train', 'coach'}, 'Chevilly': {'train', 'coach'}, 'Cercottes': {'train', 'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'train', 'coach'}, 'Paris Austerlitz': {'train'}, 'Étampes': {'train'}, 'Guillerval': {'train'}, 'Monnerville': {'train'}, 'Boisseaux': {'train'}, 'Les Aubrais': {'train'}}"
         }
       ],
       "direction": 0,
@@ -102086,7 +102086,7 @@
         },
         {
           "ok": true,
-          "text": "station modes {'Orléans': {'coach', 'train'}, 'Cercottes': {'coach', 'train'}, 'Chevilly': {'coach', 'train'}, 'Artenay': {'coach', 'train'}, 'Château-Gaillard': {'coach', 'train'}, 'Toury': {'coach', 'train'}, 'Angerville': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Les Aubrais': {'train'}, 'Boisseaux': {'train'}, 'Monnerville': {'train'}, 'Guillerval': {'train'}, 'Étampes': {'train'}, 'Paris Austerlitz': {'train'}}, the trips call at {'Angerville': {'coach', 'train'}, 'Toury': {'coach', 'train'}, 'Château-Gaillard': {'coach', 'train'}, 'Artenay': {'coach', 'train'}, 'Chevilly': {'coach', 'train'}, 'Cercottes': {'coach', 'train'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'coach', 'train'}, 'Paris Austerlitz': {'train'}, 'Étampes': {'train'}, 'Guillerval': {'train'}, 'Monnerville': {'train'}, 'Boisseaux': {'train'}, 'Les Aubrais': {'train'}}"
+          "text": "station modes {'Orléans': {'train', 'coach'}, 'Cercottes': {'train', 'coach'}, 'Chevilly': {'train', 'coach'}, 'Artenay': {'train', 'coach'}, 'Château-Gaillard': {'train', 'coach'}, 'Toury': {'train', 'coach'}, 'Angerville': {'train', 'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Les Aubrais': {'train'}, 'Boisseaux': {'train'}, 'Monnerville': {'train'}, 'Guillerval': {'train'}, 'Étampes': {'train'}, 'Paris Austerlitz': {'train'}}, the trips call at {'Angerville': {'train', 'coach'}, 'Toury': {'train', 'coach'}, 'Château-Gaillard': {'train', 'coach'}, 'Artenay': {'train', 'coach'}, 'Chevilly': {'train', 'coach'}, 'Cercottes': {'train', 'coach'}, 'Les Aubrais Gare Routière': {'coach'}, 'Orléans': {'train', 'coach'}, 'Paris Austerlitz': {'train'}, 'Étampes': {'train'}, 'Guillerval': {'train'}, 'Monnerville': {'train'}, 'Boisseaux': {'train'}, 'Les Aubrais': {'train'}}"
         }
       ],
       "direction": 1,
@@ -137541,6 +137541,98 @@
       "id": "tests_provider/test_realtime.py::test_a_cancelled_trip_is_not_a_local_departure",
       "outcome": "passed",
       "promise": "local_stop",
+      "reason": null
+    },
+    {
+      "checks": [
+        {
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "text": "alerts on the quiet trip alone: expected None, got None"
+        },
+        {
+          "expected": 1,
+          "got": 1,
+          "ok": true,
+          "text": "alerts on the named trip as the next departure: expected 1, got 1"
+        },
+        {
+          "expected": [
+            [
+              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
+            ]
+          ],
+          "got": [
+            [
+              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
+            ]
+          ],
+          "ok": true,
+          "text": "the alert names that trip: expected [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']], got [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']]"
+        },
+        {
+          "expected": [
+            null
+          ],
+          "got": [
+            null
+          ],
+          "ok": true,
+          "text": "it concerns the next departure: expected [None], got [None]"
+        },
+        {
+          "expected": 1,
+          "got": 1,
+          "ok": true,
+          "text": "alerts with the named trip listed second: expected 1, got 1"
+        },
+        {
+          "expected": [
+            [
+              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
+            ]
+          ],
+          "got": [
+            [
+              "OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211"
+            ]
+          ],
+          "ok": true,
+          "text": "the alert names the listed trip: expected [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']], got [['OCESN853603F1187_F:TER:FR:Line::1f647a2c-138d-47de-8fb5-333f230e16f7::87444711:87444000:7:802:20261211']]"
+        },
+        {
+          "expected": [
+            true
+          ],
+          "got": [
+            true
+          ],
+          "ok": true,
+          "text": "it concerns a later departure only: expected [True], got [True]"
+        },
+        {
+          "ok": true,
+          "sentence": "Réservation vélo obligatoire",
+          "text": "the sentence is still published"
+        },
+        {
+          "expected": [
+            "now",
+            "later"
+          ],
+          "got": [
+            "now",
+            "later"
+          ],
+          "ok": true,
+          "text": "what concerns the next departure ranks first: expected ['now', 'later'], got ['now', 'later']"
+        }
+      ],
+      "fixture": "sncf",
+      "id": "tests_provider/test_realtime.py::test_alerts_reach_the_listed_trips",
+      "outcome": "passed",
+      "promise": "alerts",
       "reason": null
     },
     {
