@@ -819,6 +819,9 @@ case: tao-journeys-N-d1-swapped
 case: tao-journeys-N-d1-towards
   result: PASSED
 
+case: tests_provider/test_alerts.py::test_alerts_reach_the_listed_trips
+  result: PASSED
+
 case: tests_provider/test_boarding.py::test_a_stop_with_no_way_on_lists_no_local_departure
   result: PASSED
 
@@ -838,9 +841,6 @@ case: tests_provider/test_boarding.py::test_train_stations_hold_to_the_feed
   result: PASSED
 
 case: tests_provider/test_realtime.py::test_a_cancelled_trip_is_not_a_local_departure
-  result: PASSED
-
-case: tests_provider/test_realtime.py::test_alerts_reach_the_listed_trips
   result: PASSED
 
 case: tests_provider/test_realtime.py::test_struck_trips_give_no_departure
