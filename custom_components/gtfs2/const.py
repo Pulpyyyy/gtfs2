@@ -86,6 +86,12 @@ ATTR_DELAY = "Delay"
 ATTR_NEXT_UP = "Next Service"
 ATTR_NEXT_RT = "Next Services RT"
 ATTR_NEXT_RT_DELAYS = "Next Services RT Delays"
+# the trip behind each realtime departure, in the same order as the two
+# lists above, and what the feed struck out: trips it cancelled, trips
+# that skip the origin (schedule_relationship of GTFS-RT)
+ATTR_NEXT_RT_TRIPS = "Next Services RT Trips"
+ATTR_RT_CANCELLED = "Cancelled Trips RT"
+ATTR_RT_SKIPPED = "Skipped Trips RT"
 ATTR_ICON = "Icon"
 ATTR_UNIT_OF_MEASUREMENT = "unit_of_measurement"
 ATTR_DEVICE_CLASS = "device_class"

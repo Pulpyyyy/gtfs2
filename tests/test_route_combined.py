@@ -281,10 +281,18 @@ def test_coordinator_case(case_id: str, case_dir: Path):
             now_date_local_tz, now_time
         )
 
+        def next_departure_from_rows(_hass, data):
+            # what the real get_next_departure leaves beside its answer: the
+            # rows it read, which a realtime refresh reads again without the
+            # trips the feed cancelled (drop_departure_trips)
+            data["departure_rows"] = rows
+            data["departure_rows_origin"] = start_station_id
+            return precomputed_next_departure
+
         coord = coordinator_mod.GTFSUpdateCoordinator(hass, entry)
 
         with patch.object(coordinator_mod, "get_gtfs", return_value="FAKE_SCHEDULE"), \
-             patch.object(coordinator_mod, "get_next_departure", return_value=precomputed_next_departure), \
+             patch.object(coordinator_mod, "get_next_departure", side_effect=next_departure_from_rows), \
              patch.object(coordinator_mod, "check_datasource_index", return_value=None), \
              patch.object(coordinator_mod, "update_route_geojson", return_value=None), \
              patch.object(coordinator_mod, "get_representative_trip", return_value="fullest_trip"), \
@@ -294,6 +302,11 @@ def test_coordinator_case(case_id: str, case_dir: Path):
             result = asyncio.run(coord._async_update_data())
 
     result = _normalize_datetimes(result)
+    # the rows kept for a later realtime refresh are this case's own input
+    # file, not an output: compared through what the coordinator made of
+    # them, never repeated in the capture
+    for key in ("departure_rows", "departure_rows_origin"):
+        result.pop(key, None)
     assert result == expected, (
         f"[{case_id}] ({label}) coordinator.data did not match "
         f"case_*_coordinator_output_data.txt"

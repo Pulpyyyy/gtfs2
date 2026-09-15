@@ -1,4 +1,4 @@
-provider case results -- 279 case(s)
+provider case results -- 284 case(s)
 
 case: adelaide-GLNELG-d0-destinations
   result: PASSED
@@ -835,4 +835,19 @@ case: tests_provider/test_boarding.py::test_the_files_say_how_each_call_is_made
   result: PASSED
 
 case: tests_provider/test_boarding.py::test_train_stations_hold_to_the_feed
+  result: PASSED
+
+case: tests_provider/test_realtime.py::test_a_cancelled_trip_is_not_a_local_departure
+  result: PASSED
+
+case: tests_provider/test_realtime.py::test_struck_trips_give_no_departure
+  result: PASSED
+
+case: tests_provider/test_realtime.py::test_the_board_moves_on_without_the_struck_trip
+  result: PASSED
+
+case: tests_provider/test_realtime.py::test_the_converter_spells_out_what_the_feed_struck
+  result: PASSED
+
+case: tests_provider/test_realtime.py::test_the_leg_file_says_what_is_struck
   result: PASSED
