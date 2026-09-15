@@ -1,0 +1,14 @@
+{
+  "captured_at": 1789502266,
+  "kept": {
+    "agency": 1,
+    "calendar": 1,
+    "routes": 1,
+    "stop_times": 17,
+    "stops": 6,
+    "trips": 3
+  },
+  "provider": "made up (test_boarding.py)",
+  "static_only": true,
+  "why": "one bus line, three trips of one direction, whose calls carry pickup_type / drop_off_type the way real feeds write them: the first stop sets nobody down (drop_off_type 1), Mairie takes nobody on on any trip (pickup_type 1, a set-down only call), Hameau wants a phone call or a word to the driver (2 / 3), Zone sets down only and one trip skips it, the terminus takes nobody on; not a test_journeys case, which samples pairs the feed forbids"
+}

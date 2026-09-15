@@ -184,6 +184,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
             {line_join}
             where {origin_where} and {dest_where}
               and o.stop_sequence < x.stop_sequence
+              and {_boards("o")} and {_alights("x")}
               {line_where}
         )
         select min(dates.d) from dates
@@ -303,6 +304,8 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
               {route_where}
               {shortest_ride_where}
               AND origin_stop_time.stop_sequence < destination_stop_time.stop_sequence
+              AND {_boards("origin_stop_time")}
+              AND {_alights("destination_stop_time")}
           ),
           cal_expand(service_id, d, end_date, monday, tuesday, wednesday, thursday, friday, saturday, sunday) AS (
             SELECT service_id, MAX(start_date, date('now', 'localtime', '-1 day')), end_date,
@@ -1507,6 +1510,47 @@ def _place_group(param):
 _STOP_GROUP = _place_group("origin")
 
 
+# Whether the rider can get on, or off, at a call. stop_times says it per
+# call: pickup_type and drop_off_type read 0 (or nothing) for a regular
+# stop, 1 for none at all, 2 and 3 for a phone call or a word to the driver,
+# which is still a way on. A 1 is not rare, and not only at the ends of a
+# trip: a night train takes nobody on at its morning stops (SNCF: 2,080
+# calls mid-route, 44 route-stop pairs where no trip ever boards), a coach
+# sets down only on its way into town (Zou: 9,285 calls, 279 pairs), the
+# Dutch feed flags 51,145 calls and 912 pairs. Offering such a call as a
+# departure, or as a place to get off, sends the rider to a bus that will
+# not open its door. The value is cast, pygtfs stores it as a number but a
+# feed's blank is a NULL, and the db of a test may hold text.
+def _boards(alias):
+    """SQL: the rider can get on at this stop_times row."""
+    return f"coalesce(cast({alias}.pickup_type as integer), 0) <> 1"
+
+
+def _alights(alias):
+    """SQL: the rider can get off at this stop_times row."""
+    return f"coalesce(cast({alias}.drop_off_type as integer), 0) <> 1"
+
+
+def _call_type(value):
+    """A pickup_type / drop_off_type as the feed meant it: 0 when blank."""
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+# the records of a line where some trip takes riders on (BOARDING) or sets
+# them down (ALIGHTING): the lists offer a place when one of its records is
+_BOARDING_ROWS = f"""
+    select distinct st.stop_id
+    from trips t
+    inner join stop_times st on st.trip_id = t.trip_id
+    where t.route_id = :route_id
+    and (:direction is null or t.direction_id = :direction or t.direction_id is null)
+    and {_boards("st")}
+"""
+
+
 def _same_place(a, b):
     """The rule of _place_group, on (name, parent, lat, lon) tuples."""
     if a[1] or b[1]:
@@ -1890,10 +1934,20 @@ def get_stop_list(schedule, route_id, direction=None):
     Without a direction, the whole line both ways round, which is what the
     flow offers: the rider picks where they are, not a label of the feed.
     A direction still narrows it to that direction's trips.
+
+    A place no trip of the line takes riders on at is left out: the rider
+    picks where they get on, and a call the feed flags as set-down only
+    (pickup_type 1 on every trip, see _boards) is nowhere to get on. The
+    order is still read from every call, so a place kept sits where the
+    line rides it.
     """
     _LOGGER.debug("Getting stops list for route: %s direction: %s", route_id, direction)
     with schedule.engine.connect() as conn:
-        kept, station_names, _place, _trips = _line_of(conn, route_id, direction)
+        kept, station_names, place, _trips = _line_of(conn, route_id, direction)
+        boarding = {row[0] for row in conn.execute(text(_BOARDING_ROWS), {
+            "route_id": route_id, "direction": _direction_param(direction)})}
+    boardable = {place[s] for s in boarding if s in place}
+    kept = [x for x in kept if x[0] in boardable]
     stops = _entries_of(kept, _labels_of(kept, station_names))
     _LOGGER.debug(f"Route stops: {stops}")
     return stops
@@ -1915,6 +1969,11 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     round are read, each in riding order from the origin. The entries are
     the line's, records and labels, so a stop reads the same on both
     screens; the origin's own place is not offered.
+
+    Only the calls the rider can make count: a trip is through the origin
+    from its first call there that takes riders on, and a place is offered
+    when some such trip sets riders down there afterwards (see _boards and
+    _alights). A call with no way off still orders the places around it.
     """
     _LOGGER.debug("Getting destinations for route: %s direction: %s from: %s",
                   route_id, direction, origin_stop_id)
@@ -1922,7 +1981,8 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     rides_sql = f"""
     with through as (
         select trip_id, min(stop_sequence) as origin_sequence
-        from stop_times where stop_id in {_STOP_GROUP} group by trip_id
+        from stop_times where stop_id in {_STOP_GROUP} and {_boards("stop_times")}
+        group by trip_id
     ), ride as (
         select t.trip_id, group_concat(st.stop_sequence || ':' || st.stop_id) as stops
         from trips t
@@ -1950,11 +2010,22 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     weights_sql = rides_sql + """
     select min(trip_id), count(*) from ride group by stops
     """
+    # the records some trip through the origin sets riders down at, after it
+    alighting_sql = rides_sql + f"""
+    select distinct st.stop_id
+    from ride
+    inner join through o on o.trip_id = ride.trip_id
+    inner join stop_times st on st.trip_id = ride.trip_id
+        and st.stop_sequence > o.origin_sequence
+    where {_alights("st")}
+    """
     scope = {"route_id": route_id, "direction": _direction_param(direction)}
     with schedule.engine.connect() as conn:
         line, station_names, place, _line_trips = _line_of(conn, route_id, direction)
         rows = conn.execute(text(sql), {**scope, "origin": origin_stop_id}).fetchall()
         trip_count = dict(conn.execute(text(weights_sql), {**scope, "origin": origin_stop_id}).fetchall())
+        alighting = {row[0] for row in conn.execute(text(alighting_sql), {**scope, "origin": origin_stop_id})}
+    alightable = {place[s] for s in alighting if s in place}
     position = {x[0]: i for i, x in enumerate(line)}
     by_place = {x[0]: x for x in line}
     trips, _info = _trips_of(rows)
@@ -2008,7 +2079,7 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
         order.append(p)
         placed.add(p)
         last = p
-    kept = [by_place[p] for p in order if p in by_place]
+    kept = [by_place[p] for p in order if p in by_place and p in alightable]
     stops = _entries_of(kept, _labels_of(line, station_names))
     _LOGGER.debug(f"Destinations from {origin_stop_id}: {stops}")
     return stops
@@ -2223,6 +2294,7 @@ def has_trip_between(schedule, route_id, origin_id, destination_id, direction=No
       and o.stop_id in {_place_group("origin_id")}
       and d.stop_id in {_place_group("destination_id")}
       and o.stop_sequence < d.stop_sequence
+      and {_boards("o")} and {_alights("d")}
       {direction_where}
     limit 1
     """
@@ -2261,6 +2333,7 @@ def has_train_trip_between(schedule, origin_name, destination_name, line=None):
       and so.stop_name in {origin_in}
       and sd.stop_name in {dest_in}
       and o.stop_sequence < d.stop_sequence
+      and {_boards("o")} and {_alights("d")}
       {line_where}
     limit 1
     """  # noqa: S608
@@ -2277,6 +2350,10 @@ def get_station_list(schedule, route_id=None):
     A station shows up in GTFS as several stops, one per platform or mode, so
     the ids cannot be offered as they are. The names repeat instead: on a
     regional rail feed, 925 stops come down to 379 names.
+
+    Held to a route, the list is where its trains take riders on: a station
+    every train of the line passes, or only sets down at (a night train's
+    morning stops), is nowhere to get on (see _boards).
     """
     _LOGGER.debug("Getting station list for route: %s", route_id)
     where = ""
@@ -2286,6 +2363,7 @@ def get_station_list(schedule, route_id=None):
             select 1 from stop_times st
             inner join trips t on t.trip_id = st.trip_id
             where st.stop_id = s.stop_id and t.route_id = '{route_id}'
+              and {_boards("st")}
         )"""
     sql = f"""
     SELECT distinct s.stop_name
@@ -2356,6 +2434,7 @@ def get_train_destination_list(schedule, route_id, origin_name, line=None):
     where r.route_type in ({rail})
       and so.stop_name = :origin
       and {scope}
+      and {_boards("o")} and {_alights("d")}
     """  # noqa: S608
     params = {"origin": origin_name, "line": line, "route_id": str(route_id or "")}
     with schedule.engine.connect() as conn:
@@ -2990,7 +3069,8 @@ def update_route_geojson(self, trip_id=None):
     if not trip_id:
         return
     sql_stops = """
-    SELECT st.stop_id, s.stop_name, s.stop_lat, s.stop_lon, st.stop_sequence, st.departure_time
+    SELECT st.stop_id, s.stop_name, s.stop_lat, s.stop_lon, st.stop_sequence, st.departure_time,
+           st.pickup_type, st.drop_off_type
     FROM stop_times st
     JOIN stops s ON s.stop_id = st.stop_id
     WHERE st.trip_id = :trip_id
@@ -3036,6 +3116,10 @@ def update_route_geojson(self, trip_id=None):
                 "stop_name": row[1],
                 "stop_sequence": row[4],
                 "departure_time": _fmt_gtfs_time(row[5]),
+                # how this trip calls there: 0 regular, 1 no way on / off,
+                # 2 phone ahead, 3 tell the driver (see _boards)
+                "pickup_type": _call_type(row[6]),
+                "drop_off_type": _call_type(row[7]),
             },
         })
     geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)
@@ -3158,7 +3242,8 @@ def update_leg_geojson(self, feed_entities=None):
         params = {f"t{i}": t for i, t in enumerate(trip_ids)}
         sql = f"""
         SELECT st.trip_id, st.stop_id, s.stop_name, s.stop_lat, s.stop_lon,
-               st.stop_sequence, st.arrival_time, st.departure_time, s.parent_station
+               st.stop_sequence, st.arrival_time, st.departure_time, s.parent_station,
+               st.pickup_type, st.drop_off_type
         FROM stop_times st
         JOIN stops s ON s.stop_id = st.stop_id
         WHERE st.trip_id IN ({", ".join(":" + k for k in params)})
@@ -3213,6 +3298,11 @@ def update_leg_geojson(self, feed_entities=None):
                 "sequence": r[5],
                 "scheduled_arrival": at(midnight, r[6]),
                 "scheduled": at(midnight, r[7]),
+                # as the feed flags the call: 0 regular, 1 none, 2 phone
+                # ahead, 3 tell the driver; a card chaining legs picks its
+                # ends among the calls the rider can make (see _boards)
+                "pickup_type": _call_type(r[9]),
+                "drop_off_type": _call_type(r[10]),
             }
         trips[t] = {"stops": stops}
         if t == trip_id:
@@ -3229,6 +3319,8 @@ def update_leg_geojson(self, feed_entities=None):
                         "stop_sequence": r[5],
                         "scheduled_arrival": stops[str(r[1])]["scheduled_arrival"],
                         "scheduled": stops[str(r[1])]["scheduled"],
+                        "pickup_type": stops[str(r[1])]["pickup_type"],
+                        "drop_off_type": stops[str(r[1])]["drop_off_type"],
                     },
                 })
     # the realtime of every listed trip, at every stop the feed covers
@@ -3437,6 +3529,7 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
               AND abs(stop.stop_lat - :latitude) < :radius AND abs(stop.stop_lon - :longitude) < :radius
             INNER JOIN routes route ON route.route_id = trip.route_id
             INNER JOIN agency agency ON route.agency_id = agency.agency_id
+            WHERE {_boards("st")}
           ),
           candidate_dates(date) AS (
             SELECT date(:now_offset, '-1 day')

@@ -58,7 +58,7 @@ CREATE TABLE trips (feed_id INTEGER NOT NULL, route_id VARCHAR,
     shape_id VARCHAR, PRIMARY KEY (feed_id, trip_id));
 CREATE TABLE stop_times (feed_id INTEGER NOT NULL, trip_id VARCHAR NOT NULL,
     arrival_time DATETIME, departure_time DATETIME, stop_id VARCHAR NOT NULL,
-    stop_sequence INTEGER NOT NULL,
+    stop_sequence INTEGER NOT NULL, pickup_type INTEGER, drop_off_type INTEGER,
     PRIMARY KEY (feed_id, trip_id, stop_id, stop_sequence));
 """
 
@@ -118,15 +118,21 @@ def schedule(tmp_path, monkeypatch):
     """
     engines = []
 
-    def build(trip_id="T1", shape_id=SHAPE, name="gtfs.sqlite"):
+    def build(trip_id="T1", shape_id=SHAPE, name="gtfs.sqlite", calls=None):
+        """calls: {stop_id: (pickup_type, drop_off_type)}, blank elsewhere,
+        the way a feed that never writes the columns leaves them."""
+        calls = calls or {}
         path = tmp_path / name
         db = sqlite3.connect(path)
         db.executescript(SCHEMA)
         db.executemany("INSERT INTO stops VALUES (1, ?, ?, ?, ?, NULL)", STOPS)
         db.execute("INSERT INTO trips VALUES (1, ?, 'S', ?, 1, ?)", (ROUTE, trip_id, shape_id))
         db.executemany(
-            "INSERT INTO stop_times VALUES (1, ?, '08:00:00', '08:00:00', ?, ?)",
-            [(trip_id, stop_id, sequence) for sequence, (stop_id, *_) in enumerate(STOPS, 1)])
+            "INSERT INTO stop_times (feed_id, trip_id, arrival_time, departure_time, "
+            "stop_id, stop_sequence, pickup_type, drop_off_type) "
+            "VALUES (1, ?, '08:00:00', '08:00:00', ?, ?, ?, ?)",
+            [(trip_id, stop_id, sequence, *calls.get(stop_id, (None, None)))
+             for sequence, (stop_id, *_) in enumerate(STOPS, 1)])
         db.commit()
         db.close()
         try:
@@ -251,6 +257,22 @@ def test_route_file_keeps_to_the_stops_when_the_zip_is_gone(tmp_path, schedule):
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None
+
+
+def test_route_file_says_how_the_trip_calls_at_each_stop(tmp_path, schedule):
+    # the feed's pickup_type / drop_off_type per call, 0 when it wrote none:
+    # a card picks its ends among the calls the rider can make. Here the
+    # first stop sets nobody down, the last takes nobody on, and the middle
+    # one wants a phone call ahead
+    calls = {"VER1": (0, 1), "LAM1": (2, 2), "BUS1": (1, 0)}
+    gtfs_helper.update_route_geojson(coordinator(tmp_path, schedule(calls=calls)), trip_id="T1")
+    stops = [f["properties"] for f in route_file(tmp_path)["features"]]
+    assert [(s["stop_id"], s["pickup_type"], s["drop_off_type"]) for s in stops] == [
+        ("VER1", 0, 1), ("LAM1", 2, 2), ("BUS1", 1, 0)]
+    # blank columns read as the regular call
+    gtfs_helper.update_route_geojson(coordinator(tmp_path, schedule(name="blank.sqlite")), trip_id="T1")
+    stops = [f["properties"] for f in route_file(tmp_path)["features"]]
+    assert [(s["pickup_type"], s["drop_off_type"]) for s in stops] == [(0, 0)] * 3
 
 
 def test_shape_named_by_no_trip_stop_draws_the_stops_alone(tmp_path, schedule):
