@@ -738,6 +738,40 @@ _BOARDING_ROWS = f"""
     and {_boards("st")}
 """
 
+_ALIGHTING_ROWS = f"""
+    select distinct st.stop_id
+    from trips t
+    inner join stop_times st on st.trip_id = t.trip_id
+    where t.route_id = :route_id
+    and (:direction is null or t.direction_id = :direction or t.direction_id is null)
+    and {_alights("st")}
+"""
+
+
+def _line_ways(conn, route_id, direction=None):
+    """Whether the line, over every trip of it this way, ever takes riders
+    on, or sets them down, at a record: (boards, alights), each answering
+    a stop_id.
+
+    The drawn trip's own pickup_type says how THAT trip calls; a night
+    train's 1 at a station the next TER boards at says nothing of the
+    line. Read per place, not per record: a station's other platform is
+    the same place to the rider (see _place_group), so a trip boarding
+    there makes the whole place a way on. A record the sampled trips of
+    _line_of do not place is judged on its own rows. In doubt the answer
+    is yes: a no shuts a stop out of a card's lists, and only the feed's
+    own word, on every trip, may do that.
+    """
+    params = {"route_id": route_id, "direction": _direction_param(direction)}
+    _kept, _station_names, place, _trips = _line_of(conn, route_id, direction)
+
+    def ways(sql):
+        records = {row[0] for row in conn.execute(text(sql), params)}
+        places = {place[s] for s in records if s in place}
+        return lambda stop_id: stop_id in records or place.get(stop_id) in places
+
+    return ways(_BOARDING_ROWS), ways(_ALIGHTING_ROWS)
+
 
 def _same_place(a, b):
     """The rule of _place_group, on (name, parent, lat, lon) tuples."""
@@ -1656,6 +1690,7 @@ def update_route_geojson(self):
     """
     with schedule.engine.connect() as conn:
         stop_rows = conn.execute(text(sql_stops), {"trip_id": trip_id}).fetchall()
+        boards, alights = _line_ways(conn, route_id, direction)
     if not stop_rows:
         _LOGGER.debug("No stops found for trip: %s", trip_id)
         return
@@ -1676,6 +1711,12 @@ def update_route_geojson(self):
                 # 2 phone ahead, 3 tell the driver (see _boards)
                 "pickup_type": _call_type(row[6]),
                 "drop_off_type": _call_type(row[7]),
+                # and whether any trip of the line does, this way: false
+                # only when no trip ever takes riders on, or sets them
+                # down, at this place, the one word that may shut it out
+                # of a card's lists (see _line_ways)
+                "boards": boards(row[0]),
+                "alights": alights(row[0]),
             },
         })
     geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)

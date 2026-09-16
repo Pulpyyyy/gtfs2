@@ -1,4 +1,4 @@
-provider case results -- 189 case(s)
+provider case results -- 190 case(s)
 
 case: adelaide-GLNELG-d0-destinations
   result: PASSED
@@ -583,6 +583,9 @@ case: tests_provider/test_boarding.py::test_stop_list_offers_the_places_with_a_w
   result: PASSED
 
 case: tests_provider/test_boarding.py::test_the_files_say_how_each_call_is_made
+  result: PASSED
+
+case: tests_provider/test_boarding.py::test_the_route_file_flags_the_line_not_the_drawn_trip
   result: PASSED
 
 case: tests_provider/test_boarding.py::test_train_stations_hold_to_the_feed
