@@ -100,14 +100,10 @@ from .rt_source import (
     static_feed_config,
     static_key_fields,
 )
+from .const import CONF_NEEDS_API_KEY, CONF_ADD_RETURN, CONF_ALSO_RELOAD, TRANSLATION_DESCRIPTION_PLACEHOLDERS
 
 _LOGGER = logging.getLogger(__name__)
 
-# only used to branch inside the flow, never written to the config entry
-CONF_NEEDS_API_KEY = "needs_api_key"
-CONF_ADD_RETURN = "add_return"
-# other pruned lines to bring back in the same import, never saved
-CONF_ALSO_RELOAD = "also_reload"
 
 def _station_label(name, modes, words):
     """A station as the picker shows it. On a line that mixes trains and
@@ -266,18 +262,6 @@ def _collect_source_rt_options(url_fields, key_fields, previous=None):
             if key in previous:
                 options[key] = previous[key]
     return options
-
-
-TRANSLATION_DESCRIPTION_PLACEHOLDERS = {
-    "docu_extracting": "https://github.com/vingerha/gtfs2/wiki/01:-Initial-Setup-of-the-Static-GTFS-Data-Source#extraction-of-data-from-the-datasource",
-    "docu_menu_options": "https://github.com/vingerha/gtfs2/wiki/00:-Installation-and-Main-Menu",
-    "docu_select_source": "https://github.com/vingerha/gtfs2/wiki/01:-Initial-Setup-of-the-Static-GTFS-Data-Source",
-    "docu_local_stops": "https://github.com/vingerha/gtfs2/wiki/03:-Adding-a-location%E2%80%90based-dynamic-departures-sensor",
-    "docu_new_route": "https://github.com/vingerha/gtfs2/wiki/02:-Adding-a-route",
-    "docu_setup_train": "https://github.com/vingerha/gtfs2/wiki/02b:-Adding-a-route-(using-city-method)",
-    "docu_configuring_options": "https://github.com/vingerha/gtfs2/wiki/04:-Configuring-a-route's-options-(inc.-adding-real%E2%80%90time)",
-    "model": "Example model",
-}
 
 
 def _stop_name_of(entry):

@@ -348,3 +348,26 @@ DEFAULT_API_KEY_NAME = "api_key"
 TIME_STR_FORMAT = "%H:%M"
 ATTR_NEXT_SERVICE_DATE = "next_service_date"
 ATTR_NEXT_SERVICE_IN_DAYS = "next_service_in_days"
+
+
+# only used to branch inside the flow, never written to the config entry
+CONF_NEEDS_API_KEY = "needs_api_key"
+
+
+CONF_ADD_RETURN = "add_return"
+
+
+# other pruned lines to bring back in the same import, never saved
+CONF_ALSO_RELOAD = "also_reload"
+
+
+TRANSLATION_DESCRIPTION_PLACEHOLDERS = {
+    "docu_extracting": "https://github.com/vingerha/gtfs2/wiki/01:-Initial-Setup-of-the-Static-GTFS-Data-Source#extraction-of-data-from-the-datasource",
+    "docu_menu_options": "https://github.com/vingerha/gtfs2/wiki/00:-Installation-and-Main-Menu",
+    "docu_select_source": "https://github.com/vingerha/gtfs2/wiki/01:-Initial-Setup-of-the-Static-GTFS-Data-Source",
+    "docu_local_stops": "https://github.com/vingerha/gtfs2/wiki/03:-Adding-a-location%E2%80%90based-dynamic-departures-sensor",
+    "docu_new_route": "https://github.com/vingerha/gtfs2/wiki/02:-Adding-a-route",
+    "docu_setup_train": "https://github.com/vingerha/gtfs2/wiki/02b:-Adding-a-route-(using-city-method)",
+    "docu_configuring_options": "https://github.com/vingerha/gtfs2/wiki/04:-Configuring-a-route's-options-(inc.-adding-real%E2%80%90time)",
+    "model": "Example model",
+}
