@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
-from functools import partial
 import logging
 import os
 import re
@@ -15,8 +14,6 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 import homeassistant.util.dt as dt_util
 
 from .const import (
-    ATTR_RT_CANCELLED,
-    ATTR_RT_SKIPPED,
     DEFAULT_PATH_GEOJSON,
     DEFAULT_PATH,
     DEFAULT_REFRESH_INTERVAL, 
@@ -38,11 +35,12 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_helper import get_gtfs, get_next_departure, get_next_service_date, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, drop_departure_trips
+from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures
 from .geojson import write_route_file, write_leg_file, route_geojson_name, vehicle_positions_name, leg_geojson_name, get_representative_trip
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, struck_trips
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
+from .refresh_steps import drop_struck_trips, next_service_date_for
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -182,24 +180,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 # with every departure already behind us, and that is not the
                 # same thing as a line resting for days: the sensor tells the
                 # two apart by whether the date it gets back is today's.
-                try:
-                    # async_add_executor_job takes positional arguments only:
-                    # the keywords ride in a partial, or the call raises and
-                    # the date is lost on every refresh
-                    self._data["next_service_date"] = await self.hass.async_add_executor_job(partial(
-                        get_next_service_date, self._pygtfs,
-                        data["origin"].split(": ")[0], data["destination"].split(": ")[0],
-                        (dt_util.now() + timedelta(
-                            minutes=self._data.get("offset", 0) or 0)).strftime("%Y-%m-%d"),
-                        data["route_type"],
-                        line=data.get("line"),
-                        origin_names=data.get("origin_stations"),
-                        dest_names=data.get("destination_stations"),
-                    ))
-                except Exception as ex:  # pylint: disable=broad-except
-                    # only enriches an attribute: never fail the update over it
-                    _LOGGER.warning("Could not get next service date: %s", ex)
-                    self._data["next_service_date"] = None
+                self._data["next_service_date"] = await next_service_date_for(
+                    self.hass, self._pygtfs, data, self._data.get("offset", 0))
         
         # collect and return rt attributes
         # STILL REQUIRES A SOLUTION IF CONNECTION TIMING OUT
@@ -256,42 +238,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 self._data["next_departure_realtime_attr"] = self._get_next_service
                 self._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
                 self._data["alert"] = self._get_rt_alerts
-                # A trip the feed cancelled, or that skips the origin, is
-                # no departure: the board moves on to the next one rather
-                # than showing the struck one as on time. The departures
-                # are read again from the rows of the last static refresh
-                # without those trips, and the realtime attributes follow
-                # the departure now shown.
-                # What was struck is remembered until the next static
-                # refresh: once dropped, a trip is no longer in the list
-                # the feed is matched against, and the attribute would
-                # forget it a minute later.
-                if run_static:
-                    self._struck_cancelled, self._struck_skipped = {}, {}
-                self._remember_struck()
-                struck = {**self._struck_skipped, **self._struck_cancelled}
-                departure = self._data.get("next_departure") or {}
-                listed = {str(t) for t in departure.get("next_departures_trip_id") or []}
-                listed.add(str(departure.get("trip_id")))
-                if struck and listed & set(struck) and self._data.get("departure_rows"):
-                    _LOGGER.debug("GTFS RT: the feed struck %s out of the listed trips, reading the departures again", sorted(listed & set(struck)))
-                    self._data["next_departure"] = await self.hass.async_add_executor_job(
-                        drop_departure_trips, self.hass, self._data, struck)
-                    departure = self._data["next_departure"] or {}
-                    self._stop_id = departure.get("origin_stop_id", data["origin"]).split(": ")[0]
-                    self._stop_sequence = departure.get("origin_stop_sequence", None)
-                    self._trip_id = departure.get("trip_id", None) or "no_trip_information"
-                    self._trip_short_name = departure.get("trip_short_name", None)
-                    self._direction = str(departure.get("trip_direction_id", data["direction"]))
-                    self._trip_list = departure.get("next_departures_trip_id", [])[:10]
-                    self._get_next_service = await self.hass.async_add_executor_job(get_next_services, self)
-                    self._remember_struck()
-                    self._data["next_departure_realtime_attr"] = self._get_next_service
-                    self._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
-                # the trips struck since the last static refresh, whichever
-                # reading turned them up
-                self._get_next_service[ATTR_RT_CANCELLED] = sorted(self._struck_cancelled)
-                self._get_next_service[ATTR_RT_SKIPPED] = sorted(self._struck_skipped)
+                await drop_struck_trips(self, data, run_static)
             except Exception as ex:  # pylint: disable=broad-except
                 _LOGGER.error("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
                 return self._data
