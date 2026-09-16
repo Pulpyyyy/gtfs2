@@ -1,5 +1,5 @@
 """Support for GTFS."""
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 import logging
 from typing import Any
 
@@ -20,11 +20,6 @@ from .const import (
     ATTR_DUE_IN,
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
-    ATTR_NEXT_RT_TRIPS,
-    ATTR_RT_CANCELLED,
-    ATTR_RT_SKIPPED,
-    ATTR_NEXT_SERVICE_DATE,
-    ATTR_NEXT_SERVICE_IN_DAYS,
     ATTR_DROP_OFF_DESTINATION,
     ATTR_DROP_OFF_ORIGIN,
     ATTR_FIRST,
@@ -75,6 +70,9 @@ from .rt_source import has_rt_feed
 from .rt_window import window_state
 from .feed_window import read_feed_window, timetable_state
 from .source_refresh import SIGNAL_SOURCE_REFRESH, _zip_path
+from .departure_attributes import (
+    alert_details, map_files, next_departure_lists, next_service_info, realtime_trips,
+)
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 _LOGGER = logging.getLogger(__name__)
@@ -464,81 +462,8 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         # Add contextual information
         self._attributes[ATTR_OFFSET] = self._offset
 
-        if self._state is None:
-            # Three situations, and the user needs to tell them apart. In
-            # order of how much is known:
-            #
-            #   nothing scheduled at all   no date to give, only say so
-            #   next one is days away      name the date
-            #   departures today           not this branch, the state is set
-            #
-            # The query reaches past today, so a next departure tomorrow is
-            # already carried by the state and never lands here.
-            #
-            # So: whenever a next date exists it is published, and the wording
-            # follows how far off it is. "no more departures" is kept for the
-            # only case where it is the whole truth.
-            next_service = self.coordinator.data.get("next_service_date")
-            delta = None
-            if next_service:
-                # How far off that is, so a card can say "tomorrow" or "Monday"
-                # without re-deriving it: the offset already applies to what
-                # counts as today here.
-                try:
-                    today = (dt_util.now() + timedelta(
-                        minutes=self._offset or 0)).date()
-                    delta = (date.fromisoformat(next_service) - today).days
-                except (TypeError, ValueError):
-                    delta = None
-            if next_service:
-                self._attributes[ATTR_NEXT_SERVICE_DATE] = next_service
-                self._attributes[ATTR_NEXT_SERVICE_IN_DAYS] = delta
-                if delta == 0:
-                    # today, but every departure is behind us
-                    self._attributes[ATTR_INFO] = "No more departures today"
-                else:
-                    # the query already reaches past today, so a next date
-                    # with nothing to show is worth naming whatever it is
-                    self._attributes[ATTR_INFO] = f"No departures until {next_service}"
-            else:
-                if ATTR_NEXT_SERVICE_DATE in self._attributes:
-                    del self._attributes[ATTR_NEXT_SERVICE_DATE]
-                # nothing found within the search horizon: this line has no
-                # scheduled service left at all. -1 rather than a missing key,
-                # so a card can tell "never again" apart from "running now":
-                # both would otherwise be the absence of an attribute.
-                self._attributes[ATTR_NEXT_SERVICE_IN_DAYS] = -1
-                self._attributes[ATTR_INFO] = "No scheduled departures"
-        else:
-            # There is a departure, but is it today's? The query reaches past
-            # today, so the state can carry tomorrow's first departure. The line is resting today all the same, and a
-            # card needs the machine-readable date for its badge, not only
-            # the sentence below: publish the same two attributes as when
-            # there is nothing to show at all, derived from the departure
-            # itself. Deleting them here was what kept a badge blank on a
-            # line whose next trip is tomorrow morning.
-            delta = None
-            if self._state:
-                try:
-                    today = (dt_util.now() + timedelta(
-                        minutes=self._offset or 0)).date()
-                    delta = (dt_util.as_local(self._state).date() - today).days
-                except (TypeError, ValueError):
-                    delta = None
-            if delta is not None and delta > 0:
-                shown = dt_util.as_local(self._state)
-                self._attributes[ATTR_NEXT_SERVICE_DATE] = shown.date().isoformat()
-                self._attributes[ATTR_NEXT_SERVICE_IN_DAYS] = delta
-                self._attributes[ATTR_INFO] = (
-                    f"Next departures tomorrow at {shown.strftime(TIME_STR_FORMAT)}"
-                    if delta == 1
-                    else f"No departures until {shown.date().isoformat()}")
-            else:
-                for k in (ATTR_NEXT_SERVICE_DATE, ATTR_NEXT_SERVICE_IN_DAYS):
-                    if k in self._attributes:
-                        del self._attributes[k]
-                if ATTR_INFO in self._attributes:
-                    del self._attributes[ATTR_INFO]
+        next_service_info(self._attributes, self._state,
+                          self.coordinator.data.get("next_service_date"), self._offset)
 
         # Add extra metadata
         key = "agency_id"
@@ -682,66 +607,20 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
             self._attributes["next_departures_destination_arrival_times"] = self._departure[
                 "next_departures_destination_arrival_times"][:10]
 
-        # Add next departures durations, in minutes
-        prefix = "next_departures_durations"
-        self._attributes["next_departures_durations"] = []
-        if self._next_departures:
-            self._attributes["next_departures_durations"] = self._departure[
-                "next_departures_durations"][:10]
-
-        # Add the stop each next departure leaves from: a place can be served
-        # from two of its records in turn (a terminus's quays)
-        self._attributes["next_departures_origin_stop_id"] = []
-        if self._next_departures:
-            self._attributes["next_departures_origin_stop_id"] = self._departure.get(
-                "next_departures_origin_stop_id", [])[:10]
-        # Add next departures route types: a rail line may list a coach
-        prefix = "next_departures_route_types"
-        self._attributes["next_departures_route_types"] = []
-        if self._next_departures:
-            self._attributes["next_departures_route_types"] = self._departure.get(
-                "next_departures_route_types", [])[:10]
+        next_departure_lists(self._attributes, self._departure, self._next_departures)
 
       
         self._attributes["gtfs_updated_at"] = self.coordinator.data[
             "gtfs_updated_at"]
 
-        # the drawn line and the timed ride, exported with or without realtime
-        if self.coordinator.data.get("route_geojson_file", None):
-            self._attributes["route_geojson_file"] = self.coordinator.data["route_geojson_file"]
-        if self.coordinator.data.get("leg_geojson_file", None):
-            self._attributes["leg_geojson_file"] = self.coordinator.data["leg_geojson_file"]
-        if self.coordinator.data.get("vehicle_positions_file", None):
-            self._attributes["vehicle_positions_file"] = self.coordinator.data["vehicle_positions_file"]
+        map_files(self._attributes, self.coordinator.data)
 
         self._attributes["origin_stop_alert"] = self.coordinator.data[
             "alert"].get("origin_stop_alert", "no info")
         self._attributes["destination_stop_alert"] = self.coordinator.data[
             "alert"].get("destination_stop_alert", "no info")
 
-        # The whole stack behind those two sentences, worst first: a journey can
-        # be under a cancellation and a works notice at the same time, and the
-        # strings can only say one of them. Each item carries its text and, when
-        # the feed states them, its cause and effect. Written only when there is
-        # something to say, and removed when there is not.
-        for key in ("origin_stop_alerts", "destination_stop_alerts"):
-            value = self.coordinator.data["alert"].get(key, None)
-            if value:
-                self._attributes[key] = value
-            elif key in self._attributes:
-                del self._attributes[key]
-
-        # What kind of alert, in the feed's own vocabulary: a cause out of
-        # twelve and an effect out of eleven. A card can draw roadworks from
-        # CONSTRUCTION; it cannot draw them from a free sentence. Written only
-        # when the feed says so, and removed when it stops saying so, so the
-        # attribute's presence is itself the answer to "is there one".
-        for key in ("alert_cause", "alert_effect"):
-            value = self.coordinator.data["alert"].get(key, None)
-            if value:
-                self._attributes[key] = value
-            elif key in self._attributes:
-                del self._attributes[key]
+        alert_details(self._attributes, self.coordinator.data["alert"])
         if self._departure_rt:
             _LOGGER.debug("next dep realtime attr: %s", self._departure_rt)
             # Add next departure realtime to the right level, only if populated
@@ -759,14 +638,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
                 else:
                     self._attributes["next_delay_realtime"] = '-'
                     self._attributes["next_delays_realtime"] = '-'
-                # the trip behind each realtime departure, and what the feed
-                # struck out: a cancelled trip is no longer in the departure
-                # lists above, its id is here for a card to say so
-                for key, attr in ((ATTR_NEXT_RT_TRIPS, "next_departures_realtime_trips"),
-                                  (ATTR_RT_CANCELLED, "cancelled_trips_realtime"),
-                                  (ATTR_RT_SKIPPED, "skipped_trips_realtime")):
-                    if key in self._departure_rt:
-                        self._attributes[attr] = self._departure_rt[key]
+                realtime_trips(self._attributes, self._departure_rt)
             if ATTR_INFO_RT in self._attributes:
                 del self._attributes[ATTR_INFO_RT]    
         else:
