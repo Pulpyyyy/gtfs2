@@ -24,7 +24,14 @@ Auterive on, passing Toulouse without a stop):
     files          the route file says, for every call, how the trip makes
                    it, so a card chaining legs picks its ends among the
                    calls the rider can make; the leg file too where the
-                   tree writes one
+                   tree writes one. The route file also says, per stop,
+                   whether ANY trip of the line takes riders on or sets
+                   them down there (boards / alights): the drawn trip's own
+                   1 is not the line's word
+    line_flags     a stop the drawn trip does not board at, that another
+                   trip of the line does, reads boards true: a card that
+                   filtered its lists on the drawn trip would shut out a
+                   journey that works
     stations       the train path: the departures hold to the same rule,
                    by name; so do the station list, the arrival list and the
                    pair test where the tree has them
@@ -39,6 +46,7 @@ from __future__ import annotations
 import datetime
 import json
 import types
+import zipfile
 import zoneinfo
 from pathlib import Path
 
@@ -247,14 +255,15 @@ def _route_file_name(route_id, direction):
     return f"{safe(route_id)}_{safe(direction)}_route.json"
 
 
-def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
-    check = Check()
+def _route_file(schedule, tmp_path):
+    """The sensor A -> E riding T1 at 08:00, its route file written under
+    tmp_path and read back: (me, route)."""
     leaves = datetime.datetime(2026, 6, 15, 8, 0, tzinfo=PARIS)
     me = types.SimpleNamespace(
         hass=_hass(tmp_path), _route_id=ROUTE, _direction="0",
-        _data={"schedule": bus, "gtfs_dir": "gtfs2", "file": "fixture", "name": "boarding",
+        _data={"schedule": schedule, "gtfs_dir": "gtfs2", "file": "fixture", "name": "boarding",
                "route": f"{ROUTE}: B1", "direction": "0",
-               "origin": _entry(bus, "A"), "destination": _entry(bus, "E"),
+               "origin": _entry(schedule, "A"), "destination": _entry(schedule, "E"),
                "next_departure": {
                    "trip_id": "T1", "departure_time": leaves,
                    "origin_stop_id": "A", "destination_stop_id": "E",
@@ -264,11 +273,28 @@ def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
     gtfs_helper.update_route_geojson(me)
     with open(tmp_path / "www" / "gtfs2" / _route_file_name(ROUTE, "0"),
               encoding="utf-8") as handle:
-        route = json.load(handle)
-    calls = [(f["properties"]["stop_id"], f["properties"]["pickup_type"], f["properties"]["drop_off_type"])
-             for f in route["features"] if f["geometry"]["type"] == "Point"]
+        return me, json.load(handle)
+
+
+def _points(route, *keys):
+    """(stop_id, *keys) of every Point of a route file, in order."""
+    return [tuple(f["properties"][k] for k in ("stop_id",) + keys)
+            for f in route["features"] if f["geometry"]["type"] == "Point"]
+
+
+def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
+    check = Check()
+    me, route = _route_file(bus, tmp_path)
+    calls = _points(route, "pickup_type", "drop_off_type")
     want = [("A", 0, 1), ("B", 1, 0), ("C", 0, 0), ("H", 2, 2), ("D", 0, 1), ("E", 1, 0)]
     check.same(calls, want, "the route file's calls")
+    # the line's word, over its three trips: the first stop sets nobody
+    # down, Mairie takes nobody on, Zone sets nobody down, the terminus
+    # takes nobody on; Hameau's phone call is a way on and off
+    check.same(_points(route, "boards", "alights"),
+               [("A", True, False), ("B", False, True), ("C", True, True),
+                ("H", True, True), ("D", True, False), ("E", False, True)],
+               "the route file's line flags")
     legs = _reader("update_leg_geojson")
     if legs:
         legs(me)
@@ -285,6 +311,53 @@ def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
     else:
         check.not_here("update_leg_geojson", "the leg file's calls")
     _done(record_property, check, fixture="boarding", promise="files")
+
+
+@pytest.fixture(scope="module")
+def bus_with_t4(tmp_path_factory):
+    """The made-up line plus a fourth trip, T4 at 11:00, which takes riders
+    on at Mairie and sets them down at Zone where the three others do not:
+    the way a TER boards at the station the night train only sets down at."""
+    root = tmp_path_factory.mktemp("boarding_t4")
+    with zipfile.ZipFile(FIXTURES / "boarding" / "static.zip") as source, \
+            zipfile.ZipFile(root / "static.zip", "w") as target:
+        for name in source.namelist():
+            data = source.read(name).decode("utf-8")
+            if name == "trips.txt":
+                data = data.rstrip("\n") + "\nB1,S,T4,Terminus,0\n"
+            elif name == "stop_times.txt":
+                data = data.rstrip("\n") + "\n" + "\n".join((
+                    "T4,11:00:00,11:00:00,A,1,0,1",
+                    "T4,11:05:00,11:05:00,B,2,0,0",
+                    "T4,11:10:00,11:10:00,C,3,0,0",
+                    "T4,11:15:00,11:15:00,H,4,0,0",
+                    "T4,11:20:00,11:20:00,D,5,0,0",
+                    "T4,11:25:00,11:25:00,E,6,1,0")) + "\n"
+            target.writestr(name, data)
+    return fixture_db.build(str(root))
+
+
+def test_the_route_file_flags_the_line_not_the_drawn_trip(record_property, bus_with_t4, tmp_path):
+    check = Check()
+    _me, route = _route_file(bus_with_t4, tmp_path)
+    # the drawn trip is still T1, and still says it takes nobody on at
+    # Mairie and sets nobody down at Zone
+    check.same(_points(route, "pickup_type", "drop_off_type"),
+               [("A", 0, 1), ("B", 1, 0), ("C", 0, 0), ("H", 2, 2), ("D", 0, 1), ("E", 1, 0)],
+               "the drawn trip's calls, unchanged by T4")
+    # but the line now boards at Mairie and sets down at Zone, on T4: a
+    # list filtered on the drawn trip would shut out a journey that works.
+    # The first stop and the terminus stay what they are on every trip.
+    check.same(_points(route, "boards", "alights"),
+               [("A", True, False), ("B", True, True), ("C", True, True),
+                ("H", True, True), ("D", True, True), ("E", False, True)],
+               "the route file's line flags with T4")
+    # the lists follow: Mairie is a departure, Zone an arrival from Gare
+    check.same(_ids(gtfs_helper.get_stop_list(bus_with_t4, ROUTE, None)),
+               ["A", "B", "C", "H", "D"], "the origin list with T4")
+    check.same(_ids(gtfs_helper.get_destination_stop_list(bus_with_t4, ROUTE, None, "A")),
+               ["B", "C", "H", "D", "E"], "the destinations from A with T4")
+    _done(record_property, check, fixture="boarding", promise="line_flags")
 
 
 # --- the SNCF night train -----------------------------------------------------
