@@ -84,6 +84,7 @@ import fixture_db  # noqa: E402
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the platforms and with them the rest of Home Assistant.
 gtfs_helper = ha_stub.load("gtfs_helper")
+stations = ha_stub.load("stations")
 get_next_departure = gtfs_helper.get_next_departure
 get_stop_list = gtfs_helper.get_stop_list
 get_destination_stop_list = gtfs_helper.get_destination_stop_list
@@ -1538,9 +1539,9 @@ def check_train_stations(check, fx, route_id, direction):
                            f"{where}: next service {date}, the stations alone "
                            f"give {dates}")
 
-                single = [gtfs_helper.has_train_trip_between(schedule, o, d, short_name)
+                single = [stations.has_train_trip_between(schedule, o, d, short_name)
                           for o, d in singles]
-                multi = gtfs_helper.has_train_trip_between(schedule, origins, destinations,
+                multi = stations.has_train_trip_between(schedule, origins, destinations,
                                                            short_name)
                 check.note(multi == any(single),
                            f"{where}: trip test {multi}, the stations alone give {single}")
@@ -1557,7 +1558,7 @@ def check_train_stations(check, fx, route_id, direction):
                 called.setdefault(fx.stop_names[stop], set()).add(
                     "coach" if stop.startswith(prefix) else "train")
     mixed = set().union(*called.values()) == {"train", "coach"} if called else False
-    modes = gtfs_helper.get_station_modes(schedule, route_id)
+    modes = stations.get_station_modes(schedule, route_id)
     check.note(modes == (called if mixed else {}),
                f"station modes {modes}, the trips call at {called}")
 
@@ -1597,7 +1598,7 @@ def check_train_destinations(check, fx, route_id, direction):
                       for p in patterns_of(schedule, route_id, direction) for s in p})
     for origin in origins:
         for line, ridden_from in ((short_name, by_line), (None, by_route)):
-            offered = gtfs_helper.get_train_destination_list(
+            offered = stations.get_train_destination_list(
                 schedule, route_id, origin, line)
             expected = ridden_from.get(origin, {})
             missing = sorted(set(expected) - set(offered))

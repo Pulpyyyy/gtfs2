@@ -76,11 +76,7 @@ from .gtfs_helper import (
     get_destination_stop_list,
     get_pair_direction,
     get_towards,
-    get_station_list,
-    get_station_modes,
     has_trip_between,
-    has_train_trip_between,
-    get_train_destination_list,
     get_direction_labels,
     get_datasources,
     get_zipfiles,
@@ -93,6 +89,7 @@ from .gtfs_helper import (
     open_datasource,
     build_scratch_database,
 )
+from .stations import get_station_list, get_station_modes, has_train_trip_between, get_train_destination_list
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, get_route_options_from_zip, get_agencies_in_zip, routes_in_zip_for_agency
 from .notifications import _async_text, check_extraction_result, async_watch_extraction, async_notify_import
 
