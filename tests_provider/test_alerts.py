@@ -26,6 +26,7 @@ ha_stub.install()
 import fixture_db  # noqa: E402
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+alerts_mod = ha_stub.load("alerts")
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sncf"
 
@@ -101,6 +102,6 @@ def test_alerts_reach_the_listed_trips(record_property, monkeypatch):
     # ranked after what concerns the next departure, whatever the effect
     later = {"text": "later", "effect": "NO_SERVICE", "later_only": True}
     now = {"text": "now", "effect": "NO_EFFECT"}
-    check.same([i["text"] for i in gtfs_rt_helper._rank_alerts([later, now])], ["now", "later"],
+    check.same([i["text"] for i in alerts_mod._rank_alerts([later, now])], ["now", "later"],
                "what concerns the next departure ranks first")
     _done(record_property, check, fixture="sncf", promise="alerts")
