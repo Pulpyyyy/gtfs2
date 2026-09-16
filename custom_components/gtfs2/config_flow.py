@@ -85,10 +85,8 @@ from .gtfs_helper import (
     check_datasource_index,
     get_agency_list,
     get_local_stop_list,
-    ensure_source_zip,
-    open_datasource,
-    build_scratch_database,
 )
+from .source_zip import ensure_source_zip, open_datasource, build_scratch_database
 from .stations import get_station_list, get_station_modes, has_train_trip_between, get_train_destination_list
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, get_route_options_from_zip, get_agencies_in_zip, routes_in_zip_for_agency
 from .notifications import _async_text, check_extraction_result, async_watch_extraction, async_notify_import
