@@ -81,12 +81,10 @@ from .gtfs_helper import (
     has_trip_between,
     has_train_trip_between,
     get_train_destination_list,
-    _async_text,
     get_direction_labels,
     get_datasources,
     get_zipfiles,
     check_extracting,
-    check_extraction_result,
     remove_datasource,
     check_datasource_index,
     get_agency_list,
@@ -99,10 +97,9 @@ from .gtfs_helper import (
     routes_in_zip_for_agency,
     ensure_source_zip,
     open_datasource,
-    async_watch_extraction,
-    async_notify_import,
-    build_scratch_database
+    build_scratch_database,
 )
+from .notifications import _async_text, check_extraction_result, async_watch_extraction, async_notify_import
 
 from .gtfs_db import import_routes, routes_in, real_path, optimise_datasource
 from .rt_source import (
