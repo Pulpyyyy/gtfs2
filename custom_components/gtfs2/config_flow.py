@@ -318,6 +318,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # not keep it
         self._towards = None
         self._pending_error: str | None = None
+        # why the arrival screen sent the rider back to the departure one
+        self._stops_error: str | None = None
         self._extract_job = None
         self._extract_task = None
         self._extract_next_step: str | None = None
