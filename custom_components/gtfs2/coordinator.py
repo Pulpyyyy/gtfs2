@@ -38,7 +38,8 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_helper import get_gtfs, get_next_departure, get_next_service_date, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, update_route_geojson, route_geojson_name, vehicle_positions_name, get_representative_trip, update_leg_geojson, leg_geojson_name, drop_departure_trips
+from .gtfs_helper import get_gtfs, get_next_departure, get_next_service_date, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures, drop_departure_trips
+from .geojson import write_route_file, write_leg_file, route_geojson_name, vehicle_positions_name, leg_geojson_name, get_representative_trip
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, struck_trips
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
@@ -333,7 +334,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         on a Sunday. Rewritten only when that trip changes or the zip is
         replaced, that is when the feed does, which is what makes it cheap
         enough to sit on every static refresh. The zip counts because the
-        line's polyline is read from it (see update_route_geojson): a new
+        line's polyline is read from it (see write_route_file): a new
         edition that ships shapes.txt where the last did not, or moves a
         shape, must reach the map even when the trip drawn keeps its id.
         """
@@ -374,7 +375,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._route_id = route_id
         self._direction = direction
         try:
-            await self.hass.async_add_executor_job(update_route_geojson, self, trip_id)
+            await self.hass.async_add_executor_job(write_route_file, self, trip_id)
             self._route_export_trip = export_key
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Error writing route geojson: %s", ex)
@@ -393,7 +394,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         direction = str(departure.get("trip_direction_id", data.get("direction")))
         self._data["leg_geojson_file"] = leg_geojson_name(route_id, direction, data["name"])
         try:
-            await self.hass.async_add_executor_job(update_leg_geojson, self, feed_entities)
+            await self.hass.async_add_executor_job(write_leg_file, self, feed_entities)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Error writing leg geojson: %s", ex)
     def _cleanup_stale_vehicle_markers(self) -> None:

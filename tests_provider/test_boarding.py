@@ -63,6 +63,10 @@ import homeassistant.util.dt as dt_util  # noqa: E402
 import fixture_db  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
+try:
+    geojson = ha_stub.load("geojson")
+except FileNotFoundError:  # a tree without the fork's map files
+    geojson = None
 
 FIXTURES = Path(__file__).parent / "fixtures"
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
@@ -125,7 +129,7 @@ def _train_data(schedule, origin, destination):
 
 def _reader(name):
     """The helper under test, or None where this tree has no such reader."""
-    return getattr(gtfs_helper, name, None)
+    return getattr(gtfs_helper, name, None) or getattr(geojson, name, None)
 
 
 class Check:
@@ -270,7 +274,7 @@ def _route_file(schedule, tmp_path):
                    "route_id": ROUTE, "trip_direction_id": "0",
                    "next_departures_trip_id": ["T1"],
                    "next_departures": [leaves.isoformat()]}})
-    gtfs_helper.update_route_geojson(me)
+    geojson.write_route_file(me)
     with open(tmp_path / "www" / "gtfs2" / _route_file_name(ROUTE, "0"),
               encoding="utf-8") as handle:
         return me, json.load(handle)
@@ -295,10 +299,10 @@ def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
                [("A", True, False), ("B", False, True), ("C", True, True),
                 ("H", True, True), ("D", True, False), ("E", False, True)],
                "the route file's line flags")
-    legs = _reader("update_leg_geojson")
+    legs = _reader("write_leg_file")
     if legs:
         legs(me)
-        with open(tmp_path / "www" / "gtfs2" / gtfs_helper.leg_geojson_name(ROUTE, "0", "boarding"),
+        with open(tmp_path / "www" / "gtfs2" / geojson.leg_geojson_name(ROUTE, "0", "boarding"),
                   encoding="utf-8") as handle:
             leg = json.load(handle)
         stops = leg["trips"]["T1"]["stops"]
@@ -309,7 +313,7 @@ def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
                  for f in leg["features"]]
         check.same(calls, want, "the leg file's stop features")
     else:
-        check.not_here("update_leg_geojson", "the leg file's calls")
+        check.not_here("write_leg_file", "the leg file's calls")
     _done(record_property, check, fixture="boarding", promise="files")
 
 

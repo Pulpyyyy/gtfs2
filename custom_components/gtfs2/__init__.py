@@ -16,7 +16,8 @@ from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAUL
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
-from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops, route_geojson_name, vehicle_positions_name, leg_geojson_pattern, async_notify_line_orphaned
+from .gtfs_helper import refresh_datasource, update_gtfs_local_stops, get_route_departures, get_trip_stops, async_notify_line_orphaned
+from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern
 from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
 from .rt_source import (

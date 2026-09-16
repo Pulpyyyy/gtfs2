@@ -1,6 +1,6 @@
 """Which trip draws a line: get_representative_trip.
 
-The route file (update_route_geojson) writes the stops of the trip this
+The route file (write_route_file) writes the stops of the trip this
 picks, and a map card places the sensor's boarding and alighting stops on
 it. A trip the sensor does not ride puts them where nothing it lists ever
 stops. The cases are the ones the SNCF feed produced, cut down to a few
@@ -23,7 +23,7 @@ import ha_stub
 
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the coordinator and the platforms, and with them the rest of Home Assistant.
-gtfs_helper = ha_stub.load("gtfs_helper")
+geojson = ha_stub.load("geojson")
 
 K8 = "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
 K5 = "FR:Line::13DADBDA-4FB1-4AA3-8DAB-60E24EF4AAFF:"
@@ -121,7 +121,7 @@ def schedule(tmp_path, monkeypatch):
         try:
             from sqlalchemy import create_engine
         except ImportError:
-            monkeypatch.setattr(gtfs_helper, "text", str)
+            monkeypatch.setattr(geojson, "text", str)
             engine = _Sqlite3Engine(path)
         else:
             engine = create_engine(f"sqlite:///{path}")
@@ -134,7 +134,7 @@ def schedule(tmp_path, monkeypatch):
 
 
 def pick(schedule, route_id, direction, origin_id=None, destination_id=None):
-    return gtfs_helper.get_representative_trip(
+    return geojson.get_representative_trip(
         schedule, route_id, direction, origin_id=origin_id, destination_id=destination_id)
 
 
@@ -231,7 +231,7 @@ def test_without_stop_ids(schedule):
         ("0_OTHER_WAY", K8, 0, [TRAIN_PARIS, TRAIN_AUBRAIS, TRAIN_ORLEANS, COACH_ORLEANS]),
     ])
     assert pick(feed, K8, "1") == "C_TWICE"
-    assert gtfs_helper.get_representative_trip(feed, K8, "1") == "C_TWICE"
+    assert geojson.get_representative_trip(feed, K8, "1") == "C_TWICE"
     # an empty id is no id
     assert pick(feed, K8, "1", "", "") == "C_TWICE"
     assert pick(feed, K8, "0") == "0_OTHER_WAY"
