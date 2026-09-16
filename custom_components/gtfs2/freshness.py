@@ -15,17 +15,20 @@ and touches nothing but the source's zip and its sidecar.
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
+import os
 
 import requests
+import homeassistant.util.dt as dt_util
 
+from . import zip_file as zipfile
 from .const import (
     CONF_API_KEY,
     CONF_API_KEY_LOCATION,
     CONF_API_KEY_NAME,
     DEFAULT_API_KEY_NAME,
 )
-from .gtfs_helper import adopt_zip, source_meta, stage_zip
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -151,3 +154,70 @@ def fetch_if_new(data, zip_path):
         return None
     adopt_zip(response, staged, zip_path)
     return True
+
+
+def source_meta_path(zip_path):
+    """Where the sidecar of a source zip lives: right beside it."""
+    return zip_path + ".meta.json"
+
+
+def source_meta(zip_path):
+    """What the sidecar remembers of the last successful download, or {}.
+
+    The sidecar is a cache of derived facts, never primary data: deleting
+    it costs at most one refresh that could have been skipped, so a missing
+    or unreadable file is an empty answer, not an error.
+    """
+    try:
+        with open(source_meta_path(zip_path), encoding="utf-8") as meta_file:
+            meta = json.load(meta_file)
+        return meta if isinstance(meta, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def stage_zip(response, zip_path):
+    """Write a downloaded feed beside its target and verify it is a zip.
+
+    A moved or renumbered url often keeps answering HTTP 200 with whatever
+    now lives there: an error page, a stray protobuf, fifteen bytes of
+    nothing. The kept zip is the only full record of the feed, so nothing
+    replaces it before proving to be a zip. Returns the staged path, or
+    None when the payload is not one.
+    """
+    staged = zip_path + ".new"
+    with open(staged, "wb") as out:
+        out.write(response.content)
+    if not zipfile.is_zipfile(staged):
+        _LOGGER.error(
+            "The download from %s is not a zip file (%s bytes), "
+            "keeping the current data", response.url, len(response.content))
+        try:
+            os.remove(staged)
+        except OSError:
+            pass
+        return None
+    return staged
+
+
+def adopt_zip(response, staged, zip_path):
+    """Swap the verified download in and record what it was.
+
+    The sidecar keeps the validators the host sent, so the next check can
+    ask "did this change" for the price of one conditional request, and
+    the hash, for the hosts that send no validators at all.
+    """
+    os.replace(staged, zip_path)
+    meta = {
+        "url": str(response.url),
+        "etag": response.headers.get("ETag"),
+        "last_modified": response.headers.get("Last-Modified"),
+        "sha256": hashlib.sha256(response.content).hexdigest(),
+        "size": len(response.content),
+        "downloaded_at": dt_util.utcnow().isoformat(),
+    }
+    try:
+        with open(source_meta_path(zip_path), "w", encoding="utf-8") as out:
+            json.dump(meta, out, indent=1)
+    except OSError as ex:
+        _LOGGER.warning("Could not record the download of %s: %s", zip_path, ex)

@@ -60,7 +60,8 @@ from .freshness import (
     fetch_if_new,
     probe_source,
 )
-from .gtfs_helper import refresh_datasource, source_meta
+from .gtfs_helper import refresh_datasource
+from .freshness import source_meta
 from .notifications import _async_notify
 from .rt_source import journey_entries, static_feed_config
 
