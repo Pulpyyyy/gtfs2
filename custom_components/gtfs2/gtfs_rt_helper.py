@@ -864,38 +864,6 @@ def convert_gtfs_realtime_positions_to_json(gtfs_realtime_data):
         json_data["entity"].append(entity_dict)
     return json_data    
 
-def convert_gtfs_realtime_alerts_to_json(gtfs_realtime_data):
-    feed = gtfs_realtime_pb2.FeedMessage()
-    feed.ParseFromString(gtfs_realtime_data)
-
-    json_data = {
-        "entity": []
-    }
-    for entity in feed.entity:
-        _LOGGER.debug("Alert entity: %s", entity)
-        if entity.HasField('alert'):
-            informed_entities = []
-            for informed_entity in entity.alert.informed_entity:
-                informed_entity_json = {
-                        "route_id": informed_entity.route_id,
-                        "trip_id": informed_entity.trip.trip_id
-                    }
-                informed_entities.append(informed_entity_json)
-            entity_dict = {
-                "alert": {
-                    "id": entity.id,
-                    #"active_period": {
-                    #    "start": entity.alert.active_period.start,
-                    #    "end": entity.alert.active_period.end
-                    #},
-                    "informed_entity": informed_entities,
-                    "header_text": entity.alert.header_text,
-                    "description_text": entity.alert.description_text
-                }   
-            }
-        json_data["entity"].append(entity_dict)
-        _LOGGER.debug("Alert entity JSON: %s", json_data["entity"])
-    return json_data      
     
 def convert_realtime_siri_trips_to_json(url,headers,stop_id):
     

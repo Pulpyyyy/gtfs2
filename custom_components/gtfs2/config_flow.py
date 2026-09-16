@@ -100,15 +100,6 @@ def _stop_options(stops):
             for entry in stops]
 
 
-def _stop_name_of(entry):
-    """The stop name inside a picker entry "stop_id: Name #2 (12)": the
-    number given to a repeated name and the sequence are display only."""
-    name = entry.split(": ", 1)[1].rsplit(" (", 1)[0]
-    if " #" in name and name.rsplit(" #", 1)[1].isdigit():
-        name = name.rsplit(" #", 1)[0]
-    return name
-
-
 @config_entries.HANDLERS.register(DOMAIN)
 class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for GTFS."""

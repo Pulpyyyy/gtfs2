@@ -35,7 +35,7 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, create_trip_geojson, check_extracting, get_local_stops_next_departures
+from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures
 from .geojson import write_route_file, write_leg_file, route_geojson_name, vehicle_positions_name, leg_geojson_name, get_representative_trip
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, struck_trips
 from .rt_source import rt_feed_config, rt_headers, with_query_key
