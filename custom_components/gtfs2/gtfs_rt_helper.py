@@ -64,7 +64,7 @@ from .const import (
 
     TIME_STR_FORMAT
 )
-from .alerts import _alert_kind, _rank_alerts, _stop_aliases, _journey_stops, _alert_language, _alert_text, _alert_scope
+from .alerts import journey_alerts
 
 _UNSAFE_FILE_PART = re.compile(r"[^a-z0-9._-]+")
 
@@ -635,77 +635,7 @@ def get_rt_alerts(self):
             label="alerts",
             owner=self._data.get("file", ""),
         )
-        if not feed_entities:
-            _LOGGER.debug("No proper RT feed entities for alerts")
-            return rt_alerts
-        origin_ids = _stop_aliases(self, self._stop_id)
-        destination_ids = _stop_aliases(self, self._destination_id)
-        # the destination the flow stored can be a station name rather than an
-        # id, which never matched anything; the departure knows the real one
-        arrival = ((getattr(self, "_data", None) or {})
-                   .get("next_departure") or {}).get("destination_stop_id")
-        if arrival:
-            destination_ids |= _stop_aliases(self, arrival)
-        journey_ids = _journey_stops(self)
-        language = _alert_language(self)
-        # the trips on the board: the next departure, then the ones listed
-        # behind it, so an alert naming any of them is read
-        head = str(getattr(self, "_trip_id", None) or "")
-        head = head if head and head != "no_trip_information" else None
-        listed = []
-        for t in getattr(self, "_trip_list", None) or []:
-            if t and str(t) != head and str(t) not in listed:
-                listed.append(str(t))
-        origin_alerts = []
-        destination_alerts = []
-        for entity in feed_entities:
-            if not entity.HasField("alert"):
-                continue
-            alert = entity.alert
-            hits = _alert_scope(alert, origin_ids, destination_ids,
-                                self._route_id, head, journey_ids, listed)
-            if not any(hits.values()):
-                continue
-            # an alert with no readable header still carries its cause and its
-            # effect, and it does not take a sentence to say that something is
-            # going on
-            item = {"text": _alert_text(alert.header_text, language)}
-            item.update(_alert_kind(alert))
-            if hits["trips"]:
-                # which departures of the board it names, head first
-                item["trips"] = list(hits["trips"])
-                if head not in hits["trips"] and not any(
-                        hits[k] for k in ("origin", "destination", "route", "journey")):
-                    # about a later departure only: kept, ranked after what
-                    # concerns the next one, so it never takes its sentence
-                    item["later_only"] = True
-            _LOGGER.debug("RT Alert for route: %s, scope: %s, alert: %s", self._route_id, hits, alert.header_text)
-            # an alert about the line, about the train itself, or about a stop
-            # somewhere along the way speaks for the whole journey
-            whole_journey = hits["route"] or hits["trip"] or hits["journey"]
-            if hits["origin"] or whole_journey:
-                origin_alerts.append(item)
-            if hits["destination"] or whole_journey:
-                destination_alerts.append(item)
-        origin_alerts = _rank_alerts(origin_alerts)
-        destination_alerts = _rank_alerts(destination_alerts)
-        # A journey can be under several alerts at once and the strings hold one
-        # sentence each, so they take the worst of them instead of whichever the
-        # feed published last. The lists carry the rest, in the same order.
-        if origin_alerts:
-            rt_alerts["origin_stop_alerts"] = origin_alerts
-            rt_alerts["origin_stop_alert"] = origin_alerts[0]["text"]
-        if destination_alerts:
-            rt_alerts["destination_stop_alerts"] = destination_alerts
-            rt_alerts["destination_stop_alert"] = destination_alerts[0]["text"]
-        # cause and effect have to describe the alert the sentence comes from.
-        # Taken from two different alerts, as they were, a card that styles
-        # itself on them paints a service notice as an incident. Origin first,
-        # because that is the sentence a start/stop card reads.
-        head = (origin_alerts or destination_alerts or [{}])[0]
-        for field in ("cause", "effect"):
-            if field in head:
-                rt_alerts["alert_" + field] = head[field]
+        rt_alerts = journey_alerts(self, feed_entities)
 
     return rt_alerts
     
