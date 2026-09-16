@@ -89,16 +89,11 @@ from .gtfs_helper import (
     check_datasource_index,
     get_agency_list,
     get_local_stop_list,
-    get_route_labels,
-    get_route_labels_from_zip,
-    get_routes_in_zip,
-    get_route_options_from_zip,
-    get_agencies_in_zip,
-    routes_in_zip_for_agency,
     ensure_source_zip,
     open_datasource,
     build_scratch_database,
 )
+from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, get_route_options_from_zip, get_agencies_in_zip, routes_in_zip_for_agency
 from .notifications import _async_text, check_extraction_result, async_watch_extraction, async_notify_import
 
 from .gtfs_db import import_routes, routes_in, real_path, optimise_datasource
