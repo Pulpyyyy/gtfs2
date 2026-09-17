@@ -485,16 +485,11 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     # the leg file is this entry's own, nobody else writes or reads it; found
     # by its entry part, the line part being the departure's, not the entry's
-    if entry.data.get("name"):
-        for leg in glob.glob(os.path.join(geojson_dir, leg_geojson_pattern(entry.data["name"]))):
-            try:
-                os.remove(leg)
-                _LOGGER.info("Removed %s", leg)
-            except OSError as ex:
-                _LOGGER.warning("Could not remove %s: %s", leg, ex)
+    leg_pattern = leg_geojson_pattern(entry.data["name"]) if entry.data.get("name") else None
     route = (entry.data.get("route") or "").split(": ")[0]
     direction = entry.data.get("direction")
     if not route:
+        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_pattern, [])
         return
     # an entry set up without a direction wrote its files under the
     # direction of the departures it followed, either one
@@ -518,11 +513,21 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
         legacy = f"{route}_{d}"
         if os.path.basename(legacy) == legacy and ".." not in legacy:
             names += [legacy + ".json", legacy + "_route.json"]
-    for name in dict.fromkeys(names):
-        path = os.path.join(geojson_dir, name)
-        if os.path.exists(path):
-            try:
-                os.remove(path)
-                _LOGGER.info("Removed %s", path)
-            except OSError as ex:
-                _LOGGER.warning("Could not remove %s: %s", path, ex)
+    # a disk walk: the glob and the removals run in the executor, never on the loop
+    await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_pattern, names)
+
+
+def _remove_geojson_files(geojson_dir, leg_pattern, names):
+    """Delete the leg files matching leg_pattern and the named files under
+    geojson_dir, logging each removal. Blocking file work, made for the
+    executor."""
+    paths = glob.glob(os.path.join(geojson_dir, leg_pattern)) if leg_pattern else []
+    paths += [os.path.join(geojson_dir, name) for name in dict.fromkeys(names)]
+    for path in paths:
+        if not os.path.exists(path):
+            continue
+        try:
+            os.remove(path)
+            _LOGGER.info("Removed %s", path)
+        except OSError as ex:
+            _LOGGER.warning("Could not remove %s: %s", path, ex)
