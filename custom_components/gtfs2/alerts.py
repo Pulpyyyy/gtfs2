@@ -125,7 +125,7 @@ def _same_trip(named, trip_id):
     return trip_id[len(named)].isdigit()
 
 
-def _stop_aliases(self, stop_id):
+def _stop_aliases(data, stop_id):
     """The ids a stop can be named by: its own, and the station above it.
 
     Feeds derived from NeTEx publish a station and each of its platforms as
@@ -137,7 +137,7 @@ def _stop_aliases(self, stop_id):
     stop_id = str(stop_id or "")
     if not stop_id:
         return set()
-    data = getattr(self, "_data", None) or {}
+    data = data or {}
     schedule = data.get("schedule")
     if schedule is None:
         return {stop_id}
@@ -162,7 +162,7 @@ def _stop_aliases(self, stop_id):
     return aliases
 
 
-def _journey_stops(self):
+def _journey_stops(data, trip_id=None):
     """Every stop of the journey, from where you get on to where you get off.
 
     An alert can name a station in the middle of the run: a lift out of order
@@ -172,12 +172,13 @@ def _journey_stops(self):
 
     Not cached, unlike the station of a stop: the journey belongs to the next
     departure, so the key would change with every trip and the cache would only
-    grow. One indexed lookup on trip_id is cheaper than that.
+    grow. One indexed lookup on trip_id is cheaper than that. trip_id is
+    the coordinator's, for a departure that does not name its own.
     """
-    data = getattr(self, "_data", None) or {}
+    data = data or {}
     schedule = data.get("schedule")
     departure = data.get("next_departure") or {}
-    trip_id = departure.get("trip_id") or getattr(self, "_trip_id", None)
+    trip_id = departure.get("trip_id") or trip_id
     first = departure.get("origin_stop_sequence")
     last = (departure.get("destination_stop_time") or {}).get("Sequence")
     if schedule is None or not trip_id or first is None or last is None:
@@ -204,9 +205,9 @@ def _journey_stops(self):
     return stops
 
 
-def _alert_language(self):
+def _alert_language(hass):
     """The language to read an alert in: the one Home Assistant is set to."""
-    config = getattr(getattr(self, "hass", None), "config", None)
+    config = getattr(hass, "config", None)
     return getattr(config, "language", None) or "en"
 
 
@@ -284,34 +285,37 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
     return hits
 
 
-def journey_alerts(self, feed_entities):
+def journey_alerts(coordinator, feed_entities):
     """What the alert feed says about this sensor's journey, as the
     coordinator publishes it: the worst sentence for each end, the whole
     stack behind it, and the cause and effect of the sentence shown.
 
-    self is the coordinator, read for the stops, the route, the trips on
-    the board and the language; feed_entities the alert feed as fetched.
+    What it reads of the coordinator is read here, once: the entry's data,
+    the route, the two stops, the trips on the board and hass for the
+    language; feed_entities is the alert feed as fetched.
     """
     rt_alerts = {}
     if not feed_entities:
         _LOGGER.debug("No proper RT feed entities for alerts")
         return rt_alerts
-    origin_ids = _stop_aliases(self, self._stop_id)
-    destination_ids = _stop_aliases(self, self._destination_id)
+    data = getattr(coordinator, "_data", None) or {}
+    route_id = coordinator._route_id
+    trip_id = getattr(coordinator, "_trip_id", None)
+    origin_ids = _stop_aliases(data, coordinator._stop_id)
+    destination_ids = _stop_aliases(data, coordinator._destination_id)
     # the destination the flow stored can be a station name rather than an
     # id, which never matched anything; the departure knows the real one
-    arrival = ((getattr(self, "_data", None) or {})
-               .get("next_departure") or {}).get("destination_stop_id")
+    arrival = (data.get("next_departure") or {}).get("destination_stop_id")
     if arrival:
-        destination_ids |= _stop_aliases(self, arrival)
-    journey_ids = _journey_stops(self)
-    language = _alert_language(self)
+        destination_ids |= _stop_aliases(data, arrival)
+    journey_ids = _journey_stops(data, trip_id)
+    language = _alert_language(getattr(coordinator, "hass", None))
     # the trips on the board: the next departure, then the ones listed
     # behind it, so an alert naming any of them is read
-    head = str(getattr(self, "_trip_id", None) or "")
+    head = str(trip_id or "")
     head = head if head and head != "no_trip_information" else None
     listed = []
-    for t in getattr(self, "_trip_list", None) or []:
+    for t in getattr(coordinator, "_trip_list", None) or []:
         if t and str(t) != head and str(t) not in listed:
             listed.append(str(t))
     origin_alerts = []
@@ -321,7 +325,7 @@ def journey_alerts(self, feed_entities):
             continue
         alert = entity.alert
         hits = _alert_scope(alert, origin_ids, destination_ids,
-                            self._route_id, head, journey_ids, listed)
+                            route_id, head, journey_ids, listed)
         if not any(hits.values()):
             continue
         # an alert with no readable header still carries its cause and its
@@ -337,7 +341,7 @@ def journey_alerts(self, feed_entities):
                 # about a later departure only: kept, ranked after what
                 # concerns the next one, so it never takes its sentence
                 item["later_only"] = True
-        _LOGGER.debug("RT Alert for route: %s, scope: %s, alert: %s", self._route_id, hits, alert.header_text)
+        _LOGGER.debug("RT Alert for route: %s, scope: %s, alert: %s", route_id, hits, alert.header_text)
         # an alert about the line, about the train itself, or about a stop
         # somewhere along the way speaks for the whole journey
         whole_journey = hits["route"] or hits["trip"] or hits["journey"]
