@@ -736,7 +736,9 @@ def get_gtfs(hass, path, data, update=False):
     else:
         _pending_remove = False
     if update and data["extract_from"] == "zip" and os.path.exists(os.path.join(gtfs_dir, file)) and os.path.exists(os.path.join(gtfs_dir, sqlite)):
-        os.remove(os.path.join(gtfs_dir, sqlite))      
+        os.remove(os.path.join(gtfs_dir, sqlite))  
+        if os.path.exists(journal):
+                os.remove(journal)        
     if data["extract_from"] == "zip":
         if not os.path.exists(os.path.join(gtfs_dir, file)):
             _LOGGER.error("The given GTFS zipfile was not found")
