@@ -322,7 +322,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._route_id = route_id
         self._direction = direction
         try:
-            await self.hass.async_add_executor_job(write_route_file, self, trip_id)
+            await self.hass.async_add_executor_job(write_route_file, self.hass, self._data, route_id, direction, trip_id)
             self._route_export_trip = export_key
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Error writing route geojson: %s", ex)
@@ -341,7 +341,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         direction = str(departure.get("trip_direction_id", data.get("direction")))
         self._data["leg_geojson_file"] = leg_geojson_name(route_id, direction, data["name"])
         try:
-            await self.hass.async_add_executor_job(write_leg_file, self, feed_entities)
+            await self.hass.async_add_executor_job(write_leg_file, self.hass, self._data, feed_entities)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Error writing leg geojson: %s", ex)
     def _cleanup_stale_vehicle_markers(self) -> None:

@@ -10,9 +10,9 @@ shape; the SNCF ships none; the historic import strips it out of the zip in
 place; and a trip may carry no shape_id at all.
 
 Each test builds a small SQLite database with pygtfs's table and column
-names, a zip with or without shapes.txt, and hands write_route_file a
-coordinator that only exposes what it reads: _data, _route_id, _direction
-and hass.config.path.
+names, a zip with or without shapes.txt, and hands write_route_file what
+it reads: the entry's data, the route, the direction, and a hass whose
+config.path points under the test's directory.
 """
 from __future__ import annotations
 
@@ -152,16 +152,13 @@ def schedule(tmp_path, monkeypatch):
         engine.dispose()
 
 
-def coordinator(tmp_path, schedule, file="feed"):
-    """What write_route_file reads of the coordinator, and a hass whose
-    config directory is tmp_path: the zip lives in gtfs2/, the file goes to
-    www/gtfs2/."""
+def writer_args(tmp_path, schedule, file="feed"):
+    """What write_route_file is handed, with a hass whose config directory
+    is tmp_path: the zip lives in gtfs2/, the file goes to www/gtfs2/."""
     hass = types.SimpleNamespace(config=types.SimpleNamespace(
         path=lambda *parts: str(tmp_path.joinpath(*parts))))
-    return types.SimpleNamespace(
-        hass=hass,
-        _data={"schedule": schedule, "gtfs_dir": "gtfs2", "file": file, "next_departure": {}},
-        _route_id=ROUTE, _direction="1")
+    data = {"schedule": schedule, "gtfs_dir": "gtfs2", "file": file, "next_departure": {}}
+    return hass, data, ROUTE, "1"
 
 
 def route_file(tmp_path):
@@ -222,7 +219,7 @@ def test_shapes_without_the_required_columns_read_none(tmp_path):
 def test_route_file_carries_the_polyline_ahead_of_the_stops(tmp_path, schedule):
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip")
-    geojson.write_route_file(coordinator(tmp_path, schedule()), trip_id="T1")
+    geojson.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
     written = route_file(tmp_path)
     line, *stops = written["features"]
     assert line["geometry"] == {"type": "LineString", "coordinates": SHAPE_POINTS}
@@ -238,7 +235,7 @@ def test_route_file_carries_the_polyline_ahead_of_the_stops(tmp_path, schedule):
 def test_route_file_keeps_to_the_stops_when_the_zip_has_no_shapes(tmp_path, schedule):
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip", shapes=None)
-    geojson.write_route_file(coordinator(tmp_path, schedule()), trip_id="T1")
+    geojson.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None
@@ -247,7 +244,7 @@ def test_route_file_keeps_to_the_stops_when_the_zip_has_no_shapes(tmp_path, sche
 def test_route_file_keeps_to_the_stops_when_the_trip_names_no_shape(tmp_path, schedule):
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip")
-    geojson.write_route_file(coordinator(tmp_path, schedule(shape_id=None)), trip_id="T1")
+    geojson.write_route_file(*writer_args(tmp_path, schedule(shape_id=None)), trip_id="T1")
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None
@@ -255,7 +252,7 @@ def test_route_file_keeps_to_the_stops_when_the_trip_names_no_shape(tmp_path, sc
 
 def test_route_file_keeps_to_the_stops_when_the_zip_is_gone(tmp_path, schedule):
     # a zip removed by hand: the line is still drawn, from its stops
-    geojson.write_route_file(coordinator(tmp_path, schedule()), trip_id="T1")
+    geojson.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None
@@ -267,12 +264,12 @@ def test_route_file_says_how_the_trip_calls_at_each_stop(tmp_path, schedule):
     # first stop sets nobody down, the last takes nobody on, and the middle
     # one wants a phone call ahead
     calls = {"VER1": (0, 1), "LAM1": (2, 2), "BUS1": (1, 0)}
-    geojson.write_route_file(coordinator(tmp_path, schedule(calls=calls)), trip_id="T1")
+    geojson.write_route_file(*writer_args(tmp_path, schedule(calls=calls)), trip_id="T1")
     stops = [f["properties"] for f in route_file(tmp_path)["features"]]
     assert [(s["stop_id"], s["pickup_type"], s["drop_off_type"]) for s in stops] == [
         ("VER1", 0, 1), ("LAM1", 2, 2), ("BUS1", 1, 0)]
     # blank columns read as the regular call
-    geojson.write_route_file(coordinator(tmp_path, schedule(name="blank.sqlite")), trip_id="T1")
+    geojson.write_route_file(*writer_args(tmp_path, schedule(name="blank.sqlite")), trip_id="T1")
     stops = [f["properties"] for f in route_file(tmp_path)["features"]]
     assert [(s["pickup_type"], s["drop_off_type"]) for s in stops] == [(0, 0)] * 3
 
@@ -281,7 +278,7 @@ def test_shape_named_by_no_trip_stop_draws_the_stops_alone(tmp_path, schedule):
     # trips.shape_id points at a shape the zip does not carry
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip")
-    geojson.write_route_file(coordinator(tmp_path, schedule(shape_id="GONE")), trip_id="T1")
+    geojson.write_route_file(*writer_args(tmp_path, schedule(shape_id="GONE")), trip_id="T1")
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None

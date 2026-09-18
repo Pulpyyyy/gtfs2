@@ -175,7 +175,7 @@ def get_representative_trip(schedule, route_id, direction, origin_id=None, desti
     return trip_id
 
 
-def write_route_file(self, trip_id=None):
+def write_route_file(hass, data, route_id, direction, trip_id=None):
     """Write the line's ordered stops to www/gtfs2/<route>_<direction>_route.json.
 
     Companion file to the vehicle-positions geojson. The stops as Points,
@@ -197,15 +197,15 @@ def write_route_file(self, trip_id=None):
     (write_leg_file). Rewritten only when the fullest trip or the zip
     changes, that is when the feed does (see coordinator).
     """
-    schedule = self._data["schedule"]
+    schedule = data["schedule"]
     if not trip_id:
         # a trip the sensor rides: its stops come from the next departure,
         # from the entry once the last one of the day is gone
-        departure = self._data.get("next_departure") or {}
+        departure = data.get("next_departure") or {}
         trip_id = get_representative_trip(
-            schedule, self._route_id, self._direction,
-            departure.get("origin_stop_id") or (self._data.get("origin") or "").split(": ")[0],
-            departure.get("destination_stop_id") or (self._data.get("destination") or "").split(": ")[0])
+            schedule, route_id, direction,
+            departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0],
+            departure.get("destination_stop_id") or (data.get("destination") or "").split(": ")[0])
     if not trip_id:
         return
     sql_stops = """
@@ -222,12 +222,12 @@ def write_route_file(self, trip_id=None):
         # the shapes themselves are never imported
         shape_row = conn.execute(text("SELECT shape_id FROM trips WHERE trip_id = :trip_id"),
                                  {"trip_id": trip_id}).fetchone()
-        boards, alights = _line_ways(conn, self._route_id, self._direction)
+        boards, alights = _line_ways(conn, route_id, direction)
     if not stop_rows:
         _LOGGER.debug("No stops found for trip: %s", trip_id)
         return
     shape_id = shape_row[0] if shape_row and shape_row[0] else None
-    zip_path = os.path.join(self.hass.config.path(self._data["gtfs_dir"]), str(self._data["file"]) + ".zip")
+    zip_path = os.path.join(hass.config.path(data["gtfs_dir"]), str(data["file"]) + ".zip")
     shape = read_shape(zip_path, shape_id) if shape_id else None
     features = []
     if shape and len(shape) >= 2:
@@ -235,8 +235,8 @@ def write_route_file(self, trip_id=None):
             "type": "Feature",
             "geometry": {"type": "LineString", "coordinates": shape},
             "properties": {
-                "id": str(self._route_id) + "_" + str(self._direction) + "_shape",
-                "title": str(self._route_id) + "_shape",
+                "id": str(route_id) + "_" + str(direction) + "_shape",
+                "title": str(route_id) + "_shape",
                 "trip_id": trip_id,
                 "shape_id": str(shape_id),
             },
@@ -248,7 +248,7 @@ def write_route_file(self, trip_id=None):
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": [row[3], row[2]]},
             "properties": {
-                "id": str(self._route_id) + "_" + str(self._direction) + "_" + str(row[4]),
+                "id": str(route_id) + "_" + str(direction) + "_" + str(row[4]),
                 # the _stop suffix is what a customize_glob rule matches on to
                 # give the stop entity a picture, see upstream c666cb7
                 "title": row[1] + "_stop",
@@ -269,19 +269,19 @@ def write_route_file(self, trip_id=None):
                 "alights": alights(row[0]),
             },
         })
-    geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)
+    geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     os.makedirs(geojson_dir, exist_ok=True)
     # the ids come out of the datasource, so they are not file names until
     # they are made ones: see safe_file_part
-    file = os.path.join(geojson_dir, route_geojson_name(self._route_id, self._direction))
+    file = os.path.join(geojson_dir, route_geojson_name(route_id, direction))
     _LOGGER.debug("Creating route geojson file: %s", file)
     with open(file, "w") as outfile:
         json.dump({
             "type": "FeatureCollection",
             "properties": {
                 "trip_id": trip_id,
-                "route_id": str(self._route_id),
-                "direction_id": str(self._direction),
+                "route_id": str(route_id),
+                "direction_id": str(direction),
                 # the trip stands for the line, it is not the one about to leave
                 "representative": True,
                 # the shape drawn, None when the stops alone draw the line
@@ -341,7 +341,7 @@ def _leg_timezone(schedule, route_id, departure, hass):
     return dt_util.get_time_zone(name) or datetime.timezone.utc
 
 
-def write_leg_file(self, feed_entities=None):
+def write_leg_file(hass, data, feed_entities=None):
     """Write www/gtfs2/<entry>_leg.json: the trip the next departure rides,
     stop by stop, and for every listed departure when its trip calls at
     every stop, scheduled and, where the feed says, expected.
@@ -364,9 +364,9 @@ def write_leg_file(self, feed_entities=None):
     zero delay is left out: protobuf reads an absent field as zero, so that
     one cannot be told from "on time".
     """
-    schedule = self._data["schedule"]
-    name = self._data.get("name") or ""
-    departure = self._data.get("next_departure") or {}
+    schedule = data["schedule"]
+    name = data.get("name") or ""
+    departure = data.get("next_departure") or {}
     trip_id = str(departure.get("trip_id") or "") or None
     trip_ids = []
     for t in [trip_id] + list(departure.get("next_departures_trip_id") or []):
@@ -380,9 +380,9 @@ def write_leg_file(self, feed_entities=None):
     if trip_id and departure.get("departure_time"):
         first = departure["departure_time"]
         leaves.setdefault(trip_id, first.isoformat() if hasattr(first, "isoformat") else str(first))
-    route_id = str(departure.get("route_id") or (self._data.get("route") or "").split(": ")[0])
-    direction = str(departure.get("trip_direction_id", self._data.get("direction")))
-    origin_id = str(departure.get("origin_stop_id") or (self._data.get("origin") or "").split(": ")[0])
+    route_id = str(departure.get("route_id") or (data.get("route") or "").split(": ")[0])
+    direction = str(departure.get("trip_direction_id", data.get("direction")))
+    origin_id = str(departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0])
     stops_by_trip = {}
     origin_parent = None
     if trip_ids:
@@ -402,7 +402,7 @@ def write_leg_file(self, feed_entities=None):
             parent = conn.execute(text("SELECT parent_station FROM stops WHERE stop_id = :s"),
                                   {"s": origin_id}).fetchone()
             origin_parent = parent[0] if parent and parent[0] else None
-    zone = _leg_timezone(schedule, route_id, departure, self.hass)
+    zone = _leg_timezone(schedule, route_id, departure, hass)
 
     def midnight_of(t, rows):
         """The service day's midnight of that trip, in the line's zone: the
@@ -529,7 +529,7 @@ def write_leg_file(self, feed_entities=None):
                 if delay or when:
                     stop["delay"] = int(delay or 0)
                     realtime = True
-    geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)
+    geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     os.makedirs(geojson_dir, exist_ok=True)
     file = os.path.join(geojson_dir, leg_geojson_name(route_id, direction, name))
     _LOGGER.debug("Creating leg geojson file: %s", file)

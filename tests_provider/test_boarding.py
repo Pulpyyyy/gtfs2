@@ -279,7 +279,7 @@ def _route_file(schedule, tmp_path):
                    "route_id": ROUTE, "trip_direction_id": "0",
                    "next_departures_trip_id": ["T1"],
                    "next_departures": [leaves.isoformat()]}})
-    geojson.write_route_file(me)
+    geojson.write_route_file(me.hass, me._data, me._route_id, me._direction)
     with open(tmp_path / "www" / "gtfs2" / _route_file_name(ROUTE, "0"),
               encoding="utf-8") as handle:
         return me, json.load(handle)
@@ -306,7 +306,7 @@ def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
                "the route file's line flags")
     legs = _reader("write_leg_file")
     if legs:
-        legs(me)
+        legs(me.hass, me._data)
         with open(tmp_path / "www" / "gtfs2" / geojson.leg_geojson_name(ROUTE, "0", "boarding"),
                   encoding="utf-8") as handle:
             leg = json.load(handle)

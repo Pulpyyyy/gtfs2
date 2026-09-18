@@ -247,7 +247,7 @@ def test_the_leg_file_says_what_is_struck(record_property, sncf, entities, tmp_p
                        "origin_stop_id": origin, "route_id": route_id, "trip_direction_id": "1",
                        "next_departures_trip_id": [trip_id],
                        "next_departures": [leaves.isoformat()]}})
-        legs(me, entities)
+        legs(me.hass, me._data, entities)
         with open(tmp_path / "www" / "gtfs2" / geojson.leg_geojson_name(route_id, "1", "leg"),
                   encoding="utf-8") as handle:
             leg = json.load(handle)
