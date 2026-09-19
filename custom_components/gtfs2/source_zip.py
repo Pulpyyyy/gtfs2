@@ -24,6 +24,7 @@ from .freshness import adopt_zip, stage_zip
 from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in
 from .gtfs_filter import filter_gtfs_zip, zip_only_future_dates
 from .gtfs_helper import check_extracting, get_gtfs, remove_from_zip
+from .notifications import async_notify_lines_missing
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -181,6 +182,9 @@ def refresh_datasource(hass, path, data):
     Falls back to the legacy full extract when there is nothing to refresh
     from: no database yet, or one that follows no route.
 
+    data may carry read_routes, the lines the source's sensors name: the
+    new edition must still carry trips for those, or the swap is refused.
+
     Returns {route_id: stop_times} on success, False on failure, and
     whatever get_gtfs returns when it falls back.
     """
@@ -242,6 +246,20 @@ def refresh_datasource(hass, path, data):
         if added is None or len(added) < len(routes):
             _LOGGER.error("Refresh of %s aborted, the current data stays: %s",
                           filename, added)
+            return False
+        # a line the new edition carries no trip for: renumbered, retired,
+        # or a broken feed. The copy of such a line succeeds with nothing
+        # in it, so swapping would leave its sensors empty without a word.
+        # The current data stays while a sensor still reads one, or when
+        # nothing at all came through; a line nobody reads just goes.
+        gone = {route for route, count in added.items() if not count}
+        read = gone & set(data.get("read_routes") or ())
+        if gone and (read or len(gone) == len(routes)):
+            _LOGGER.error("Refresh of %s aborted, the new edition has no trip "
+                          "for %s, the current data stays", filename, sorted(gone))
+            # every line gone says the file is broken, so every line is named
+            hass.create_task(async_notify_lines_missing(
+                hass, filename, sorted(gone if len(gone) == len(routes) else read)))
             return False
         # intern only: everything in this file was just copied on purpose
         optimise_datasource(gtfs_dir, staging)

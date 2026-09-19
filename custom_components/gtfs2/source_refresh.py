@@ -264,6 +264,20 @@ def refresh_data_for(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     return data
 
 
+def _lines_read(hass: HomeAssistant, file) -> list[str]:
+    """The route_ids the source's sensors name: lines a refresh must keep.
+
+    Train and local stop entries name no line, they read across the whole
+    feed, where lines come and go as a matter of course.
+    """
+    return sorted({
+        entry.data["route"].split(": ")[0]
+        for entry in journey_entries(hass, file)
+        if entry.data.get("route") and entry.data["route"] != "train"
+        and not entry.data.get("device_tracker_id")
+    })
+
+
 async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
     """One rebuild of a source from an assembled data dict, serialised per
     source, recorded, and told to its entities. The three triggers meet
@@ -272,6 +286,8 @@ async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
     if lock.locked():
         _LOGGER.info("A refresh of %s is already running", file)
         return False
+    # read here, on the loop: the entries are not for the executor to walk
+    data = {**data, "read_routes": _lines_read(hass, file)}
     async with lock:
         ok = await hass.async_add_executor_job(
             refresh_source, hass, DEFAULT_PATH, data)

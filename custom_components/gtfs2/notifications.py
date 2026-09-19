@@ -158,6 +158,20 @@ async def async_notify_line_orphaned(hass, filename, line):
                         file=filename, line=line)
 
 
+async def async_notify_lines_missing(hass, filename, routes):
+    """Say that a refresh was refused: the new edition lost lines sensors read.
+
+    Raised by the refresh itself. The current timetable stays, so the
+    sensors keep running on it; what is left to the user is telling a
+    renumbered line from a retired one, which no feed says. Same id as the
+    orphaned-line notification: one notification per source sums up the
+    state of its lines.
+    """
+    lines = ", ".join(r.split(":")[-1] for r in routes)
+    await _async_notify(hass, "lines_missing", f"gtfs2_prune_{filename}",
+                        file=filename, lines=lines)
+
+
 async def _async_notify(hass, key, notification_id, **values):
     """Raise a notification in the user's language.
 
