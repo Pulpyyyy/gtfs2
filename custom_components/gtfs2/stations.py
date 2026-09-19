@@ -77,7 +77,7 @@ def get_station_list(schedule, route_id=None):
         where exists (
             select 1 from stop_times st
             inner join trips t on t.trip_id = st.trip_id
-            where st.stop_id = s.stop_id and t.route_id = '{route_id}'
+            where st.stop_id = s.stop_id and t.route_id = :route_id
               and {_boards("st")}
         )"""
     sql = f"""
@@ -87,7 +87,9 @@ def get_station_list(schedule, route_id=None):
     order by s.stop_name
     """  # noqa: S608
     with schedule.engine.connect() as conn:
-        rows = conn.execute(text(sql), {"q": "q"}).fetchall()
+        # bound, not inlined: a route_id is the feed's own text, and one
+        # carrying a quote ("L'Express") would end the literal and the screen
+        rows = conn.execute(text(sql), {"route_id": str(route_id)}).fetchall()
     stations = [r[0] for r in rows if r[0]]
     _LOGGER.debug("Stations returned: %s", len(stations))
     return stations
