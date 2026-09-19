@@ -86,6 +86,9 @@ from .gtfs_helper import (
     get_routes_in_zip,
     get_route_options_from_zip,
     get_agencies_in_zip,
+    LINE_MODES,
+    with_modes,
+    _async_text,
     routes_in_zip_for_agency,
     ensure_source_zip,
     open_datasource,
@@ -688,10 +691,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             total = len(usable) if fresh else len(
                 await self.hass.async_add_executor_job(
                     get_route_list, self._pygtfs, self._user_inputs))
+            # the mode goes after the label where lines of one number differ
+            words = {mode: await _async_text(self.hass, f"line_mode_{mode}", mode)
+                     for mode in LINE_MODES}
             route_list = [
                 # value carries route_type##route_id, label is the readable part
-                selector.SelectOptionDict(value=r, label=r.split('##')[2])
-                for r in usable
+                selector.SelectOptionDict(value=r, label=label)
+                for r, label in zip(usable, with_modes(usable, words))
                 ]
             placeholders = dict(TRANSLATION_DESCRIPTION_PLACEHOLDERS)
             placeholders["routes"] = str(len(usable))

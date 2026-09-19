@@ -481,6 +481,17 @@
     "reason_tables_missing": "unpacking stopped before it wrote every table",
     "reason_unfinished": "unpacking did not finish",
     "reason_tables_empty": "some tables came out empty",
-    "reason_unreadable": "the database is unreadable"
+    "reason_unreadable": "the database is unreadable",
+    "line_mode_tram": "tram",
+    "line_mode_metro": "metro",
+    "line_mode_train": "train",
+    "line_mode_bus": "bus",
+    "line_mode_coach": "coach",
+    "line_mode_ferry": "ferry",
+    "line_mode_cable_tram": "cable tram",
+    "line_mode_aerial_lift": "aerial lift",
+    "line_mode_funicular": "funicular",
+    "line_mode_trolleybus": "trolleybus",
+    "line_mode_monorail": "monorail"
   }
 }

@@ -481,6 +481,17 @@
     "reason_tables_missing": "la décompression s'est arrêtée avant d'écrire toutes les tables",
     "reason_unfinished": "la décompression n'est pas allée à son terme",
     "reason_tables_empty": "certaines tables sont vides",
-    "reason_unreadable": "la base est illisible"
+    "reason_unreadable": "la base est illisible",
+    "line_mode_tram": "tram",
+    "line_mode_metro": "métro",
+    "line_mode_train": "train",
+    "line_mode_bus": "bus",
+    "line_mode_coach": "car",
+    "line_mode_ferry": "bateau",
+    "line_mode_cable_tram": "tramway à câble",
+    "line_mode_aerial_lift": "téléphérique",
+    "line_mode_funicular": "funiculaire",
+    "line_mode_trolleybus": "trolleybus",
+    "line_mode_monorail": "monorail"
   }
 }

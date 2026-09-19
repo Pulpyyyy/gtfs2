@@ -82,3 +82,30 @@ def test_no_zip_no_trips_no_headsign_give_nothing(tmp_path):
     assert gtfs_helper.headsign_ends(None, "feed", ["X"]) == {}
     gtfs_dir = _feed(tmp_path, [("X", "0", "")])
     assert gtfs_helper.headsign_ends(gtfs_dir, "feed", ["X"]) == {}
+
+
+def test_lines_of_one_number_and_several_modes_say_their_mode():
+    options = ["1##M6##6 : Nation ↔ Charles de Gaulle - Étoile",
+               "3##R6##6 : Remplacement Métro 6",
+               "3##B6##6 : Gare de Bourg-la-Reine",
+               "1##M3B##3B : Porte des Lilas ↔ Gambetta"]
+    words = {"metro": "métro", "bus": "bus"}
+    assert gtfs_helper.with_modes(options, words) == [
+        "6 : Nation ↔ Charles de Gaulle - Étoile (métro)",
+        "6 : Remplacement Métro 6 (bus)",
+        "6 : Gare de Bourg-la-Reine (bus)",
+        "3B : Porte des Lilas ↔ Gambetta"]
+
+
+def test_lines_of_one_number_and_one_mode_keep_their_label():
+    options = ["0##T4a##4 : Lijn 4 · GVB", "0##T4b##4 : Lijn 4 · HTM", "99##X##9"]
+    assert gtfs_helper.with_modes(options, {"tram": "tram"}) == [
+        "4 : Lijn 4 · GVB", "4 : Lijn 4 · HTM", "9"]
+
+
+def test_route_types_basic_and_extended():
+    assert [gtfs_helper.line_mode(t) for t in ("0", "1", "2", "3", "4", "5", "6", "7", "11", "12")] == [
+        "tram", "metro", "train", "bus", "ferry", "cable_tram", "aerial_lift", "funicular",
+        "trolleybus", "monorail"]
+    assert [gtfs_helper.line_mode(t) for t in ("100", "200", "401", "700", "900", "1300", "99", "x")] == [
+        "train", "coach", "metro", "bus", "tram", "aerial_lift", None, None]
