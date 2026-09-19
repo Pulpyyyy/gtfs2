@@ -107,7 +107,13 @@ async def async_setup_entry(
         coordinator: GTFSUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id][
            "coordinator"
         ]
-        await coordinator.async_config_entry_first_refresh()
+        # The first refresh reads the departures, and at startup every entry
+        # reads them at once: waiting for it held the sensor platform past
+        # Home Assistant's ten seconds (IDFM metro lines, 5 to 9 s each). The
+        # sensor is added now, empty, and fills in when its first refresh
+        # is done; a failed one is retried at the next interval.
+        config_entry.async_create_background_task(
+            hass, coordinator.async_refresh(), f"gtfs2 first refresh {config_entry.title}")
         
         sensors = [
             GTFSDepartureSensor(coordinator),
@@ -247,7 +253,8 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator) -> None:
         """Initialize the GTFSsensor."""
         super().__init__(coordinator)
-        self._name = coordinator.data["name"]
+        # the entry knows the name before the first refresh has run
+        self._name = coordinator.config_entry.data["name"]
         self._attributes: dict[str, Any] = {}
         # _update_attrs returns early when the source is extracting or broken,
         # before it reaches the line that sets the icon: everything a property
@@ -284,6 +291,13 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
     def _update_attrs(self):  # noqa: C901 PLR0911
         _LOGGER.debug("SENSOR update attr data: %s", self.coordinator.data)
         self._icon = ICON
+        if self.coordinator.data is None:
+            # added before its first refresh (see async_setup_entry): no
+            # departure known yet, the refresh fills the sensor in
+            self._attr_native_value = None
+            self._attributes = {}
+            self._attr_extra_state_attributes = self._attributes
+            return self._attributes
         if self.coordinator.data["extracting"]:  
             _LOGGER.warning("Extracting datasource: %s ,for sensor: %s", self.coordinator.data["file"], self._name)
             self._attr_native_value = None
