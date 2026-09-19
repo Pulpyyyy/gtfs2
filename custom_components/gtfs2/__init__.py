@@ -35,6 +35,7 @@ from .source_refresh import (
     async_refresh_source,
     async_refresh_source_data,
     refresh_data_for,
+    source_lock,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -217,8 +218,20 @@ async def async_prune_datasources(hass: HomeAssistant, data):
             # no sensor reads it: pruning would empty the datasource
             skipped.append({"file": filename, "reason": "no_sensor_reads_it"})
             continue
-        stats = await hass.async_add_executor_job(
-            prune_gtfs_datasource, gtfs_dir, filename, routes, dry_run)
+        if dry_run:
+            # counting only, nothing is written
+            stats = await hass.async_add_executor_job(
+                prune_gtfs_datasource, gtfs_dir, filename, routes, True)
+        else:
+            lock = source_lock(hass, filename)
+            if lock.locked():
+                # a refresh is rebuilding this source and will swap its file
+                # in: pruning the one being replaced would be lost with it
+                skipped.append({"file": filename, "reason": "refresh_running"})
+                continue
+            async with lock:
+                stats = await hass.async_add_executor_job(
+                    prune_gtfs_datasource, gtfs_dir, filename, routes, False)
         if stats:
             pruned.append(stats)
     result = {"pruned": pruned, "skipped": skipped}
@@ -248,13 +261,27 @@ async def async_intern_datasources(hass: HomeAssistant, data):
     else:
         targets = known
 
-    interned = []
+    interned, skipped = [], []
     for filename in sorted(targets):
-        stats = await hass.async_add_executor_job(
-            intern_gtfs_datasource, gtfs_dir, filename, dry_run)
+        if dry_run:
+            # counting only, nothing is written
+            stats = await hass.async_add_executor_job(
+                intern_gtfs_datasource, gtfs_dir, filename, True)
+        else:
+            lock = source_lock(hass, filename)
+            if lock.locked():
+                # same as pruning: the file being interned is about to be
+                # replaced by the refresh, so the work would go with it
+                skipped.append({"file": filename, "reason": "refresh_running"})
+                continue
+            async with lock:
+                stats = await hass.async_add_executor_job(
+                    intern_gtfs_datasource, gtfs_dir, filename, False)
         if stats:
             interned.append(stats)
     result = {"interned": interned}
+    if skipped:
+        result["skipped"] = skipped
     if unknown:
         result["unknown"] = unknown
     return result

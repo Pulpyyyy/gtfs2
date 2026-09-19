@@ -34,6 +34,7 @@ from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in
 from .gtfs_helper import check_datasource_index
 from .notifications import async_notify_import
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
+from .source_refresh import source_lock
 from .source_zip import build_scratch_database, open_datasource
 
 _LOGGER = logging.getLogger(__name__)
@@ -175,8 +176,15 @@ class ReloadScreens:
                 added = await self._import_job
                 await async_notify_import(self.hass, filename, routes, added)
 
-            self._import_job = self.hass.async_add_executor_job(
-                import_routes, gtfs_dir, filename, routes, _build)
+            async def _import():
+                # behind the source's own lock: a refresh rebuilds the file
+                # beside this one and swaps it in, which would take the lines
+                # added here with it. The wait shows as the progress screen.
+                async with source_lock(self.hass, filename):
+                    return await self.hass.async_add_executor_job(
+                        import_routes, gtfs_dir, filename, routes, _build)
+
+            self._import_job = self.hass.async_create_task(_import())
             self.hass.async_create_background_task(
                 _watch(), name=f"gtfs2 watch import {filename}")
 
@@ -300,9 +308,10 @@ class ReloadScreens:
                     "dropped": str(len(dropped)),
                 },
             )
-        result = await self.hass.async_add_executor_job(
-            optimise_datasource, gtfs_dir, filename,
-            None if unrestricted else keep)
+        async with source_lock(self.hass, filename):
+            result = await self.hass.async_add_executor_job(
+                optimise_datasource, gtfs_dir, filename,
+                None if unrestricted else keep)
         _LOGGER.info("Optimised datasource %s: %s", filename, result)
         return self.async_abort(
             reason="optimised",
