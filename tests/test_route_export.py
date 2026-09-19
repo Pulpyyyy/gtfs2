@@ -17,6 +17,8 @@ import ha_stub
 
 ha_stub.install()
 coordinator_mod = ha_stub.load("coordinator")
+import sys  # noqa: E402
+exports_mod = sys.modules["gtfs2_under_test.exports"]
 
 ROUTE, DIRECTION, TRIP = "IDFM:C01374", "1", "T4-29"
 
@@ -26,7 +28,7 @@ def _files(tmp_path, trip=TRIP, file_newer=True):
     zip_path = tmp_path / "gtfs2" / "IDFM.zip"
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     zip_path.write_bytes(b"zip")
-    file = tmp_path / "www" / "gtfs2" / coordinator_mod.route_geojson_name(ROUTE, DIRECTION)
+    file = tmp_path / "www" / "gtfs2" / exports_mod.route_geojson_name(ROUTE, DIRECTION)
     if trip is not None:
         file.parent.mkdir(parents=True, exist_ok=True)
         file.write_text(json.dumps({"type": "FeatureCollection", "properties": {"trip_id": trip}}))
@@ -37,28 +39,28 @@ def _files(tmp_path, trip=TRIP, file_newer=True):
 
 def test_the_trip_a_route_file_draws(tmp_path):
     zip_path, file = _files(tmp_path)
-    assert coordinator_mod._drawn_trip(zip_path, file) == TRIP
+    assert exports_mod._drawn_trip(zip_path, file) == TRIP
 
 
 def test_a_route_file_older_than_its_zip_draws_nothing_worth_keeping(tmp_path):
     zip_path, file = _files(tmp_path, file_newer=False)
-    assert coordinator_mod._drawn_trip(zip_path, file) is None
+    assert exports_mod._drawn_trip(zip_path, file) is None
 
 
 def test_no_route_file_or_an_unreadable_one(tmp_path):
     zip_path, file = _files(tmp_path, trip=None)
-    assert coordinator_mod._drawn_trip(zip_path, file) is None
+    assert exports_mod._drawn_trip(zip_path, file) is None
     zip_path, file = _files(tmp_path)
     with open(file, "w") as handle:
         handle.write("not json")
-    assert coordinator_mod._drawn_trip(zip_path, file) is None
+    assert exports_mod._drawn_trip(zip_path, file) is None
 
 
 def _run(tmp_path, monkeypatch):
     """Export the route of an entry the way a refresh does: (written, started)."""
     written, started = [], []
-    monkeypatch.setattr(coordinator_mod, "get_representative_trip", lambda *args: TRIP)
-    monkeypatch.setattr(coordinator_mod, "write_route_file",
+    monkeypatch.setattr(exports_mod, "get_representative_trip", lambda *args: TRIP)
+    monkeypatch.setattr(exports_mod, "write_route_file",
                         lambda hass, data, route_id, direction, trip_id: written.append(trip_id))
 
     async def run():
@@ -79,13 +81,13 @@ def _run(tmp_path, monkeypatch):
         me._route_task = None
         me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "IDFM",
                     "next_departure": {"route_id": ROUTE, "trip_direction_id": DIRECTION}}
-        await me._export_route_shape({"route": ROUTE, "direction": DIRECTION,
-                                      "origin": "A: a", "destination": "B: b"})
+        await exports_mod.export_route_shape(me, {"route": ROUTE, "direction": DIRECTION,
+                                                  "origin": "A: a", "destination": "B: b"})
         # the refresh did not wait for the writing
         assert written == []
         if me._route_task is not None:
             await me._route_task
-        assert me._data["route_geojson_file"] == coordinator_mod.route_geojson_name(ROUTE, DIRECTION)
+        assert me._data["route_geojson_file"] == exports_mod.route_geojson_name(ROUTE, DIRECTION)
 
     asyncio.run(run())
     return written, started

@@ -85,13 +85,16 @@ def test_the_refresh_does_not_wait_for_the_timetable(tmp_path, monkeypatch):
     import asyncio
     import types
 
+    import sys
+
     coordinator_mod = ha_stub.load("coordinator")
+    exports_mod = sys.modules[coordinator_mod.__name__.rsplit(".", 1)[0] + ".exports"]
     written, started, updates = [], [], []
 
     def write(hass, data, today, zip_path):
         written.append(data["name"])
 
-    monkeypatch.setattr(coordinator_mod, "write_timetable_file", write)
+    monkeypatch.setattr(exports_mod, "write_timetable_file", write)
 
     async def run():
         loop = asyncio.get_running_loop()
@@ -114,11 +117,11 @@ def test_the_refresh_does_not_wait_for_the_timetable(tmp_path, monkeypatch):
         me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "feed", "name": "Métro 4"}
         me.async_update_listeners = lambda: updates.append(dict(me._data))
         data = {"name": "Métro 4"}
-        await me._export_timetable(data)
+        await exports_mod.export_timetable(me, data)
         # handed off: nothing written yet, nothing named yet
         assert written == [] and "timetable_file" not in me._data
         # a second refresh while it runs starts no second writing
-        await me._export_timetable(data)
+        await exports_mod.export_timetable(me, data)
         assert len(started) == 1
         await me._timetable_task
         assert written == ["Métro 4"]

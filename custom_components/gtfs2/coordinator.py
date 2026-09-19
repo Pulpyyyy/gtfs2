@@ -3,9 +3,7 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
-import json
 import logging
-import os
 import re
 
 from homeassistant.config_entries import ConfigEntry
@@ -15,7 +13,6 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 import homeassistant.util.dt as dt_util
 
 from .const import (
-    DEFAULT_PATH_GEOJSON,
     DEFAULT_PATH,
     DEFAULT_REFRESH_INTERVAL, 
     DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
@@ -37,44 +34,14 @@ from .const import (
     ICONS
 )    
 from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures
-from .geojson import (
-    write_route_file, write_leg_file, write_timetable_file, route_geojson_name, vehicle_positions_name,
-    leg_geojson_name, timetable_name, get_representative_trip,
-)
+from .geojson import vehicle_positions_name
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, struck_trips
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
 from .refresh_steps import drop_struck_trips, next_service_date_for
+from .exports import export_leg, export_route_shape, export_timetable
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _route_export_state(zip_path, file):
-    """What decides whether the route file is written again: the edition of
-    the zip it is drawn from (size and modification time, changed by a
-    refresh and by an import that rewrites the zip in place) and whether
-    the file is still there. Two stats, made for the executor."""
-    try:
-        stat = os.stat(zip_path)
-        edition = f"{stat.st_size}:{stat.st_mtime_ns}"
-    except OSError:
-        edition = ""
-    return edition, os.path.exists(file)
-
-
-def _drawn_trip(zip_path, file):
-    """The trip a route file already draws, when it is at least as new as
-    the zip it was drawn from; None when there is no such file, when the
-    zip was replaced since, or when the file cannot be read. What spares a
-    restart the reading of the line's shape again: on IDFM shapes.txt is
-    131 MB to scan for one line, and eight entries did it at once."""
-    try:
-        if os.path.getmtime(file) < os.path.getmtime(zip_path):
-            return None
-        with open(file, encoding="utf-8") as handle:
-            return (json.load(handle).get("properties") or {}).get("trip_id")
-    except (OSError, ValueError, AttributeError):
-        return None
 
 
 class GTFSUpdateCoordinator(DataUpdateCoordinator):
@@ -194,8 +161,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             # The route shape comes from the schedule alone: export it here,
             # outside the realtime block, so a map card can draw the journey
             # of an entry that has no vehicle feed at all.
-            await self._export_route_shape(data)
-            await self._export_timetable(data)
+            await export_route_shape(self, data)
+            await export_timetable(self, data)
 
             if not self._data["next_departure"]:
                 # Nothing left to show. Look ahead for the next day this journey
@@ -283,7 +250,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         # the leg file follows every clock that can move: the list of
         # departures on a static refresh, their realtime on a realtime one
         if run_static or rt_feed is not None:
-            await self._export_leg(data, rt_feed)
+            await export_leg(self, data, rt_feed)
 
         return self._data
 
@@ -296,153 +263,6 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._struck_skipped = {**(getattr(self, "_struck_skipped", None) or {}),
                                 **(getattr(self, "_rt_skipped", None) or {})}
 
-    async def _export_route_shape(self, data) -> None:
-        """Write the geojson of the line the sensor rides.
-
-        Shape and stops are read from the schedule, so this owes nothing to
-        realtime: an entry without a vehicle feed, or with realtime switched
-        off entirely, still gets its line drawn on a map card. Nor does it owe
-        anything to there being a departure today: the line drawn is the
-        fullest trip that calls at the sensor's stops, the same at night and
-        on a Sunday. Rewritten only when that trip changes or the zip is
-        replaced, that is when the feed does, which is what makes it cheap
-        enough to sit on every static refresh. The zip counts because the
-        line's polyline is read from it (see write_route_file): a new
-        edition that ships shapes.txt where the last did not, or moves a
-        shape, must reach the map even when the trip drawn keeps its id.
-
-        A file already there, newer than the zip and drawing the same trip,
-        is kept: a restart knows nothing of what the last run wrote, and
-        read the shape again for every entry. When it has to be written, it
-        is written in the background: the sensor waits for this refresh, and
-        a large shapes.txt held the sensor platform past Home Assistant's
-        minute at startup.
-        """
-        departure = self._data.get("next_departure") or {}
-        route_id = departure.get("route_id", None) or (data.get("route") or "").split(": ")[0]
-        direction = str(departure.get("trip_direction_id", data.get("direction")))
-        # the file is named from the route and the direction, both known even
-        # once the last departure of the day is behind us: the attribute stays
-        # put so a card keeps its route through the evening, and it is named
-        # before the first write rather than a refresh later
-        if route_id and direction not in ("None", ""):
-            self._data["route_geojson_file"] = route_geojson_name(route_id, direction)
-        if not route_id:
-            return
-        # the trip drawn has to be one the sensor rides, or a card places its
-        # stops where nothing it lists calls: the stops of the next
-        # departure, the entry's once the last one of the day is gone
-        origin_id = departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0]
-        destination_id = departure.get("destination_stop_id") or (data.get("destination") or "").split(": ")[0]
-        try:
-            trip_id = await self.hass.async_add_executor_job(
-                get_representative_trip, self._data["schedule"], route_id, direction,
-                origin_id, destination_id)
-        except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Error picking the trip to draw route %s: %s", route_id, ex)
-            return
-        if not trip_id:
-            return
-        # rewritten when the trip changes, when the zip does, and when the
-        # file is gone: a folder cleaned by hand must not leave the map
-        # without its line until the next restart
-        file = os.path.join(self.hass.config.path(DEFAULT_PATH_GEOJSON), route_geojson_name(route_id, direction))
-        zip_path = os.path.join(self.hass.config.path(self._data["gtfs_dir"]), str(self._data["file"]) + ".zip")
-        edition, present = await self.hass.async_add_executor_job(_route_export_state, zip_path, file)
-        export_key = f"{route_id}_{direction}:{trip_id}:{edition}"
-        if export_key == self._route_export_trip and present:
-            return
-        if present and await self.hass.async_add_executor_job(_drawn_trip, zip_path, file) == trip_id:
-            # written by an earlier run, and still the line of this zip
-            self._route_export_trip = export_key
-            return
-        if self._route_task is not None and not self._route_task.done():
-            # one writing at a time: the next refresh looks again
-            return
-        self._route_id = route_id
-        self._direction = direction
-        self._route_task = self.hass.async_create_background_task(
-            self._write_route(self._data, route_id, direction, trip_id, export_key),
-            f"gtfs2 route {route_id} {direction}")
-
-    async def _write_route(self, source, route_id, direction, trip_id, export_key) -> None:
-        """Write the route file off the refresh (see _export_route_shape)."""
-        try:
-            await self.hass.async_add_executor_job(write_route_file, self.hass, source, route_id, direction, trip_id)
-            self._route_export_trip = export_key
-        except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Error writing route geojson: %s", ex)
-
-    async def _export_timetable(self, data) -> None:
-        """Write the timetable file: every departure of the entry over the
-        service day under way and the two after it (see write_timetable_file).
-
-        It changes with the service day and with the zip, and with nothing
-        else: rewritten on the first static refresh of a new day, when the
-        zip is replaced, and when the file is gone, never on the refreshes
-        in between. The attribute is set once the file is written, unlike
-        the leg file's: a card reads the sensor first and this file only
-        past it, and one that is not there is better not named at all.
-
-        The writing itself runs in the background: three days of departures
-        and the next service day are a few reads more than the sensor's own,
-        and at startup every entry does them at once, which held the sensor
-        platform past Home Assistant's minute. The sensor comes up on its
-        departures, and takes the attribute as soon as the file is there.
-        """
-        schedule = self._data.get("schedule")
-        # a sentinel string or None when the datasource is unusable, as the
-        # departures read it: nothing to write the days from
-        if schedule is None or isinstance(schedule, str):
-            return
-        name = timetable_name(data["name"])
-        today = (dt_util.now() + timedelta(minutes=self._data.get("offset", 0) or 0)).strftime("%Y-%m-%d")
-        file = os.path.join(self.hass.config.path(DEFAULT_PATH_GEOJSON), name)
-        zip_path = os.path.join(self.hass.config.path(self._data["gtfs_dir"]), str(self._data["file"]) + ".zip")
-        edition, present = await self.hass.async_add_executor_job(_route_export_state, zip_path, file)
-        export_key = f"{today}:{edition}"
-        if export_key == self._timetable_export and present:
-            # written already: named again, the refresh built a fresh _data
-            self._data["timetable_file"] = name
-            return
-        if self._timetable_task is not None and not self._timetable_task.done():
-            # one writing at a time: the one under way names the file itself
-            return
-        self._timetable_task = self.hass.async_create_background_task(
-            self._write_timetable(self._data, name, today, zip_path, export_key),
-            f"gtfs2 timetable {name}")
-
-    async def _write_timetable(self, source, name, today, zip_path, export_key) -> None:
-        """Write the timetable file off the refresh, then name it on the
-        sensor without waiting for the next refresh."""
-        try:
-            await self.hass.async_add_executor_job(write_timetable_file, self.hass, source, today, zip_path)
-        except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Error writing the timetable file: %s", ex)
-            return
-        self._timetable_export = export_key
-        # the refresh under way when the task started may have been
-        # replaced since: the attribute goes on the data the sensor reads now
-        self._data["timetable_file"] = name
-        self.async_update_listeners()
-
-    async def _export_leg(self, data, feed_entities) -> None:
-        """Write the leg file: the ride of the next departure, and the clocks
-        of every listed departure at every stop, realtime included when the
-        trip updates of this refresh carry it.
-
-        Named after the entry, not the line: it is this sensor's ride. The
-        attribute is set before the write, so a card can name the file even
-        when the first write fails.
-        """
-        departure = self._data.get("next_departure") or {}
-        route_id = str(departure.get("route_id") or (data.get("route") or "").split(": ")[0])
-        direction = str(departure.get("trip_direction_id", data.get("direction")))
-        self._data["leg_geojson_file"] = leg_geojson_name(route_id, direction, data["name"])
-        try:
-            await self.hass.async_add_executor_job(write_leg_file, self.hass, self._data, feed_entities)
-        except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Error writing leg geojson: %s", ex)
     def _cleanup_stale_vehicle_markers(self) -> None:
         """One-shot removal of the stale vehicle markers of this route.
 
