@@ -47,9 +47,28 @@ def _member(zin, name):
 
 
 def _rows(zin, member):
-    """Stream a member as csv rows, header first, byte order mark eaten."""
-    return csv.reader(io.TextIOWrapper(
+    """Stream a member as csv rows, header first, byte order mark eaten.
+
+    Blank lines are left out: a table ending with one, which plenty of
+    feeds do, reads as a row with no column at all and breaks every index
+    taken on the header.
+    """
+    reader = csv.reader(io.TextIOWrapper(
         zin.open(member), encoding="utf-8-sig", newline=""))
+    return (row for row in reader if row)
+
+
+def _header(rows, name):
+    """The header row of a table, or the end of the filtering.
+
+    A table with not one line has no columns to filter on. Saying so as a
+    ValueError puts it where a feed missing that table already lands: the
+    caller keeps the feed whole rather than writing half of it.
+    """
+    header = next(rows, None)
+    if header is None:
+        raise ValueError(f"{name} carries no header")
+    return header
 
 
 class _Writer:
@@ -74,19 +93,28 @@ class _Writer:
         self._wrapper.detach()
         self._handle.close()
 
+    # used as a context manager so that a table breaking halfway still
+    # closes its handle: a zip cannot even be closed, let alone deleted,
+    # while one is open on it
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+        return False
+
 
 def _copy_filtered(zin, zout, member, name, keep):
     """Copy one table keeping the rows keep() accepts. Returns (kept, total)."""
     rows = _rows(zin, member)
-    header = next(rows)
-    out = _Writer(zout, name, header)
+    header = _header(rows, name)
     kept = total = 0
-    for row in rows:
-        total += 1
-        if keep(row):
-            out.row(row)
-            kept += 1
-    out.close()
+    with _Writer(zout, name, header) as out:
+        for row in rows:
+            total += 1
+            if keep(row):
+                out.row(row)
+                kept += 1
     return kept, total
 
 
@@ -113,42 +141,40 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
             # trips first: it decides everything else that survives
             trip_ids, service_ids = set(), set()
             rows = _rows(zin, required["trips.txt"])
-            header = next(rows)
+            header = _header(rows, "trips.txt")
             i_route = header.index("route_id")
             i_trip = header.index("trip_id")
             i_service = header.index("service_id")
-            out = _Writer(zout, "trips.txt", header)
             trips_total = 0
-            for row in rows:
-                trips_total += 1
-                if row[i_route] in route_ids:
-                    out.row(row)
-                    trip_ids.add(row[i_trip])
-                    service_ids.add(row[i_service])
-            out.close()
+            with _Writer(zout, "trips.txt", header) as out:
+                for row in rows:
+                    trips_total += 1
+                    if row[i_route] in route_ids:
+                        out.row(row)
+                        trip_ids.add(row[i_trip])
+                        service_ids.add(row[i_service])
 
             # stop_times is the weight of the feed: one pass, collecting the
             # stops the kept trips call at
             stop_ids = set()
             rows = _rows(zin, required["stop_times.txt"])
-            header = next(rows)
+            header = _header(rows, "stop_times.txt")
             i_trip = header.index("trip_id")
             i_stop = header.index("stop_id")
-            out = _Writer(zout, "stop_times.txt", header)
             st_kept = st_total = 0
-            for row in rows:
-                st_total += 1
-                if row[i_trip] in trip_ids:
-                    out.row(row)
-                    stop_ids.add(row[i_stop])
-                    st_kept += 1
-            out.close()
+            with _Writer(zout, "stop_times.txt", header) as out:
+                for row in rows:
+                    st_total += 1
+                    if row[i_trip] in trip_ids:
+                        out.row(row)
+                        stop_ids.add(row[i_stop])
+                        st_kept += 1
 
             # stops: a first pass finds the parent stations of the kept
             # stops, so a platform never loses the station above it
             if member := _member(zin, "stops.txt"):
                 rows = _rows(zin, member)
-                header = next(rows)
+                header = _header(rows, "stops.txt")
                 i_stop = header.index("stop_id")
                 i_parent = (header.index("parent_station")
                             if "parent_station" in header else None)
@@ -167,7 +193,7 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
                     ("frequencies.txt", "trip_id", trip_ids)):
                 if member := _member(zin, name):
                     rows = _rows(zin, member)
-                    header = next(rows)
+                    header = _header(rows, name)
                     if column not in header:
                         continue
                     index = header.index(column)
@@ -179,7 +205,10 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
                     continue
                 if member := _member(zin, name):
                     zout.writestr(name, zin.read(member))
-    except (OSError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
+    except (OSError, LookupError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
+        # LookupError: a row shorter than its header, or a column the feed
+        # names elsewhere; the feed is then kept whole rather than trimmed
+        # on a guess
         _LOGGER.error("Could not filter %s to %s routes: %s",
                       src, len(route_ids), ex)
         if os.path.exists(dst):
