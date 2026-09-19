@@ -42,7 +42,7 @@ from .const import (
     )
 from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities,
                              struck_trips, on_service_day)
-from .route_names import get_routes_in_zip, _adds_to, _set_apart, _route_endpoints, _route_label, _natural
+from .route_names import get_routes_in_zip, _adds_to, _set_apart, route_ends, _route_label, _natural
 from .freshness import stage_zip, adopt_zip
 
 _LOGGER = logging.getLogger(__name__)
@@ -933,8 +933,8 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
         routes_list.append(list(row_cursor))
     # the lines whose long name says nothing get the two ends of the route
     # instead, read in one go rather than one query per line
-    endpoints = _route_endpoints(
-        schedule, [str(x[1]) for x in routes_list if not _adds_to(x[2], x[3])])
+    endpoints = route_ends(
+        schedule, gtfs_dir, data["file"], [str(x[1]) for x in routes_list if not _adds_to(x[2], x[3])])
     for x in routes_list:
         # the value keeps route_type and route_id, which the flow parses back;
         # what follows the second ## is only ever shown to the user, so it

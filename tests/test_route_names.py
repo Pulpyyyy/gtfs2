@@ -42,3 +42,43 @@ def test_look_alikes_of_one_agency_are_left_alone():
     # nor does a missing agency get a bare separator
     assert route_names._set_apart(["3##X##7", "3##Y##7"], ["GVB", None]) == \
         ["3##X##7 · GVB", "3##Y##7"]
+
+
+def _feed(tmp_path, trips):
+    """A source zip whose trips.txt holds (route_id, direction_id, headsign)."""
+    import zipfile
+    with zipfile.ZipFile(tmp_path / "feed.zip", "w") as zout:
+        zout.writestr("trips.txt", "route_id,service_id,trip_id,trip_headsign,direction_id\n" + "".join(
+            f"{r},S,T{i},{h},{d}\n" for i, (r, d, h) in enumerate(trips)))
+    return str(tmp_path)
+
+
+def test_the_trips_name_where_a_line_goes(tmp_path):
+    gtfs_dir = _feed(tmp_path, [
+        ("M4", "0", "Porte de Clignancourt"), ("M4", "0", "Porte de Clignancourt"),
+        ("M4", "1", "Bagneux - Lucie Aubrac"), ("M4", "1", "Montparnasse Bienvenue"),
+        ("M4", "1", "Bagneux - Lucie Aubrac")])
+    assert route_names.headsign_ends(gtfs_dir, "feed", ["M4"]) == \
+        {"M4": "Porte de Clignancourt ↔ Bagneux - Lucie Aubrac"}
+
+
+def test_codes_in_the_headsign_are_not_places(tmp_path):
+    # a train number (SNCF), a mission code (IDFM RER)
+    gtfs_dir = _feed(tmp_path, [
+        ("K8", "0", "44930"), ("K8", "1", "44931"),
+        ("RERA", "0", "UZAR"), ("RERA", "1", "NATO")])
+    assert route_names.headsign_ends(gtfs_dir, "feed", ["K8", "RERA"]) == {}
+
+
+def test_a_feed_without_directions_gives_the_two_most_shown(tmp_path):
+    gtfs_dir = _feed(tmp_path, [
+        ("F", "", "Den Helder"), ("F", "", "Texel"), ("F", "", "Den Helder"), ("F", "", "Texel"),
+        ("F", "", "Oudeschild")])
+    assert route_names.headsign_ends(gtfs_dir, "feed", ["F"]) == {"F": "Den Helder ↔ Texel"}
+
+
+def test_no_zip_no_trips_no_headsign_give_nothing(tmp_path):
+    assert route_names.headsign_ends(str(tmp_path), "absent", ["X"]) == {}
+    assert route_names.headsign_ends(None, "feed", ["X"]) == {}
+    gtfs_dir = _feed(tmp_path, [("X", "0", "")])
+    assert route_names.headsign_ends(gtfs_dir, "feed", ["X"]) == {}
