@@ -105,7 +105,7 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
         options.append(
             f"{row.get('route_type') or '99'}##{row['route_id']}##{label}##pruned")
     options = _set_apart(options, [names.get(str(row.get("agency_id") or ""), only) for row in rows])
-    options = _set_apart_by_ends(options, headsign_ends(gtfs_dir, filename, _look_alikes(options)))
+    options = _set_apart_by_ends(options, look_alike_ends(None, gtfs_dir, filename, _look_alikes(options)))
     return sorted(options, key=lambda value: _natural(value.split("##")[2]))
 
 
@@ -189,13 +189,17 @@ def _set_apart(options, agencies):
 
 
 def _look_alikes(options):
-    """The route_ids of the lines whose label another line of the list wears
-    too, after _set_apart: one operator publishing one name for several
-    routes (IDFM's three "TER : TER Centre - Val de Loire", to Chartres, to
-    Montargis and to Châteaudun)."""
-    labels = Counter(option.split("##")[2].casefold() for option in options)
-    return [option.split("##")[1] for option in options
-            if labels[option.split("##")[2].casefold()] > 1]
+    """The route_ids of the lines whose label another line of the same mode
+    wears too, after _set_apart: one operator publishing one name for
+    several routes (IDFM's three "TER : TER Centre - Val de Loire", to
+    Chartres, to Montargis and to Châteaudun). Look-alikes of different
+    modes are left out, the flow already names their mode (with_modes):
+    Zou's P18 train and P18 coach."""
+    def seen_as(option):
+        return (option.split("##")[2].casefold(), line_mode(option.split("##")[0]))
+
+    labels = Counter(seen_as(option) for option in options)
+    return [option.split("##")[1] for option in options if labels[seen_as(option)] > 1]
 
 
 def _set_apart_by_ends(options, ends):
@@ -293,6 +297,83 @@ def headsign_ends(gtfs_dir, filename, route_ids):
         _HEADSIGN_ENDS[key] = _read_headsign_ends(zip_path)
     ends = _HEADSIGN_ENDS[key]
     return {r: ends[r] for r in route_ids if r in ends}
+
+
+def _read_stop_ends(zip_path, route_ids):
+    """{route_id: "A > B"} for these lines: the first and last stop of the
+    trip that calls at the most stops, read from the zip's stop_times.txt,
+    as _route_endpoints reads it from the database."""
+    trips, calls, first, last = {}, Counter(), {}, {}
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            files = {n.rsplit("/", 1)[-1]: n for n in zin.namelist()}
+
+            def rows(name):
+                return csv.DictReader(io.TextIOWrapper(zin.open(files[name]), "utf-8-sig", newline=""))
+
+            for row in rows("trips.txt"):
+                if row.get("route_id") in route_ids:
+                    trips[row["trip_id"]] = row["route_id"]
+            for row in rows("stop_times.txt"):
+                trip = row.get("trip_id")
+                if trip not in trips:
+                    continue
+                sequence = int(row["stop_sequence"])
+                calls[trip] += 1
+                if trip not in first or sequence < first[trip][0]:
+                    first[trip] = (sequence, row["stop_id"])
+                if trip not in last or sequence > last[trip][0]:
+                    last[trip] = (sequence, row["stop_id"])
+            names = {row["stop_id"]: row.get("stop_name") for row in rows("stops.txt")}
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.warning("Could not read the stops of %s: %s", zip_path, ex)
+        return {}
+    longest = {}
+    for trip, route_id in trips.items():
+        if calls[trip] and calls[trip] > calls[longest.get(route_id, "")]:
+            longest[route_id] = trip
+    return {route_id: f"{names.get(first[trip][1])} > {names.get(last[trip][1])}"
+            for route_id, trip in longest.items()}
+
+
+# the ends read from stop_times.txt, per zip edition: {(path, size, mtime): ends}
+_STOP_ENDS = {}
+
+
+def look_alike_ends(schedule, gtfs_dir, filename, route_ids):
+    """The ends of look-alike lines (see _look_alikes), wherever they are
+    written: the trips' destinations, the imported trips (when schedule is
+    given), and for what is left the zip's stop_times.txt.
+
+    That last read is the costly one, so it is kept for the look-alikes the
+    rest leaves without ends: SNCF's 54 "INCONNU" lines, whose trips show a
+    train number and which a filtered import does not carry (54 MB, 1.2 s),
+    Renfe's lines named after the product alone (22 MB, 0.4 s). IDFM, NL,
+    TAO never reach it. Kept per edition of the zip, like the destinations.
+    """
+    route_ids = [str(r) for r in route_ids]
+    if schedule is not None:
+        ends = route_ends(schedule, gtfs_dir, filename, route_ids)
+    else:
+        ends = headsign_ends(gtfs_dir, filename, route_ids)
+    missing = {r for r in route_ids if r not in ends}
+    zip_path = os.path.join(gtfs_dir, filename + ".zip") if gtfs_dir else None
+    if not missing or not zip_path or not os.path.exists(zip_path):
+        return ends
+    stat = os.stat(zip_path)
+    key = (zip_path, stat.st_size, stat.st_mtime_ns)
+    if key not in _STOP_ENDS:
+        for old in [k for k in _STOP_ENDS if k[0] == zip_path]:
+            del _STOP_ENDS[old]
+        _STOP_ENDS[key] = {}
+    known = _STOP_ENDS[key]
+    unread = missing - set(known)
+    if unread:
+        found = _read_stop_ends(zip_path, unread)
+        # a line with no trip in the zip is remembered too, not read again
+        known.update({r: found.get(r) for r in unread})
+    ends.update({r: known[r] for r in missing if known[r]})
+    return ends
 
 
 def route_ends(schedule, gtfs_dir, filename, route_ids):

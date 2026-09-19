@@ -42,7 +42,7 @@ from .const import (
     )
 from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities,
                              struck_trips, on_service_day)
-from .route_names import get_routes_in_zip, _adds_to, _look_alikes, _set_apart, _set_apart_by_ends, route_ends, _route_label, _natural
+from .route_names import get_routes_in_zip, _adds_to, _look_alikes, _set_apart, _set_apart_by_ends, look_alike_ends, route_ends, _route_label, _natural
 from .freshness import stage_zip, adopt_zip
 
 _LOGGER = logging.getLogger(__name__)
@@ -974,7 +974,7 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     routes = _set_apart(routes, [x[4] for x in routes_list])
     # and routes one operator publishes under one name get their two ends
     routes = _set_apart_by_ends(
-        routes, route_ends(schedule, gtfs_dir, data["file"], _look_alikes(routes)))
+        routes, look_alike_ends(schedule, gtfs_dir, data["file"], _look_alikes(routes)))
     routes.sort(key=lambda value: _natural(value.split("##")[2]))
     _LOGGER.debug(f"routes: {routes}")
     return routes

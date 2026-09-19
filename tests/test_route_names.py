@@ -59,6 +59,26 @@ def test_look_alikes_of_one_agency_get_their_ends():
                    "3##I2##INCONNU : A ↔ B"]
 
 
+def test_look_alikes_of_two_modes_are_left_to_the_mode():
+    # Zou's P18 train and P18 coach: the flow says "(train)" and "(coach)"
+    options = ["2##P18T##P18 : Nîmes-Avignon", "3##P18C##P18 : Nîmes-Avignon"]
+    assert route_names._look_alikes(options) == []
+
+
+def test_look_alikes_without_destinations_read_the_stops(tmp_path):
+    # SNCF: the trips show a train number, only stop_times says where they go
+    import zipfile
+    with zipfile.ZipFile(tmp_path / "feed.zip", "w") as zout:
+        zout.writestr("trips.txt", "route_id,service_id,trip_id,trip_headsign\n"
+                      "R1,S,T1,3731\nR1,S,T2,3733\nR2,S,T3,3740\nR3,S,T4,1\n")
+        zout.writestr("stop_times.txt", "trip_id,stop_sequence,stop_id\n"
+                      "T1,1,PA\nT1,2,TA\nT2,1,PA\nT2,2,LO\nT2,3,TA\nT3,5,TA\nT3,9,PA\n")
+        zout.writestr("stops.txt", "stop_id,stop_name\nPA,Paris\nLO,Lourdes\nTA,Tarbes\n")
+    got = route_names.look_alike_ends(None, str(tmp_path), "feed", ["R1", "R2", "R3"])
+    # the trip with the most stops draws the line; R3 has no stop to read
+    assert got == {"R1": "Paris > Tarbes", "R2": "Tarbes > Paris"}
+
+
 def _feed(tmp_path, trips):
     """A source zip whose trips.txt holds (route_id, direction_id, headsign)."""
     import zipfile
