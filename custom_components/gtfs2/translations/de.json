@@ -559,6 +559,17 @@
     "reason_tables_empty": "einige Tabellen sind leer geblieben",
     "reason_unreadable": "die Datenbank ist unlesbar",
     "source_update_available_title": "GTFS: {file} hat eine neue Version",
-    "source_update_available": "Die Quelle hat einen neuen Fahrplan-Feed veröffentlicht ({version}).\n\nInstallieren Sie ihn über die Update-Entität **Statischer Feed** von {file}, oder lassen Sie es Ihre Automatisierung tun. Die aktuellen Daten liefern weiter, bis die Installation sie in einem Zug ersetzt."
+    "source_update_available": "Die Quelle hat einen neuen Fahrplan-Feed veröffentlicht ({version}).\n\nInstallieren Sie ihn über die Update-Entität **Statischer Feed** von {file}, oder lassen Sie es Ihre Automatisierung tun. Die aktuellen Daten liefern weiter, bis die Installation sie in einem Zug ersetzt.",
+    "line_mode_tram": "Straßenbahn",
+    "line_mode_metro": "U-Bahn",
+    "line_mode_train": "Zug",
+    "line_mode_bus": "Bus",
+    "line_mode_coach": "Fernbus",
+    "line_mode_ferry": "Fähre",
+    "line_mode_cable_tram": "Kabelstraßenbahn",
+    "line_mode_aerial_lift": "Seilbahn",
+    "line_mode_funicular": "Standseilbahn",
+    "line_mode_trolleybus": "Oberleitungsbus",
+    "line_mode_monorail": "Einschienenbahn"
   }
 }

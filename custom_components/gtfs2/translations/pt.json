@@ -559,6 +559,17 @@
     "reason_tables_empty": "algumas tabelas ficaram vazias",
     "reason_unreadable": "a base de dados está ilegível",
     "source_update_available_title": "GTFS: {file} tem uma nova versão",
-    "source_update_available": "A fonte publicou um novo feed de horários ({version}).\n\nInstale-o a partir da entidade de atualização **Feed estático** de {file}, ou deixe a sua automação fazê-lo. Os dados atuais continuam a servir até que a instalação os substitua, de uma só vez."
+    "source_update_available": "A fonte publicou um novo feed de horários ({version}).\n\nInstale-o a partir da entidade de atualização **Feed estático** de {file}, ou deixe a sua automação fazê-lo. Os dados atuais continuam a servir até que a instalação os substitua, de uma só vez.",
+    "line_mode_tram": "elétrico",
+    "line_mode_metro": "metro",
+    "line_mode_train": "comboio",
+    "line_mode_bus": "autocarro",
+    "line_mode_coach": "expresso",
+    "line_mode_ferry": "barco",
+    "line_mode_cable_tram": "elétrico de cabo",
+    "line_mode_aerial_lift": "teleférico",
+    "line_mode_funicular": "funicular",
+    "line_mode_trolleybus": "troleicarro",
+    "line_mode_monorail": "monocarril"
   }
 }
