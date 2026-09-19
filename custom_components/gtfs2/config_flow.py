@@ -70,7 +70,8 @@ from .gtfs_helper import (
     get_local_stop_list,
 )
 from .stations import get_station_list, get_station_modes
-from .route_names import get_route_options_from_zip, get_agencies_in_zip
+from .route_names import get_route_options_from_zip, get_agencies_in_zip, LINE_MODES, with_modes
+from .notifications import _async_text
 
 from .rt_source import (
     RT_OPTION_KEYS,
@@ -414,10 +415,13 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             total = len(usable) if fresh else len(
                 await self.hass.async_add_executor_job(
                     get_route_list, self._pygtfs, self._user_inputs))
+            # the mode goes after the label where lines of one number differ
+            words = {mode: await _async_text(self.hass, f"line_mode_{mode}", mode)
+                     for mode in LINE_MODES}
             route_list = [
                 # value carries route_type##route_id, label is the readable part
-                selector.SelectOptionDict(value=r, label=r.split('##')[2])
-                for r in usable
+                selector.SelectOptionDict(value=r, label=label)
+                for r, label in zip(usable, with_modes(usable, words))
                 ]
             placeholders = dict(TRANSLATION_DESCRIPTION_PLACEHOLDERS)
             placeholders["routes"] = str(len(usable))

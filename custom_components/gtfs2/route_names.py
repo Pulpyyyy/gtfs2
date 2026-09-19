@@ -351,6 +351,66 @@ def _natural(label):
         out.append((1, int(chunk)) if chunk.isdigit() else (0, chunk.lower()))
     return out
 
+# the modes a line can be named by, as translated in common.line_mode_*
+LINE_MODES = ("tram", "metro", "train", "bus", "coach", "ferry", "cable_tram",
+              "aerial_lift", "funicular", "trolleybus", "monorail")
+
+
+def line_mode(route_type):
+    """The mode of a GTFS route_type, basic or extended, or None."""
+    try:
+        n = int(str(route_type))
+    except ValueError:
+        return None
+    if n == 0 or 900 <= n < 1000:
+        return "tram"
+    if n == 1 or 400 <= n < 500:
+        return "metro"
+    if n == 2 or 100 <= n < 200:
+        return "train"
+    if n == 3 or 700 <= n < 800:
+        return "bus"
+    if 200 <= n < 300:
+        return "coach"
+    if n == 4 or 1000 <= n < 1100 or n == 1200:
+        return "ferry"
+    if n == 5:
+        return "cable_tram"
+    if n == 6 or 1300 <= n < 1400:
+        return "aerial_lift"
+    if n in (7, 1400):
+        return "funicular"
+    if n in (11, 800):
+        return "trolleybus"
+    if n == 12:
+        return "monorail"
+    return None
+
+
+def with_modes(options, words):
+    """The labels to show for route options, the mode in brackets at the end
+    where lines of one number run different modes.
+
+    IDFM lists three lines 6 once the operator is not narrowed: the metro,
+    the bus that replaces it during works, and a bus of Vallée Sud Grand
+    Paris. Their ends tell them apart, their mode does it at a glance:
+    "6 : Nation ↔ Charles de Gaulle - Étoile (métro)". A number no other
+    line wears, or worn by lines of one mode, keeps its label. words maps a
+    mode to the word shown, in the user's language.
+    """
+    labels = [option.split("##")[2] for option in options]
+    modes = [line_mode(option.split("##")[0]) for option in options]
+
+    def number(label):
+        return label.split(" : ")[0].split(" · ")[0].strip().casefold()
+
+    seen = {}
+    for label, mode in zip(labels, modes):
+        seen.setdefault(number(label), set()).add(mode)
+    return [f"{label} ({words.get(mode, mode)})"
+            if mode and len(seen[number(label)]) > 1 else label
+            for label, mode in zip(labels, modes)]
+
 
 def get_route_labels(schedule, route_ids, gtfs_dir=None, filename=None):
     """Readable names for route_ids, as {route_id: "41 : GARE - ESAT RODIN"}.

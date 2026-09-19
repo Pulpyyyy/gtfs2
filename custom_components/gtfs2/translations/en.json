@@ -559,6 +559,17 @@
     "reason_tables_empty": "some tables came out empty",
     "reason_unreadable": "the database is unreadable",
     "source_update_available_title": "GTFS: {file} has a new version",
-    "source_update_available": "The source published a new timetable feed ({version}).\n\nInstall it from the **Static feed** update entity of {file}, or let your automation do it. The current data keeps serving until the install swaps it in, in one go."
+    "source_update_available": "The source published a new timetable feed ({version}).\n\nInstall it from the **Static feed** update entity of {file}, or let your automation do it. The current data keeps serving until the install swaps it in, in one go.",
+    "line_mode_tram": "tram",
+    "line_mode_metro": "metro",
+    "line_mode_train": "train",
+    "line_mode_bus": "bus",
+    "line_mode_coach": "coach",
+    "line_mode_ferry": "ferry",
+    "line_mode_cable_tram": "cable tram",
+    "line_mode_aerial_lift": "aerial lift",
+    "line_mode_funicular": "funicular",
+    "line_mode_trolleybus": "trolleybus",
+    "line_mode_monorail": "monorail"
   }
 }
