@@ -136,7 +136,7 @@
           "add_return": "Auch die Gegenrichtung anlegen"
         },
         "data_description": {
-          "name": "Aus der Linie und den beiden Haltestellen vorgeschlagen. Auf Ihrem Dashboard angezeigt, und er legt die Entitäts-ID fest: ein später unter anderem Namen angelegter Sensor ist eine neue Entität, und Karten, die auf diesen zeigen, müssen angepasst werden.",
+          "name": "Aus der Datenquelle, der Linie und den beiden Haltestellen vorgeschlagen. Auf Ihrem Dashboard angezeigt, und er legt die Entitäts-ID fest: ein später unter anderem Namen angelegter Sensor ist eine neue Entität, und Karten, die auf diesen zeigen, müssen angepasst werden.",
           "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Linie in Gegenrichtung."
         },
         "description": "Der Sensor zeigt die nächsten Abfahrten für **{trip}**.\n\n[Dokumentation]({docu_new_route})"
@@ -166,7 +166,7 @@
         },
         "description": "Der Sensor zeigt die nächsten Abfahrten für **{trip}**.",
         "data_description": {
-          "name": "Aus der Linie und den Bahnhöfen vorgeschlagen, frei änderbar.",
+          "name": "Aus der Datenquelle, der Linie und den Bahnhöfen vorgeschlagen, frei änderbar.",
           "add_return": "Ein zweiter Sensor für **{return_trip}**, dieselbe Fahrt in der Gegenrichtung."
         }
       },

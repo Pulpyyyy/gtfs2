@@ -136,7 +136,7 @@
           "add_return": "Créer aussi le trajet retour"
         },
         "data_description": {
-          "name": "Proposé à partir de la ligne et des deux arrêts. Affiché sur votre tableau de bord, et il fixe l'identifiant de l'entité : un capteur recréé plus tard sous un autre nom est une nouvelle entité, et les cartes qui pointent vers celui-ci devront être mises à jour.",
+          "name": "Proposé à partir de la source, de la ligne et des deux arrêts. Affiché sur votre tableau de bord, et il fixe l'identifiant de l'entité : un capteur recréé plus tard sous un autre nom est une nouvelle entité, et les cartes qui pointent vers celui-ci devront être mises à jour.",
           "add_return": "Un second capteur pour **{return_trip}**, la même ligne dans l'autre sens."
         },
         "description": "Le capteur affichera les prochains départs pour **{trip}**.\n\n[documentation]({docu_new_route})"
@@ -148,7 +148,7 @@
         },
         "description": "Le capteur affichera les prochains départs pour **{trip}**.",
         "data_description": {
-          "name": "Proposé d'après la ligne et les gares, modifiez-le librement.",
+          "name": "Proposé d'après la source, la ligne et les gares, modifiez-le librement.",
           "add_return": "Un second capteur pour **{return_trip}**, le même trajet dans l'autre sens."
         }
       },

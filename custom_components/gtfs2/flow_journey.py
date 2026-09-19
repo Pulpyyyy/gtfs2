@@ -132,7 +132,9 @@ class JourneyScreens:
                 get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE]
             )
             trip = labels.get(str(self._user_inputs.get(CONF_LOOP_DIRECTION)), "") or trip
-        suggested = f"{line} {trip}".strip() if line else trip
+        # the source leads, so the entity id tells line 1 of one network
+        # from line 1 of another: sensor.gtfs_idfm_14_...
+        suggested = " ".join(filter(None, (self._user_inputs.get(CONF_FILE), line, trip)))
         if self._return_trip is None:
             await self._find_return_trip(origin, destination)
 
@@ -315,7 +317,7 @@ class JourneyScreens:
                 get_direction_labels, self._pygtfs, route)
             trip = labels.get(str(loop_direction), "") or trip
         line = self._route_label
-        self._return_name = f"{line} {trip}".strip() if line else trip
+        self._return_name = " ".join(filter(None, (self._user_inputs.get(CONF_FILE), line, trip)))
         # only what differs: this runs when the screen opens, before the
         # options on it are answered, so the rest is merged at creation time
         self._return_trip = {

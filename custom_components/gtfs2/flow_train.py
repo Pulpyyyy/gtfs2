@@ -22,6 +22,7 @@ from .const import (
     CONF_ADD_RETURN,
     CONF_DESTINATION,
     CONF_DIRECTION,
+    CONF_FILE,
     CONF_NAME,
     CONF_ORIGIN,
     CONF_ROUTE,
@@ -129,13 +130,15 @@ class TrainScreens:
         # from the schedule for that very direction
         line = self._route_label
         trip = f"{origin} → {destination}"
-        suggested = f"{line} {trip}".strip() if line else trip
+        # the source leads, like the other sensors' names
+        source = self._user_inputs.get(CONF_FILE)
+        suggested = " ".join(filter(None, (source, line, trip)))
         if self._return_trip is None:
             # trains rarely run one way only, but check before offering.
             # A train sensor covers the station pair, not one line, so the
             # return wears the same label as the outward.
             back = f"{destination} → {origin}"
-            self._return_name = f"{line} {back}".strip() if line else back
+            self._return_name = " ".join(filter(None, (source, line, back)))
             exists = await self.hass.async_add_executor_job(
                 has_train_trip_between, self._pygtfs, destination, origin,
                 self._route_label or None,

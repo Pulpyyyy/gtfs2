@@ -136,7 +136,7 @@
           "add_return": "Crear también el trayecto de vuelta"
         },
         "data_description": {
-          "name": "Propuesto a partir de la línea y las dos paradas. Se muestra en su panel y fija el identificador de la entidad: un sensor creado más tarde con otro nombre es una entidad nueva, y las tarjetas que apuntan a este deberán actualizarse.",
+          "name": "Propuesto a partir de la fuente, la línea y las dos paradas. Se muestra en su panel y fija el identificador de la entidad: un sensor creado más tarde con otro nombre es una entidad nueva, y las tarjetas que apuntan a este deberán actualizarse.",
           "add_return": "Un segundo sensor para **{return_trip}**, la misma línea en sentido contrario."
         },
         "description": "El sensor mostrará las próximas salidas de **{trip}**.\n\n[documentación]({docu_new_route})"
@@ -166,7 +166,7 @@
         },
         "description": "El sensor mostrará las próximas salidas para **{trip}**.",
         "data_description": {
-          "name": "Propuesto a partir de la línea y las estaciones, puede cambiarlo libremente.",
+          "name": "Propuesto a partir de la fuente, la línea y las estaciones, puede cambiarlo libremente.",
           "add_return": "Un segundo sensor para **{return_trip}**, el mismo trayecto en sentido contrario."
         }
       },

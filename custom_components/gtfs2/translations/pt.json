@@ -136,7 +136,7 @@
           "add_return": "Criar também a viagem de regresso"
         },
         "data_description": {
-          "name": "Sugerido a partir da linha e das duas paragens. Mostrado no seu painel e fixa o identificador da entidade: um sensor criado mais tarde com outro nome é uma entidade nova, e os cartões que apontam para este terão de ser atualizados.",
+          "name": "Sugerido a partir da fonte, da linha e das duas paragens. Mostrado no seu painel e fixa o identificador da entidade: um sensor criado mais tarde com outro nome é uma entidade nova, e os cartões que apontam para este terão de ser atualizados.",
           "add_return": "Um segundo sensor para **{return_trip}**, a mesma linha no sentido inverso."
         },
         "description": "O sensor mostrará as próximas partidas de **{trip}**.\n\n[documentação]({docu_new_route})"
@@ -166,7 +166,7 @@
         },
         "description": "O sensor mostrará as próximas partidas para **{trip}**.",
         "data_description": {
-          "name": "Sugerido a partir da linha e das estações, pode alterá-lo livremente.",
+          "name": "Sugerido a partir da fonte, da linha e das estações, pode alterá-lo livremente.",
           "add_return": "Um segundo sensor para **{return_trip}**, a mesma viagem no sentido inverso."
         }
       },
