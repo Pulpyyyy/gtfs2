@@ -21,7 +21,7 @@ import requests
 from .const import CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME
 from .direction_repair import repair_trip_directions
 from .freshness import adopt_zip, stage_zip
-from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in
+from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in, swap_in
 from .gtfs_filter import filter_gtfs_zip, zip_only_future_dates
 from .gtfs_helper import check_extracting, get_gtfs, remove_from_zip
 from .notifications import async_notify_lines_missing
@@ -263,7 +263,8 @@ def refresh_datasource(hass, path, data):
             return False
         # intern only: everything in this file was just copied on purpose
         optimise_datasource(gtfs_dir, staging)
-        os.replace(new_real, real)
+        if not swap_in(new_real, real):
+            return False
     finally:
         for leftover in (new_real, new_real + "-journal"):
             if os.path.exists(leftover):

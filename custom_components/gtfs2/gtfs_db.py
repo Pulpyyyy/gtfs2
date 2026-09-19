@@ -56,6 +56,11 @@ _LOGGER = logging.getLogger(__name__)
 # same filesystem and a rename never crosses a device boundary
 IMPORT_SUFFIX = ".import"
 
+# how long the swap waits for another writer to finish before giving up and
+# leaving the current data in place: long enough for an index or an intern,
+# short enough not to hold the refresh behind a VACUUM of several minutes
+SWAP_TIMEOUT = 30
+
 # copied whole: they describe the network, not a route, and stay small. Order
 # matters only for readability, since pygtfs declares foreign keys but SQLite
 # does not enforce them here (pragma foreign_keys is 0).
@@ -115,6 +120,77 @@ def create_real_from(scratch_file, real_file):
         return False
     dst.close()
     return True
+
+
+def _drop_side_files(real_file):
+    """Remove what SQLite may have left beside a file just swapped out.
+
+    Named after the file, not after the data: a journal still there once the
+    rename is done belongs to the database that just lost its name, but the
+    next reader would take it for the new one's and replay it into it. The
+    exclusive lock is what makes this safe to do: no live transaction can be
+    holding one.
+    """
+    for suffix in ("-journal", "-wal", "-shm"):
+        side = real_file + suffix
+        if os.path.exists(side):
+            try:
+                os.remove(side)
+                _LOGGER.debug("Removed %s left beside the swapped file", side)
+            except OSError as ex:
+                _LOGGER.warning("Could not remove %s: %s", side, ex)
+
+
+def swap_in(new_file, real_file, timeout=SWAP_TIMEOUT):
+    """Put a rebuilt database in place of the real one, no writer in between.
+
+    A rename is invisible to SQLite: a writer holding a transaction on the
+    old file goes on writing, and its journal, replayed against the new
+    file, takes it back to the old contents. So the swap happens while
+    holding SQLite's own exclusive lock, which every writer respects
+    whatever process it runs in, the forked extract included: one already
+    writing keeps us out, and the current data stays; one arriving later is
+    kept out of a file that is about to lose its name, and writes into the
+    unlinked old one, which harms nothing. Taking the lock also rolls back
+    a journal left behind by a crash, so nothing hot survives the rename.
+
+    Returns True when the swap happened.
+    """
+    conn = sqlite3.connect(real_file, timeout=timeout)
+    try:
+        try:
+            conn.execute("begin exclusive")
+        except sqlite3.Error as ex:
+            _LOGGER.error("Could not take %s to swap it, something is writing "
+                          "to it: %s", real_file, ex)
+            return False
+        try:
+            os.replace(new_file, real_file)
+            _drop_side_files(real_file)
+            return True
+        except OSError as ex:
+            # Windows refuses to replace a file this process still holds
+            # open; Linux, where Home Assistant runs, renames over it. The
+            # lock is dropped first, so the swap is unguarded for the few
+            # microseconds of the rename, and only on a developer's box.
+            _LOGGER.debug("Swapping %s under the lock failed (%s), letting go "
+                          "of it first", real_file, ex)
+        conn.rollback()
+        conn.close()
+        conn = None
+        os.replace(new_file, real_file)
+        _drop_side_files(real_file)
+        return True
+    except OSError as ex:
+        _LOGGER.error("Could not swap %s in: %s", new_file, ex)
+        return False
+    finally:
+        if conn is not None:
+            try:
+                conn.rollback()
+            except sqlite3.Error:
+                pass
+            conn.close()
 
 
 def copy_route(real_file, scratch_file, route_id):
