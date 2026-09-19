@@ -84,9 +84,9 @@
         "data": {
           "agency": "Betreiber"
         },
-        "description": "Diese Datenquelle enthält mehrere Betreiber.\n\n[Dokumentation]({docu_new_route})",
+        "description": "Die Datenquelle **{source}** enthält mehrere Betreiber.\n\n[Dokumentation]({docu_new_route})",
         "data_description": {
-          "agency": "Wählen Sie einen, um die Linienliste im nächsten Schritt zu kürzen, oder **ALL** für alle Linien."
+          "agency": "Wählen Sie einen, um die Linienliste im nächsten Schritt zu kürzen, oder **Alle Betreiber** für alle Linien."
         }
       },
       "route": {
@@ -570,6 +570,7 @@
     "line_mode_aerial_lift": "Seilbahn",
     "line_mode_funicular": "Standseilbahn",
     "line_mode_trolleybus": "Oberleitungsbus",
-    "line_mode_monorail": "Einschienenbahn"
+    "line_mode_monorail": "Einschienenbahn",
+    "agency_all": "Alle Betreiber"
   }
 }

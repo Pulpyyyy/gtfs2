@@ -84,9 +84,9 @@
         "data": {
           "agency": "Exploitant"
         },
-        "description": "Cette source contient plusieurs exploitants.\n\n[documentation]({docu_new_route})",
+        "description": "La source **{source}** contient plusieurs exploitants.\n\n[documentation]({docu_new_route})",
         "data_description": {
-          "agency": "Choisissez-en un pour raccourcir la liste des lignes à l'écran suivant, ou **ALL** pour toutes les garder."
+          "agency": "Choisissez-en un pour raccourcir la liste des lignes à l'écran suivant, ou **Tous les exploitants** pour toutes les garder."
         }
       },
       "route": {
@@ -570,6 +570,7 @@
     "line_mode_aerial_lift": "téléphérique",
     "line_mode_funicular": "funiculaire",
     "line_mode_trolleybus": "trolleybus",
-    "line_mode_monorail": "monorail"
+    "line_mode_monorail": "monorail",
+    "agency_all": "Tous les exploitants"
   }
 }

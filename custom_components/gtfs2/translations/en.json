@@ -84,9 +84,9 @@
         "data": {
           "agency": "Operator"
         },
-        "description": "This source carries several operators.\n\n[documentation]({docu_new_route})",
+        "description": "The source **{source}** carries several operators.\n\n[documentation]({docu_new_route})",
         "data_description": {
-          "agency": "Pick one to shorten the route list on the next screen, or **ALL** to keep every route."
+          "agency": "Pick one to shorten the route list on the next screen, or **All operators** to keep every route."
         }
       },
       "route": {
@@ -570,6 +570,7 @@
     "line_mode_aerial_lift": "aerial lift",
     "line_mode_funicular": "funicular",
     "line_mode_trolleybus": "trolleybus",
-    "line_mode_monorail": "monorail"
+    "line_mode_monorail": "monorail",
+    "agency_all": "All operators"
   }
 }

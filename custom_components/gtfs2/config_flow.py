@@ -326,17 +326,26 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             agencies = await self.hass.async_add_executor_job(
                 get_agency_list, self._pygtfs, self._user_inputs)
         if len(agencies) > 1:
-            agencies[:0] = ["0: ALL"]
+            # the value stays "agency_id: agency_name", read back by its id;
+            # the screen shows the names, and the id only where two agencies
+            # share a name
+            names = [agency.split(": ", 1)[-1] for agency in agencies]
+            options = {"0: ALL": await _async_text(self.hass, "agency_all", "All operators")}
+            options.update({agency: name if names.count(name) == 1 else agency
+                            for agency, name in zip(agencies, names)})
             errors: dict[str, str] = {}
             if user_input is None:
                 return self.async_show_form(
                     step_id="agency",
                     data_schema=vol.Schema(
                         {
-                            vol.Required(CONF_AGENCY): vol.In(agencies),
+                            vol.Required(CONF_AGENCY): vol.In(options),
                         },
                     ),
-                    description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                    description_placeholders={
+                        **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                        "source": self._user_inputs.get(CONF_FILE, ""),
+                    },
                     errors=errors,
                 ) 
         else:

@@ -84,9 +84,9 @@
         "data": {
           "agency": "Operador"
         },
-        "description": "Esta fuente contiene varios operadores.\n\n[documentación]({docu_new_route})",
+        "description": "La fuente **{source}** contiene varios operadores.\n\n[documentación]({docu_new_route})",
         "data_description": {
-          "agency": "Elija uno para acortar la lista de líneas en la pantalla siguiente, o **ALL** para conservarlas todas."
+          "agency": "Elija uno para acortar la lista de líneas en la pantalla siguiente, o **Todos los operadores** para conservarlas todas."
         }
       },
       "route": {
@@ -570,6 +570,7 @@
     "line_mode_aerial_lift": "teleférico",
     "line_mode_funicular": "funicular",
     "line_mode_trolleybus": "trolebús",
-    "line_mode_monorail": "monorraíl"
+    "line_mode_monorail": "monorraíl",
+    "agency_all": "Todos los operadores"
   }
 }
