@@ -191,7 +191,16 @@ def refresh_datasource(hass, path, data):
     gtfs_dir = hass.config.path(path)
     filename = data["file"]
     real = real_path(gtfs_dir, filename)
-    routes = sorted(routes_in(real))
+    loaded = routes_in(real)
+    if loaded is None:
+        # the file is there but would not answer: something holds it, a
+        # VACUUM or an intern, or it is momentarily unreadable. Reading that
+        # as "follows no route" would send this refresh down the legacy
+        # path, which deletes the database and the zip and rebuilds the
+        # whole network in place
+        _LOGGER.error("Cannot read the routes of %s, keeping its data", filename)
+        return False
+    routes = sorted(loaded)
     if not routes:
         _LOGGER.info("Datasource %s follows no route yet, extracting it whole",
                      filename)

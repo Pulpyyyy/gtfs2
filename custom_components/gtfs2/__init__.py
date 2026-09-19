@@ -388,8 +388,9 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
     gtfs_dir = hass.config.path(DEFAULT_PATH)
     loaded = await hass.async_add_executor_job(
         routes_in, real_path(gtfs_dir, filename))
-    if route not in loaded:
-        # the timetable is already gone, nothing worth saying
+    if not loaded or route not in loaded:
+        # the timetable is already gone, or the database would not say:
+        # either way there is nothing worth saying
         return
     label = (entry.data.get("route") or "").split(": ", 1)[-1]
     await async_notify_line_orphaned(hass, filename, label or route)

@@ -101,6 +101,11 @@ class ReloadScreens:
                 get_routes_in_zip, gtfs_dir, filename)
             loaded = await self.hass.async_add_executor_job(
                 routes_in, real_path(gtfs_dir, filename))
+            if loaded is None:
+                # the database would not answer (busy, being rebuilt): which
+                # lines it lacks cannot be told, so only the one picked goes in
+                _LOGGER.warning("Cannot read the lines of %s, offering none to add", filename)
+                loaded = set(in_zip)
             missing = sorted(in_zip - loaded - {route_id})
             # the operator was named on the agency screen: offer that
             # operator's missing lines, not the whole feed's
@@ -294,6 +299,10 @@ class ReloadScreens:
             # accept losing timetables, and the count of each is what decides
             loaded = await self.hass.async_add_executor_job(
                 routes_in, real_path(gtfs_dir, filename))
+            if loaded is None:
+                # nothing to count, and nothing an optimisation could read
+                _LOGGER.error("Cannot read the lines of %s, it is not optimised", filename)
+                return self.async_abort(reason="generic_failure")
             dropped = {} if unrestricted else {r: 1 for r in loaded if r not in keep}
             # counted, not named: a network drops dozens of lines here and the
             # list buried the two figures that decide it

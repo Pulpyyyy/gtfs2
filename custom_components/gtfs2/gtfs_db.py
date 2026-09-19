@@ -299,7 +299,12 @@ def copy_route(real_file, scratch_file, route_id):
 
 
 def routes_in(db_file):
-    """The route_ids a database actually carries trips for."""
+    """The route_ids a database actually carries trips for.
+
+    An empty set means the file holds no trip; None means it could not be
+    asked. The two must stay apart: a caller reading an unreadable database
+    as "follows nothing" would go and build it from scratch.
+    """
     if not os.path.exists(db_file):
         return set()
     conn = sqlite3.connect(db_file, timeout=60)
@@ -307,7 +312,7 @@ def routes_in(db_file):
         return {r[0] for r in conn.execute("select distinct route_id from trips")}
     except sqlite3.Error as ex:
         _LOGGER.warning("Could not read routes from %s: %s", db_file, ex)
-        return set()
+        return None
     finally:
         conn.close()
 
