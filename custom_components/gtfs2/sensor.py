@@ -9,6 +9,7 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import slugify
 import homeassistant.util.dt as dt_util
@@ -241,7 +242,7 @@ class GTFSDatasourceTimetableSensor(SensorEntity):
         }
 
 
-class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
+class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
     """Implementation of a GTFS departure sensor."""
 
     # The device already carries the sensor's name: naming the entity too
@@ -275,6 +276,30 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity):
         # its early paths: assigning its return here replaced the dict with
         # None, and the next update crashed writing into it
         self._update_attrs()
+        self._attr_extra_state_attributes = self._attributes
+
+    async def async_added_to_hass(self) -> None:
+        """Show the departure known before the restart while the first
+        refresh runs, when it is still ahead.
+
+        The sensor is added before its first refresh (see async_setup_entry)
+        and would read unknown for those seconds. What Home Assistant kept
+        of it is shown instead, attributes included, as long as the
+        departure it names has not left yet: a train gone during the
+        restart is not shown as the next one. The refresh replaces it all.
+        """
+        await super().async_added_to_hass()
+        if self.coordinator.data is not None:
+            return
+        last = await self.async_get_last_state()
+        when = dt_util.parse_datetime(str(last.state)) if last is not None else None
+        if when is None or when <= dt_util.utcnow():
+            return
+        self._attr_device_class = SensorDeviceClass.TIMESTAMP
+        self._attr_native_value = when
+        # what Home Assistant adds of its own is not the sensor's to write back
+        self._attributes = {k: v for k, v in last.attributes.items()
+                            if k not in ("friendly_name", "icon", "device_class", "attribution")}
         self._attr_extra_state_attributes = self._attributes
 
     @callback
