@@ -18,7 +18,7 @@ from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
 from .gtfs_helper import update_gtfs_local_stops, get_route_departures, get_trip_stops
 from .notifications import async_notify_line_orphaned
-from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern
+from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern, timetable_name
 from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
 from .rt_source import (
@@ -486,15 +486,17 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
     # the leg file is this entry's own, nobody else writes or reads it; found
     # by its entry part, the line part being the departure's, not the entry's
     leg_pattern = leg_geojson_pattern(entry.data["name"]) if entry.data.get("name") else None
+    # the timetable is the entry's own too, named after it alone
+    own = [timetable_name(entry.data["name"])] if entry.data.get("name") else []
     route = (entry.data.get("route") or "").split(": ")[0]
     direction = entry.data.get("direction")
     if not route:
-        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_pattern, [])
+        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_pattern, own)
         return
     # an entry set up without a direction wrote its files under the
     # direction of the departures it followed, either one
     directions = [str(direction)] if direction is not None else ["0", "1"]
-    names = []
+    names = list(own)
     for d in directions:
         still_used = any(
             e.entry_id != entry.entry_id

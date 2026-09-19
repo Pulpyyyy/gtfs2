@@ -138,6 +138,8 @@ def map_files(attributes, data):
         attributes["route_geojson_file"] = data["route_geojson_file"]
     if data.get("leg_geojson_file", None):
         attributes["leg_geojson_file"] = data["leg_geojson_file"]
+    if data.get("timetable_file", None):
+        attributes["timetable_file"] = data["timetable_file"]
     if data.get("vehicle_positions_file", None):
         attributes["vehicle_positions_file"] = data["vehicle_positions_file"]
 

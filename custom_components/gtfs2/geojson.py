@@ -4,10 +4,11 @@ Their names, so that the writer, the sensor attribute and the removal on
 entry deletion agree (route_geojson_name, vehicle_positions_name,
 leg_geojson_name); the route file, the line drawn from its fullest trip
 with the shape read out of the zip and the boarding rules per stop
-(write_route_file); and the leg file, the ride of the next departure timed
-stop by stop, realtime included (write_leg_file). The coordinator calls the
-two writers from the executor; the positions file itself is written by
-gtfs_rt_helper.get_rt_vehicle_positions.
+(write_route_file); the leg file, the ride of the next departure timed
+stop by stop, realtime included (write_leg_file); and the timetable, every
+departure of the entry over the next service days (write_timetable_file).
+The coordinator calls the writers from the executor; the positions file
+itself is written by gtfs_rt_helper.get_rt_vehicle_positions.
 """
 from __future__ import annotations
 
@@ -24,7 +25,10 @@ from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
-from .gtfs_helper import _call_type, _line_ways
+from .feed_window import read_feed_window
+from .gtfs_helper import (
+    _call_type, _fetch_departure_rows, _line_ways, departure_query_args, get_next_service_date,
+)
 from .gtfs_rt_helper import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, safe_file_part, stop_relationship, trip_relationship,
 )
@@ -550,3 +554,138 @@ def write_leg_file(hass, data, feed_entities=None):
             "features": features,
             "trips": trips,
         }, outfile)
+
+
+# The service days the timetable holds: the one under way and the two after
+# it, so that it always reaches at least 48 hours ahead - at 23:00 the rest
+# of the evening and two whole days, just past a day change nearly three.
+TIMETABLE_DAYS = 3
+# a safeguard on the rows of one read, not a length: a metro over three
+# days is some 900 departures, a train a few dozen
+TIMETABLE_ROWS_MAX = 5000
+
+
+def timetable_name(name):
+    """File name of an entry's timetable. The entry's name alone: unlike the
+    route and positions files it is this sensor's, and a train entry's
+    departures may ride several routes. Kept in one place, like the others,
+    so the writer, the attribute and the removal agree."""
+    return f"timetable_{entry_file_part(name)}.json"
+
+
+def _local(stamp, zone):
+    """A naive 'YYYY-MM-DD HH:MM:SS' of the query, in the line's zone, as an
+    ISO datetime with its offset; None when unreadable."""
+    try:
+        moment = datetime.datetime.fromisoformat(str(stamp))
+    except (TypeError, ValueError):
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=zone)
+    return moment.astimezone(zone).isoformat()
+
+
+def timetable_doc(name, rows, service_dates, zone, next_departure=None, until=None, generated=None):
+    """The timetable file's content, from the departure rows of a window.
+
+    service_dates are the days the file stands for, each listed even when
+    no departure runs on it: an empty day says the timetable is known and
+    has nothing, which a missing file cannot say. A row of the day before
+    the first (a run of last night's service leaving after midnight) gets
+    a day of its own ahead of them. Each departure is its trip, when it
+    leaves the entry's origin and when it reaches its destination, both
+    real datetimes: a run past midnight keeps its service day and carries
+    the next calendar date.
+
+    next_departure is the first departure after the window, found in the
+    calendar, and until the last day the feed has any service on: past
+    it nothing can be known, so an empty window with no next departure
+    says "nothing published until then" rather than "never".
+    """
+    days = {d: [] for d in service_dates}
+    for row in rows:
+        day = str(row.get("origin_depart_date") or "")[:10]
+        dep = _local(row.get("origin_depart_dt"), zone)
+        if not day or not dep:
+            continue
+        days.setdefault(day, []).append({
+            "trip_id": str(row.get("trip_id")),
+            "dep": dep,
+            "arr": _local(row.get("dest_arrival_dt"), zone),
+        })
+    return {
+        "entry": name,
+        "timezone": str(zone),
+        "generated": (generated or dt_util.now()).isoformat(),
+        "days": [{"service_date": d, "departures": sorted(days[d], key=lambda x: x["dep"])}
+                 for d in sorted(days)],
+        "next": next_departure,
+        "until": until,
+    }
+
+
+# the last service day of each zip, read once per edition: the file is
+# small but every entry of a source asks, every day
+_UNTIL = {}
+
+
+def _feed_until(zip_path):
+    try:
+        stat = os.stat(zip_path)
+    except OSError:
+        return None
+    key = (zip_path, stat.st_size, stat.st_mtime_ns)
+    if key not in _UNTIL:
+        _UNTIL.clear()
+        _UNTIL[key] = (read_feed_window(zip_path) or {}).get("last_service_day")
+    return _UNTIL[key]
+
+
+def write_timetable_file(hass, data, today, zip_path):
+    """Write www/gtfs2/timetable_<entry>.json: every departure of the entry
+    from now to the end of the third service day, today's included.
+
+    The sensor lists ten departures, enough for a board and too few for a
+    journey: a card chaining a bus, a train and a metro needs the metro an
+    hour and a half ahead, where a line every four minutes has long run
+    out of listed runs. The card reads the sensor first, realtime and all,
+    and this file past it. Written from the same query as the sensor, so
+    both agree on the calendar, the places and the runs after midnight;
+    rewritten when the service day or the zip changes (see the
+    coordinator), not on every refresh.
+
+    today is the local service date as YYYY-MM-DD. Returns the file name.
+    """
+    schedule = data["schedule"]
+    name = data.get("name") or ""
+    first = datetime.date.fromisoformat(today)
+    service_dates = [(first + datetime.timedelta(days=i)).isoformat() for i in range(TIMETABLE_DAYS)]
+    yesterday = (first - datetime.timedelta(days=1)).isoformat()
+    args = departure_query_args(data)
+    rows, _origin = _fetch_departure_rows(
+        data["route_type"], data["origin"], data["destination"], schedule,
+        window=(yesterday, service_dates[-1]), limit=TIMETABLE_ROWS_MAX, **args)
+    departure = data.get("next_departure") or {}
+    zone = _leg_timezone(schedule, str(departure.get("route_id") or args["route"] or ""), departure, hass)
+    # the first run past the window: the next day the entry runs at all,
+    # then its first departure that day
+    next_departure = None
+    after = (first + datetime.timedelta(days=TIMETABLE_DAYS)).isoformat()
+    day = get_next_service_date(
+        schedule, data["origin"].split(": ")[0], data["destination"].split(": ")[0], after,
+        data["route_type"], line=args["line"],
+        origin_names=data.get("origin_stations"), dest_names=data.get("destination_stations"))
+    if day:
+        later, _origin = _fetch_departure_rows(
+            data["route_type"], data["origin"], data["destination"], schedule,
+            window=(day, day), limit=1, **args)
+        if later:
+            next_departure = _local(later[0].get("origin_depart_dt"), zone)
+    doc = timetable_doc(name, rows, service_dates, zone, next_departure, _feed_until(zip_path))
+    geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
+    os.makedirs(geojson_dir, exist_ok=True)
+    file = timetable_name(name)
+    _LOGGER.debug("Creating timetable file: %s, %s departures", file, sum(len(d["departures"]) for d in doc["days"]))
+    with open(os.path.join(geojson_dir, file), "w") as outfile:
+        json.dump(doc, outfile)
+    return file

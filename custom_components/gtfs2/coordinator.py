@@ -36,7 +36,10 @@ from .const import (
     ICONS
 )    
 from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures
-from .geojson import write_route_file, write_leg_file, route_geojson_name, vehicle_positions_name, leg_geojson_name, get_representative_trip
+from .geojson import (
+    write_route_file, write_leg_file, write_timetable_file, route_geojson_name, vehicle_positions_name,
+    leg_geojson_name, timetable_name, get_representative_trip,
+)
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, struck_trips
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
@@ -79,6 +82,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         # the trip whose stops are already exported, so the geojson is
         # rewritten when the journey changes and not on every refresh
         self._route_export_trip = None
+        # the service day and zip edition the timetable file was written for
+        self._timetable_export = None
         self._stale_markers_cleaned = False
 
     async def _async_update_data(self) -> dict[str, str]:
@@ -170,6 +175,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             # outside the realtime block, so a map card can draw the journey
             # of an entry that has no vehicle feed at all.
             await self._export_route_shape(data)
+            await self._export_timetable(data)
 
             if not self._data["next_departure"]:
                 # Nothing left to show. Look ahead for the next day this journey
@@ -326,6 +332,39 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             self._route_export_trip = export_key
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Error writing route geojson: %s", ex)
+
+    async def _export_timetable(self, data) -> None:
+        """Write the timetable file: every departure of the entry over the
+        service day under way and the two after it (see write_timetable_file).
+
+        It changes with the service day and with the zip, and with nothing
+        else: rewritten on the first static refresh of a new day, when the
+        zip is replaced, and when the file is gone, never on the refreshes
+        in between. The attribute is set once the file is written, unlike
+        the leg file's: a card reads the sensor first and this file only
+        past it, and one that is not there is better not named at all.
+        """
+        schedule = self._data.get("schedule")
+        # a sentinel string or None when the datasource is unusable, as the
+        # departures read it: nothing to write the days from
+        if schedule is None or isinstance(schedule, str):
+            return
+        name = timetable_name(data["name"])
+        today = (dt_util.now() + timedelta(minutes=self._data.get("offset", 0) or 0)).strftime("%Y-%m-%d")
+        file = os.path.join(self.hass.config.path(DEFAULT_PATH_GEOJSON), name)
+        zip_path = os.path.join(self.hass.config.path(self._data["gtfs_dir"]), str(self._data["file"]) + ".zip")
+        edition, present = await self.hass.async_add_executor_job(_route_export_state, zip_path, file)
+        export_key = f"{today}:{edition}"
+        if export_key == self._timetable_export and present:
+            # written already: named again, the refresh built a fresh _data
+            self._data["timetable_file"] = name
+            return
+        try:
+            await self.hass.async_add_executor_job(write_timetable_file, self.hass, self._data, today, zip_path)
+            self._timetable_export = export_key
+            self._data["timetable_file"] = name
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Error writing the timetable file: %s", ex)
 
     async def _export_leg(self, data, feed_entities) -> None:
         """Write the leg file: the ride of the next departure, and the clocks

@@ -210,7 +210,8 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
 
 
 def _fetch_departure_rows(route_type, origin, destination, schedule, direction=None, route=None,
-                          line=None, origin_names=None, destination_names=None):
+                          line=None, origin_names=None, destination_names=None,
+                          window=None, limit=30):
     """Run the static-GTFS SQL query and return matching rows as plain dicts.
 
     direction is only given by an entry at a loop's terminus
@@ -218,7 +219,14 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
     the stops decide it everywhere else, and the direction older entries
     store is not read. line, origin_names and destination_names belong to
     the train path: the line code the flow picked, and every station the
-    entry ticked at each end."""
+    entry ticked at each end.
+
+    The sensor reads the next `limit` departures from now. The timetable
+    export (write_timetable_file) reads whole service days instead:
+    window is (first, last), two YYYY-MM-DD service dates, and every
+    departure from now on those days comes back, `limit` then being a
+    safeguard rather than the list's length. Without a window the query is
+    the sensor's, unchanged."""
     if route_type == "2":
         route_type_where = f"route.route_type in (2,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117)"
         # The station is matched on the exact name the flow offered. A prefix
@@ -268,7 +276,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
         route_where = "AND trip.route_id = :route" if route else ""
         _LOGGER.debug("Setting up Route for start/end : %s / %s ", start_station_id, end_station_id)
 
-    limit = 24 * 60 * 60 * 2
+    window_where = "AND vd.date BETWEEN :window_first AND :window_last" if window else ""
     ## QUERY candidate_trips and cal_expand are used to construct a list of valida_dates, i.e a list where services run
     ## valid_dates is then used in the main query
     sql_query = f"""
@@ -369,8 +377,9 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
                 CASE WHEN date(origin_stop_time.departure_time) = '1970-01-02'
                 THEN '+1 day' ELSE '+0 day' END
               ) >= datetime('now', 'localtime')
+          {window_where}
         ORDER BY vd.date, origin_stop_time.departure_time
-        LIMIT 30;
+        LIMIT {int(limit)};
     """  # noqa: S608
 
     # Create lookup timetable taking into
@@ -400,8 +409,9 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
                 "direction": int(direction) if str(direction) in ("0", "1") else None,
                 "route": route,
                 "line": line,
-                "limit": limit,
                 "route_type": route_type,
+                "window_first": window[0] if window else None,
+                "window_last": window[1] if window else None,
                 **name_params,
             },
         )
@@ -667,6 +677,20 @@ def drop_departure_trips(hass, _data, struck):
         now_date_local_tz, now_time)
 
 
+def departure_query_args(_data):
+    """What an entry's departures are asked with beyond its two ends, the
+    same for the sensor and for the timetable export: the direction kept at
+    a loop's terminus, the entry's line, and on the train path the line
+    code the flow picked and every station ticked at each end."""
+    return {
+        "direction": _data.get("loop_direction"),
+        "route": (_data.get("route") or "").split(": ")[0] or None,
+        "line": str(_data.get("line", "") or "").strip() or None,
+        "origin_names": entry_stations(_data, "origin"),
+        "destination_names": entry_stations(_data, "destination"),
+    }
+
+
 def get_next_departure(hass, _data):
     """Get next departures from data."""
     _LOGGER.debug("Get next departure with data: %s", _data)
@@ -690,14 +714,7 @@ def get_next_departure(hass, _data):
 
     rows, start_station_id = _fetch_departure_rows(
         route_type, _data["origin"], _data["destination"], schedule,
-        direction=_data.get("loop_direction"),
-        route=(_data.get("route") or "").split(": ")[0] or None,
-        # the train path: the line code the flow picked, and every station
-        # the entry ticked at each end
-        line=str(_data.get("line", "") or "").strip() or None,
-        origin_names=entry_stations(_data, "origin"),
-        destination_names=entry_stations(_data, "destination"),
-    )
+        **departure_query_args(_data))
     # kept beside the departures: a realtime refresh that learns of a
     # cancelled trip reads them again without it (drop_departure_trips),
     # rather than showing the struck trip as on time until the next
