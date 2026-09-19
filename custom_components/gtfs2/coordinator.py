@@ -364,7 +364,11 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             self._headers = {}
             self._rt_group = "trip"
             self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
-            self._vehicle_position_url = rt_cfg.get(CONF_VEHICLE_POSITION_URL, None)
+            # a local stops sensor lists departures of every line around a
+            # position, so it owns no route to draw: reading the vehicle
+            # feed here would fetch it once per listed line and write the
+            # map file of a route this entry does not speak for
+            self._vehicle_position_url = None
             self._alerts_url = rt_cfg.get(CONF_ALERTS_URL, None)
             if not self._trip_update_url:
                 # local stops read nothing but trip updates: a source living on
@@ -372,15 +376,18 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
                 # get_local_stops_next_departures would otherwise try to
                 # download the missing feed and drop every departure with it
                 self._realtime = False
+            # what the key is and where it goes, for the download
+            # get_local_stops_next_departures runs; kept apart from the
+            # headers, which are sent to the host as they are and take
+            # nothing but strings
+            self._rt_key = {
+                CONF_API_KEY: rt_cfg.get(CONF_API_KEY),
+                CONF_API_KEY_NAME: rt_cfg.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME),
+                CONF_API_KEY_LOCATION: rt_cfg.get(CONF_API_KEY_LOCATION),
+                CONF_ACCEPT_HEADER_PB: rt_cfg.get(CONF_ACCEPT_HEADER_PB, False),
+            }
             if rt_cfg.get(CONF_API_KEY_LOCATION, None) == "header":
-                # get_local_stops_next_departures reads the raw key fields
-                # back out of this dict, so they ride along with the header
-                self._headers = {rt_cfg.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME): rt_cfg.get(CONF_API_KEY)}
-                self._headers[CONF_API_KEY_LOCATION] = rt_cfg.get(CONF_API_KEY_LOCATION, None)
-                self._headers[CONF_API_KEY_NAME] = rt_cfg.get(CONF_API_KEY_NAME, None)
-                self._headers[CONF_API_KEY] = rt_cfg.get(CONF_API_KEY, None)
-                self._headers[CONF_ACCEPT_HEADER_PB] = rt_cfg.get(CONF_ACCEPT_HEADER_PB, False)
-            _LOGGER.debug("RT header: %s", self._headers)
+                self._headers = rt_headers(rt_cfg)
                 
 
         if self._realtime:

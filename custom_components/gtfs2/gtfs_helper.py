@@ -2365,12 +2365,17 @@ def _interpret_local_stop_rows(self, rows):
     # Set elements for realtime retrieval via local file.
     if self._realtime:
         self._rt_group = "trip"
+        rt_key = dict(getattr(self, "_rt_key", None) or {})
+        if rt_key.get(CONF_API_KEY_LOCATION) == "query_string":
+            # the coordinator already put this key in the url: handed on,
+            # get_gtfs_rt appended it a second time (?key=K&key=K)
+            rt_key.pop(CONF_API_KEY_LOCATION)
         self._rt_data = {
             "url": self._trip_update_url,
-            CONF_API_KEY : self._headers.get(CONF_API_KEY,None),
-            CONF_API_KEY_NAME : self._headers.get(CONF_API_KEY_NAME, None),
-            CONF_API_KEY_LOCATION : self._headers.get(CONF_API_KEY_LOCATION,None),
-            CONF_ACCEPT_HEADER_PB :self._headers.get(CONF_ACCEPT_HEADER_PB,None),
+            CONF_API_KEY : rt_key.get(CONF_API_KEY,None),
+            CONF_API_KEY_NAME : rt_key.get(CONF_API_KEY_NAME, None),
+            CONF_API_KEY_LOCATION : rt_key.get(CONF_API_KEY_LOCATION,None),
+            CONF_ACCEPT_HEADER_PB :rt_key.get(CONF_ACCEPT_HEADER_PB,None),
             "file": self._data["name"] + "_localstop",
             }
         _LOGGER.debug("self rt_data: %s, self headers: %s, self data: %s", self._rt_data, self._headers, self._data)
