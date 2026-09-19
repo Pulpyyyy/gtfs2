@@ -223,6 +223,21 @@ def _record_installed(hass: HomeAssistant, file) -> None:
         _LOGGER.warning("Could not record the rebuild of %s: %s", file, ex)
 
 
+def rebuild_pending(hass: HomeAssistant, file) -> bool:
+    """True when the kept zip is a newer edition than the database.
+
+    The zip is adopted as soon as it is proven to be one, before anything
+    is built from it, so a rebuild that failed leaves the two apart. The
+    host is no help from then on: asked with the zip's own validators it
+    answers "unchanged", and the source would never be built again. The
+    two files say it instead, and the retry needs no download.
+    """
+    kept = source_meta(_zip_path(hass, file))
+    if not kept:
+        return False
+    return version_label(installed_meta(hass, file)) != version_label(kept)
+
+
 def version_label(meta: dict):
     """A human answer to "which version is this", best evidence first."""
     if not meta:
@@ -325,6 +340,19 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
     if source_lock(hass, file).locked():
         # a rebuild is running right now; next tick will know more
         return
+    if (mode == STATIC_REFRESH_AUTO
+            and await hass.async_add_executor_job(rebuild_pending, hass, file)):
+        # the kept zip is ahead of the database, so a rebuild was started
+        # and did not finish. Asking the host would only hear "unchanged"
+        # about the zip we already have: the retry reads that zip, and the
+        # check goes no further tonight.
+        _LOGGER.info("Source %s was fetched but not built, building it", file)
+        if await async_refresh_source(hass, entry, use_zip=True):
+            return
+        # that zip was refused (a line a sensor reads is missing from it,
+        # or it is broken): built again every night it would never get
+        # further, and only a newer edition can. The host is asked for one
+        _LOGGER.info("Source %s could not be built from its kept zip, asking its host", file)
     data = refresh_data_for(hass, entry)
     zip_path = _zip_path(hass, file)
     interval = check_interval(entry)
