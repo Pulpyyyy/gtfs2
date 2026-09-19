@@ -473,6 +473,17 @@
     "reason_tables_missing": "das Entpacken brach ab, bevor alle Tabellen geschrieben waren",
     "reason_unfinished": "das Entpacken wurde nicht abgeschlossen",
     "reason_tables_empty": "einige Tabellen sind leer geblieben",
-    "reason_unreadable": "die Datenbank ist unlesbar"
+    "reason_unreadable": "die Datenbank ist unlesbar",
+    "line_mode_tram": "Straßenbahn",
+    "line_mode_metro": "U-Bahn",
+    "line_mode_train": "Zug",
+    "line_mode_bus": "Bus",
+    "line_mode_coach": "Fernbus",
+    "line_mode_ferry": "Fähre",
+    "line_mode_cable_tram": "Kabelstraßenbahn",
+    "line_mode_aerial_lift": "Seilbahn",
+    "line_mode_funicular": "Standseilbahn",
+    "line_mode_trolleybus": "Oberleitungsbus",
+    "line_mode_monorail": "Einschienenbahn"
   }
 }

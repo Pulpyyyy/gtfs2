@@ -473,6 +473,17 @@
     "reason_tables_missing": "la descompresión se detuvo antes de escribir todas las tablas",
     "reason_unfinished": "la descompresión no llegó a terminar",
     "reason_tables_empty": "algunas tablas han quedado vacías",
-    "reason_unreadable": "la base de datos es ilegible"
+    "reason_unreadable": "la base de datos es ilegible",
+    "line_mode_tram": "tranvía",
+    "line_mode_metro": "metro",
+    "line_mode_train": "tren",
+    "line_mode_bus": "autobús",
+    "line_mode_coach": "autocar",
+    "line_mode_ferry": "ferri",
+    "line_mode_cable_tram": "tranvía de cable",
+    "line_mode_aerial_lift": "teleférico",
+    "line_mode_funicular": "funicular",
+    "line_mode_trolleybus": "trolebús",
+    "line_mode_monorail": "monorraíl"
   }
 }
