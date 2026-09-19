@@ -31,7 +31,7 @@ from .const import (
     STATIC_REFRESH_OFF,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
-from .flow_source import _collect_source_rt_options, _source_key_schema, _source_rt_key_schema
+from .flow_source import _collect_source_rt_options, _source_key_schema, _source_rt_key_schema, _typed_key
 from .rt_source import STATIC_KEY_KEYS, static_feed_config, static_key_fields
 
 _LOGGER = logging.getLogger(__name__)
@@ -69,7 +69,8 @@ class OptionsScreens:
         _LOGGER.debug("UserInput Source realtime key received")
         return self.async_create_entry(
             title="", data=_collect_source_rt_options(
-                self._user_inputs, user_input, previous=self.config_entry.options))
+                self._user_inputs, _typed_key(user_input, opts),
+                previous=self.config_entry.options))
 
     async def async_step_static_refresh(
            self, user_input: dict[str, Any] | None = None
@@ -158,7 +159,8 @@ class OptionsScreens:
                 errors={},
             )
         _LOGGER.debug("UserInput Source static key received")
-        return self._finish_static_refresh(user_input)
+        return self._finish_static_refresh(_typed_key(
+            user_input, static_feed_config(self.hass, self.config_entry)))
 
     def _finish_static_refresh(self, key_fields) -> FlowResult:
         """Store what the static feed screens collected.

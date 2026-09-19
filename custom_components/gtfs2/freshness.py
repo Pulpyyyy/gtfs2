@@ -29,6 +29,7 @@ from .const import (
     CONF_API_KEY_NAME,
     DEFAULT_API_KEY_NAME,
 )
+from .key_mask import hide_keys
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -209,7 +210,9 @@ def adopt_zip(response, staged, zip_path):
     """
     os.replace(staged, zip_path)
     meta = {
-        "url": str(response.url),
+        # the key a query string carried stays out of the file, and out of
+        # the update entity that shows this url
+        "url": hide_keys(response.url),
         "etag": response.headers.get("ETag"),
         "last_modified": response.headers.get("Last-Modified"),
         "sha256": hashlib.sha256(response.content).hexdigest(),

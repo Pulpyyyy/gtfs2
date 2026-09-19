@@ -21,6 +21,7 @@ from .notifications import async_notify_line_orphaned
 from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern, timetable_name
 from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
+from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
 from .rt_source import (
     async_bootstrap_datasource_entries,
     async_ensure_datasource_entry,
@@ -37,6 +38,9 @@ from .source_refresh import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# no api key in the logs, whichever module writes the line
+hide_keys_in_logs(__name__, __path__)
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     """Migrate old entry."""
@@ -259,6 +263,7 @@ async def async_intern_datasources(hass: HomeAssistant, data):
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GTFS from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+    note_entry_keys(entry)
 
     # every start walks the known sources once, in the background, and gives
     # each its datasource entry; guarded so the entries this creates do not
@@ -382,6 +387,7 @@ def setup(hass, config):
         the call are only read to create a source that does not exist yet,
         and the new source keeps them from then on.
         """
+        note_key(call.data.get(CONF_API_KEY))
         _LOGGER.debug("Updating GTFS with: %s", call.data)
         data = dict(call.data)
         file = data.get("file", "")
@@ -415,6 +421,7 @@ def setup(hass, config):
 
     def update_gtfs_rt_local(call):
         """My GTFS RT service."""
+        note_key(call.data.get(CONF_API_KEY))
         _LOGGER.debug("Updating GTFS RT with: %s", call.data)
         get_gtfs_rt(hass, DEFAULT_PATH_RT, call.data)
         return True  

@@ -45,6 +45,7 @@ from .const import (
 from .flow_reload import _database_size
 from .gtfs_db import real_path
 from .gtfs_helper import check_extracting, get_zipfiles
+from .key_mask import KEY_MASK, note_key
 from .notifications import async_watch_extraction, check_extraction_result
 from .rt_source import async_ensure_datasource_entry, datasource_entry
 from .source_zip import ensure_source_zip
@@ -74,13 +75,14 @@ def _source_key_schema(previous):
     One screen for every feed that needs a key: the static feed at creation
     and on the source's screen, the realtime feeds with one more field. A
     stored "not_applicable" is not offered back: on this screen a key exists,
-    so it goes somewhere.
+    so it goes somewhere. A stored key is shown as the mask, never itself:
+    sent back unchanged, the mask keeps it (see _typed_key).
     """
     location = previous.get(CONF_API_KEY_LOCATION)
     if location not in ("header", "query_string"):
         location = "query_string"
     return {
-        vol.Required(CONF_API_KEY, default=previous.get(CONF_API_KEY, "")): cv.string,
+        vol.Required(CONF_API_KEY, default=KEY_MASK if previous.get(CONF_API_KEY) else ""): cv.string,
         vol.Required(
             CONF_API_KEY_NAME,
             default=previous.get(CONF_API_KEY_NAME) or DEFAULT_API_KEY_NAME,
@@ -95,6 +97,19 @@ def _source_key_schema(previous):
             )
         ),
     }
+
+
+def _typed_key(key_fields, previous):
+    """The key screen's fields, the mask swapped back for the key it stands for.
+
+    The key is noted on the way, so the logs hide it from the moment it is
+    typed, before any entry stores it.
+    """
+    key = key_fields.get(CONF_API_KEY)
+    if key == KEY_MASK:
+        key = (previous or {}).get(CONF_API_KEY, "")
+    note_key(key)
+    return {**key_fields, CONF_API_KEY: key}
 
 
 def _source_rt_key_schema(opts):
@@ -242,6 +257,7 @@ class SourceScreens:
 
         if user_input is None:
             return _show(errors)
+        user_input = _typed_key(user_input, self._user_inputs)
         self._user_inputs.update(user_input)
         check_data = await self.hass.async_add_executor_job(
             ensure_source_zip, self.hass, DEFAULT_PATH, self._user_inputs)
@@ -289,7 +305,7 @@ class SourceScreens:
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                 errors=errors,
             )
-        await self._store_source_rt(self._source_rt_inputs, user_input)
+        await self._store_source_rt(self._source_rt_inputs, _typed_key(user_input, opts))
         return await self.async_step_agency()
 
     async def _store_source_rt(self, url_fields, key_fields):

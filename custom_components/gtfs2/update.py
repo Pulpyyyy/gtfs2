@@ -31,6 +31,7 @@ from .const import (
     STATIC_REFRESH_OFF,
 )
 from .feed_window import read_feed_window
+from .key_mask import hide_keys
 from .source_refresh import (
     SIGNAL_SOURCE_REFRESH,
     async_refresh_source,
@@ -203,7 +204,9 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
             "downloaded_at": meta.get("downloaded_at"),
             "version_source": "recorded" if built_at else "assumed",
             # the url the bytes actually came from, redirects followed
-            "source_url": meta.get("url"),
+            # masked here too: a file written before the mask existed
+            # still holds the key
+            "source_url": hide_keys(meta["url"]) if meta.get("url") else None,
             "source_size": meta.get("size"),
             # the schedule, so the entity says when it will look next
             "refresh_mode": self._entry.options.get(CONF_STATIC_REFRESH_MODE,
