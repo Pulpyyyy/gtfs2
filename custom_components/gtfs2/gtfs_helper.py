@@ -284,7 +284,9 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
           candidate_trips AS MATERIALIZED (
             SELECT trip.trip_id, trip.service_id,
                    origin_stop_time.stop_id AS origin_stop_id,
-                   destination_stop_time.stop_id AS destination_stop_id
+                   destination_stop_time.stop_id AS destination_stop_id,
+                   origin_stop_time.stop_sequence AS origin_stop_sequence,
+                   destination_stop_time.stop_sequence AS destination_stop_sequence
             FROM trips trip
             INNER JOIN routes route ON route.route_id = trip.route_id
             INNER JOIN stop_times origin_stop_time ON trip.trip_id = origin_stop_time.trip_id
@@ -365,9 +367,9 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
                destination_stop_time.timepoint AS dest_stop_timepoint
         FROM candidate_trips ct
         INNER JOIN trips trip ON trip.trip_id = ct.trip_id
-        INNER JOIN stop_times origin_stop_time ON origin_stop_time.trip_id = trip.trip_id AND origin_stop_time.stop_id = ct.origin_stop_id
+        INNER JOIN stop_times origin_stop_time ON origin_stop_time.trip_id = trip.trip_id AND origin_stop_time.stop_sequence = ct.origin_stop_sequence
         INNER JOIN stops start_station ON origin_stop_time.stop_id = start_station.stop_id
-        INNER JOIN stop_times destination_stop_time ON destination_stop_time.trip_id = trip.trip_id AND destination_stop_time.stop_id = ct.destination_stop_id
+        INNER JOIN stop_times destination_stop_time ON destination_stop_time.trip_id = trip.trip_id AND destination_stop_time.stop_sequence = ct.destination_stop_sequence
         INNER JOIN stops end_station ON destination_stop_time.stop_id = end_station.stop_id
         INNER JOIN routes route ON route.route_id = trip.route_id
         INNER JOIN agency agency ON route.agency_id = agency.agency_id
