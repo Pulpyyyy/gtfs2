@@ -105,6 +105,7 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
         options.append(
             f"{row.get('route_type') or '99'}##{row['route_id']}##{label}##pruned")
     options = _set_apart(options, [names.get(str(row.get("agency_id") or ""), only) for row in rows])
+    options = _set_apart_by_ends(options, headsign_ends(gtfs_dir, filename, _look_alikes(options)))
     return sorted(options, key=lambda value: _natural(value.split("##")[2]))
 
 
@@ -182,6 +183,34 @@ def _set_apart(options, agencies):
         if len(groups[label.casefold()]) > 1 and _says_something(agency):
             parts = option.split("##")
             parts[2] = f"{label} · {str(agency).strip()}"
+            option = "##".join(parts)
+        out.append(option)
+    return out
+
+
+def _look_alikes(options):
+    """The route_ids of the lines whose label another line of the list wears
+    too, after _set_apart: one operator publishing one name for several
+    routes (IDFM's three "TER : TER Centre - Val de Loire", to Chartres, to
+    Montargis and to Châteaudun)."""
+    labels = Counter(option.split("##")[2].casefold() for option in options)
+    return [option.split("##")[1] for option in options
+            if labels[option.split("##")[2].casefold()] > 1]
+
+
+def _set_apart_by_ends(options, ends):
+    """Give the look-alikes their two ends: " · Chartres ↔ Gare Montparnasse".
+
+    ends is {route_id: ends} as route_ends or headsign_ends read them. A
+    label that already shows its ends (a line without a long name) is left
+    as it is, the words would only be said twice.
+    """
+    out = []
+    for option in options:
+        parts = option.split("##")
+        found = ends.get(parts[1])
+        if found and found.casefold() not in parts[2].casefold():
+            parts[2] = f"{parts[2]} · {found}"
             option = "##".join(parts)
         out.append(option)
     return out

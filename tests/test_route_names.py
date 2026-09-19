@@ -44,6 +44,21 @@ def test_look_alikes_of_one_agency_are_left_alone():
         ["3##X##7 · GVB", "3##Y##7"]
 
 
+def test_look_alikes_of_one_agency_get_their_ends():
+    # IDFM: one operator, one name, routes to Chartres and to Montargis
+    options = ["2##C1##TER : TER Centre", "2##C2##TER : TER Centre##pruned",
+               "2##C3##TER : TER Centre-Val", "3##I1##INCONNU : A ↔ B", "3##I2##INCONNU : A ↔ B"]
+    twins = route_names._look_alikes(options)
+    assert twins == ["C1", "C2", "I1", "I2"]
+    got = route_names._set_apart_by_ends(options, {
+        "C1": "Montparnasse ↔ Chartres", "C2": "Bercy ↔ Montargis", "I1": "A ↔ B"})
+    assert got == ["2##C1##TER : TER Centre · Montparnasse ↔ Chartres",
+                   "2##C2##TER : TER Centre · Bercy ↔ Montargis##pruned",
+                   # a label nobody else wears, and one already showing its ends
+                   "2##C3##TER : TER Centre-Val", "3##I1##INCONNU : A ↔ B",
+                   "3##I2##INCONNU : A ↔ B"]
+
+
 def _feed(tmp_path, trips):
     """A source zip whose trips.txt holds (route_id, direction_id, headsign)."""
     import zipfile
