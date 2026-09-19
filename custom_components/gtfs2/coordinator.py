@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime
 from datetime import timedelta
+import json
 import logging
 import os
 import re
@@ -61,6 +62,21 @@ def _route_export_state(zip_path, file):
     return edition, os.path.exists(file)
 
 
+def _drawn_trip(zip_path, file):
+    """The trip a route file already draws, when it is at least as new as
+    the zip it was drawn from; None when there is no such file, when the
+    zip was replaced since, or when the file cannot be read. What spares a
+    restart the reading of the line's shape again: on IDFM shapes.txt is
+    131 MB to scan for one line, and eight entries did it at once."""
+    try:
+        if os.path.getmtime(file) < os.path.getmtime(zip_path):
+            return None
+        with open(file, encoding="utf-8") as handle:
+            return (json.load(handle).get("properties") or {}).get("trip_id")
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
 class GTFSUpdateCoordinator(DataUpdateCoordinator):
     """Data update coordinator for the GTFS integration."""
 
@@ -82,6 +98,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         # the trip whose stops are already exported, so the geojson is
         # rewritten when the journey changes and not on every refresh
         self._route_export_trip = None
+        # the writing of the route file under way, if any (see _export_route_shape)
+        self._route_task = None
         # the service day and zip edition the timetable file was written for
         self._timetable_export = None
         # the writing of it under way, if any (see _export_timetable)
@@ -292,6 +310,13 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         line's polyline is read from it (see write_route_file): a new
         edition that ships shapes.txt where the last did not, or moves a
         shape, must reach the map even when the trip drawn keeps its id.
+
+        A file already there, newer than the zip and drawing the same trip,
+        is kept: a restart knows nothing of what the last run wrote, and
+        read the shape again for every entry. When it has to be written, it
+        is written in the background: the sensor waits for this refresh, and
+        a large shapes.txt held the sensor platform past Home Assistant's
+        minute at startup.
         """
         departure = self._data.get("next_departure") or {}
         route_id = departure.get("route_id", None) or (data.get("route") or "").split(": ")[0]
@@ -327,10 +352,23 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         export_key = f"{route_id}_{direction}:{trip_id}:{edition}"
         if export_key == self._route_export_trip and present:
             return
+        if present and await self.hass.async_add_executor_job(_drawn_trip, zip_path, file) == trip_id:
+            # written by an earlier run, and still the line of this zip
+            self._route_export_trip = export_key
+            return
+        if self._route_task is not None and not self._route_task.done():
+            # one writing at a time: the next refresh looks again
+            return
         self._route_id = route_id
         self._direction = direction
+        self._route_task = self.hass.async_create_background_task(
+            self._write_route(self._data, route_id, direction, trip_id, export_key),
+            f"gtfs2 route {route_id} {direction}")
+
+    async def _write_route(self, source, route_id, direction, trip_id, export_key) -> None:
+        """Write the route file off the refresh (see _export_route_shape)."""
         try:
-            await self.hass.async_add_executor_job(write_route_file, self.hass, self._data, route_id, direction, trip_id)
+            await self.hass.async_add_executor_job(write_route_file, self.hass, source, route_id, direction, trip_id)
             self._route_export_trip = export_key
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Error writing route geojson: %s", ex)

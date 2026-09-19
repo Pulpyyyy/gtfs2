@@ -119,6 +119,11 @@ class _FakeHass:
     async def async_add_executor_job(self, fn, *args):
         return fn(*args)
 
+    def async_create_background_task(self, coro, name):
+        # the route and timetable files are written off the refresh; the
+        # loop the test runs on takes the task like Home Assistant's would
+        return asyncio.get_running_loop().create_task(coro)
+
 
 class _FakeConfigEntry:
     """Stand-in for `homeassistant.config_entries.ConfigEntry`.
