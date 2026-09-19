@@ -6,6 +6,7 @@ import time
 import logging
 import statistics
 import os
+import shutil
 import glob
 import json
 import requests
@@ -867,26 +868,47 @@ def check_calendar_dates_from_zip(gtfs_dir,file):
     return True
 
 def remove_from_zip(delmelist,gtfs_dir,file):
+    """Rewrite a kept zip without the members listed, or leave it as it was.
+
+    The zip is the only full record of the feed, so the rewrite happens
+    beside it and the original only steps aside once the new one is whole.
+    A feed that breaks halfway used to leave nothing under the zip's name:
+    check_extracting then saw the _temp.zip for ever and every sensor of
+    the source stayed "extracting" until someone renamed the file by hand.
+
+    Members are copied through rather than read whole: stop_times.txt of a
+    national feed is bigger than the memory of the machines this runs on.
+    """
     _LOGGER.debug("Removing data: %s , from zipfile: %s", delmelist, file)
     tempfile = file + "_temp.zip"
     tempfile_out = file + "_temp_out.zip"
     filename = file + ".zip"
-    os.rename (os.path.join(gtfs_dir, filename), os.path.join(gtfs_dir, tempfile))
-    # Load the ZIP archive
-    try: 
-        zin = zipfile.ZipFile (f"{os.path.join(gtfs_dir, tempfile)}", 'r')
-        zout = zipfile.ZipFile (f"{os.path.join(gtfs_dir, tempfile_out)}", 'w')
-        for item in zin.infolist():
-            buffer = zin.read(item.filename)
-            if (item.filename not in delmelist):
-                zout.writestr(item, buffer)
-        zout.close()
-        zin.close()
-        os.rename(os.path.join(gtfs_dir, tempfile_out), os.path.join(gtfs_dir, filename))
-        os.remove(os.path.join(gtfs_dir, tempfile)) 
+    kept = os.path.join(gtfs_dir, filename)
+    aside = os.path.join(gtfs_dir, tempfile)
+    written = os.path.join(gtfs_dir, tempfile_out)
+    os.rename (kept, aside)
+    try:
+        with zipfile.ZipFile(aside, 'r') as zin, \
+             zipfile.ZipFile(written, 'w') as zout:
+            for item in zin.infolist():
+                if (item.filename not in delmelist):
+                    with zin.open(item) as source, zout.open(item, 'w') as target:
+                        shutil.copyfileobj(source, target)
+        os.rename(written, kept)
+        os.remove(aside)
+        return True
     except Exception as ex:  # pylint: disable=broad-except
-        print('Something went wrong with the zipfile... : ', ex)
-        return     
+        _LOGGER.error("Could not rewrite %s without %s: %s", filename, delmelist, ex)
+        # the feed goes back under its own name, whole, as if nothing had
+        # been attempted
+        if not os.path.exists(kept) and os.path.exists(aside):
+            os.rename(aside, kept)
+        if os.path.exists(written):
+            try:
+                os.remove(written)
+            except OSError:
+                pass
+        return False
 
 
 def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
