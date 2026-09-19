@@ -84,6 +84,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._route_export_trip = None
         # the service day and zip edition the timetable file was written for
         self._timetable_export = None
+        # the writing of it under way, if any (see _export_timetable)
+        self._timetable_task = None
         self._stale_markers_cleaned = False
 
     async def _async_update_data(self) -> dict[str, str]:
@@ -343,6 +345,12 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         in between. The attribute is set once the file is written, unlike
         the leg file's: a card reads the sensor first and this file only
         past it, and one that is not there is better not named at all.
+
+        The writing itself runs in the background: three days of departures
+        and the next service day are a few reads more than the sensor's own,
+        and at startup every entry does them at once, which held the sensor
+        platform past Home Assistant's minute. The sensor comes up on its
+        departures, and takes the attribute as soon as the file is there.
         """
         schedule = self._data.get("schedule")
         # a sentinel string or None when the datasource is unusable, as the
@@ -359,12 +367,26 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             # written already: named again, the refresh built a fresh _data
             self._data["timetable_file"] = name
             return
+        if self._timetable_task is not None and not self._timetable_task.done():
+            # one writing at a time: the one under way names the file itself
+            return
+        self._timetable_task = self.hass.async_create_background_task(
+            self._write_timetable(self._data, name, today, zip_path, export_key),
+            f"gtfs2 timetable {name}")
+
+    async def _write_timetable(self, source, name, today, zip_path, export_key) -> None:
+        """Write the timetable file off the refresh, then name it on the
+        sensor without waiting for the next refresh."""
         try:
-            await self.hass.async_add_executor_job(write_timetable_file, self.hass, self._data, today, zip_path)
-            self._timetable_export = export_key
-            self._data["timetable_file"] = name
+            await self.hass.async_add_executor_job(write_timetable_file, self.hass, source, today, zip_path)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("Error writing the timetable file: %s", ex)
+            return
+        self._timetable_export = export_key
+        # the refresh under way when the task started may have been
+        # replaced since: the attribute goes on the data the sensor reads now
+        self._data["timetable_file"] = name
+        self.async_update_listeners()
 
     async def _export_leg(self, data, feed_entities) -> None:
         """Write the leg file: the ride of the next departure, and the clocks

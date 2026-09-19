@@ -73,3 +73,56 @@ def test_a_row_without_a_time_is_left_out():
 
 def test_the_name_is_the_entrys_own():
     assert geojson.timetable_name("Métro 5 → Place d'Italie") == "timetable_metro_5_place_d_italie.json"
+
+
+# --- the writing runs off the refresh ----------------------------------------
+
+def test_the_refresh_does_not_wait_for_the_timetable(tmp_path, monkeypatch):
+    """At startup every entry writes its timetable at once, which held the
+    sensor platform past Home Assistant's minute: the refresh hands the
+    writing to a background task, one per entry at a time, and the task
+    names the file on the sensor once it is written."""
+    import asyncio
+    import types
+
+    coordinator_mod = ha_stub.load("coordinator")
+    written, started, updates = [], [], []
+
+    def write(hass, data, today, zip_path):
+        written.append(data["name"])
+
+    monkeypatch.setattr(coordinator_mod, "write_timetable_file", write)
+
+    async def run():
+        loop = asyncio.get_running_loop()
+
+        async def executor(fn, *args):
+            return fn(*args)
+
+        def background(coro, name):
+            task = loop.create_task(coro)
+            started.append(name)
+            return task
+
+        hass = types.SimpleNamespace(
+            config=types.SimpleNamespace(path=lambda *parts: str(tmp_path.joinpath(*parts))),
+            async_add_executor_job=executor, async_create_background_task=background)
+        me = object.__new__(coordinator_mod.GTFSUpdateCoordinator)
+        me.hass = hass
+        me._timetable_export = None
+        me._timetable_task = None
+        me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "feed", "name": "Métro 4"}
+        me.async_update_listeners = lambda: updates.append(dict(me._data))
+        data = {"name": "Métro 4"}
+        await me._export_timetable(data)
+        # handed off: nothing written yet, nothing named yet
+        assert written == [] and "timetable_file" not in me._data
+        # a second refresh while it runs starts no second writing
+        await me._export_timetable(data)
+        assert len(started) == 1
+        await me._timetable_task
+        assert written == ["Métro 4"]
+        assert me._data["timetable_file"] == "timetable_metro_4.json"
+        assert updates and updates[-1]["timetable_file"] == "timetable_metro_4.json"
+
+    asyncio.run(run())
