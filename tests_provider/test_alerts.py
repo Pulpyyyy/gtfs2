@@ -105,3 +105,58 @@ def test_alerts_reach_the_listed_trips(record_property, monkeypatch):
     check.same([i["text"] for i in alerts_mod._rank_alerts([later, now])], ["now", "later"],
                "what concerns the next departure ranks first")
     _done(record_property, check, fixture="sncf", promise="alerts")
+
+
+def test_alerts_name_their_stops(record_property, monkeypatch):
+    """An alert addressed to a station of the journey carries the station's
+    name: IDFM closes a station under the header "Travaux" and says which
+    only in the stop it addresses, so the sentence alone tells nobody where."""
+    from google.transit import gtfs_realtime_pb2 as rt
+    sncf = fixture_db.build(str(FIXTURE))
+    trip = ("OCEEA436011R5235_R:CTE:FR:Line::8440e055-0d15-4156-9e77-017af816441a"
+            "::87296442:87296012:5:1327:20260828")
+    route = "FR:Line::8440e055-0d15-4156-9e77-017af816441a:"
+
+    def works(stop_id):
+        entity = rt.FeedEntity(id=f"works-{stop_id}")
+        entity.alert.header_text.translation.add(text="Travaux", language="fr")
+        entity.alert.cause = rt.Alert.CONSTRUCTION
+        informed = entity.alert.informed_entity.add()
+        informed.route_id = route
+        informed.stop_id = stop_id
+        return entity
+
+    def follower():
+        return types.SimpleNamespace(
+            hass=types.SimpleNamespace(config=types.SimpleNamespace(language="fr")),
+            _alerts_url="http://alerts.test/feed", _headers=None,
+            _route_id=route,
+            _stop_id="StopPoint:OCECar TER-87296442",
+            _destination_id="StopPoint:OCECar TER-87296012",
+            _trip_id=trip, _trip_list=[],
+            _data={"file": "fixture", "schedule": sncf,
+                   "next_departure": {"trip_id": trip, "origin_stop_sequence": 0,
+                                      "destination_stop_time": {"Sequence": 4}}})
+
+    check = Check()
+    # Versigny, passed on the way, named by its station as IDFM does
+    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities",
+                        lambda **_kw: [works("StopArea:OCE87296608")])
+    got = gtfs_rt_helper.get_rt_alerts(follower())
+    items = got.get("origin_stop_alerts") or []
+    check.same([i.get("stops") for i in items], [["Versigny"]], "the station passed is named")
+    check.same(got.get("origin_stop_alert"), "Travaux", "the sentence stays the feed's")
+    # the departure itself, named by its platform: the station's name
+    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities",
+                        lambda **_kw: [works("StopPoint:OCECar TER-87296442")])
+    items = gtfs_rt_helper.get_rt_alerts(follower()).get("origin_stop_alerts") or []
+    check.same([i.get("stops") for i in items], [["Tergnier"]], "the departure is named")
+    # a station off the journey: no alert at all, as before
+    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities",
+                        lambda **_kw: [works("StopArea:OCE99999999")])
+    check.same(gtfs_rt_helper.get_rt_alerts(follower()).get("origin_stop_alerts"), None,
+               "a station off the journey")
+    # the same sentence at two stations is two alerts
+    two = [{"text": "Travaux", "stops": ["A"]}, {"text": "Travaux", "stops": ["B"]}]
+    check.same(len(alerts_mod._rank_alerts(two)), 2, "works at two stations")
+    _done(record_property, check, fixture="sncf", promise="alert stops")

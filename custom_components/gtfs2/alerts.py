@@ -85,14 +85,16 @@ def _rank_alerts(items):
     """The alerts of one end of the journey, worst first and without repeats.
 
     SNCF publishes the same alert under two ids, word for word, and the reader
-    would see the sentence twice; text, cause and effect together are what one
-    can tell apart. The sort is stable, so at equal effect the feed's own order
+    would see the sentence twice; text, cause, effect and the stops named
+    together are what one can tell apart: "Travaux" at two stations is two
+    alerts. The sort is stable, so at equal effect the feed's own order
     still decides, and the cap is applied last so what is kept is the worst.
     """
     seen = set()
     unique = []
     for item in items:
-        key = (item.get("text", ""), item.get("cause"), item.get("effect"))
+        key = (item.get("text", ""), item.get("cause"), item.get("effect"),
+               tuple(item.get("stops") or ()))
         if key in seen:
             continue
         seen.add(key)
@@ -160,6 +162,46 @@ def _stop_aliases(data, stop_id):
             aliases.add(str(row[0]))
     _STOP_ALIASES[key] = aliases
     return aliases
+
+
+# the name a stop is shown by, per datasource, as _STOP_ALIASES
+_STOP_NAMES = {}
+
+
+def _stop_names(data, stop_ids):
+    """The names of the stops an alert names, their station's where they
+    have one, each once.
+
+    The sentence of an alert is its header, and a header is short: IDFM
+    writes "Travaux" for the closing of a station and says which one only in
+    the stop it addresses the alert to. A card that shows the sentence alone
+    cannot tell the rider where the works are, nor whether the stop is one
+    they get on, off or change at, or one their train only passes.
+    """
+    data = data or {}
+    schedule = data.get("schedule")
+    names = []
+    if schedule is None:
+        return names
+    for stop_id in stop_ids:
+        key = (data.get("file"), str(stop_id))
+        if key not in _STOP_NAMES:
+            try:
+                with schedule.engine.connect() as conn:
+                    row = conn.execute(
+                        sql_text("select coalesce(p.stop_name, s.stop_name) from stops s "
+                                 "left join stops p on p.stop_id = s.parent_station "
+                                 "where s.stop_id = :stop_id"),
+                        {"stop_id": str(stop_id)}).fetchone()
+            except Exception as ex:  # pylint: disable=broad-except
+                # the alert is still worth its sentence without the name
+                _LOGGER.debug("Could not read the name of stop %s: %s", stop_id, ex)
+                continue
+            _STOP_NAMES[key] = str(row[0]).strip() if row and row[0] else ""
+        name = _STOP_NAMES[key]
+        if name and name not in names:
+            names.append(name)
+    return names
 
 
 def _journey_stops(data, trip_id=None):
@@ -261,7 +303,7 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
     """
     journey_ids = journey_ids or set()
     hits = {"origin": False, "destination": False, "route": False,
-            "trip": False, "journey": False, "trips": []}
+            "trip": False, "journey": False, "trips": [], "stops": []}
     followed = [str(t) for t in [trip_id, *trip_ids] if t]
     for x in alert.informed_entity:
         e_stop = x.stop_id if x.HasField("stop_id") else None
@@ -282,6 +324,12 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
             hits["journey"] = True
         elif e_stop is None and e_route == str(route_id):
             hits["route"] = True
+            continue
+        else:
+            continue
+        # the stops of the journey it names, in the feed's order
+        if e_stop not in hits["stops"]:
+            hits["stops"].append(e_stop)
     return hits
 
 
@@ -333,6 +381,9 @@ def journey_alerts(coordinator, feed_entities):
         # going on
         item = {"text": _alert_text(alert.header_text, language)}
         item.update(_alert_kind(alert))
+        stops = _stop_names(data, hits["stops"])
+        if stops:
+            item["stops"] = stops
         if hits["trips"]:
             # which departures of the board it names, head first
             item["trips"] = list(hits["trips"])

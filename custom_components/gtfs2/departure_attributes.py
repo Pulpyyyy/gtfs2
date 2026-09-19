@@ -150,7 +150,8 @@ def alert_details(attributes, alert):
     # The whole stack behind those two sentences, worst first: a journey can
     # be under a cancellation and a works notice at the same time, and the
     # strings can only say one of them. Each item carries its text and, when
-    # the feed states them, its cause and effect. Written only when there is
+    # the feed states them, its cause and effect, and the names of the
+    # journey's stops it is addressed to. Written only when there is
     # something to say, and removed when there is not.
     for key in ("origin_stop_alerts", "destination_stop_alerts"):
         value = alert.get(key, None)
