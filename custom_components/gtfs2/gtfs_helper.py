@@ -14,6 +14,7 @@ import sqlite3
 import json
 import csv
 import io
+from collections import Counter, defaultdict
 import requests
 import pygtfs
 from sqlalchemy.sql import text
@@ -906,11 +907,14 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
     # agency_id may be left out when the feed has a single agency
     names = {str(a.get("agency_id") or ""): a["agency_name"] for a in agencies}
     only = agencies[0]["agency_name"] if len(agencies) == 1 else ""
+    ends = headsign_ends(gtfs_dir, filename, [
+        row["route_id"] for row in rows
+        if not _adds_to(row.get("route_short_name"), row.get("route_long_name"))])
     options = []
     for row in rows:
         label = _route_label(row.get("route_short_name"),
                              row.get("route_long_name"),
-                             route_id=row["route_id"])
+                             ends.get(row["route_id"]), row["route_id"])
         options.append(
             f"{row.get('route_type') or '99'}##{row['route_id']}##{label}##pruned")
     options = _set_apart(options, [names.get(str(row.get("agency_id") or ""), only) for row in rows])
@@ -920,9 +924,13 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
 def get_route_labels_from_zip(gtfs_dir, filename, route_ids):
     """get_route_labels when there is no database to ask: names from the zip."""
     rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    wanted = set(route_ids)
+    ends = headsign_ends(gtfs_dir, filename, [
+        row["route_id"] for row in rows if row["route_id"] in wanted
+        and not _adds_to(row.get("route_short_name"), row.get("route_long_name"))])
     known = {row["route_id"]: _route_label(row.get("route_short_name"),
                                            row.get("route_long_name"),
-                                           route_id=row["route_id"])
+                                           ends.get(row["route_id"]), row["route_id"])
              for row in rows}
     return {r: known.get(r, r) for r in route_ids}
 
@@ -992,21 +1000,113 @@ def _set_apart(options, agencies):
     return out
 
 
+# the ends read from trips.txt, per zip edition: {(path, size, mtime): ends}
+_HEADSIGN_ENDS = {}
+
+
+def _names_a_place(headsign):
+    """Whether a trip_headsign reads as a destination rather than a code.
+
+    SNCF writes the train number there ("44930"), IDFM the RER mission code
+    ("UZAR", "NATO"): neither tells a rider where the line goes. A short
+    word in capitals with no space is taken for such a code.
+    """
+    headsign = str(headsign or "").strip()
+    if not any(character.isalpha() for character in headsign):
+        return False
+    return not (headsign.isupper() and " " not in headsign and len(headsign) <= 5)
+
+
+def _read_headsign_ends(zip_path):
+    """{route_id: "A ↔ B"}: the destination each direction of a line shows
+    most often, read from trips.txt. A direction whose trips mostly show a
+    code, or nothing, is left out; a line with none left is not in the
+    answer."""
+    shown = defaultdict(lambda: defaultdict(Counter))
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            member = next((n for n in zin.namelist()
+                           if n.rsplit("/", 1)[-1] == "trips.txt"), None)
+            if member is None:
+                return {}
+            with zin.open(member) as fh:
+                reader = csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig", newline=""))
+                if "trip_headsign" not in (reader.fieldnames or []):
+                    return {}
+                for row in reader:
+                    shown[row.get("route_id")][row.get("direction_id") or ""][
+                        (row.get("trip_headsign") or "").strip()] += 1
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.warning("Could not read the trips of %s: %s", zip_path, ex)
+        return {}
+    ends = {}
+    for route_id, directions in shown.items():
+        places = []
+        for direction in sorted(directions):
+            counts = directions[direction]
+            # a feed without direction_id puts both ways under one key
+            wanted = 2 if direction == "" else 1
+            named = [(h, n) for h, n in counts.most_common() if _names_a_place(h)]
+            if sum(n for _, n in named) * 2 < sum(counts.values()):
+                continue
+            places += [h for h, _ in named[:wanted]]
+        places = list(dict.fromkeys(places))[:2]
+        if places:
+            ends[str(route_id)] = " ↔ ".join(places)
+    return ends
+
+
+def headsign_ends(gtfs_dir, filename, route_ids):
+    """Where these lines go, as the trips of the source zip say it:
+    {route_id: "Château de Vincennes ↔ La Défense"}, for the ones it can.
+
+    Works before any database exists and for a line whose timetable was
+    never imported, which the stops cannot do. trips.txt is read once per
+    edition of the zip and kept in memory (IDFM: 47 MB, 6 s), and only when
+    some line needs it.
+    """
+    route_ids = {str(r) for r in route_ids}
+    zip_path = os.path.join(gtfs_dir, filename + ".zip") if gtfs_dir else None
+    if not route_ids or not zip_path or not os.path.exists(zip_path):
+        return {}
+    stat = os.stat(zip_path)
+    key = (zip_path, stat.st_size, stat.st_mtime_ns)
+    if key not in _HEADSIGN_ENDS:
+        for old in [k for k in _HEADSIGN_ENDS if k[0] == zip_path]:
+            del _HEADSIGN_ENDS[old]
+        _HEADSIGN_ENDS[key] = _read_headsign_ends(zip_path)
+    ends = _HEADSIGN_ENDS[key]
+    return {r: ends[r] for r in route_ids if r in ends}
+
+
+def route_ends(schedule, gtfs_dir, filename, route_ids):
+    """The ends of these lines: the trips' destinations where the zip names
+    them, the first and last stop of the longest imported trip otherwise."""
+    ends = headsign_ends(gtfs_dir, filename, route_ids)
+    ends.update(_route_endpoints(schedule, [r for r in route_ids if str(r) not in ends]))
+    return ends
+
+
 def _route_endpoints(schedule, route_ids):
     """Where each of these lines starts and ends, as "A > B".
 
-    Read from one trip per line, which is what the direction step already does
-    on the screen after this one. It is only asked for the lines whose name is
-    unusable, so the query stays small even on a national feed.
+    Read from the trip of the line that calls at the most stops: the first
+    trip by id is often a short turn (IDFM metro 4: Montparnasse, not
+    Bagneux). It is only asked for the lines whose name is unusable, so the
+    query stays small even on a national feed.
     """
     if not route_ids:
         return {}
     route_ids = sorted(route_ids)
     placeholders = ", ".join(f":e{i}" for i in range(len(route_ids)))
+    # sqlite hands back the trip_id of the row that holds the max
     sql = f"""
-    with picked as (
-        select route_id, min(trip_id) as trip_id
-        from trips where route_id in ({placeholders}) group by route_id
+    with calls as (
+        select t.route_id, t.trip_id, count(*) as n
+        from trips t inner join stop_times st on st.trip_id = t.trip_id
+        where t.route_id in ({placeholders}) group by t.trip_id
+    ), picked as (
+        select route_id, trip_id, max(n) from calls group by route_id
     )
     select p.route_id, st.stop_sequence, s.stop_name
     from picked p
@@ -1065,12 +1165,13 @@ def _natural(label):
     return out
 
 
-def get_route_labels(schedule, route_ids):
+def get_route_labels(schedule, route_ids, gtfs_dir=None, filename=None):
     """Readable names for route_ids, as {route_id: "41 : GARE - ESAT RODIN"}.
 
     routes survives a prune even when its trips do not, so these names are
     available for lines the datasource no longer carries any timetable for -
-    which is exactly when they need to be offered back.
+    which is exactly when they need to be offered back. gtfs_dir and filename
+    let the source zip's trips name where a line goes (see route_ends).
     """
     if not route_ids:
         return {}
@@ -1087,7 +1188,7 @@ def get_route_labels(schedule, route_ids):
         return {r: r for r in route_ids}
     rows = list(rows)
     needs_ends = [r[0] for r in rows if not _adds_to(r[1], r[2])]
-    endpoints = _route_endpoints(schedule, needs_ends)
+    endpoints = route_ends(schedule, gtfs_dir, filename, needs_ends)
     for route_id, short, long in rows:
         out[route_id] = _route_label(short, long, endpoints.get(route_id), route_id)
     # a route the feed declares but routes does not: keep it selectable
@@ -1159,8 +1260,8 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
         routes_list.append(list(row_cursor))
     # the lines whose long name says nothing get the two ends of the route
     # instead, read in one go rather than one query per line
-    endpoints = _route_endpoints(
-        schedule, [str(x[1]) for x in routes_list if not _adds_to(x[2], x[3])])
+    endpoints = route_ends(
+        schedule, gtfs_dir, data["file"], [str(x[1]) for x in routes_list if not _adds_to(x[2], x[3])])
     for x in routes_list:
         # the value keeps route_type and route_id, which the flow parses back;
         # what follows the second ## is only ever shown to the user, so it
