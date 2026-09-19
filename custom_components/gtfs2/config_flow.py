@@ -319,7 +319,10 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                 # earlier, so send the user back there with the message instead of
                 # closing the flow. "extracting" keeps its own abort message.
                 if check_data == "extracting":
-                    self._user_inputs.update(user_input)
+                    # the step is reached on its way in too, with no answer
+                    # to keep: there is only something to merge when the
+                    # user has just submitted the screen
+                    self._user_inputs.update(user_input or {})
                     return await self.async_step_extracting()
                 return await self._back_to_source(check_data)
 
@@ -373,9 +376,10 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             _LOGGER.debug("Source check data: %s", check_data)
             if check_data :
                 # same as in async_step_agency: the datasource is the problem, not
-                # anything typed on this step.
+                # anything typed on this step. user_input is None on the way in,
+                # and on a re-show after an error, where it is blanked above.
                 if check_data == "extracting":
-                    self._user_inputs.update(user_input)
+                    self._user_inputs.update(user_input or {})
                     return await self.async_step_extracting()
                 return await self._back_to_source(check_data)
 
