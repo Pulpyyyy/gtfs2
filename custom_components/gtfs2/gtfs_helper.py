@@ -898,9 +898,14 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
     screen that imports one. agency narrows to one agency_id; "0" and None
     mean the whole feed.
     """
-    rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    zip_path = os.path.join(gtfs_dir, filename + ".zip")
+    rows = read_zip_routes(zip_path)
     if agency and agency != "0":
         rows = [row for row in rows if (row.get("agency_id") or "0") == agency]
+    agencies = read_zip_agencies(zip_path)
+    # agency_id may be left out when the feed has a single agency
+    names = {str(a.get("agency_id") or ""): a["agency_name"] for a in agencies}
+    only = agencies[0]["agency_name"] if len(agencies) == 1 else ""
     options = []
     for row in rows:
         label = _route_label(row.get("route_short_name"),
@@ -908,6 +913,7 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
                              route_id=row["route_id"])
         options.append(
             f"{row.get('route_type') or '99'}##{row['route_id']}##{label}##pruned")
+    options = _set_apart(options, [names.get(str(row.get("agency_id") or ""), only) for row in rows])
     return sorted(options, key=lambda value: _natural(value.split("##")[2]))
 
 
@@ -946,6 +952,44 @@ def _says_something(part):
     that to the user is worse than showing nothing.
     """
     return any(character.isalnum() for character in str(part or ""))
+
+
+def _adds_to(short, long_name):
+    """Whether the long name tells the reader more than the number does.
+
+    IDFM writes the number again as the long name on 1837 of its 2024 lines
+    ("1" / "1", "4244" / "4244"), which read "1 : 1" in the list. A long name
+    that only repeats the number is treated as no long name at all, so the
+    two ends of the route take its place as they do for an empty one.
+    """
+    return (_says_something(long_name)
+            and str(long_name).strip().casefold() != str(short or "").strip().casefold())
+
+
+def _set_apart(options, agencies):
+    """Name the agency where two lines of the list read the same.
+
+    options are "route_type##route_id##label[##pruned]" values, agencies the
+    agency name of each, in the same order. A feed covering a region lists
+    lines of several operators under one number: the metro 1 of the RATP and
+    the bus 1 of Terres d'Envol at IDFM, the tram 4 of GVB and of HTM in the
+    Netherlands. Those get " · <agency>" after their label, and only those:
+    a label nobody else wears keeps its words. Nor is it added where the
+    agencies of the look-alikes are the same too (SNCF's "INCONNU" lines),
+    since it would lengthen every one of them without telling them apart.
+    """
+    labels = [option.split("##")[2] for option in options]
+    groups = {}
+    for label, agency in zip(labels, agencies):
+        groups.setdefault(label.casefold(), set()).add(str(agency or "").strip().casefold())
+    out = []
+    for option, label, agency in zip(options, labels, agencies):
+        if len(groups[label.casefold()]) > 1 and _says_something(agency):
+            parts = option.split("##")
+            parts[2] = f"{label} · {str(agency).strip()}"
+            option = "##".join(parts)
+        out.append(option)
+    return out
 
 
 def _route_endpoints(schedule, route_ids):
@@ -1003,6 +1047,9 @@ def _route_label(short, long_name, endpoints=None, route_id=None):
     """
     parts = [str(p) for p in (short, long_name)
              if p and str(p) != "None" and _says_something(p)]
+    if len(parts) == 2 and not _adds_to(short, long_name):
+        # the long name repeats the number: "1 : 1" says it twice
+        parts = parts[:1]
     if len(parts) < 2 and endpoints:
         parts = parts[:1] + [endpoints]
     if parts:
@@ -1039,7 +1086,7 @@ def get_route_labels(schedule, route_ids):
         _LOGGER.warning("Could not read route names: %s", ex)
         return {r: r for r in route_ids}
     rows = list(rows)
-    needs_ends = [r[0] for r in rows if not _says_something(r[2])]
+    needs_ends = [r[0] for r in rows if not _adds_to(r[1], r[2])]
     endpoints = _route_endpoints(schedule, needs_ends)
     for route_id, short, long in rows:
         out[route_id] = _route_label(short, long, endpoints.get(route_id), route_id)
@@ -1113,7 +1160,7 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     # the lines whose long name says nothing get the two ends of the route
     # instead, read in one go rather than one query per line
     endpoints = _route_endpoints(
-        schedule, [str(x[1]) for x in routes_list if not _says_something(x[3])])
+        schedule, [str(x[1]) for x in routes_list if not _adds_to(x[2], x[3])])
     for x in routes_list:
         # the value keeps route_type and route_id, which the flow parses back;
         # what follows the second ## is only ever shown to the user, so it
@@ -1132,6 +1179,8 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     # sorted on what the user reads, and read the way a line number is: the
     # cast on route_id this used to order by is 0 for every id that is not a
     # number, which is most of them outside a small network
+    # lines of two operators under one number get the agency's name
+    routes = _set_apart(routes, [x[4] for x in routes_list])
     routes.sort(key=lambda value: _natural(value.split("##")[2]))
     _LOGGER.debug(f"routes: {routes}")
     return routes
