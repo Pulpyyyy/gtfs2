@@ -436,7 +436,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         user_input[CONF_ROUTE_TYPE] = _picked[0]
         user_input[CONF_ROUTE] = _picked[1]
         # the readable part is only used to suggest a sensor name
-        self._route_label = _picked[2].split(" : ")[0] if len(_picked) > 2 else ""
+        self._route_label = _picked[2].split(" : ")[0].split(" · ")[0] if len(_picked) > 2 else ""
         self._route_shown = _picked[2] if len(_picked) > 2 else ""
         was_pruned = len(_picked) > 3 and _picked[3] == "pruned"
         self._user_inputs.update(user_input)
