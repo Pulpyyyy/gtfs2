@@ -928,7 +928,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 routes_in_zip_for_agency, gtfs_dir, filename, missing, agency)
             if self._pygtfs and hasattr(self._pygtfs, 'session'):
                 labels = await self.hass.async_add_executor_job(
-                    get_route_labels, self._pygtfs, missing)
+                    get_route_labels, self._pygtfs, missing, gtfs_dir, filename)
             else:
                 # a fresh source has no database to ask yet
                 labels = await self.hass.async_add_executor_job(
