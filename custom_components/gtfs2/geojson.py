@@ -255,11 +255,13 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
             "properties": {
                 "id": str(route_id) + "_" + str(direction) + "_" + str(row[4]),
                 # the _stop suffix is what a customize_glob rule matches on to
-                # give the stop entity a picture, see upstream c666cb7
-                "title": row[1] + "_stop",
+                # give the stop entity a picture, see upstream c666cb7.
+                # pygtfs stores an empty stop_name as None, and a feed that
+                # leaves one blank used to take the whole file down with it
+                "title": f"{row[1] or row[0]}_stop",
                 "trip_id": trip_id,
                 "stop_id": row[0],
-                "stop_name": row[1],
+                "stop_name": row[1] or row[0],
                 "stop_sequence": row[4],
                 "departure_time": _fmt_gtfs_time(row[5]),
                 # how this trip calls there: 0 regular, 1 no way on / off,
@@ -518,10 +520,12 @@ def write_leg_file(hass, data, feed_entities=None):
                     "geometry": {"type": "Point", "coordinates": [r[4], r[3]]},
                     "properties": {
                         "id": f"{route_id}_{direction}_{r[5]}",
-                        "title": str(r[2]) + "_stop",
+                        # a stop the feed left unnamed falls back on its id,
+                        # here as in the route file
+                        "title": f"{r[2] or r[1]}_stop",
                         "trip_id": trip_id,
                         "stop_id": r[1],
-                        "stop_name": r[2],
+                        "stop_name": r[2] or r[1],
                         "stop_sequence": r[5],
                         "scheduled_arrival": call["scheduled_arrival"],
                         "scheduled": call["scheduled"],
