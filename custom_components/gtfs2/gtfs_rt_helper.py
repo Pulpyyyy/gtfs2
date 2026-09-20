@@ -646,12 +646,19 @@ def get_rt_vehicle_positions(self):
     )
     geojson_body = []
     geojson_element = {"geometry": {"coordinates":[],"type": "Point"}, "properties": {"id": "", "title": "", "trip_id": "", "route_id": "", "direction_id": "", "vehicle_id": "", "vehicle_label": ""}, "type": "Feature"}
-    if not feed_entities:
+    if feed_entities is None:
         # a failed fetch returns None: iterating it raises, and the caller's
         # broad except then abandons the whole realtime block, so a hiccup on
-        # vehicle-positions used to take the departure times down with it
+        # vehicle-positions used to take the departure times down with it.
+        # The file is left as it was: the last known positions beat none at
+        # all while a host has a hiccup
         _LOGGER.debug("No proper RT feed entities for vehicle positions")
         return geojson_body
+    if not feed_entities:
+        # a feed that answers with nothing means the vehicles are off the
+        # road, which is an answer: written as such, the map empties. Left
+        # alone, the last buses of the evening sat on it all night
+        _LOGGER.debug("The vehicle feed is empty, taking the vehicles off the map")
     for entity in feed_entities:
         vehicle = entity["vehicle"]
         

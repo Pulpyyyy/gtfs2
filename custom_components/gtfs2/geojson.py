@@ -86,6 +86,34 @@ def vehicle_positions_name(route_id, direction):
     return f"{safe_file_part(route_id)}_{safe_file_part(direction)}.json"
 
 
+def clear_vehicle_file(hass, route_id, direction) -> bool:
+    """Take the vehicles off the map, the feeds not being read any more.
+
+    The positions file is the last thing the map was told, and nothing
+    says how old it is: left as it was when the service window closed,
+    the evening's last buses sat on the map all night. Written empty it
+    says what is true, that nothing is running.
+
+    Returns whether it wrote. A file already empty, or one that was never
+    written, is left alone, so a paused source costs no write per minute.
+    """
+    file = os.path.join(hass.config.path(DEFAULT_PATH_GEOJSON),
+                        vehicle_positions_name(route_id, direction))
+    if not os.path.exists(file):
+        return False
+    try:
+        with open(file, encoding="utf-8") as handle:
+            if not (json.load(handle).get("features") or []):
+                return False
+    except (OSError, ValueError):
+        # unreadable: write it afresh rather than leave whatever it holds
+        pass
+    with open(file, "w") as outfile:
+        json.dump({"features": [], "type": "FeatureCollection"}, outfile)
+    _LOGGER.debug("Vehicles taken off the map: %s", file)
+    return True
+
+
 def _calls_in_order(stops, origin_id, destination_id):
     """Whether a trip's ordered stop_ids call at origin_id, then at
     destination_id further on; either one may be None. The first call at the

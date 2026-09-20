@@ -34,7 +34,7 @@ from .const import (
     ICONS
 )    
 from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures
-from .geojson import vehicle_positions_name
+from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, struck_trips
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
@@ -193,6 +193,16 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("GTFS RT: %s is outside its service window (%s), feeds not read",
                               self._data["file"], rt_paused)
                 rt_active = False
+                if rt_cfg.get(CONF_VEHICLE_POSITION_URL):
+                    # nothing will refresh the positions until the window
+                    # opens again, so the map is told rather than left on
+                    # the last vehicles seen
+                    departure = self._data.get("next_departure") or {}
+                    await self.hass.async_add_executor_job(
+                        clear_vehicle_file, self.hass,
+                        str(departure.get("route_id")
+                            or (data.get("route") or "").split(": ")[0]),
+                        str(departure.get("trip_direction_id", data.get("direction"))))
         if rt_active:
             # No next_departure does NOT mean no bus: the last scheduled
             # departure of the day can still be on its way, late, and the
