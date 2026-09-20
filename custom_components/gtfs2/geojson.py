@@ -304,6 +304,33 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
 LEG_TRIPS_MAX = 20
 
 
+# what each written file last held, apart from the moment it was written:
+# a refresh that changes nothing then costs no write. Keyed by path, and
+# emptied by a restart, which writes once. Sensors refresh every minute and
+# these files are the size of a timetable, so rewriting them for a new
+# timestamp alone is a few thousand writes a day on a memory card.
+_WRITTEN: dict[str, str] = {}
+
+
+def write_json_if_changed(file, doc, stable) -> bool:
+    """Write doc to file as json, unless it already says the same thing.
+
+    stable is what the comparison reads: doc without the moment it was
+    written, which is new every time and says nothing about the contents.
+    A file that is not there is always written, so emptying www/gtfs2 by
+    hand gets everything back at the next refresh.
+    """
+    digest = hashlib.sha1(
+        json.dumps(stable, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+    if _WRITTEN.get(file) == digest and os.path.exists(file):
+        _LOGGER.debug("Unchanged since the last write, left alone: %s", file)
+        return False
+    with open(file, "w") as outfile:
+        json.dump(doc, outfile)
+    _WRITTEN[file] = digest
+    return True
+
+
 def entry_file_part(name) -> str:
     """An entry's name, made a readable file name part: accents dropped to
     their base letter (Orléans reads orleans, not orl_ans), then the same
@@ -604,23 +631,23 @@ def write_leg_file(hass, data, feed_entities=None):
     os.makedirs(geojson_dir, exist_ok=True)
     file = os.path.join(geojson_dir, leg_geojson_name(route_id, direction, name))
     _LOGGER.debug("Creating leg geojson file: %s", file)
-    with open(file, "w") as outfile:
-        json.dump({
-            "type": "FeatureCollection",
-            "properties": {
-                "name": name,
-                "route_id": route_id,
-                "direction_id": direction,
-                "trip_id": trip_id,
-                "origin_stop_id": departure.get("origin_stop_id"),
-                "destination_stop_id": departure.get("destination_stop_id"),
-                "timezone": str(zone),
-                "realtime": realtime,
-                "updated_at": dt_util.utcnow().isoformat(),
-            },
-            "features": features,
-            "trips": trips,
-        }, outfile)
+    properties = {
+        "name": name,
+        "route_id": route_id,
+        "direction_id": direction,
+        "trip_id": trip_id,
+        "origin_stop_id": departure.get("origin_stop_id"),
+        "destination_stop_id": departure.get("destination_stop_id"),
+        "timezone": str(zone),
+        "realtime": realtime,
+    }
+    body = {"type": "FeatureCollection", "properties": properties,
+            "features": features, "trips": trips}
+    write_json_if_changed(
+        file,
+        {**body, "properties": {**properties,
+                                "updated_at": dt_util.utcnow().isoformat()}},
+        body)
 
 
 # The service days the timetable holds: the one under way and the two after
@@ -753,6 +780,6 @@ def write_timetable_file(hass, data, today, zip_path):
     os.makedirs(geojson_dir, exist_ok=True)
     file = timetable_name(name)
     _LOGGER.debug("Creating timetable file: %s, %s departures", file, sum(len(d["departures"]) for d in doc["days"]))
-    with open(os.path.join(geojson_dir, file), "w") as outfile:
-        json.dump(doc, outfile)
+    write_json_if_changed(os.path.join(geojson_dir, file), doc,
+                          {k: v for k, v in doc.items() if k != "generated"})
     return file
