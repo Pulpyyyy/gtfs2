@@ -520,13 +520,13 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     # the leg file is this entry's own, nobody else writes or reads it; found
     # by its entry part, the line part being the departure's, not the entry's
-    leg_pattern = leg_geojson_pattern(entry.data["name"]) if entry.data.get("name") else None
+    leg_patterns = leg_geojson_pattern(entry.data["name"]) if entry.data.get("name") else ()
     # the timetable is the entry's own too, named after it alone
     own = [timetable_name(entry.data["name"])] if entry.data.get("name") else []
     route = (entry.data.get("route") or "").split(": ")[0]
     direction = entry.data.get("direction")
     if not route:
-        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_pattern, own)
+        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_patterns, own)
         return
     # an entry set up without a direction wrote its files under the
     # direction of the departures it followed, either one
@@ -551,14 +551,15 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
         if os.path.basename(legacy) == legacy and ".." not in legacy:
             names += [legacy + ".json", legacy + "_route.json"]
     # a disk walk: the glob and the removals run in the executor, never on the loop
-    await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_pattern, names)
+    await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_patterns, names)
 
 
-def _remove_geojson_files(geojson_dir, leg_pattern, names):
-    """Delete the leg files matching leg_pattern and the named files under
+def _remove_geojson_files(geojson_dir, leg_patterns, names):
+    """Delete the leg files matching leg_patterns and the named files under
     geojson_dir, logging each removal. Blocking file work, made for the
     executor."""
-    paths = glob.glob(os.path.join(geojson_dir, leg_pattern)) if leg_pattern else []
+    paths = [path for pattern in leg_patterns or ()
+             for path in glob.glob(os.path.join(geojson_dir, pattern))]
     paths += [os.path.join(geojson_dir, name) for name in dict.fromkeys(names)]
     for path in paths:
         if not os.path.exists(path):

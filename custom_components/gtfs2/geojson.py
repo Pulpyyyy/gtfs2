@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import datetime
 import glob
+import hashlib
 import json
 import logging
 import os
@@ -305,9 +306,18 @@ def entry_file_part(name) -> str:
     """An entry's name, made a readable file name part: accents dropped to
     their base letter (Orléans reads orleans, not orl_ans), then the same
     rule as the ids, then the stray dashes an arrow or a long dash leaves
-    behind ("_-_") folded away."""
+    behind ("_-_") folded away.
+
+    A name written in an alphabet that leaves nothing behind, Greek,
+    Russian or Japanese, used to fold to the empty string: every such
+    entry then wrote the same file and the last one won. It keeps a short
+    print of the name instead, unreadable but its own.
+    """
     plain = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode()
-    return re.sub(r"_+", "_", safe_file_part(plain).replace("-", "_")).strip("_")
+    part = re.sub(r"_+", "_", safe_file_part(plain).replace("-", "_")).strip("_")
+    if not part:
+        part = hashlib.sha1(str(name).encode("utf-8")).hexdigest()[:8]
+    return part
 
 
 def leg_geojson_name(route_id, direction, name):
@@ -320,10 +330,23 @@ def leg_geojson_name(route_id, direction, name):
     return f"{safe_file_part(route_id)}_{safe_file_part(direction)}_leg_{entry_file_part(name)}.json"
 
 
-def leg_geojson_pattern(name) -> str:
-    """The glob that finds an entry's leg file whatever line it was written
-    under: a train entry's departure may name a route the entry does not."""
-    return f"*_leg_{glob.escape(entry_file_part(name))}.json"
+# the direction part of a leg file name: what str() makes of a departure's
+# trip_direction_id, or of an entry without one
+LEG_DIRECTIONS = ("0", "1", "none")
+
+
+def leg_geojson_pattern(name) -> tuple[str, ...]:
+    """The globs that find an entry's leg file whatever line it was written
+    under: a train entry's departure may name a route the entry does not.
+
+    One glob per direction rather than one on the entry part alone: an
+    entry called "x leg a" writes ..._leg_x_leg_a.json, which a bare
+    *_leg_a.json matched, so removing the entry called "a" took the other
+    entry's file with it. The direction sits between the two, and a name
+    cannot forge it there.
+    """
+    part = glob.escape(entry_file_part(name))
+    return tuple(f"*_{direction}_leg_{part}.json" for direction in LEG_DIRECTIONS)
 
 
 def _leg_timezone(schedule, route_id, departure, hass):
