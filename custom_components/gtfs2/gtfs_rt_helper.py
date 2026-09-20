@@ -1,6 +1,7 @@
 import logging
 import re
 from datetime import datetime, timedelta
+from urllib.parse import quote
 import json
 import os
 
@@ -777,15 +778,18 @@ def get_gtfs_rt(hass, path, data):
             open(os.path.join(gtfs_dir, file), "w").write(json.dumps(r))
             return "ok"
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Ìssues with downloading GTFS RT SIRI data to: %s with error: 5s", os.path.join(gtfs_dir, file), ex)
+            _LOGGER.error("Ìssues with downloading GTFS RT SIRI data to: %s with error: %s", os.path.join(gtfs_dir, file), ex)
             return "no_rt_data_file" 
         return "ok"                                
     try:
         r = requests.get(url, headers=_with_user_agent(_headers), allow_redirects=True, timeout=20)
-        open(os.path.join(gtfs_dir, file), "wb").write(r.content)
         if r.status_code != 200:
-            _LOGGER.error("Ìssues with downloading GTFS RT data, error: %s, content: %s", r.status_code, r.content)
+            # written first, an error page replaced the last good feed on
+            # disk and the readers parsed that instead
+            _LOGGER.error("Ìssues with downloading GTFS RT data, error: %s, content: %s",
+                          r.status_code, r.content[:200])
             return "no_rt_data_file"
+        open(os.path.join(gtfs_dir, file), "wb").write(r.content)
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.error("Ìssues with downloading GTFS RT data to: %s", os.path.join(gtfs_dir, file))
         return "no_rt_data_file"
@@ -967,8 +971,13 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
 
     #url = "https://bustime.mta.info/api/siri/stop-monitoring.json?key=f4f9c18e-0550-4cc7-bc36-275715015673&OperatorRef=MTA"
     
-    url = url + f"&MonitoringRef={stop_id}"
+    # the url may already carry a query of its own, or none at all
+    url = url + ("&" if "?" in url else "?") + f"MonitoringRef={quote(str(stop_id))}"
     response = requests.get(url, headers=_with_user_agent(headers), timeout=20)
+    if response.status_code != 200:
+        _LOGGER.error("Trying to read the SIRI feed, and got response(code): %s with text: %s",
+                      response.status_code, response.text[:200])
+        return {"entity": []}
 
     json_object = json.loads(response.content)
     feed = json_object
@@ -1016,7 +1025,10 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
                     "stop_id": stop_id,
                     "arrival": {
                         "delay": '',
-                        "time": datetime.fromisoformat(entity['MonitoredVehicleJourney']['MonitoredCall'].get('ExpectedArrivlTime',entity['MonitoredVehicleJourney']['MonitoredCall'].get('AimedArrivalTime',None))).timestamp()
+                        # ExpectedArrivalTime, the real one: spelt without
+                        # its "a" this never matched, so every arrival was
+                        # read as the timetable's and no delay ever showed
+                        "time": datetime.fromisoformat(entity['MonitoredVehicleJourney']['MonitoredCall'].get('ExpectedArrivalTime',entity['MonitoredVehicleJourney']['MonitoredCall'].get('AimedArrivalTime',None))).timestamp()
                     },
                     "departure": {
                         "delay": '',
