@@ -261,8 +261,15 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             if self._vehicle_position_url and not self._stale_markers_cleaned:
                 self._cleanup_stale_vehicle_markers()
                 self._stale_markers_cleaned = True
-        elif rt_paused is None:
-            _LOGGER.debug("GTFS RT: realtime not active for this entry, neither on its source nor in its options")
+        else:
+            # paused by the window, switched off, or never configured: the
+            # delays and alerts read before are the ones of another moment,
+            # and carried over from the previous cycle they were served as
+            # if they still stood. The timetable alone speaks from here
+            self._data["next_departure_realtime_attr"] = {}
+            self._data["alert"] = {}
+            if rt_paused is None:
+                _LOGGER.debug("GTFS RT: realtime not active for this entry, neither on its source nor in its options")
 
         # the leg file follows every clock that can move: the list of
         # departures on a static refresh, their realtime on a realtime one
