@@ -23,12 +23,13 @@ early.
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, time, timedelta
 
 import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text
 
-from .const import CONF_DEVICE_TRACKER_ID, CONF_ROUTE
+from .const import CONF_DEVICE_TRACKER_ID, CONF_ROUTE, DEFAULT_PATH
 from .gtfs_rt_helper import cached_feed_has_future_stop
 from .rt_source import journey_entries
 
@@ -39,10 +40,13 @@ TRAIL = timedelta(minutes=20)
 EXTEND = timedelta(minutes=10)
 OVERTIME_CAP = timedelta(hours=2)
 
-# (file, date) -> (first, last) gtfs seconds of the service day, or None when
-# nothing runs; the gate only ever reads yesterday and today, older keys are
-# dropped as it goes
-_ENVELOPES: dict[tuple[str, str], tuple[int, int] | None] = {}
+# (file, edition, date) -> (first, last) gtfs seconds of the service day, or
+# None when nothing runs; the gate only ever reads yesterday and today, older
+# keys are dropped as it goes. The edition is what the database was when the
+# envelope was read (see _edition_of): a refresh, a line added in the flow or
+# a prune changes the hours the source runs, and the answer kept from this
+# morning would hold the realtime shut on the line added this afternoon.
+_ENVELOPES: dict[tuple[str, str, str], tuple[int, int] | None] = {}
 # per file: what the gate last decided, read back by the diagnostic entity
 _STATE: dict[str, dict] = {}
 
@@ -150,9 +154,29 @@ def _service_envelope(schedule, date_str):
     return min(bounds), max(bounds)
 
 
-def _window_for(file, schedule, day):
+def _edition_of(hass, file):
+    """What the source's database is right now, as far as a cache cares.
+
+    Its size and the moment it was last written: every writer changes one
+    or the other, whether it swaps a rebuilt file in or writes in place,
+    and no writer has to know this cache exists. An unreadable file reads
+    as its own edition, so the envelope is asked again rather than served
+    from an answer about another file.
+    """
+    try:
+        path = os.path.join(hass.config.path(DEFAULT_PATH), file + ".sqlite")
+        stat = os.stat(path)
+    except (OSError, AttributeError):
+        # no such file, or a caller holding a schedule and no config at all
+        # (the offline harnesses): one edition for them all, the cache then
+        # behaves as it did before this was read
+        return "unknown"
+    return f"{int(stat.st_mtime)}:{stat.st_size}"
+
+
+def _window_for(hass, file, schedule, day):
     """The polling window of one service day, in naive local time, or None."""
-    key = (file, day.isoformat())
+    key = (file, _edition_of(hass, file), day.isoformat())
     if key not in _ENVELOPES:
         _ENVELOPES[key] = _service_envelope(schedule, day.isoformat())
     envelope = _ENVELOPES[key]
@@ -212,11 +236,14 @@ def _gate(hass, file, schedule, trip_update_url, now=None):
     today = now_local.date()
 
     cutoff = (today - timedelta(days=1)).isoformat()
-    for key in [k for k in _ENVELOPES if k[1] < cutoff]:
+    edition = _edition_of(hass, file)
+    for key in [k for k in _ENVELOPES
+                if k[2] < cutoff or (k[0] == file and k[1] != edition)]:
+        # the day is gone, or the database it was read from is
         del _ENVELOPES[key]
 
-    win_yesterday = _window_for(file, schedule, today - timedelta(days=1))
-    win_today = _window_for(file, schedule, today)
+    win_yesterday = _window_for(hass, file, schedule, today - timedelta(days=1))
+    win_today = _window_for(hass, file, schedule, today)
     windows = [w for w in (win_yesterday, win_today) if w]
 
     state = _STATE.setdefault(file, {})
