@@ -459,16 +459,36 @@ def write_leg_file(hass, data, feed_entities=None):
             return None
         return (midnight + datetime.timedelta(seconds=seconds)).astimezone(datetime.timezone.utc).isoformat()
 
+    def boarding_first(rows):
+        """The trip's calls, the ride's own first.
+
+        A stop is a key here, so a trip calling twice at one stop can only
+        keep one of its two calls, and a loop line calls at its terminus
+        twice. The one that counts is the one the rider makes, so the
+        calls from the origin onwards come first and the ones before it
+        follow: reading them in order then keeps the right one, where the
+        plain feed order kept whichever came last, the return pass.
+        """
+        origin_row = next((r for r in rows if str(r[1]) == origin_id), None)
+        if origin_row is None and origin_parent:
+            origin_row = next((r for r in rows if r[8] == origin_parent), None)
+        if origin_row is None:
+            return rows
+        return sorted(rows, key=lambda r: (r[5] < origin_row[5], r[5]))
+
     trips = {}
     features = []
+    # the stops a trip calls at twice, the only ones where the feed's own
+    # stop_sequence has to be believed over the stop id
+    called_twice = {}
     for t in trip_ids:
         rows = stops_by_trip.get(t)
         if not rows:
             continue
         midnight = midnight_of(t, rows)
-        stops = {}
-        for r in rows:
-            stops[str(r[1])] = {
+
+        def call_at(r):
+            return {
                 "sequence": r[5],
                 "scheduled_arrival": at(midnight, r[6]),
                 "scheduled": at(midnight, r[7]),
@@ -478,23 +498,35 @@ def write_leg_file(hass, data, feed_entities=None):
                 "pickup_type": _call_type(r[9]),
                 "drop_off_type": _call_type(r[10]),
             }
+
+        stops = {}
+        seen = set()
+        for r in boarding_first(rows):
+            stop_id = str(r[1])
+            if stop_id in seen:
+                called_twice.setdefault(t, set()).add(stop_id)
+            seen.add(stop_id)
+            stops.setdefault(stop_id, call_at(r))
         trips[t] = {"stops": stops}
         if t == trip_id:
             for r in rows:
+                # each point carries its own call, not the one the stop
+                # keeps: on a loop the two differ
+                call = call_at(r)
                 features.append({
                     "type": "Feature",
                     "geometry": {"type": "Point", "coordinates": [r[4], r[3]]},
                     "properties": {
                         "id": f"{route_id}_{direction}_{r[5]}",
-                        "title": r[2] + "_stop",
+                        "title": str(r[2]) + "_stop",
                         "trip_id": trip_id,
                         "stop_id": r[1],
                         "stop_name": r[2],
                         "stop_sequence": r[5],
-                        "scheduled_arrival": stops[str(r[1])]["scheduled_arrival"],
-                        "scheduled": stops[str(r[1])]["scheduled"],
-                        "pickup_type": stops[str(r[1])]["pickup_type"],
-                        "drop_off_type": stops[str(r[1])]["drop_off_type"],
+                        "scheduled_arrival": call["scheduled_arrival"],
+                        "scheduled": call["scheduled"],
+                        "pickup_type": call["pickup_type"],
+                        "drop_off_type": call["drop_off_type"],
                     },
                 })
     # the realtime of every listed trip, at every stop the feed covers
@@ -533,6 +565,14 @@ def write_leg_file(hass, data, feed_entities=None):
                 stop_id = str(update.get("stop_id") or "") or by_sequence.get(update.get("stop_sequence"))
                 stop = run["stops"].get(stop_id) if stop_id else None
                 if stop is None:
+                    continue
+                told = update.get("stop_sequence")
+                if (stop_id in called_twice.get(t, ()) and told is not None
+                        and stop.get("sequence") not in (None, told)):
+                    # the trip calls there twice and the feed says which
+                    # call it times: this one is the pass the ride skips.
+                    # Only then, since a feed may number its calls its own
+                    # way (the SNCF does) and the id is enough elsewhere
                     continue
                 called = stop_relationship(update)
                 if called == SKIPPED_STOP:
