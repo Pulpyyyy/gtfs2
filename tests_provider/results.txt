@@ -1,4 +1,4 @@
-provider case results -- 293 case(s)
+provider case results -- 294 case(s)
 
 case: adelaide
   result: PASSED
@@ -838,6 +838,9 @@ case: tao-journeys-N-d1-swapped
   result: PASSED
 
 case: tao-journeys-N-d1-towards
+  result: PASSED
+
+case: tests_provider/test_alerts.py::test_alerts_name_their_stops
   result: PASSED
 
 case: tests_provider/test_alerts.py::test_alerts_reach_the_listed_trips

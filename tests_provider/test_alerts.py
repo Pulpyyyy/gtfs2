@@ -16,10 +16,12 @@ fixture's own capture (fixtures/sncf/service_alerts.pb):
 """
 from __future__ import annotations
 
+import datetime
 import types
 from pathlib import Path
 
 import ha_stub
+from freezegun import freeze_time
 
 ha_stub.install()
 
@@ -29,6 +31,11 @@ gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
 alerts_mod = ha_stub.load("alerts")
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sncf"
+# the capture's alerts say when they apply, and most of them ran out at the
+# end of that August: read from any later day they are over, which is what
+# the feed means. The reading is placed inside their period, the way the
+# rest of the tree is placed on the capture's own day.
+CAPTURED = datetime.datetime(2026, 8, 26, 8, 0, tzinfo=datetime.timezone.utc)
 
 
 class Check:
@@ -82,23 +89,37 @@ def test_alerts_reach_the_listed_trips(record_property, monkeypatch):
                    "next_departure": {"trip_id": head, "origin_stop_sequence": 0,
                                       "destination_stop_time": {"Sequence": 4}}})
 
-    # the quiet trip alone: nothing
-    got = gtfs_rt_helper.get_rt_alerts(follower(quiet, []))
-    check.same(got.get("origin_stop_alerts"), None, "alerts on the quiet trip alone")
-    # the named trip as the next departure: found, hung on it
-    got = gtfs_rt_helper.get_rt_alerts(follower(named, []))
-    items = got.get("origin_stop_alerts") or []
-    check.same(len(items), 1, "alerts on the named trip as the next departure")
-    check.same([i.get("trips") for i in items], [[named]], "the alert names that trip")
-    check.same([i.get("later_only") for i in items], [None], "it concerns the next departure")
-    # the named trip listed behind the quiet one: found too, marked as later
-    got = gtfs_rt_helper.get_rt_alerts(follower(quiet, [named]))
-    items = got.get("origin_stop_alerts") or []
-    check.same(len(items), 1, "alerts with the named trip listed second")
-    check.same([i.get("trips") for i in items], [[named]], "the alert names the listed trip")
-    check.same([i.get("later_only") for i in items], [True], "it concerns a later departure only")
-    check.note(bool(got.get("origin_stop_alert")), "the sentence is still published",
-               sentence=got.get("origin_stop_alert"))
+    with freeze_time(CAPTURED):
+        # the quiet trip alone: nothing
+        got = gtfs_rt_helper.get_rt_alerts(follower(quiet, []))
+        check.same(got.get("origin_stop_alerts"), None, "alerts on the quiet trip alone")
+        # the named trip as the next departure: found, hung on it
+        got = gtfs_rt_helper.get_rt_alerts(follower(named, []))
+        items = got.get("origin_stop_alerts") or []
+        check.same(len(items), 1, "alerts on the named trip as the next departure")
+        check.same([i.get("trips") for i in items], [[named]], "the alert names that trip")
+        check.same([i.get("later_only") for i in items], [None], "it concerns the next departure")
+        # the named trip listed behind the quiet one: found too, marked as later
+        got = gtfs_rt_helper.get_rt_alerts(follower(quiet, [named]))
+        items = got.get("origin_stop_alerts") or []
+        check.same(len(items), 1, "alerts with the named trip listed second")
+        check.same([i.get("trips") for i in items], [[named]], "the alert names the listed trip")
+        check.same([i.get("later_only") for i in items], [True], "it concerns a later departure only")
+        check.note(bool(got.get("origin_stop_alert")), "the sentence is still published",
+                   sentence=got.get("origin_stop_alert"))
+    # the same feed read a year later: every period is over, and an alert
+    # that applied last summer is not published as if it were current
+    with freeze_time(CAPTURED + datetime.timedelta(days=365)):
+        got = gtfs_rt_helper.get_rt_alerts(follower(named, []))
+        check.same(got.get("origin_stop_alerts"), None, "the same alert once its period is over")
+    # announced for a day ahead: kept, but never ahead of what runs now.
+    # A year earlier, since the capture's alerts were published weeks
+    # before they applied and a month back is already inside their period
+    with freeze_time(CAPTURED - datetime.timedelta(days=365)):
+        got = gtfs_rt_helper.get_rt_alerts(follower(named, []))
+        items = got.get("origin_stop_alerts") or []
+        check.same([i.get("later_only") for i in items] or None, [True],
+                   "an alert announced for a later day is marked as such")
     # ranked after what concerns the next departure, whatever the effect
     later = {"text": "later", "effect": "NO_SERVICE", "later_only": True}
     now = {"text": "now", "effect": "NO_EFFECT"}

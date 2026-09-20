@@ -136846,6 +136846,61 @@
     {
       "checks": [
         {
+          "expected": [
+            [
+              "Versigny"
+            ]
+          ],
+          "got": [
+            [
+              "Versigny"
+            ]
+          ],
+          "ok": true,
+          "text": "the station passed is named: expected [['Versigny']], got [['Versigny']]"
+        },
+        {
+          "expected": "Travaux",
+          "got": "Travaux",
+          "ok": true,
+          "text": "the sentence stays the feed's: expected 'Travaux', got 'Travaux'"
+        },
+        {
+          "expected": [
+            [
+              "Tergnier"
+            ]
+          ],
+          "got": [
+            [
+              "Tergnier"
+            ]
+          ],
+          "ok": true,
+          "text": "the departure is named: expected [['Tergnier']], got [['Tergnier']]"
+        },
+        {
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "text": "a station off the journey: expected None, got None"
+        },
+        {
+          "expected": 2,
+          "got": 2,
+          "ok": true,
+          "text": "works at two stations: expected 2, got 2"
+        }
+      ],
+      "fixture": "sncf",
+      "id": "tests_provider/test_alerts.py::test_alerts_name_their_stops",
+      "outcome": "passed",
+      "promise": "alert stops",
+      "reason": null
+    },
+    {
+      "checks": [
+        {
           "expected": null,
           "got": null,
           "ok": true,
@@ -136915,6 +136970,22 @@
           "ok": true,
           "sentence": "Réservation vélo obligatoire",
           "text": "the sentence is still published"
+        },
+        {
+          "expected": null,
+          "got": null,
+          "ok": true,
+          "text": "the same alert once its period is over: expected None, got None"
+        },
+        {
+          "expected": [
+            true
+          ],
+          "got": [
+            true
+          ],
+          "ok": true,
+          "text": "an alert announced for a later day is marked as such: expected [True], got [True]"
         },
         {
           "expected": [

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 
+import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text as sql_text
 
 _LOGGER = logging.getLogger(__name__)
@@ -79,6 +80,44 @@ def _alert_severity(item):
         return (later, _ALERT_EFFECT_ORDER.index(item.get("effect")))
     except ValueError:
         return (later, len(_ALERT_EFFECT_ORDER))
+
+
+def _period_bound(period, field):
+    """One end of an active_period, None when the feed left it open."""
+    try:
+        if not period.HasField(field):
+            return None
+    except (AttributeError, ValueError):
+        # a feed read as plain data, or bindings that do not answer for a
+        # scalar: zero is what an absent bound looks like there
+        pass
+    value = getattr(period, field, 0) or 0
+    return int(value) or None
+
+
+def _alert_when(alert, now_ts, until_ts):
+    """Whether an alert covers the ride ahead: "now", "later" or "over".
+
+    Networks publish works weeks in advance, so an alert says when it
+    applies and the feed keeps it in place until then. Read as if it were
+    current, a closure announced for next weekend outranks the delay
+    happening right now and takes its sentence. The ride ahead is from now
+    to the departure the sensor announces, since an alert starting just
+    before it still concerns the rider. An alert with no period at all is
+    current, which is what the spec says.
+    """
+    periods = list(getattr(alert, "active_period", None) or [])
+    if not periods:
+        return "now"
+    later = False
+    for period in periods:
+        start = _period_bound(period, "start")
+        end = _period_bound(period, "end")
+        if (start is None or start <= until_ts) and (end is None or end >= now_ts):
+            return "now"
+        if start is not None and start > until_ts:
+            later = True
+    return "later" if later else "over"
 
 
 def _rank_alerts(items):
@@ -366,12 +405,23 @@ def journey_alerts(coordinator, feed_entities):
     for t in getattr(coordinator, "_trip_list", None) or []:
         if t and str(t) != head and str(t) not in listed:
             listed.append(str(t))
+    # the ride ahead: from now to the departure the sensor announces, the
+    # span an alert has to cover to be about this journey
+    now_ts = int(dt_util.utcnow().timestamp())
+    leaves = (data.get("next_departure") or {}).get("departure_time")
+    until_ts = now_ts
+    if hasattr(leaves, "timestamp"):
+        until_ts = max(now_ts, int(leaves.timestamp()))
     origin_alerts = []
     destination_alerts = []
     for entity in feed_entities:
         if not entity.HasField("alert"):
             continue
         alert = entity.alert
+        when = _alert_when(alert, now_ts, until_ts)
+        if when == "over":
+            # it applied to a day gone by; the feed drops it later
+            continue
         hits = _alert_scope(alert, origin_ids, destination_ids,
                             route_id, head, journey_ids, listed)
         if not any(hits.values()):
@@ -381,6 +431,10 @@ def journey_alerts(coordinator, feed_entities):
         # going on
         item = {"text": _alert_text(alert.header_text, language)}
         item.update(_alert_kind(alert))
+        if when == "later":
+            # announced for a later day: kept, since a rider wants to know,
+            # but never ahead of what is happening on this ride
+            item["later_only"] = True
         stops = _stop_names(data, hits["stops"])
         if stops:
             item["stops"] = stops
