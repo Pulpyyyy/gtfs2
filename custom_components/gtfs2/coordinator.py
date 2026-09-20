@@ -225,12 +225,19 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             self._direction = str(self._data.get('next_departure', {}).get('trip_direction_id', data["direction"]))
             self._trip_list = self._data["next_departure"].get("next_departures_trip_id", [])[:10]
             self._relative = False
+            # the alerts first and on their own: they are a feed of their
+            # own, often a different host, and read together with the trip
+            # updates one bad answer there took the departure times down
+            # with it, leaving the sensor on last cycle's
             try:
                 self._get_rt_alerts = await self.hass.async_add_executor_job(get_rt_alerts, self)
+                self._data["alert"] = self._get_rt_alerts
+            except Exception as ex:  # pylint: disable=broad-except
+                _LOGGER.error("Error getting gtfs realtime alerts, for origin: %s with error: %s", data["origin"], ex)
+            try:
                 self._get_next_service = await self.hass.async_add_executor_job(get_next_services, self)
                 self._data["next_departure_realtime_attr"] = self._get_next_service
                 self._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
-                self._data["alert"] = self._get_rt_alerts
                 await drop_struck_trips(self, data, run_static)
             except Exception as ex:  # pylint: disable=broad-except
                 _LOGGER.error("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
