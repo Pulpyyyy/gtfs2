@@ -342,6 +342,37 @@ def cached_feed_has_future_stop(owner, url, routes, now_epoch):
     return False
 
 
+def _as_epoch(value):
+    """A departure time, as the coordinator publishes it, in epoch seconds."""
+    if hasattr(value, "timestamp"):
+        return int(value.timestamp())
+    try:
+        return int(datetime.fromisoformat(str(value)).timestamp())
+    except (TypeError, ValueError):
+        return None
+
+
+def _scheduled_departures(self):
+    """When the board's trips are due at the entity's stop, by trip id.
+
+    Read off the departure the coordinator already holds: the next one and
+    the ones listed behind it. A feed is free to publish a delay and no
+    time at all, which the spec allows and plenty of them do; laid on the
+    time the timetable announces, that delay is a departure like any other.
+    """
+    due = {}
+    departure = (getattr(self, "_data", None) or {}).get("next_departure") or {}
+    for trip, when in zip(departure.get("next_departures_trip_id") or [],
+                          departure.get("next_departures") or []):
+        stamp = _as_epoch(when)
+        if trip and stamp:
+            due.setdefault(str(trip), stamp)
+    stamp = _as_epoch(departure.get("departure_time"))
+    if departure.get("trip_id") and stamp:
+        due.setdefault(str(departure["trip_id"]), stamp)
+    return due
+
+
 def _same_route(configured, seen):
     """Whether a realtime route_id designates the configured route.
 
@@ -403,6 +434,10 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
     if not feed_entities:
         _LOGGER.debug("No proper RT feed entities: %s", feed_entities)
         return {}
+
+    # what the timetable says for the trips on the board, to lay a delay on
+    # when the feed publishes one without a time
+    scheduled = _scheduled_departures(self)
 
     if self._rt_group == "route":
         _LOGGER.debug("Search departure times for route: %s, trip: %s, type: %s, direction: %s, short_name: %s, trip_list: %s", self._route_id, self._trip_id, self._rt_group, self._direction, self._trip_short_name, self._trip_list)
@@ -522,9 +557,17 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                             
                         if stop["departure"].get("delay",0) >= stop["arrival"].get("delay",0):
                             delay = stop["departure"].get("delay",0)
-                        else: 
+                        else:
                             delay = stop["arrival"].get("delay",0)
-                            
+
+                        if not stop_time and delay and scheduled.get(trip_id):
+                            # the feed gives the delay and no time: read as
+                            # an epoch that would be 1970, which reads as
+                            # long past and dropped the departure with it
+                            stop_time = scheduled[trip_id] + delay
+                            _LOGGER.debug("Trip %s carries a delay and no time: %s + %ss",
+                                          trip_id, scheduled[trip_id], delay)
+
                         # Ignore arrival times in the past
                         departure_dt = dt_util.utc_from_timestamp(stop_time)  # aware UTC, epoch is always UTC
                         if due_in_minutes(departure_dt) >= 0:
