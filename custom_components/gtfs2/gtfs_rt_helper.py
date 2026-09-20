@@ -467,12 +467,18 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                 
             # for route-based requests, if the rt-data has no route (ex. TER) then the selection should be on matching trip_id or matching RT-id with short_name (ex. MTA Metro North RR)
             # result will be that only one RT value will be collected
+            # how THIS entity can be matched, not how the sensor asks: an
+            # entity naming no line (a TER, a SIRI feed) can only be read by
+            # trip, and that used to be written on the coordinator, so every
+            # entity read after it was matched by trip too. On a feed that
+            # never names its lines the board then kept its head trip alone
+            group = self._rt_group
             if not route_id:
-                self._rt_group = "trip"   
-                route_id = self._route_id                
-                
-            if self._rt_group == "trip":
-                direction_id = self._direction   
+                group = "trip"
+                route_id = self._route_id
+
+            if group == "trip":
+                direction_id = self._direction
 
             trip_id = entity["trip_update"]["trip"]["trip_id"]
             entity_id = entity["id"]
@@ -481,7 +487,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                 
             # first part covers start/end and thus multiple RT are possible for the same stop, also, for SIRI route_id do not match so a 'in' is used 
             # the second part covers local stops, i.e. per trip, so only one RT possible for that stop         
-            if self._rt_group == "route":
+            if group == "route":
                 # route-mode, between predefined start/stop
                 if direction_id != "nn":
                     matched = (
@@ -491,11 +497,17 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                 else:
                     matched = trip_id == self._trip_id or self._trip_id in trip_id or (trip_id in self._trip_list)
             else:
-                # trip-mode, for local stops which can have multiple routes
-                matched = trip_id == self._trip_id or entity_id == self._trip_short_name
+                # trip-mode, for local stops which can have multiple routes,
+                # and for the entities of a feed that names no line: the
+                # board's own trips count there too, or a journey on such a
+                # feed would only ever hear about its next departure
+                # a local stops context carries no list of its own
+                matched = (trip_id == self._trip_id
+                           or entity_id == self._trip_short_name
+                           or trip_id in (getattr(self, "_trip_list", None) or ()))
 
             if matched:
-                _LOGGER.debug("Entity found params - group: %s, route_id: %s, direction_id: %s, self_trip_id: %s, with rt trip: %s, rt id: %s", self._rt_group, route_id, direction_id, self._trip_id, entity["trip_update"]["trip"], entity_id)
+                _LOGGER.debug("Entity found params - group: %s, route_id: %s, direction_id: %s, self_trip_id: %s, with rt trip: %s, rt id: %s", group, route_id, direction_id, self._trip_id, entity["trip_update"]["trip"], entity_id)
 
                 start_date = entity["trip_update"]["trip"].get("start_date") or None
                 relationship = trip_relationship(entity)
