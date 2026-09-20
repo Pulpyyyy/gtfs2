@@ -106,6 +106,11 @@ _FEED_CACHE_GUARD = threading.Lock()
 # short enough that a delay stays fresh, long enough to cover a wave of
 # coordinators: they were measured starting 12 ms apart
 FEED_CACHE_TTL = 30
+# when a feed failed, how long its sensors take the answer as read rather
+# than each waiting out the timeout again: short enough that a host coming
+# back is read within the minute
+_FEED_FAILED: dict[tuple[str, str, str], float] = {}
+FEED_FAIL_TTL = 15
 
 RT_USER_AGENT = "GTFS2-HomeAssistant/1.0 (+https://github.com/vingerha/gtfs2)"
 
@@ -148,11 +153,24 @@ def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
                 _LOGGER.debug("GTFS RT cache hit for %s (%s), age %.1fs", label, url, age)
                 return cached[1]
 
+        failed = _FEED_FAILED.get(key)
+        if failed is not None and time.time() - failed < FEED_FAIL_TTL:
+            # the last attempt just failed: a host that is down answers every
+            # sensor of the source the same way, and each of them waiting out
+            # the timeout in turn holds an executor thread for nothing
+            _LOGGER.debug("GTFS RT %s (%s) failed %.1fs ago, not asked again yet",
+                          label, url, time.time() - failed)
+            return None
+
         entities = _fetch_gtfs_feed_entities(url, headers, label)
-        # a failed fetch returns None: do not cache it, the next caller should
-        # get a real attempt rather than a stale failure
+        # a failed fetch returns None: it is not kept as data, only as the
+        # memory of a failure, so the next caller gets a real attempt once
+        # the short wait is over rather than a stale answer
         if entities is not None:
             _FEED_CACHE[key] = (time.time(), entities)
+            _FEED_FAILED.pop(key, None)
+        else:
+            _FEED_FAILED[key] = time.time()
         return entities
 
 
@@ -164,12 +182,19 @@ def _fetch_gtfs_feed_entities(url: str, headers, label: str):
     _LOGGER.debug(f"GTFS RT get_feed_entities for url: {url} , headers: {headers}, label: {label}")
     feed = gtfs_realtime_pb2.FeedMessage()  # type: ignore
 
-    if url.startswith('file'):
-        requests_session = requests.session()
-        requests_session.mount('file://', LocalFileAdapter())
-        response = requests_session.get(url)   
-    else:
-        response = requests.get(url, headers=_with_user_agent(headers), timeout=20)
+    try:
+        if url.startswith('file'):
+            requests_session = requests.session()
+            requests_session.mount('file://', LocalFileAdapter())
+            response = requests_session.get(url)
+        else:
+            response = requests.get(url, headers=_with_user_agent(headers), timeout=20)
+    except requests.RequestException as ex:
+        # a host that is down, a name that no longer resolves, a certificate
+        # that expired: the caller reads None as "no realtime this cycle",
+        # which is what it already did for a bad response
+        _LOGGER.error("Could not reach %s for %s: %s", url, label, type(ex).__name__)
+        return None
 
     # Success is the status code plus a body that parses below. Grepping the
     # decoded body for error phrases rejected valid feeds whose own free text
@@ -177,7 +202,10 @@ def _fetch_gtfs_feed_entities(url: str, headers, label: str):
     if response.status_code == 200:
         _LOGGER.debug("Successfully updated %s", label)
     else:
-        _LOGGER.error("Trying to update %s, and got RT response(code): %s with text: %s", label, response.status_code, response.text)
+        # the first line of the body says what went wrong; a maintenance page
+        # in full says it again in a hundred lines of html
+        _LOGGER.error("Trying to update %s, and got RT response(code): %s with text: %s",
+                      label, response.status_code, response.text[:200])
         return None
 
     if label == "alerts":
