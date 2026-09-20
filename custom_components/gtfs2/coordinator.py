@@ -35,7 +35,7 @@ from .const import (
 )    
 from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
-from .gtfs_rt_helper import get_next_services, get_rt_alerts, struck_trips
+from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck, struck_trips
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
 from .refresh_steps import drop_struck_trips, next_service_date_for
@@ -282,10 +282,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         """Fold what the last realtime reading struck out into what this
         static period has seen: {trip_id: start_date or None}, cancelled
         and skipping the origin kept apart."""
-        self._struck_cancelled = {**(getattr(self, "_struck_cancelled", None) or {}),
-                                  **(getattr(self, "_rt_cancelled", None) or {})}
-        self._struck_skipped = {**(getattr(self, "_struck_skipped", None) or {}),
-                                **(getattr(self, "_rt_skipped", None) or {})}
+        self._struck_cancelled = merge_struck(getattr(self, "_struck_cancelled", None),
+                                              getattr(self, "_rt_cancelled", None))
+        self._struck_skipped = merge_struck(getattr(self, "_struck_skipped", None),
+                                            getattr(self, "_rt_skipped", None))
 
     def _cleanup_stale_vehicle_markers(self) -> None:
         """One-shot removal of the stale vehicle markers of this route.

@@ -145,6 +145,13 @@ def test_the_converter_spells_out_what_the_feed_struck(record_property, entities
     _done(record_property, check, fixture="sncf", promise="converter")
 
 
+def _struck_days(me):
+    """What the feed struck out, days sorted: a strike lasts more than a
+    day and the reading holds every day it names, as a set."""
+    return {trip: sorted(str(day) for day in days)
+            for trip, days in gtfs_rt_helper.struck_trips(me).items()}
+
+
 def test_struck_trips_give_no_departure(record_property, entities):
     check = Check()
     cancelled = _trip_id(entities, "OCESA86017F5111")
@@ -152,7 +159,7 @@ def test_struck_trips_give_no_departure(record_property, entities):
     statuses = gtfs_rt_helper.get_rt_route_trip_statuses(me, entities)
     slot = statuses.get(C3, {}).get("1", {}).get(GRASSE, {})
     check.same(slot.get("departures", []), [], "departures of the cancelled trip at Grasse")
-    check.same(gtfs_rt_helper.struck_trips(me), {cancelled: "20260826"},
+    check.same(_struck_days(me), {cancelled: ["20260826"]},
                "what the feed struck out for the C3 follower")
     # the P9 runs but does not call at Béziers that morning
     p9 = _trip_id(entities, "OCESN878950F1187")
@@ -160,7 +167,7 @@ def test_struck_trips_give_no_departure(record_property, entities):
     statuses = gtfs_rt_helper.get_rt_route_trip_statuses(me, entities)
     check.same(statuses.get(P9, {}).get("1", {}).get(BEZIERS, {}).get("departures", []), [],
                "departures of the P9 at Béziers, skipped")
-    check.same(gtfs_rt_helper.struck_trips(me), {p9: "20260826"},
+    check.same(_struck_days(me), {p9: ["20260826"]},
                "what the feed struck out for the Béziers follower")
     # and calls at Bédarieux, 35 minutes late (07:14 + 35 = 07:49), the trip
     # named beside the time; asked before that, a call gone by is not listed
@@ -170,7 +177,7 @@ def test_struck_trips_give_no_departure(record_property, entities):
     slot = statuses.get(P9, {}).get("1", {}).get(BEDARIEUX, {})
     check.same(slot.get("delays"), [2100], "the P9's delay at Bédarieux")
     check.same(slot.get("trips"), [p9], "the trip behind the departure at Bédarieux")
-    check.same(gtfs_rt_helper.struck_trips(me), {}, "nothing struck for the Bédarieux follower")
+    check.same(_struck_days(me), {}, "nothing struck for the Bédarieux follower")
     # a call without data gives no departure, and a zero delay is not on time
     without = json.loads(json.dumps(entities))
     for e in without:
@@ -182,7 +189,7 @@ def test_struck_trips_give_no_departure(record_property, entities):
         statuses = gtfs_rt_helper.get_rt_route_trip_statuses(me, without)
     check.same(statuses.get(P9, {}).get("1", {}).get(BEDARIEUX, {}).get("departures", []), [],
                "departures at Bédarieux when the feed has no data there")
-    check.same(gtfs_rt_helper.struck_trips(me), {}, "no data is not a strike")
+    check.same(_struck_days(me), {}, "no data is not a strike")
     _done(record_property, check, fixture="sncf", promise="statuses")
 
 

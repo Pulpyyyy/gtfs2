@@ -17,7 +17,7 @@ import homeassistant.util.dt as dt_util
 
 from .const import ATTR_RT_CANCELLED, ATTR_RT_SKIPPED
 from .gtfs_helper import drop_departure_trips, get_next_service_date
-from .gtfs_rt_helper import get_next_services
+from .gtfs_rt_helper import get_next_services, merge_struck
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ async def drop_struck_trips(coordinator, data, run_static):
     if run_static:
         coordinator._struck_cancelled, coordinator._struck_skipped = {}, {}
     coordinator._remember_struck()
-    struck = {**coordinator._struck_skipped, **coordinator._struck_cancelled}
+    struck = merge_struck(coordinator._struck_skipped, coordinator._struck_cancelled)
     departure = coordinator._data.get("next_departure") or {}
     listed = {str(t) for t in departure.get("next_departures_trip_id") or []}
     listed.add(str(departure.get("trip_id")))

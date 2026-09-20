@@ -515,7 +515,10 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                 if relationship in CANCELLED_TRIP:
                     # no departure at all: the stop updates it may still
                     # carry (every stop SKIPPED, a delay left in) say nothing
-                    self._rt_cancelled[trip_id] = start_date
+                    # every day the feed strikes this trip out on, not the
+                    # last one read: a strike over two days publishes the
+                    # same id twice and today's run used to be forgotten
+                    self._rt_cancelled.setdefault(trip_id, set()).add(start_date)
                     _LOGGER.debug("Trip %s is %s on %s, not a departure", trip_id, relationship, start_date)
                     continue
 
@@ -531,7 +534,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                         called = stop_relationship(stop)
                         if called == SKIPPED_STOP:
                             # the vehicle runs but does not call here
-                            self._rt_skipped[trip_id] = start_date
+                            self._rt_skipped.setdefault(trip_id, set()).add(start_date)
                             _LOGGER.debug("Trip %s skips %s on %s, not a departure", trip_id, stop_id, start_date)
                             continue
                         if called == NO_DATA_STOP:
@@ -626,14 +629,36 @@ def struck_trips(self):
     the ones this entity follows, as the last get_rt_route_trip_statuses
     read them: cancelled, or skipping the entity's origin. The day is the
     service day the feed names, None when it names none."""
-    struck = dict(getattr(self, "_rt_skipped", None) or {})
-    struck.update(getattr(self, "_rt_cancelled", None) or {})
-    return struck
+    return merge_struck(getattr(self, "_rt_skipped", None),
+                        getattr(self, "_rt_cancelled", None))
+
+
+def merge_struck(*sources):
+    """Fold several {trip_id: days} together, keeping every day named.
+
+    A trip can be cancelled one day and skip the origin another, and one
+    cycle's reading does not replace the last: both are days it is not a
+    departure. A day of None means the feed named none, which stands for
+    every day the trip runs.
+    """
+    merged = {}
+    for source in sources:
+        for trip, days in (source or {}).items():
+            merged.setdefault(trip, set()).update(
+                days if isinstance(days, (set, frozenset, list, tuple)) else {days})
+    return merged
 
 
 def on_service_day(start_date, service_day):
-    """Whether a feed's start_date (YYYYMMDD, or None for "unsaid") is the
-    service day (YYYY-MM-DD, or a datetime string starting with it)."""
+    """Whether a feed's start_date is the service day.
+
+    start_date is what the feed named, YYYYMMDD, or None for "unsaid",
+    or the set of days it named for that trip: a strike lasts more than a
+    day and a feed then publishes the same trip id once per day it hits.
+    service_day is YYYY-MM-DD, or a datetime string starting with it.
+    """
+    if isinstance(start_date, (set, frozenset, list, tuple)):
+        return any(on_service_day(day, service_day) for day in start_date) if start_date else True
     if not start_date:
         return True
     return str(service_day or "")[:10].replace("-", "") == str(start_date)[:8]
