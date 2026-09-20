@@ -181,7 +181,7 @@ def _stop_aliases(data, stop_id):
     data = data or {}
     schedule = data.get("schedule")
     if schedule is None:
-        return {stop_id}
+        return frozenset({stop_id})
     key = (data.get("file"), stop_id)
     if key in _STOP_ALIASES:
         return _STOP_ALIASES[key]
@@ -195,12 +195,16 @@ def _stop_aliases(data, stop_id):
         # a locked or pruned datasource is no reason to lose the alerts the
         # stop itself is named in, and a failure is not worth remembering
         _LOGGER.debug("Could not read the station of stop %s: %s", stop_id, ex)
-        return aliases
+        return frozenset(aliases)
     for row in rows:
         if row[0]:
             aliases.add(str(row[0]))
-    _STOP_ALIASES[key] = aliases
-    return aliases
+    # frozen: callers read this straight out of the cache and one of them
+    # used to add the arrival's own aliases to it with |=, which grew the
+    # entry of one stop with the platforms of another and handed those
+    # alerts to every sensor departing from there
+    _STOP_ALIASES[key] = frozenset(aliases)
+    return _STOP_ALIASES[key]
 
 
 # the name a stop is shown by, per datasource, as _STOP_ALIASES
@@ -394,7 +398,9 @@ def journey_alerts(coordinator, feed_entities):
     # id, which never matched anything; the departure knows the real one
     arrival = (data.get("next_departure") or {}).get("destination_stop_id")
     if arrival:
-        destination_ids |= _stop_aliases(data, arrival)
+        # a new set: the two come out of the cache, and merging in place
+        # wrote one sensor's arrival into another's entry
+        destination_ids = destination_ids | _stop_aliases(data, arrival)
     journey_ids = _journey_stops(data, trip_id)
     language = _alert_language(getattr(coordinator, "hass", None))
     # the trips on the board: the next departure, then the ones listed
