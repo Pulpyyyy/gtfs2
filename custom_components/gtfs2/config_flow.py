@@ -810,7 +810,9 @@ async def _check_stop_list(self, data):
     count_stops = await self.hass.async_add_executor_job(
                 get_local_stop_list, self.hass, self._pygtfs, data
             )  
-    if count_stops > DEFAULT_MAX_LOCAL_STOPS:
+    # the limit the user just set on this screen, which the refusal tells
+    # them to raise: compared with the default, raising it changed nothing
+    if count_stops > int(data.get(CONF_MAX_LOCAL_STOPS) or DEFAULT_MAX_LOCAL_STOPS):
         _LOGGER.debug("Checkstops limit reached with: %s", count_stops)
         return "stop_limit_reached"
     return None         
