@@ -743,11 +743,19 @@ def get_rt_vehicle_positions(self):
         if vehicle["trip"]["trip_id"] == self._trip_id: 
             _LOGGER.debug('Adding position for TripId: %s, RouteId: %s, DirectionId: %s, Lat: %s, Lon: %s, crc_trip_id: %s', vehicle["trip"]["trip_id"],vehicle["trip"]["route_id"],vehicle["trip"]["direction_id"],vehicle["position"]["latitude"],vehicle["position"]["longitude"], binascii.crc32((vehicle["trip"]["trip_id"]).encode('utf8')))  
             
-        # add data if trip found or if route in the selected direction
-        if ( 
+        # add data if trip found or if route in the selected direction; a
+        # vehicle whose feed names no direction is placed by its trip, one of
+        # the board's, rather than on whichever map 0 happens to be
+        seen_direction = vehicle["trip"].get("direction_id")
+        if seen_direction is None:
+            on_this_way = str(vehicle["trip"]["trip_id"]) in {
+                str(t) for t in (getattr(self, "_trip_list", None) or ())}
+        else:
+            on_this_way = str(self._direction) == str(seen_direction)
+        if (
             str(vehicle["trip"]["trip_id"]) == str(self._trip_id)
-            or 
-            ( str(self._route_id) == str(vehicle["trip"]["route_id"])  and str(self._direction) == str(vehicle["trip"]["direction_id"] ))
+            or
+            ( _same_route(self._route_id, vehicle["trip"]["route_id"]) and on_this_way )
             ):
             _LOGGER.debug("Found vehicle on route with attributes: %s", vehicle)
             _LOGGER.debug("crc : %s", binascii.crc32((vehicle["trip"]["trip_id"]).encode('utf8')))
@@ -759,7 +767,9 @@ def get_rt_vehicle_positions(self):
             # to reduce number of entities created by geojson. 
             _crc = str(binascii.crc32((vehicle["trip"]["trip_id"]).encode('utf8')))[-3:]
             _veh = str(vehicle.get("vehicle", {}).get("id", "") or vehicle.get("vehicle", {}).get("label", "")).strip()
-            _dir = str(vehicle["trip"]["direction_id"])
+            # the direction of the map it lands on when the feed names none,
+            # so its marker id keeps the digit the registry cleanup reads
+            _dir = str(seen_direction if seen_direction is not None else self._direction)
             try:
                 _line = str(self._data.get("next_departure", {}).get("route_short_name") or "").strip()
                 _dest = self.config_entry.data.get("destination", "").split(": ")[-1].split(" (")[0].split(" - ")[0].strip()
@@ -773,7 +783,7 @@ def get_rt_vehicle_positions(self):
             geojson_element["properties"]["title"] = _label
             geojson_element["properties"]["trip_id"] = vehicle["trip"]["trip_id"]
             geojson_element["properties"]["route_id"] = str(self._route_id)
-            geojson_element["properties"]["direction_id"] = vehicle["trip"]["direction_id"]
+            geojson_element["properties"]["direction_id"] = seen_direction if seen_direction is not None else _dir
             geojson_element["properties"]["vehicle_id"] = vehicle["vehicle"]["id"]
             geojson_element["properties"]["vehicle_label"] = vehicle["vehicle"]["label"]
             geojson_element["properties"][vehicle["trip"]["trip_id"]] = geojson_element["geometry"]["coordinates"]
@@ -1013,7 +1023,12 @@ def convert_gtfs_realtime_positions_to_json(gtfs_realtime_data):
             "trip": {
                 "trip_id" : entity.trip.trip_id,
                 "route_id": entity.trip.route_id,
-                "direction_id": entity.trip.direction_id
+                # None when the feed does not say: protobuf reads an absent
+                # field as 0, which put every vehicle of a feed that gives no
+                # direction on the outbound map, the same trap the trip
+                # updates already step around
+                "direction_id": (entity.trip.direction_id
+                                 if entity.trip.HasField("direction_id") else None)
                 },
             "vehicle": {
                 "id": entity.vehicle.id,
