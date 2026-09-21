@@ -19,8 +19,6 @@ DEFAULT_PATH_RT = "www/gtfs2"
 DEFAULT_API_KEY_LOCATION = "not_applicable"
 
 CONF_DATA = "data"
-CONF_DESTINATION = "destination"
-CONF_ORIGIN = "origin"
 
 # the entry kind separates the datasource entries (one per source, carrying
 # its realtime feeds) from the journey and local-stop entries; an entry
