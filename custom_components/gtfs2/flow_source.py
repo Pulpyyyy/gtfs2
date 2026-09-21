@@ -44,6 +44,7 @@ from .const import (
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
 from .flow_reload import _database_size
+from .freshness import source_meta
 from .gtfs_db import real_path
 from .gtfs_helper import check_extracting, get_zipfiles
 from .key_mask import KEY_MASK, note_key
@@ -172,6 +173,28 @@ class SourceScreens:
         """
         return await self.async_step_user(user_input)
 
+    async def _name_taken_elsewhere(self, name, url) -> bool:
+        """Whether another source already goes by this name.
+
+        The zip and the entry of a source are found by its name alone, so a
+        second source typed under a name in use went on silently with the
+        first one's data, its own url kept nowhere that counts. The same
+        name with the same url is the same source added again, and passes.
+        """
+        entry = datasource_entry(self.hass, name)
+        if entry is not None:
+            return (entry.data.get(CONF_URL) or "na") != url
+        zip_path = os.path.join(self.hass.config.path(DEFAULT_PATH), name + ".zip")
+        if not await self.hass.async_add_executor_job(os.path.exists, zip_path):
+            return False
+        # a zip and no entry yet: a download from this very url, left when
+        # the flow was closed before the entry was made, is the same source
+        # added again. A zip the user dropped there has no sidecar and keeps
+        # its name, as does one fetched from anywhere else
+        recorded = (await self.hass.async_add_executor_job(source_meta, zip_path)).get("url")
+        same = recorded and (recorded == url or recorded.startswith(url + ("&" if "?" in url else "?")))
+        return not same
+
     async def async_step_source_url(self, user_input: dict | None = None) -> FlowResult:
         """Download the feed from a url."""
         errors: dict[str, str] = {}
@@ -207,6 +230,8 @@ class SourceScreens:
             errors[CONF_FILE] = "invalid_source_name"
         if not url.startswith(("http://", "https://")):
             errors[CONF_URL] = "invalid_source_url"
+        if not errors and await self._name_taken_elsewhere(name, url):
+            errors[CONF_FILE] = "source_exists"
         if errors:
             return _show(errors, user_input)
         user_input[CONF_FILE], user_input[CONF_URL] = name, url

@@ -237,6 +237,7 @@
       }
     },
     "error": {
+      "source_exists": "Une source de ce nom existe déjà avec une autre adresse : choisissez-la parmi les sources existantes, ou donnez un autre nom à celle-ci.",
       "invalid_source_name": "Lettres, chiffres, espaces, tirets et soulignés uniquement : le nom devient celui du fichier de la source.",
       "invalid_source_url": "L'adresse doit commencer par http:// ou https://",
       "route_not_listed": "Ce n'est pas une des lignes de cette source : choisissez-en une dans la liste, taper une partie de son nom la retrouve.",
