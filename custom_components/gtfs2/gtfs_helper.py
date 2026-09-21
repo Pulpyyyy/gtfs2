@@ -857,7 +857,9 @@ def get_gtfs(hass, path, data, update=False):
                     os.remove(staged)
                     return
                 if _pending_remove:
-                    remove_datasource(hass, path, filename, True)
+                    # the staged download is the new edition: it goes in
+                    # below, not out with the old one
+                    remove_datasource(hass, path, filename, True, keep=(".zip.new",))
                 adopt_zip(r, staged, os.path.join(gtfs_dir, file))
             except Exception as ex:  # pylint: disable=broad-except
                 _LOGGER.error("The given URL or GTFS data file/folder was not found: %s", ex)
@@ -1988,7 +1990,9 @@ async def get_zipfiles(hass, path) -> list[str]:
     return zipfiles
 
 
-def remove_datasource(hass, path, filename, include_sqlite):
+def remove_datasource(hass, path, filename, include_sqlite, keep=()):
+    """Remove the files of a datasource. keep names the suffixes to spare:
+    a refresh clearing the old edition keeps the download that replaces it."""
     gtfs_dir = hass.config.path(path)
     _LOGGER.info(f"Removing datasource: {os.path.join(gtfs_dir, filename)}.*")
     if include_sqlite and os.path.exists(os.path.join(gtfs_dir, filename + ".sqlite")):
@@ -2004,6 +2008,19 @@ def remove_datasource(hass, path, filename, include_sqlite):
     # the sidecar follows the zip it describes
     if os.path.exists(os.path.join(gtfs_dir, filename + ".zip.meta.json")):
         os.remove(os.path.join(gtfs_dir, filename + ".zip.meta.json"))
+    # what the fork keeps beside a source: the record of the installed
+    # edition, and what a download, a refresh or an import stopped half way
+    # leaves. Left behind, the record made a new source of the same name
+    # look already built from an edition it never had
+    leftovers = [".zip.new", ".refresh.sqlite", ".refresh.sqlite-journal",
+                 ".import.sqlite", ".import.sqlite-journal", ".import.sqlite.zip"]
+    if include_sqlite:
+        leftovers += [".sqlite.meta.json", ".sqlite-wal", ".sqlite-shm"]
+    for suffix in leftovers:
+        if suffix in keep:
+            continue
+        if os.path.exists(os.path.join(gtfs_dir, filename + suffix)):
+            os.remove(os.path.join(gtfs_dir, filename + suffix))
     return "removed"
     
 def check_extracting(hass, gtfs_dir,file):
