@@ -394,6 +394,13 @@
         "query_string": "Dans l'adresse web"
       }
     },
+    "rt_type": {
+      "options": {
+        "trip_data": "Mises à jour des trajets",
+        "vehicle_positions": "Positions des véhicules",
+        "alerts": "Alertes"
+      }
+    },
     "static_refresh_mode": {
       "options": {
         "off": "Ne rien faire",

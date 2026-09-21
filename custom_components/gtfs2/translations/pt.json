@@ -394,6 +394,13 @@
         "query_string": "No endereço web"
       }
     },
+    "rt_type": {
+      "options": {
+        "trip_data": "Atualizações de viagens",
+        "vehicle_positions": "Posições dos veículos",
+        "alerts": "Alertas"
+      }
+    },
     "static_refresh_mode": {
       "options": {
         "off": "Não fazer nada",

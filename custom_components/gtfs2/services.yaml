@@ -145,7 +145,7 @@ update_gtfs_rt_local:
       default: "trip_data"
       selector:
         select:
-          translation_key: "extract_from"
+          translation_key: "rt_type"
           options:
             - "trip_data"
             - "vehicle_positions"   
