@@ -44,24 +44,8 @@ def get_routes_in_zip(gtfs_dir, filename):
     if not os.path.exists(path):
         _LOGGER.debug("No source zip beside datasource %s", filename)
         return set()
-    try:
-        with zipfile.ZipFile(path) as zin:
-            member = next((n for n in zin.namelist()
-                           if n.rsplit("/", 1)[-1] == "routes.txt"), None)
-            if member is None:
-                _LOGGER.warning("No routes.txt in %s", path)
-                return set()
-            with zin.open(member) as fh:
-                # utf-8-sig: GTFS files routinely carry a byte order mark, and
-                # it would otherwise end up glued to the first column name
-                reader = csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig"))
-                if not reader.fieldnames or "route_id" not in reader.fieldnames:
-                    _LOGGER.warning("No route_id column in %s", member)
-                    return set()
-                return {row["route_id"] for row in reader if row.get("route_id")}
-    except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.warning("Could not read routes from %s: %s", path, ex)
-        return set()
+    # the one reader of routes.txt, which the flow uses too
+    return {row["route_id"] for row in read_zip_routes(path)}
 
 
 def get_agencies_in_zip(gtfs_dir, filename):
