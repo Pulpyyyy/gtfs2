@@ -69,3 +69,34 @@ def test_debris_of_an_older_run_does_not_block(tmp_path):
     conn.close()
     assert intern_gtfs_datasource(str(tmp_path), "src")
     assert tables(tmp_path / "src.sqlite")["stop_times"] == "view"
+
+
+def test_intern_on_a_copy_swaps_the_result_in(tmp_path):
+    make_db(tmp_path / "src.sqlite")
+    stats = gtfs_db.on_a_copy(str(tmp_path), "src", intern_gtfs_datasource, False)
+    assert stats and stats["file"] == "src"
+    assert tables(tmp_path / "src.sqlite")["stop_times"] == "view"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["src.sqlite"]
+
+
+def test_the_live_file_stays_readable_during_the_work(tmp_path):
+    make_db(tmp_path / "src.sqlite")
+    seen = []
+
+    def work(gtfs_dir, name, *args):
+        # what a sensor does meanwhile: no wait allowed
+        conn = sqlite3.connect(tmp_path / "src.sqlite", timeout=0)
+        seen.append(conn.execute("select count(*) from stop_times").fetchone()[0])
+        conn.close()
+        return intern_gtfs_datasource(gtfs_dir, name)
+
+    assert gtfs_db.on_a_copy(str(tmp_path), "src", work)
+    assert seen == [4]
+
+
+def test_nothing_done_nothing_swapped(tmp_path):
+    make_db(tmp_path / "src.sqlite")
+    stamp = (tmp_path / "src.sqlite").stat().st_mtime_ns
+    assert gtfs_db.on_a_copy(str(tmp_path), "src", lambda d, n: None) is None
+    assert (tmp_path / "src.sqlite").stat().st_mtime_ns == stamp
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["src.sqlite"]

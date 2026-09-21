@@ -19,7 +19,7 @@ import voluptuous as vol
 from .gtfs_helper import update_gtfs_local_stops, get_route_departures, get_trip_stops
 from .notifications import async_notify_line_orphaned
 from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern, timetable_name
-from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
+from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
 from .rt_source import (
@@ -228,9 +228,10 @@ async def async_prune_datasources(hass: HomeAssistant, data):
                 # in: pruning the one being replaced would be lost with it
                 skipped.append({"file": filename, "reason": "refresh_running"})
                 continue
+            # on a copy swapped in, so the sensors keep reading meanwhile
             async with lock:
                 stats = await hass.async_add_executor_job(
-                    prune_gtfs_datasource, gtfs_dir, filename, routes, False)
+                    on_a_copy, gtfs_dir, filename, prune_gtfs_datasource, routes, False)
         if stats:
             pruned.append(stats)
     result = {"pruned": pruned, "skipped": skipped}
@@ -275,7 +276,7 @@ async def async_intern_datasources(hass: HomeAssistant, data):
                 continue
             async with lock:
                 stats = await hass.async_add_executor_job(
-                    intern_gtfs_datasource, gtfs_dir, filename, False)
+                    on_a_copy, gtfs_dir, filename, intern_gtfs_datasource, False)
         if stats:
             interned.append(stats)
     result = {"interned": interned}

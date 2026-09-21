@@ -405,6 +405,58 @@ _ORPHAN_SERVICE = """not exists (
     where s.feed_id = {table}.{feed_col} and s.service_id = {table}.service_id)"""
 
 
+def on_a_copy(gtfs_dir, filename, work, *args, done=bool):
+    """Run a rewrite of a datasource on a copy of it, then swap the copy in.
+
+    Prune and intern delete rows by the million and VACUUM, and on the live
+    file each holds SQLite's exclusive lock for the whole rewrite: every
+    sensor read waited behind it, minutes on a national feed. The copy is
+    SQLite's own backup, a consistent snapshot whatever reads meanwhile;
+    the work runs on it under the refresh's staging name, and the result
+    takes the real file's place the way a refresh does, so the sensors see
+    the old data or the new, never a file being rewritten.
+
+    work(gtfs_dir, name, *args) is called with the staging name. done says,
+    from what it returned, whether it changed anything: nothing changed,
+    nothing is swapped. Returns what work returned, None when the copy or
+    the swap failed.
+    """
+    real = real_path(gtfs_dir, filename)
+    staging = filename + ".refresh"
+    copy = real_path(gtfs_dir, staging)
+    for leftover in (copy, copy + "-journal"):
+        if os.path.exists(leftover):
+            os.remove(leftover)
+    try:
+        src = sqlite3.connect(real, timeout=60)
+        dst = sqlite3.connect(copy)
+        try:
+            src.backup(dst)
+        finally:
+            dst.close()
+            src.close()
+        result = work(gtfs_dir, staging, *args)
+        if not done(result):
+            return result
+        if not swap_in(copy, real):
+            return None
+    except (sqlite3.Error, OSError) as ex:
+        _LOGGER.error("Could not rewrite %s on a copy: %s", filename, ex)
+        return None
+    finally:
+        for leftover in (copy, copy + "-journal"):
+            if os.path.exists(leftover):
+                try:
+                    os.remove(leftover)
+                except OSError as ex:
+                    _LOGGER.warning("Could not remove %s: %s", leftover, ex)
+    # the stats name the file they were made on: the staging copy
+    for stats in (result, *(result.values() if isinstance(result, dict) else ())):
+        if isinstance(stats, dict) and stats.get("file") == staging:
+            stats["file"] = filename
+    return result
+
+
 def optimise_datasource(gtfs_dir, filename, keep_routes=None):
     """Shrink a datasource: drop what is not followed, then intern the rest.
 

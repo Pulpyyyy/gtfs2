@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from functools import partial
 
 import voluptuous as vol
 
@@ -30,7 +31,7 @@ from .const import (
     ENTRY_KIND_DATASOURCE,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
-from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in
+from .gtfs_db import import_routes, on_a_copy, optimise_datasource, real_path, routes_in
 from .gtfs_helper import check_datasource_index
 from .notifications import async_notify_import
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
@@ -328,10 +329,17 @@ class ReloadScreens:
                     "dropped": str(len(dropped)),
                 },
             )
+        # on a copy swapped in, so the sensors keep reading meanwhile
         async with source_lock(self.hass, filename):
             result = await self.hass.async_add_executor_job(
-                optimise_datasource, gtfs_dir, filename,
-                None if unrestricted else keep)
+                partial(on_a_copy, gtfs_dir, filename, optimise_datasource,
+                        None if unrestricted else keep,
+                        done=lambda out: bool(out and (out["pruned"] or out["interned"]))))
+        if result is None:
+            # the copy or its swap failed (on_a_copy logged why): the file is
+            # as it was, and "space freed" would say otherwise
+            _LOGGER.error("Datasource %s was not optimised, it is left as it was", filename)
+            return self.async_abort(reason="generic_failure")
         _LOGGER.info("Optimised datasource %s: %s", filename, result)
         return self.async_abort(
             reason="optimised",
