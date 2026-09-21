@@ -8,25 +8,26 @@ same answer the swap path gives it.
 """
 from __future__ import annotations
 
-import pytest
-
 import ha_stub
 
 source_refresh = ha_stub.load("source_refresh")
 
 
-@pytest.mark.parametrize("answer, delivered", [
+ANSWERS = [
     ({"R1": 12}, True),
     ("extracting", True),
     (None, False),
     (False, False),
     ("no_data_file", False),
     ("no_zip_file", False),
-])
-def test_refresh_source_answer(monkeypatch, answer, delivered):
-    recorded = []
-    monkeypatch.setattr(source_refresh, "refresh_datasource", lambda hass, path, data: answer)
-    monkeypatch.setattr(source_refresh, "_record_installed", lambda hass, file: recorded.append(file))
-    assert source_refresh.refresh_source(None, "gtfs2", {"file": "src"}) is delivered
-    # only a database built by the swap is recorded as installed
-    assert recorded == (["src"] if isinstance(answer, dict) else [])
+]
+
+
+def test_refresh_source_answer(monkeypatch):
+    for answer, delivered in ANSWERS:
+        recorded = []
+        monkeypatch.setattr(source_refresh, "refresh_datasource", lambda hass, path, data: answer)
+        monkeypatch.setattr(source_refresh, "_record_installed", lambda hass, file: recorded.append(file))
+        assert source_refresh.refresh_source(None, "gtfs2", {"file": "src"}) is delivered, answer
+        # only a database built by the swap is recorded as installed
+        assert recorded == (["src"] if isinstance(answer, dict) else []), answer
