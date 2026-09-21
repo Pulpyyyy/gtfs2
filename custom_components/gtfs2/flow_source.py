@@ -236,6 +236,7 @@ class SourceScreens:
             return _show(errors, user_input)
         user_input[CONF_FILE], user_input[CONF_URL] = name, url
         user_input[CONF_EXTRACT_FROM] = "url"
+        self._source_step = "source_url"
         if user_input.pop(CONF_NEEDS_API_KEY, False):
             self._user_inputs.update(user_input)
             return await self.async_step_source_key()
@@ -399,6 +400,7 @@ class SourceScreens:
             return await _show(errors)
         # the url is unused here, but get_gtfs still reads the key
         user_input[CONF_EXTRACT_FROM] = "zip"
+        self._source_step = "source_zip"
         user_input[CONF_URL] = "na"
         check_data = await self.hass.async_add_executor_job(
             ensure_source_zip, self.hass, DEFAULT_PATH, user_input)
@@ -527,8 +529,17 @@ class SourceScreens:
             await asyncio.sleep(5)
 
     async def _back_to_source(self, reason):
-        """Return to the step that picked the datasource, carrying the error."""
+        """Return to the step that picked the datasource, carrying the error.
+
+        The screen is the one the flow remembers picking the source. Worked
+        out from the inputs alone, it could not be the list of existing
+        sources: that screen stores the same url and extract_from as the
+        zip screen, so a source picked there was sent to the zip screen.
+        """
         self._pending_error = reason
+        step = getattr(self, "_source_step", None)
+        if step == "start_end":
+            return await self.async_step_start_end()
         if self._user_inputs.get(CONF_DEVICE_TRACKER_ID, None):
             return await self.async_step_local_stops()
         if self._user_inputs.get(CONF_EXTRACT_FROM, None) == "url":

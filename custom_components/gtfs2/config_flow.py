@@ -118,6 +118,9 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         # not keep it
         self._towards = None
         self._pending_error: str | None = None
+        # the screen that picked the source, where an error about the source
+        # sends the rider back to (see _back_to_source)
+        self._source_step: str | None = None
         # why the arrival screen sent the rider back to the departure one
         self._stops_error: str | None = None
         self._extract_job = None
@@ -212,6 +215,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
 
         user_input[CONF_URL] = "na"
         user_input[CONF_EXTRACT_FROM] = "zip"
+        self._source_step = "start_end"
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Start End: {self._user_inputs}")
         return await self.async_step_agency()            
