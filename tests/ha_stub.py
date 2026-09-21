@@ -459,6 +459,7 @@ def install() -> None:
     _module("homeassistant.components.update",
             UpdateEntity=_EntityShell, UpdateEntityFeature=_UpdateEntityFeature)
     _module("homeassistant.components.button", ButtonEntity=_EntityShell)
+    _module("homeassistant.components.switch", SwitchEntity=_EntityShell)
     _module("homeassistant.components.persistent_notification",
             async_create=_Unreached("persistent_notification.async_create"),
         async_dismiss=_Unreached("persistent_notification.async_dismiss"),
