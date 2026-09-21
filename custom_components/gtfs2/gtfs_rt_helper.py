@@ -383,8 +383,12 @@ def cached_feed_has_future_stop(owner, url, routes, now_epoch):
         if routes and not any(_same_route(route, seen) for route in routes):
             continue
         for stop in trip_update.get("stop_time_update") or []:
-            when = max((stop.get("arrival") or {}).get("time") or 0,
-                       (stop.get("departure") or {}).get("time") or 0)
+            # a json feed writes int64 as text, as the departure reader knows
+            try:
+                when = max(int((stop.get("arrival") or {}).get("time") or 0),
+                           int((stop.get("departure") or {}).get("time") or 0))
+            except (TypeError, ValueError):
+                continue
             if when > now_epoch:
                 return True
     return False
@@ -521,17 +525,21 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
 
         if entity.get('trip_update', False):
             
+            # a json feed leaves out what it does not know, where the
+            # protobuf reader writes every field: the line, the stop, the
+            # arrival of a first stop are read with their defaults
+            feed_route_id = entity["trip_update"]["trip"].get("route_id") or ""
             # If delimiter specified split the route ID in the gtfs rt feed
             if self._route_delimiter is not None:
-                route_id_split = entity["trip_update"]["trip"]["route_id"].split(
+                route_id_split = feed_route_id.split(
                     self._route_delimiter
                 )
                 if route_id_split[0] == self._route_delimiter:
-                    route_id = entity["trip_update"]["trip"]["route_id"]
+                    route_id = feed_route_id
                 else:
                     route_id = route_id_split[0]
             else:
-                route_id = entity["trip_update"]["trip"]["route_id"]
+                route_id = feed_route_id
 
             if "direction_id" in entity["trip_update"]["trip"] and entity["trip_update"]["trip"]["direction_id"] not in ("", None):
                     direction_id = entity["trip_update"]["trip"]["direction_id"]
@@ -553,8 +561,8 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
             if group == "trip":
                 direction_id = self._direction
 
-            trip_id = entity["trip_update"]["trip"]["trip_id"]
-            entity_id = entity["id"]
+            trip_id = entity["trip_update"]["trip"].get("trip_id") or ""
+            entity_id = entity.get("id") or ""
             
             #_LOGGER.debug("Search for entity with params - group: %s, route_id: %s, direction_id: %s, self_trip_id: %s, with rt trip: %s, rt id: %s", self._rt_group, route_id, direction_id, self._trip_id, entity["trip_update"]["trip"], entity_id)            
                 
@@ -594,9 +602,9 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                     _LOGGER.debug("Trip %s is %s on %s, not a departure", trip_id, relationship, start_date)
                     continue
 
-                for stop in entity["trip_update"]["stop_time_update"]:
-                    stop_id = stop["stop_id"]
-                    stop_sequence = stop["stop_sequence"]
+                for stop in entity["trip_update"].get("stop_time_update") or []:
+                    stop_id = stop.get("stop_id") or ""
+                    stop_sequence = stop.get("stop_sequence")
                     if stop_id == self._stop_id or (stop_id == "" and stop_sequence == self._stop_sequence):
                         _LOGGER.debug("Stop found: %s", stop)
                         # if the data does not contain a stop_id but only a stop_sequence, assume stop_id being the correct stop based on sequence
@@ -640,13 +648,17 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                         # the later of the two 'time' attributes is the one to announce
                         # e.g. at a terminus/layover where the vehicle stands several
                         # minutes at its bay
-                        stop_time = max(stop["arrival"]["time"],
-                                        stop["departure"]["time"])
-                            
-                        if stop["departure"].get("delay",0) >= stop["arrival"].get("delay",0):
-                            delay = stop["departure"].get("delay",0)
+                        # a json feed may give one of the two only, and
+                        # writes its int64 times as strings
+                        arrival = stop.get("arrival") or {}
+                        departure = stop.get("departure") or {}
+                        stop_time = max(int(arrival.get("time") or 0),
+                                        int(departure.get("time") or 0))
+
+                        if int(departure.get("delay") or 0) >= int(arrival.get("delay") or 0):
+                            delay = int(departure.get("delay") or 0)
                         else:
-                            delay = stop["arrival"].get("delay",0)
+                            delay = int(arrival.get("delay") or 0)
 
                         if not stop_time and delay and scheduled.get(trip_id):
                             # the feed gives the delay and no time: read as
