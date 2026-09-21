@@ -82,3 +82,15 @@ def test_new_bytes_are_only_told_without_adopting(tmp_path, monkeypatch):
     assert (tmp_path / "src.zip").read_bytes() == feed_bytes("1")
     assert (tmp_path / "src.zip.meta.json").read_text() == meta_before
     assert not (tmp_path / "src.zip.new").exists()
+
+
+def test_same_bytes_keep_the_validators_the_host_now_sends(tmp_path, monkeypatch):
+    # a host stamping a fresh Last-Modified on unchanged bytes: the next
+    # check asks with the new one, and hears "unchanged" for free
+    zip_path = kept_zip(tmp_path, "1")
+    monkeypatch.setattr(freshness, "fetch", answering(
+        feed_bytes("1"), **{"Last-Modified": "Sun, 21 Sep 2026 03:00:00 GMT"}))
+    assert freshness.fetch_if_new(DATA, zip_path) is False
+    meta = json.loads((tmp_path / "src.zip.meta.json").read_text())
+    assert meta["last_modified"] == "Sun, 21 Sep 2026 03:00:00 GMT"
+    assert meta["sha256"] == freshness.file_digest(zip_path)[0]

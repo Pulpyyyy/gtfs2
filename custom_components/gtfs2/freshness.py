@@ -134,7 +134,9 @@ def fetch_if_new(data, zip_path, adopt=True):
     lie. Returns True when a new zip was swapped in, sidecar updated with
     it; False when the download matched what the zip already holds; None
     when the download failed or was not a zip. In the last two cases the
-    kept zip is untouched. The caller owns the rebuild: after a True, the
+    kept zip is untouched; on a match the sidecar takes the validators the
+    host now sends, so the next check asks with those and hears "unchanged"
+    without downloading again. The caller owns the rebuild: after a True, the
     fresh feed sits in the zip and a refresh from it picks it up without
     downloading again.
 
@@ -161,6 +163,7 @@ def fetch_if_new(data, zip_path, adopt=True):
             os.remove(staged)
         except OSError:
             pass
+        _record_validators(response, zip_path, meta)
         return False
     if not adopt:
         digest = file_digest(staged)[0]
@@ -171,6 +174,19 @@ def fetch_if_new(data, zip_path, adopt=True):
         return digest
     adopt_zip(response, staged, zip_path)
     return True
+
+
+def _record_validators(response, zip_path, meta):
+    """Keep the validators the host sent for the bytes the zip already holds."""
+    fresh = {"etag": response.headers.get("ETag"),
+             "last_modified": response.headers.get("Last-Modified")}
+    if all(meta.get(key) == value for key, value in fresh.items()):
+        return
+    try:
+        with open(source_meta_path(zip_path), "w", encoding="utf-8") as out:
+            json.dump({**meta, **fresh}, out, indent=1)
+    except OSError as ex:
+        _LOGGER.warning("Could not record the validators of %s: %s", zip_path, ex)
 
 
 def file_digest(path):

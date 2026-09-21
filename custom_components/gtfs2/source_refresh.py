@@ -223,6 +223,33 @@ def _record_installed(hass: HomeAssistant, file) -> None:
         _LOGGER.warning("Could not record the rebuild of %s: %s", file, ex)
 
 
+def _carry_validators(hass: HomeAssistant, file) -> None:
+    """The installed record follows the zip's validators, for the same bytes.
+
+    fetch_if_new gives the zip's sidecar the validators a host sends anew
+    for a feed whose bytes did not change. The database was built from
+    those very bytes, so its record takes them too: left behind, its label
+    would differ from the zip's and read as a rebuild pending.
+    """
+    path = _installed_meta_path(hass, file)
+    try:
+        with open(path, encoding="utf-8") as meta_file:
+            meta = json.load(meta_file)
+    except (OSError, ValueError):
+        # no record of its own: the database is read off the zip's sidecar
+        return
+    kept = source_meta(_zip_path(hass, file))
+    if (not isinstance(meta, dict) or not kept.get("sha256")
+            or meta.get("sha256") != kept["sha256"]):
+        return
+    meta.update({"etag": kept.get("etag"), "last_modified": kept.get("last_modified")})
+    try:
+        with open(path, "w", encoding="utf-8") as out:
+            json.dump(meta, out, indent=1)
+    except OSError as ex:
+        _LOGGER.warning("Could not record the validators of %s: %s", file, ex)
+
+
 def rebuild_pending(hass: HomeAssistant, file) -> bool:
     """True when the kept zip is a newer edition than the database.
 
@@ -394,15 +421,26 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     changed = probe["result"] == PROBE_CHANGED
     use_zip = False
-    if probe["result"] == PROBE_UNKNOWN:
-        # the host publishes no validators, only the download can answer;
-        # when it does turn out new and the source refreshes itself, the
-        # fetched feed is kept in the zip so nothing is downloaded twice. A
-        # source that only notifies keeps its zip: the database was built
-        # from it, and a line added before the install must come from it too
+    if probe["result"] in (PROBE_UNKNOWN, PROBE_CHANGED):
+        # the host publishes no validators, or new ones, and only the
+        # download can say the feed changed: some hosts stamp a fresh
+        # Last-Modified on every answer, and taken at their word they had
+        # the whole source rebuilt at every check. A failed download leaves
+        # the host's word standing. When the feed does turn out new and the
+        # source refreshes itself, it is kept in the zip so nothing is
+        # downloaded twice. A source that only notifies keeps its zip: the
+        # database was built from it, and a line added before the install
+        # must come from it too
         auto = mode == STATIC_REFRESH_AUTO
-        fetched = await hass.async_add_executor_job(
-            fetch_if_new, data, zip_path, auto)
+        # the download writes the source's zip.new, as a refresh does, and
+        # can last half an hour: under the source's lock, or a refresh
+        # started meanwhile writes the same file under it
+        lock = source_lock(hass, file)
+        if lock.locked():
+            return
+        async with lock:
+            fetched = await hass.async_add_executor_job(
+                fetch_if_new, data, zip_path, auto)
         if fetched is True:
             changed, use_zip = True, True
             state["result"] = PROBE_CHANGED
@@ -411,9 +449,15 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
         elif isinstance(fetched, str):
             changed = True
             state["result"] = PROBE_CHANGED
-            state["latest"] = version_label({"sha256": fetched})
+            if probe["result"] == PROBE_UNKNOWN:
+                # no validator to name it by: its hash does
+                state["latest"] = version_label({"sha256": fetched})
         elif fetched is False:
+            changed = False
             state["result"] = PROBE_UNCHANGED
+            await hass.async_add_executor_job(_carry_validators, hass, file)
+            state["latest"] = version_label(
+                await hass.async_add_executor_job(source_meta, zip_path))
     async_dispatcher_send(hass, SIGNAL_SOURCE_REFRESH.format(file))
     if not changed:
         return
