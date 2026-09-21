@@ -432,8 +432,9 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
         INNER JOIN valid_dates vd ON vd.service_id = trip.service_id
         WHERE datetime(
                 vd.date || ' ' || time(origin_stop_time.departure_time),
-                CASE WHEN date(origin_stop_time.departure_time) = '1970-01-02'
-                THEN '+1 day' ELSE '+0 day' END
+                -- the whole day offset, as in the SELECT: a call past 48:00
+                -- is two days on, not one
+                '+' || CAST(julianday(date(origin_stop_time.departure_time)) - julianday('1970-01-01') AS INTEGER) || ' days'
               ) >= datetime(:now)
           {window_where}
         ORDER BY vd.date, origin_stop_time.departure_time
@@ -2385,12 +2386,16 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
             INNER JOIN agency agency ON route.agency_id = agency.agency_id
             WHERE {_boards("st")}
           ),
+          -- from as many days back as the latest call around here asks for
+          -- (a call at 48:10 leaves two days after its service day), at
+          -- least yesterday, to tomorrow
           candidate_dates(date) AS (
-            SELECT date(:now_offset, '-1 day')
+            SELECT date(:now_offset, '-' || max(1, (
+                SELECT coalesce(max(CAST(julianday(date(departure_time_raw)) - julianday('1970-01-01') AS INTEGER)), 0)
+                FROM candidate_stops)) || ' days')
             UNION ALL
-            SELECT date(:now_offset)
-            UNION ALL
-            SELECT date(:now_offset, '+1 day')
+            SELECT date(date, '+1 day') FROM candidate_dates
+            WHERE date < date(:now_offset, '+1 day')
           ),
           valid_dates AS MATERIALIZED (
             SELECT cal.service_id, cd.date
@@ -2422,7 +2427,7 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
                cs.trip_id, cs.trip_headsign, cs.direction_id, cs.trip_short_name,
                datetime(
                  vd.date || ' ' || time(cs.departure_time_raw),
-                 CASE WHEN date(cs.departure_time_raw) = '1970-01-02' THEN '+1 day' ELSE '+0 day' END
+                 '+' || CAST(julianday(date(cs.departure_time_raw)) - julianday('1970-01-01') AS INTEGER) || ' days'
                ) AS departure_dt,
                cs.stop_sequence, cs.route_long_name, cs.route_short_name, cs.route_type,
                cs.route_id
@@ -2430,7 +2435,7 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
         INNER JOIN valid_dates vd ON vd.service_id = cs.service_id
         WHERE datetime(
                 vd.date || ' ' || time(cs.departure_time_raw),
-                CASE WHEN date(cs.departure_time_raw) = '1970-01-02' THEN '+1 day' ELSE '+0 day' END
+                '+' || CAST(julianday(date(cs.departure_time_raw)) - julianday('1970-01-01') AS INTEGER) || ' days'
               ) BETWEEN datetime(:now_offset, :timerange_history) AND datetime(:now_offset, :timerange)
         ORDER BY cs.stop_id, vd.date, cs.departure_time_raw;
     """  # noqa: S608        
