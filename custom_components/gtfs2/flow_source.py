@@ -209,7 +209,10 @@ class SourceScreens:
                         vol.Required(CONF_FILE, default=previous.get(CONF_FILE, "")): str,
                         # the three key fields only matter for the few sources that
                         # need one, so they live behind this toggle
-                        vol.Optional(CONF_NEEDS_API_KEY, default=False): selector.BooleanSelector(),
+                        vol.Optional(
+                            CONF_NEEDS_API_KEY,
+                            default=previous.get(CONF_NEEDS_API_KEY, bool(previous.get(CONF_API_KEY))),
+                        ): selector.BooleanSelector(),
                     },
                 ),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
@@ -218,8 +221,11 @@ class SourceScreens:
 
         if user_input is None:
             if self._pending_error:
+                # back from the key screen: what was typed is shown again,
+                # so the url or the name can be put right
                 errors["base"] = self._pending_error
                 self._pending_error = None
+                return _show(errors, self._user_inputs)
             return _show(errors)
         # the name becomes the source's file name: every path of the source
         # is built from it, so "../x" wrote outside the gtfs2 folder, and a
@@ -240,6 +246,9 @@ class SourceScreens:
         if user_input.pop(CONF_NEEDS_API_KEY, False):
             self._user_inputs.update(user_input)
             return await self.async_step_source_key()
+        # a key typed before the toggle was turned off goes with it
+        for key in (CONF_API_KEY, CONF_API_KEY_NAME):
+            self._user_inputs.pop(key, None)
         user_input[CONF_API_KEY_LOCATION] = DEFAULT_API_KEY_LOCATION
         # only the zip is fetched here: importing waits until the lines are
         # chosen, so a national feed no longer means unpacking the whole
@@ -299,7 +308,8 @@ class SourceScreens:
             )
 
         if user_input is None:
-            return _show(errors)
+            # a key typed on an earlier pass comes back as the mask
+            return _show(errors, self._user_inputs)
         user_input = _typed_key(user_input, self._user_inputs)
         self._user_inputs.update(user_input)
         check_data = await self.hass.async_add_executor_job(
@@ -308,8 +318,11 @@ class SourceScreens:
             if check_data == "extracting":
                 self._ensure_datasource_entry()
                 return await self.async_step_extracting()
-            errors["base"] = check_data
-            return _show(errors, user_input)
+            # a wrong url and a wrong key fail the same way, and only the
+            # url screen can put both right: the error is shown there, with
+            # what was typed, and the key waits behind its toggle
+            self._pending_error = check_data
+            return await self.async_step_source_url()
         _LOGGER.debug(f"UserInputs Source key: {self._user_inputs}")
         return await self.async_step_source_rt()
 
