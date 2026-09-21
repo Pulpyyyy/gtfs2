@@ -2,11 +2,11 @@
 
 One per datasource entry. Installed is what the database was last built
 from, latest is what the last check learned from the host; the gap between
-the two is "update available", and Install runs the swap refresh whatever
-the source's mode is, so the entity doubles as a clean manual refresh
-button even with the checks off. In notify mode this entity is the hook an
-automation triggers on, and installs from, in whatever window suits the
-install.
+the two is "update available", and Install runs the swap refresh. Home
+Assistant installs only a version that differs, so a refresh without one,
+checks off included, is the source's button (button.py). In notify mode
+this entity is the hook an automation triggers on, and installs from, in
+whatever window suits the install.
 """
 from __future__ import annotations
 
@@ -149,8 +149,8 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         mode = self._entry.options.get(CONF_STATIC_REFRESH_MODE,
                                        STATIC_REFRESH_OFF)
         if mode == STATIC_REFRESH_OFF:
-            # nothing checks, so nothing is claimed: the entity is a manual
-            # refresh button that never pretends to know the host
+            # nothing checks, so nothing is claimed: the entity never
+            # pretends to know the host, and the button refreshes
             return self._installed
         latest = probe_state(self.hass, self._file).get("latest")
         if latest:

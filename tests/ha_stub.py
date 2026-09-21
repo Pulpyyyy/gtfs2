@@ -289,6 +289,7 @@ class _EntityCategory:
 
 
 class _Platform:
+    BUTTON = "button"
     SENSOR = "sensor"
     BINARY_SENSOR = "binary_sensor"
     SWITCH = "switch"

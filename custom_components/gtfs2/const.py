@@ -47,7 +47,7 @@ STATIC_REFRESH_MODES = [STATIC_REFRESH_OFF, STATIC_REFRESH_NOTIFY, STATIC_REFRES
 PLATFORMS = [Platform.SENSOR]
 # the datasource entries also carry their realtime switch and the update
 # entity of their static feed
-DATASOURCE_PLATFORMS = [Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
+DATASOURCE_PLATFORMS = [Platform.BUTTON, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
 
 # constants used in helpers
 ATTR_API_KEY_LOCATIONS = ["not_applicable","header","query_string"]
