@@ -237,6 +237,8 @@
       }
     },
     "error": {
+      "invalid_source_name": "Solo letras, cifras, espacios, guiones y guiones bajos: el nombre pasa a ser el del archivo de la fuente.",
+      "invalid_source_url": "La dirección debe empezar por http:// o https://",
       "route_not_listed": "No es una de las líneas de esta fuente: elija una de la lista, escribir parte de su nombre la encuentra.",
       "no_destination": "Ninguna parada es alcanzable desde el origen seleccionado en esta dirección",
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",

@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 
 import voluptuous as vol
 
@@ -51,6 +52,10 @@ from .rt_source import async_ensure_datasource_entry, datasource_entry
 from .source_zip import ensure_source_zip
 
 _LOGGER = logging.getLogger(__name__)
+
+# what a source may be called: letters, digits, spaces, dashes, underscores.
+# No separator, no dot, nothing a file name on Linux or Windows refuses
+_SOURCE_NAME = re.compile(r"\w[\w\- ]*")
 
 
 def _source_rt_schema(opts):
@@ -193,6 +198,18 @@ class SourceScreens:
                 errors["base"] = self._pending_error
                 self._pending_error = None
             return _show(errors)
+        # the name becomes the source's file name: every path of the source
+        # is built from it, so "../x" wrote outside the gtfs2 folder, and a
+        # dot made the list of sources cut it short and invent another one
+        name = str(user_input.get(CONF_FILE) or "").strip()
+        url = str(user_input.get(CONF_URL) or "").strip()
+        if not _SOURCE_NAME.fullmatch(name):
+            errors[CONF_FILE] = "invalid_source_name"
+        if not url.startswith(("http://", "https://")):
+            errors[CONF_URL] = "invalid_source_url"
+        if errors:
+            return _show(errors, user_input)
+        user_input[CONF_FILE], user_input[CONF_URL] = name, url
         user_input[CONF_EXTRACT_FROM] = "url"
         if user_input.pop(CONF_NEEDS_API_KEY, False):
             self._user_inputs.update(user_input)

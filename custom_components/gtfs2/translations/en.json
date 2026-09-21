@@ -237,6 +237,8 @@
       }
     },
     "error": {
+      "invalid_source_name": "Letters, digits, spaces, dashes and underscores only: the name becomes the source's file name.",
+      "invalid_source_url": "The address must start with http:// or https://",
       "route_not_listed": "That is not one of the lines of this source: pick one in the list, typing part of its name finds it.",
       "no_destination": "No stop can be reached from the selected origin in this direction",
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",

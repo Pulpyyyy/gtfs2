@@ -237,6 +237,8 @@
       }
     },
     "error": {
+      "invalid_source_name": "Apenas letras, algarismos, espaços, hífenes e sublinhados: o nome passa a ser o do ficheiro da fonte.",
+      "invalid_source_url": "O endereço deve começar por http:// ou https://",
       "route_not_listed": "Não é uma das linhas desta fonte: escolha uma da lista, escrever parte do nome encontra-a.",
       "no_destination": "Nenhuma paragem é alcançável a partir da origem selecionada nesta direção",
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",

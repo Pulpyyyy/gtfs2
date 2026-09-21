@@ -237,6 +237,8 @@
       }
     },
     "error": {
+      "invalid_source_name": "Nur Buchstaben, Ziffern, Leerzeichen, Binde- und Unterstriche: der Name wird zum Dateinamen der Quelle.",
+      "invalid_source_url": "Die Adresse muss mit http:// oder https:// beginnen",
       "route_not_listed": "Das ist keine Linie dieser Quelle: Wählen Sie eine aus der Liste, ein Teil ihres Namens findet sie.",
       "no_destination": "Von der gewählten Starthaltestelle ist in dieser Richtung keine Haltestelle erreichbar",
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
