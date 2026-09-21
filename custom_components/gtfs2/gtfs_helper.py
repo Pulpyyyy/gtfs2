@@ -2559,64 +2559,109 @@ async def update_gtfs_local_stops(hass, data):
         reload = await hass.config_entries.async_reload(cf_entry)    
     return
     
+def _route_departures_between(data, first, last):
+    """Every departure of an entry over two service days, as UTC instants.
+
+    The window read the timetable export makes, rather than the sensor's
+    next ten: a busy line has more than ten departures left today, and
+    the ten the sensor lists all fell on today, so "tomorrow" came back
+    empty. Each row is laid in its network's zone before it becomes an
+    instant, and a trip reached from two quays of one stop is listed once.
+    """
+    rows, _origin = _fetch_departure_rows(
+        data["route_type"], data["origin"], data["destination"], data["schedule"],
+        window=(first, last), limit=5000, **departure_query_args(data))
+    instants, seen = [], set()
+    for row in rows:
+        key = (row.get("origin_depart_dt"), row.get("trip_id"))
+        if key in seen or not row.get("origin_depart_dt"):
+            continue
+        seen.add(key)
+        zone_name = row.get("agency_timezone") or row.get("origin_stop_timezone")
+        zone = (dt_util.get_time_zone(zone_name) if zone_name else None) or dt_util.DEFAULT_TIME_ZONE
+        try:
+            local = datetime.datetime.strptime(row["origin_depart_dt"], "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+        instants.append(dt_util.as_utc(local.replace(tzinfo=zone)))
+    return sorted(instants)
+
+
 async def get_route_departures(hass, data):
     _LOGGER.debug("Getting route departures with data: %s", data)
     config_entry = hass.config_entries.async_get_entry(data.get("config_entry",""))
+    empty = {"today": [], "tomorrow": []}
+    if config_entry is None:
+        # a service call naming an entry that is not there, or not gtfs2's
+        _LOGGER.error("No gtfs2 entry %s to read the departures of", data.get("config_entry"))
+        return empty
     cf_data = config_entry.data
     cf_options = config_entry.options
     _LOGGER.debug("config entry data: %s, options: %s", cf_data, cf_options)
-    
-    now = dt_util.now().replace(tzinfo=None)
+    if not (cf_data.get("origin") and cf_data.get("destination")):
+        # the entry picker offers every gtfs2 entry, a source or a local
+        # stops one among them: neither is a journey with two ends
+        _LOGGER.error("Entry %s is not a journey, it has no departures to list",
+                      data.get("config_entry"))
+        return empty
+
+    # the day and the cut-off are the rider's, in Home Assistant's zone
+    now = dt_util.now()
     now_date = now.strftime(dt_util.DATE_STR_FORMAT)
-    cutoff_today = datetime.datetime.strptime(now_date + ' ' + data.get('from_time','00:00:00'), "%Y-%m-%d %H:%M:%S")
-    tomorrow = now + datetime.timedelta(days=1)
-    tomorrow_date = tomorrow.strftime(dt_util.DATE_STR_FORMAT)
-    cutoff_tomorrow = datetime.datetime.strptime(tomorrow_date + ' ' + data.get('from_time','00:00:00'), "%Y-%m-%d %H:%M:%S")
+    tomorrow_date = (now + datetime.timedelta(days=1)).strftime(dt_util.DATE_STR_FORMAT)
+    from_time = data.get('from_time', '00:00:00')
+    cutoff_today = datetime.datetime.strptime(now_date + ' ' + from_time, "%Y-%m-%d %H:%M:%S")
+    cutoff_tomorrow = datetime.datetime.strptime(tomorrow_date + ' ' + from_time, "%Y-%m-%d %H:%M:%S")
     _LOGGER.debug("Cutoff today: %s, cutoff tomorrow: %s", cutoff_today, cutoff_tomorrow)
 
     _pygtfs = await hass.async_add_executor_job(
         get_gtfs, hass, DEFAULT_PATH, cf_data, False
     )
-    
+    if _pygtfs is None or isinstance(_pygtfs, str):
+        # a sentinel: no zip, no database, or a feed all in the future
+        _LOGGER.warning("Datasource %s has no usable schedule (%s), no departures",
+                        cf_data.get("file"), _pygtfs or "empty")
+        return empty
+
+    # what the sensor of this entry is asked with, line and ends included,
+    # so the service answers for the same journey
     _data = {
             "schedule": _pygtfs,
             "origin": cf_data["origin"],
             "destination": cf_data["destination"],
+            **{key: cf_data[key] for key in ("origin_stations", "destination_stations")
+               if cf_data.get(key)},
             "offset": cf_options["offset"] if "offset" in cf_options else 0,
             "gtfs_dir": DEFAULT_PATH,
             "name": cf_data["name"],
             "file": cf_data["file"],
             "route_type": cf_data["route_type"],
             "route": cf_data["route"],
-            "extracting": False,
-            "next_departure": {},
-            "next_departure_realtime_attr": {},
-            "alert": {}
+            "loop_direction": cf_data.get("loop_direction"),
+            "line": cf_data.get("line"),
         }
-        
-    departures = await hass.async_add_executor_job(
-                    get_next_departure, hass, _data
-                ) 
-                
-    _LOGGER.debug("Departures received: %s", departures["next_departures"])
+    try:
+        instants = await hass.async_add_executor_job(
+            _route_departures_between, _data, now_date, tomorrow_date)
+    finally:
+        # released whatever happens: this schedule was opened for the call
+        try:
+            _pygtfs.engine.dispose()
+        except Exception:  # pylint: disable=broad-except
+            pass
 
     today_departures = []
     tomorrow_departures = []
-    for dt_string in departures["next_departures"]:
-        dt = datetime.datetime.fromisoformat(dt_string).replace(tzinfo=None)
-        dt_date = dt.strftime(dt_util.DATE_STR_FORMAT)
-        if dt_date == now_date and cutoff_today < dt:
-            today_departures.append(dt_string)
-        if dt_date == tomorrow_date and cutoff_tomorrow < dt:
-            tomorrow_departures.append(dt_string)
-     
-    _departures = {
-        "today": today_departures if len(today_departures) > 0 else [],
-        "tomorrow": tomorrow_departures if len(tomorrow_departures) > 0 else []
-    } 
-     
-    _LOGGER.debug("Departures returned: %s", _departures)   
-    _pygtfs.engine.dispose()
+    for instant in instants:
+        local = dt_util.as_local(instant).replace(tzinfo=None)
+        day = local.strftime(dt_util.DATE_STR_FORMAT)
+        if day == now_date and cutoff_today < local:
+            today_departures.append(instant.isoformat())
+        elif day == tomorrow_date and cutoff_tomorrow < local:
+            tomorrow_departures.append(instant.isoformat())
+
+    _departures = {"today": today_departures, "tomorrow": tomorrow_departures}
+    _LOGGER.debug("Departures returned: %s", _departures)
     return _departures
     
 async def get_trip_stops(hass, data):
