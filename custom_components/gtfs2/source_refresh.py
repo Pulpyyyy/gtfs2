@@ -37,7 +37,7 @@ import homeassistant.util.dt as dt_util
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.event import async_track_time_change
+from homeassistant.helpers.event import async_call_later, async_track_time_change
 
 from .const import (
     DOMAIN,
@@ -55,9 +55,11 @@ from .const import (
 )
 from .freshness import (
     PROBE_CHANGED,
+    PROBE_ERROR,
     PROBE_UNCHANGED,
     PROBE_UNKNOWN,
     fetch_if_new,
+    note_checked,
     probe_source,
 )
 from .source_zip import refresh_datasource
@@ -100,6 +102,24 @@ def probe_state(hass: HomeAssistant, file) -> dict:
     means unknown-latest until the first check."""
     states = _store(hass).setdefault("source_probe_state", {})
     return states.setdefault(file, {})
+
+
+# how long after the check is armed, at start or on an options change, a
+# source whose last look is overdue is looked at: past the start-up rush
+CATCH_UP_DELAY = 10 * 60
+
+
+def last_look(hass: HomeAssistant, file):
+    """When the host was last asked about this source, or None.
+
+    What this run learned first, then what the sidecar recorded, which
+    survives a restart, then the download itself. Reads a file: for the
+    executor.
+    """
+    meta = source_meta(_zip_path(hass, file))
+    last = (probe_state(hass, file).get("checked_at") or meta.get("checked_at")
+            or meta.get("downloaded_at"))
+    return dt_util.parse_datetime(last) if last else None
 
 
 def default_check_time(file) -> tuple[int, int, int]:
@@ -402,13 +422,13 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
         # says which nights count. The 12 hour slack keeps a cadence from
         # drifting past its own slot, and a lost record just means one
         # extra conditional request, not a download
-        last = probe_state(hass, file).get("checked_at") or (
-            await hass.async_add_executor_job(source_meta, zip_path)
-        ).get("downloaded_at")
-        last_dt = dt_util.parse_datetime(last) if last else None
+        last_dt = await hass.async_add_executor_job(last_look, hass, file)
         if last_dt and dt_util.utcnow() - last_dt < timedelta(hours=interval - 12):
             return
     probe = await hass.async_add_executor_job(probe_source, data, zip_path)
+    if probe["result"] != PROBE_ERROR:
+        # a look that got an answer, kept past a restart for the catch-up
+        await hass.async_add_executor_job(note_checked, zip_path)
     state = probe_state(hass, file)
     state["checked_at"] = dt_util.utcnow().isoformat()
     state["result"] = probe["result"]
@@ -506,8 +526,25 @@ def async_arm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
     async def _tick(now):
         await async_check_source(hass, entry)
 
-    unsubs[entry.entry_id] = async_track_time_change(
+    async def _catch_up(now):
+        # the night slot passed while Home Assistant was down, or the
+        # source was just switched on: look now rather than a day late
+        last = await hass.async_add_executor_job(
+            last_look, hass, entry.data.get(CONF_FILE))
+        if last is None or dt_util.utcnow() - last > timedelta(hours=interval + 1):
+            _LOGGER.info("Source %s missed its scheduled check, checking it now",
+                         entry.data.get(CONF_FILE))
+            await async_check_source(hass, entry)
+
+    cancel_tick = async_track_time_change(
         hass, _tick, hour=hours, minute=minute, second=second)
+    cancel_catch_up = async_call_later(hass, CATCH_UP_DELAY, _catch_up)
+
+    def _cancel():
+        cancel_tick()
+        cancel_catch_up()
+
+    unsubs[entry.entry_id] = _cancel
     _LOGGER.debug(
         "Source %s checks for new versions every %d h, at minute %02d:%02d "
         "of hours %s (%s)",

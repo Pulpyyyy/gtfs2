@@ -354,6 +354,7 @@ def install() -> None:
     _module("homeassistant.helpers.dispatcher",
             async_dispatcher_send=_Unreached("async_dispatcher_send"))
     _module("homeassistant.helpers.event",
+            async_call_later=_Unreached("async_call_later"),
             async_track_time_change=_Unreached("async_track_time_change"))
     _module("homeassistant.components")
     _module("homeassistant.components.sensor",

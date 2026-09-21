@@ -189,6 +189,25 @@ def _record_validators(response, zip_path, meta):
         _LOGGER.warning("Could not record the validators of %s: %s", zip_path, ex)
 
 
+def note_checked(zip_path):
+    """Record in the sidecar that the host was asked about this zip, now.
+
+    The last look lived in memory only, so after a restart nothing said
+    whether the night's check had run: a Home Assistant stopped at that
+    hour skipped it without a trace. Only written into a sidecar that
+    already describes the zip: one holding nothing else would read as a
+    zip of unknown edition.
+    """
+    meta = source_meta(zip_path)
+    if not meta:
+        return
+    try:
+        with open(source_meta_path(zip_path), "w", encoding="utf-8") as out:
+            json.dump({**meta, "checked_at": dt_util.utcnow().isoformat()}, out, indent=1)
+    except OSError as ex:
+        _LOGGER.warning("Could not record the check of %s: %s", zip_path, ex)
+
+
 def file_digest(path):
     """The sha256 and the size of a file, read a chunk at a time."""
     digest = hashlib.sha256()
