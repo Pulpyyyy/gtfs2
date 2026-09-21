@@ -492,6 +492,13 @@ class SourceScreens:
                 },
             )
 
+        # the wait may have ended on an error rather than on a finished
+        # extraction: read it, or asyncio drops it with a "never retrieved"
+        # and the screen after this one is the first to know
+        failed = None if self._extract_job.cancelled() else self._extract_job.exception()
+        if failed is not None:
+            _LOGGER.error("Waiting for %s to be unpacked failed: %s",
+                          self._user_inputs.get(CONF_FILE, ""), failed)
         self._extract_job = None
         self._extract_task = None
         return self.async_show_progress_done(
