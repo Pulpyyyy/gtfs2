@@ -312,12 +312,23 @@ def _read_stop_ends(zip_path, route_ids):
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not read the stops of %s: %s", zip_path, ex)
         return {}
-    longest = {}
+    most = {}
     for trip, route_id in trips.items():
-        if calls[trip] and calls[trip] > calls[longest.get(route_id, "")]:
-            longest[route_id] = trip
-    return {route_id: f"{names.get(first[trip][1])} > {names.get(last[trip][1])}"
-            for route_id, trip in longest.items()}
+        most[route_id] = max(most.get(route_id, 0), calls[trip])
+    ends = {}
+    for trip, route_id in trips.items():
+        if not calls[trip] or calls[trip] < most[route_id]:
+            continue
+        a, b = names.get(first[trip][1]), names.get(last[trip][1])
+        # a loop ends where it starts, and a stop with no name says nothing:
+        # "A > A" and "None > B" told two look-alikes apart by nothing
+        if not a or not b or a == b:
+            continue
+        # among the longest, the one whose ends come first by name, in the
+        # order it rides them, as _route_endpoints chooses
+        if route_id not in ends or (a, b) < ends[route_id]:
+            ends[route_id] = (a, b)
+    return {route_id: f"{a} > {b}" for route_id, (a, b) in ends.items()}
 
 
 # the ends read from stop_times.txt, per zip edition: {(path, size, mtime): ends}
@@ -380,21 +391,27 @@ def _route_endpoints(schedule, route_ids):
         return {}
     route_ids = sorted(route_ids)
     placeholders = ", ".join(f":e{i}" for i in range(len(route_ids)))
-    # sqlite hands back the trip_id of the row that holds the max
+    # the longest trips of each line, direction 0 first: every one of them,
+    # for the choice between them is made on their stops below. Left to
+    # max(n), SQLite picked whichever tied trip it met first, and the label
+    # turned round, A > B, then B > A, after a rebuild
     sql = f"""
     with calls as (
-        select t.route_id, t.trip_id, count(*) as n
+        select t.route_id, t.trip_id, coalesce(t.direction_id, 0) as d, count(*) as n
         from trips t inner join stop_times st on st.trip_id = t.trip_id
         where t.route_id in ({placeholders}) group by t.trip_id
     ), picked as (
-        select route_id, trip_id, max(n) from calls group by route_id
+        select route_id, trip_id from (
+            select route_id, trip_id,
+                   rank() over (partition by route_id order by n desc, d) as r
+            from calls
+        ) where r = 1
     )
-    select p.route_id, st.stop_sequence, s.stop_name
+    select p.route_id, p.trip_id, st.stop_sequence, s.stop_name
     from picked p
     inner join stop_times st on st.trip_id = p.trip_id
     inner join stops s on s.stop_id = st.stop_id
     """  # noqa: S608
-    ends = {}
     try:
         with schedule.engine.connect() as conn:
             rows = conn.execute(
@@ -404,18 +421,29 @@ def _route_endpoints(schedule, route_ids):
         # did before: ugly, but never empty
         _LOGGER.warning("Could not read the ends of %s routes: %s", len(route_ids), ex)
         return {}
-    for route_id, sequence, name in rows:
+    trips = {}
+    for route_id, trip_id, sequence, name in rows:
         if not name:
             continue
-        first, last = ends.get(route_id, (None, None))
+        first, last = trips.get((route_id, trip_id), (None, None))
         if first is None or sequence < first[0]:
             first = (sequence, name)
         if last is None or sequence > last[0]:
             last = (sequence, name)
-        ends[route_id] = (first, last)
-    return {route_id: f"{first[1]} > {last[1]}"
-            for route_id, (first, last) in ends.items()
-            if first and last and first[1] != last[1]}
+        trips[(route_id, trip_id)] = (first, last)
+    # among the tied trips, the one whose ends come first by name: chosen by
+    # the timetable, not by the trip ids, which some feeds change at every
+    # export (the SNCF dates them). The ends stay in the order the trip
+    # rides them: a feed publishing each way as a line of its own (Renfe's
+    # Alvia) tells the two apart by that order alone
+    ends = {}
+    for (route_id, _trip), (first, last) in trips.items():
+        if not first or not last or first[1] == last[1]:
+            continue
+        pair = (first[1], last[1])
+        if route_id not in ends or pair < ends[route_id]:
+            ends[route_id] = pair
+    return {route_id: f"{a} > {b}" for route_id, (a, b) in ends.items()}
 
 
 def _route_label(short, long_name, endpoints=None, route_id=None):
