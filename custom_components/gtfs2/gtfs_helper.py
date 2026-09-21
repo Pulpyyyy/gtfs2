@@ -4,32 +4,23 @@ from __future__ import annotations
 import datetime
 import sqlite3
 import re
-import time
 import logging
 import statistics
 import os
 import shutil
-import glob
-import json
 import pygtfs
 from sqlalchemy.sql import text
 import multiprocessing
-from multiprocessing import Process
 from . import zip_file as zipfile
-from pathlib import Path
 
 
 import homeassistant.util.dt as dt_util
-from homeassistant.core import HomeAssistant
-from homeassistant import config_entries
-from homeassistant.const import CONF_NAME
 from homeassistant.helpers import entity_registry as er
 
 from .direction_repair import repair_trip_directions
 from .const import (
-    DEFAULT_PATH_GEOJSON,
     CONF_API_KEY,
-    CONF_API_KEY_LOCATION,
+CONF_API_KEY_LOCATION,
     CONF_API_KEY_NAME,
     CONF_ACCEPT_HEADER_PB,
     DEFAULT_LOCAL_STOP_TIMERANGE, 
@@ -487,42 +478,24 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
         LIMIT {int(limit)};
     """  # noqa: S608
 
-    # Create lookup timetable taking into
-    # account any departures from yesterday scheduled after midnight,
-    # as long as all departures are within the calendar date range.
     query_params = {
-        "route_type_where": route_type_where,
-        "start_station_where": start_station_where,
-        "end_station_where": end_station_where,
         "origin_station_id": start_station_id,
-        "end_station_id": end_station_id
+        "end_station_id": end_station_id,
+        "direction": int(direction) if str(direction) in ("0", "1") else None,
+        "route": route,
+        "line": line,
+        "route_type": route_type,
+        "window_first": window[0] if window else None,
+        "window_last": window[1] if window else None,
+        # this moment on the network's clock, see _feed_now
+        "now": _feed_now(schedule, route),
+        **name_params,
     }
-
-    log_params = {
-        **query_params,
-    }
-
     _LOGGER.debug("SQL statement:\n%s", sql_query)
-    _LOGGER.debug("SQL parameters:\n%s", log_params)      
-                        
+    _LOGGER.debug("SQL parameters:\n%s", query_params)
+
     with schedule.engine.connect() as conn:
-        result = conn.execute(
-            text(sql_query),
-            {
-                "origin_station_id": start_station_id,
-                "end_station_id": end_station_id,
-                "direction": int(direction) if str(direction) in ("0", "1") else None,
-                "route": route,
-                "line": line,
-                "route_type": route_type,
-                "window_first": window[0] if window else None,
-                "window_last": window[1] if window else None,
-                # this moment on the network's clock, see _feed_now
-                "now": _feed_now(schedule, route),
-                **name_params,
-            },
-        )
-        rows = result.fetchall()
+        rows = conn.execute(text(sql_query), query_params).fetchall()
 
     return [row_cursor._asdict() for row_cursor in rows], start_station_id
 
@@ -630,11 +603,8 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
                 break
     _LOGGER.debug("Timetable Remaining Departures on this Start/Stop: %s", timetable_remaining)
     if item == {}:
-        # No departure to show. Keep returning an empty dict: callers test this
-        # value for truth and then read the fields of a real departure, so a
-        # non-empty "there is nothing" would be read as a departure and crash.
-        # The date of the next service is published separately, by the
-        # coordinator, through get_next_service_date.
+        # every departure found is already gone: the same empty dict as
+        # when none was found, for the same callers
         _LOGGER.info("No items found in gtfs")
         return {}
 
@@ -752,9 +722,6 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
         "next_departures_origin_stop_id": timetable_upcoming_origin_stops,
         "next_departures_route_types": timetable_upcoming_route_types,
     }
-
-    return data_returned
-
 
     return data_returned
 
@@ -942,7 +909,7 @@ def get_gtfs(hass, path, data, update=False):
 def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file):
     _LOGGER.debug("Extracting gtfs file: %s", file)
     # first remove shapes from zip to avoid possibly very large db 
-    clean = remove_from_zip(remove_file,gtfs_dir, file[:-4])
+    remove_from_zip(remove_file,gtfs_dir, file[:-4])
     if os.fork() != 0:
         return
     pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file))
@@ -1058,7 +1025,6 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
         params.update({f"pr{i}": r for i, r in enumerate(sorted(pruned))})
         rows = conn.execute(text(sql_routes), params).fetchall()
     for row_cursor in rows:
-        row = row_cursor._asdict()
         routes_list.append(list(row_cursor))
     # the lines whose long name says nothing get the two ends of the route
     # instead, read in one go rather than one query per line
@@ -2008,18 +1974,6 @@ def has_trip_between(schedule, route_id, origin_id, destination_id, direction=No
     return bool(row)
 
 
-# The trips of one direction ride a handful of distinct stop patterns, a
-# few thousand times each over the feed's calendar (TAO tram A: 4214 trips,
-# 27 stops). The walk only needs each pattern once, so one trip stands for
-# every trip that rides the same stops in the same order: the lowest
-# trip_id of the pattern, which is also the trip _ride_of would have walked
-# first among them, so the result is the one reading every trip gives.
-# The signature is concatenated in scan order on purpose: sorting it
-# first costs more than reading every trip did (TAO A: 4.2 s against 2.8
-# for the six lines, 1.2 s this way). Should the order ever vary between
-# two trips of one pattern, that pattern is read twice, never lost.
-
-
 def get_agency_list(schedule, data):
     _LOGGER.debug("Getting agencies with data: %s", data)
     sql_agencies = f"""
@@ -2032,7 +1986,6 @@ def get_agency_list(schedule, data):
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql_agencies), {"q": "q"}).fetchall()
     for row_cursor in rows:
-        row = row_cursor._asdict()
         agencies_list.append(list(row_cursor))
     for x in agencies_list:
         val = str(x[0]) + ": " + str(x[1])
@@ -2450,10 +2403,10 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
     }
 
     _LOGGER.debug("SQL statement:\n%s", sql_query)
-    _LOGGER.debug("SQL parameters:\n%s", query_params)        
+    _LOGGER.debug("SQL parameters:\n%s", query_params)
 
     with schedule.engine.connect() as conn:
-        rows = conn.execute(text(sql_query), {"latitude": latitude, "longitude": longitude, "timerange": time_range, "timerange_history": time_range_history, "radius": radius, "now_offset": now}).fetchall()
+        rows = conn.execute(text(sql_query), query_params).fetchall()
 
     data_returned = [row_cursor._asdict() for row_cursor in rows]
     _LOGGER.debug("Local stop rows returned: %s", data_returned)
@@ -2588,8 +2541,7 @@ def get_local_stops_next_departures(self):
         return []
     offset = self._data["offset"]
     now = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset)
-    now_date = now.strftime(dt_util.DATE_STR_FORMAT)
-    latitude, longitude = _tracker_position(self.hass, self._data['device_tracker_id'])
+    latitude, longitude= _tracker_position(self.hass, self._data['device_tracker_id'])
     time_range= str('+' + str(self._data.get("timerange", DEFAULT_LOCAL_STOP_TIMERANGE)) + ' minute')
     time_range_history = str('-' + str(self._data.get("timerange_history", DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY)) + ' minute')
     radius = self._data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
@@ -2611,7 +2563,7 @@ async def update_gtfs_local_stops(hass, data):
             entries.append(entry.entry_id)
     for cf_entry in entries:
         _LOGGER.debug("Reloading local stops for config_entry_id: %s", cf_entry) 
-        reload = await hass.config_entries.async_reload(cf_entry)    
+        await hass.config_entries.async_reload(cf_entry)
     return
     
 def _route_departures_between(data, first, last):
