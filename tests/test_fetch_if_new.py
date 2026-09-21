@@ -28,11 +28,14 @@ TABLES = {
 
 
 def feed_bytes(edition):
+    """The same edition gives the same bytes: every member carries one fixed
+    date, where writestr stamps the current time and two calls a second
+    apart made two different files."""
     buffer = io.BytesIO()
+    members = {**TABLES, "feed_info.txt": f"feed_publisher_name,feed_version\nX,{edition}\n"}
     with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in TABLES.items():
-            zout.writestr(name, body)
-        zout.writestr("feed_info.txt", f"feed_publisher_name,feed_version\nX,{edition}\n")
+        for name, body in members.items():
+            zout.writestr(zipfile.ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0)), body)
     return buffer.getvalue()
 
 
