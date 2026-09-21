@@ -31,6 +31,7 @@ from .const import (
     DEFAULT_API_KEY_NAME,
 )
 from .key_mask import hide_keys
+from .rt_source import with_query_key
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,8 +46,7 @@ def _request_parts(data):
     url = data["url"]
     headers = {"User-Agent": "home-assistant-gtfs2"}
     key = data.get(CONF_API_KEY)
-    if key and data.get(CONF_API_KEY_LOCATION) == "query_string":
-        url = url + "?" + (data.get(CONF_API_KEY_NAME) or DEFAULT_API_KEY_NAME) + "=" + key
+    url = with_query_key(url, data)
     if key and data.get(CONF_API_KEY_LOCATION) == "header":
         headers[data.get(CONF_API_KEY_NAME) or DEFAULT_API_KEY_NAME] = key
     return url, headers

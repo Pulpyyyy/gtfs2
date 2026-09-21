@@ -16,6 +16,7 @@ realtime exactly as it was.
 from __future__ import annotations
 
 import logging
+from urllib.parse import quote
 
 import homeassistant.util.dt as dt_util
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
@@ -129,12 +130,18 @@ def with_query_key(url, cfg):
     None-safe on purpose: the code this replaces concatenated onto every feed
     url whether it was set or not, which is a TypeError as soon as a source
     keeps its key in the query string and has no vehicle or alerts feed.
+
+    The one place a key joins a url, static feeds included. Joined with "&"
+    onto a url that already asks something, where a second "?" made the
+    key part of the previous value, and percent-encoded, where a key with
+    a "+" or a "&" reached the host as something else.
     """
     if not url:
         return None
     if cfg.get(CONF_API_KEY_LOCATION) == "query_string" and cfg.get(CONF_API_KEY):
-        return (url + "?" + cfg.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME)
-                + "=" + cfg[CONF_API_KEY])
+        name = cfg.get(CONF_API_KEY_NAME) or DEFAULT_API_KEY_NAME
+        return (url + ("&" if "?" in url else "?")
+                + quote(name, safe="") + "=" + quote(cfg[CONF_API_KEY], safe=""))
     return url
 
 

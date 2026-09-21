@@ -22,6 +22,7 @@ from .const import CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME
 from .direction_repair import repair_trip_directions
 from .freshness import adopt_zip, stage_zip
 from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in, swap_in
+from .rt_source import with_query_key
 from .gtfs_filter import filter_gtfs_zip, read_zip_routes, zip_only_future_dates
 from .gtfs_helper import check_extracting, get_gtfs, remove_from_zip
 from .notifications import async_notify_lines_missing
@@ -105,8 +106,7 @@ def _source_request(data):
     url = data["url"]
     headers = {"User-Agent": "home-assistant-gtfs2"}
     key = data.get(CONF_API_KEY)
-    if key and data.get(CONF_API_KEY_LOCATION) == "query_string":
-        url = url + "?" + (data.get(CONF_API_KEY_NAME) or "api_key") + "=" + key
+    url = with_query_key(url, data)
     if key and data.get(CONF_API_KEY_LOCATION) == "header":
         headers[(data.get(CONF_API_KEY_NAME) or "api_key")] = key
     return url, headers

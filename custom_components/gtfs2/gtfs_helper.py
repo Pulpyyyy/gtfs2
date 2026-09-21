@@ -46,6 +46,7 @@ from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, safe_file_
 from .route_names import get_routes_in_zip, _adds_to, _look_alikes, _set_apart, _set_apart_by_ends, look_alike_ends, route_ends, _route_label, _natural
 from .freshness import stage_zip, adopt_zip
 from .gtfs_filter import zip_only_future_dates
+from .rt_source import with_query_key
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -803,9 +804,7 @@ def get_gtfs(hass, path, data, update=False):
     os.makedirs(gtfs_dir, exist_ok=True)
     filename = data["file"]
     url = data["url"]
-    if data.get(CONF_API_KEY_LOCATION, None) == "query_string":
-      if data.get(CONF_API_KEY, None):
-        url = url + "?" + data.get(CONF_API_KEY_NAME, "api_key") + "=" + data[CONF_API_KEY]
+    url = with_query_key(url, data)
     if data.get(CONF_API_KEY_LOCATION, None) == "header":
       if data.get(CONF_API_KEY, None):
         _headers = {data.get(CONF_API_KEY_NAME, "api_key"): data[CONF_API_KEY]}

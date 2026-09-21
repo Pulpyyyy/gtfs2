@@ -66,6 +66,7 @@ from .const import (
     TIME_STR_FORMAT
 )
 from .alerts import journey_alerts
+from .rt_source import with_query_key
 
 _UNSAFE_FILE_PART = re.compile(r"[^a-z0-9._-]+")
 
@@ -852,9 +853,7 @@ def get_gtfs_rt(hass, path, data):
     os.makedirs(gtfs_dir, exist_ok=True)
     url = data["url"]
     file = data["file"] + ".rt"
-    if data.get(CONF_API_KEY_LOCATION, None) == "query_string":
-      if data.get(CONF_API_KEY, None):
-        url = url + "?" + data.get(CONF_API_KEY_NAME, "api_key") + "=" + data[CONF_API_KEY]
+    url = with_query_key(url, data)
     # NOTE: Accept asks the server for a response format and the api key
     # authenticates, so they are unrelated, yet the header is only sent when
     # the key travels in a header. A feed that needs the header and takes its
