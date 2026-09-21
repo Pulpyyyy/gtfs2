@@ -703,6 +703,15 @@ def intern_gtfs_datasource(gtfs_dir, filename, dry_run=False):
         carried = [c for c in columns if c not in ("trip_id", "stop_id", "stop_sequence")]
         carried_ddl = ", ".join(f"{c} {_column_type(cur, 'stop_times', c)}" for c in carried)
 
+        # one transaction for the whole change: sqlite3 opens none before a
+        # create table, so the first one was committed on its own, and a run
+        # stopped half way left it behind for every later run to trip on.
+        # Tables left by such a run, on a stop_times still a table, are
+        # debris and go
+        conn.isolation_level = None
+        cur.execute("begin")
+        for debris in ("gtfs2_trip_key", "gtfs2_stop_key", "gtfs2_stop_times"):
+            cur.execute(f"drop table if exists {debris}")
         cur.execute("create table gtfs2_trip_key (tk integer primary key, "
                     "trip_id varchar not null unique)")
         cur.execute("insert into gtfs2_trip_key(trip_id) select distinct trip_id from stop_times")
@@ -728,13 +737,13 @@ def intern_gtfs_datasource(gtfs_dir, filename, dry_run=False):
                     f"from gtfs2_stop_times st "
                     f"join gtfs2_trip_key k on k.tk = st.tk "
                     f"join gtfs2_stop_key s on s.sk = st.sk")
-        conn.commit()
-        conn.isolation_level = None
+        cur.execute("commit")
         cur.execute("drop table if exists sqlite_stat1")
         cur.execute("vacuum")
     except sqlite3.Error as ex:
         _LOGGER.error("Failed to intern datasource %s: %s", filename, ex)
-        conn.rollback()
+        if conn.in_transaction:
+            cur.execute("rollback")
         return None
     finally:
         conn.close()
