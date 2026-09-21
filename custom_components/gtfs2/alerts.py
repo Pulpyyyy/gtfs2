@@ -11,6 +11,7 @@ and _journey_stops), which of the texts to show and in which language
 from __future__ import annotations
 
 import logging
+import os
 
 import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text as sql_text
@@ -166,6 +167,43 @@ def _same_trip(named, trip_id):
     return trip_id[len(named)].isdigit()
 
 
+# what each source's database was when its stops were last read: the two
+# caches above hold what a stop is called and which station it hangs from,
+# and a rebuild can rename a stop, move it under another station or drop it
+_EDITIONS: dict[str, str] = {}
+
+
+def _edition_of(schedule):
+    """The source's database as far as a cache cares: size and last write."""
+    try:
+        path = schedule.engine.url.database
+        stat = os.stat(path)
+    except (AttributeError, OSError, TypeError):
+        return "unknown"
+    return f"{int(stat.st_mtime)}:{stat.st_size}"
+
+
+def forget_stale_stops(data):
+    """Drop what was read from an older edition of this source's database.
+
+    The stop caches are keyed by the source's file name, which a rebuild
+    keeps: a stop renamed, moved under another station or gone would have
+    been named the old way until Home Assistant restarted.
+    """
+    data = data or {}
+    file = data.get("file")
+    if not file:
+        return
+    edition = _edition_of(data.get("schedule"))
+    if _EDITIONS.get(file) == edition:
+        return
+    _EDITIONS[file] = edition
+    for cache in (_STOP_ALIASES, _STOP_NAMES):
+        for key in [k for k in cache if k[0] == file]:
+            del cache[key]
+    _LOGGER.debug("Stops of %s read afresh, its database has changed", file)
+
+
 def _stop_aliases(data, stop_id):
     """The ids a stop can be named by: its own, and the station above it.
 
@@ -240,7 +278,13 @@ def _stop_names(data, stop_ids):
                 # the alert is still worth its sentence without the name
                 _LOGGER.debug("Could not read the name of stop %s: %s", stop_id, ex)
                 continue
-            _STOP_NAMES[key] = str(row[0]).strip() if row and row[0] else ""
+            if not (row and row[0]):
+                # a stop this source does not carry: an alert may name the
+                # whole network's stops and only some are in a filtered
+                # database. Not remembered, since the next edition may
+                # bring it in
+                continue
+            _STOP_NAMES[key] = str(row[0]).strip()
         name = _STOP_NAMES[key]
         if name and name not in names:
             names.append(name)
@@ -390,6 +434,7 @@ def journey_alerts(coordinator, feed_entities):
         _LOGGER.debug("No proper RT feed entities for alerts")
         return rt_alerts
     data = getattr(coordinator, "_data", None) or {}
+    forget_stale_stops(data)
     route_id = coordinator._route_id
     trip_id = getattr(coordinator, "_trip_id", None)
     origin_ids = _stop_aliases(data, coordinator._stop_id)
