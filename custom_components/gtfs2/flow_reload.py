@@ -178,7 +178,12 @@ class ReloadScreens:
             # abandoned. A background task outlives the flow and reports the
             # outcome, which is what the screen promises.
             async def _watch():
-                added = await self._import_job
+                try:
+                    added = await self._import_job
+                except Exception:  # pylint: disable=broad-except
+                    # said by the step when it reads the job; the rider who
+                    # closed the window hears it here, as a failed import
+                    added = None
                 await async_notify_import(self.hass, filename, routes, added)
 
             async def _import():
@@ -219,7 +224,13 @@ class ReloadScreens:
                 },
             )
 
-        added = self._import_job.result()
+        try:
+            added = self._import_job.result()
+        except Exception as ex:  # pylint: disable=broad-except
+            # an import that raised, rather than one that returned nothing:
+            # read bare, it took the step down with an unknown error
+            _LOGGER.error("Import into %s failed: %s", filename, ex)
+            added = None
         self._import_job = None
         self._import_task = None
         if not added:
