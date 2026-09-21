@@ -15,7 +15,7 @@ import logging
 
 from sqlalchemy.sql import text
 
-from .gtfs_helper import COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, _alights, _boards, station_names_in
+from .gtfs_helper import COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards, station_names_in
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def has_train_trip_between(schedule, origin_name, destination_name, line=None):
     inner join stops so on so.stop_id = o.stop_id
     inner join stop_times d on d.trip_id = t.trip_id
     inner join stops sd on sd.stop_id = d.stop_id
-    where r.route_type in (2,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117)
+    where r.route_type in ({RAIL_ROUTE_TYPES_SQL})
       and so.stop_name in {origin_in}
       and sd.stop_name in {dest_in}
       and o.stop_sequence < d.stop_sequence

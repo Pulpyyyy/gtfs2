@@ -67,6 +67,8 @@ COACH_STOP_PREFIX = "StopPoint:OCECar "
 # GTFS extended route type: Rail Replacement Bus Service
 RAIL_REPLACEMENT_BUS = 714
 RAIL_ROUTE_TYPES = (2, *range(100, 118))
+# the same, as the queries write it
+RAIL_ROUTE_TYPES_SQL = ",".join(str(t) for t in RAIL_ROUTE_TYPES)
 
 
 def departure_route_type(route_type, origin_stop_id):
@@ -154,8 +156,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
         # held to rail, as the departures are: two stations of one name can
         # also be served by a bus the train sensor never lists
         line_join = "inner join routes r on r.route_id = t.route_id"
-        line_where = ("and r.route_type in (2,100,101,102,103,104,105,106,107,"
-                      "108,109,110,111,112,113,114,115,116,117)")
+        line_where = f"and r.route_type in ({RAIL_ROUTE_TYPES_SQL})"
         if line:
             # without it, a day the line rests but another one serves the
             # same stations (P8 beside K8+) read as a day it runs
@@ -284,7 +285,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
     safeguard rather than the list's length. Without a window the query is
     the sensor's, unchanged."""
     if route_type == "2":
-        route_type_where = f"route.route_type in (2,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117)"
+        route_type_where = f"route.route_type in ({RAIL_ROUTE_TYPES_SQL})"
         # The station is matched on the exact name the flow offered. A prefix
         # match also boarded the rider at any station whose name extends the
         # asked one (Champagnole, Champagnole Paul-Emile Victor), whichever
