@@ -659,17 +659,24 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         return None
         
     async def _check_config(self, data):
+        schedule = await self.hass.async_add_executor_job(
+            get_gtfs, self.hass, DEFAULT_PATH, data, False
+        )
+        if schedule is None or isinstance(schedule, str):
+            # a sentinel of get_gtfs, not a schedule. It used to replace the
+            # flow's own, and the screen shown again with the error then read
+            # its stations from a string: the next submit ended the flow on
+            # no_stops_read. The flow keeps the schedule it has
+            if schedule in ("no_data_file", "no_zip_file", "extracting"):
+                return schedule
+            return "generic_failure"
         if self._pygtfs and hasattr(self._pygtfs, 'session'):
             try:
                 self._pygtfs.session.close()
                 self._pygtfs.engine.dispose()
             except Exception:
                 pass
-        self._pygtfs = await self.hass.async_add_executor_job(
-            get_gtfs, self.hass, DEFAULT_PATH, data, False
-        )
-        if self._pygtfs == "no_data_file":
-            return "no_data_file"
+        self._pygtfs = schedule
         self._data = {
             "schedule": self._pygtfs,
             "origin": data["origin"],

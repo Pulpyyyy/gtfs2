@@ -107,6 +107,11 @@ class TrainScreens:
             "line": self._route_label,
         }
         check_config = await self._check_config(data)
+        if check_config == "extracting":
+            # the datasource is being unpacked: nothing to correct here, the
+            # progress screen waits for it as the other screens do
+            self._user_inputs.update(data)
+            return await self.async_step_extracting()
         # the arrival was offered from the trips that ride it from the
         # departure, so the journey exists; whether one is due in the next
         # hours is the coordinator's business: a sensor created on a day the
