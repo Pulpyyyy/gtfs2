@@ -121,7 +121,7 @@ class TrainScreens:
             errors["base"] = check_config
             return _show(errors, destination)
         self._user_inputs.update(data)
-        self._user_inputs[CONF_DIRECTION] = 0
+        self._user_inputs[CONF_DIRECTION] = "0"
         self._user_inputs[CONF_ROUTE] = "train"
         _LOGGER.debug(f"UserInputs Destination Train: {self._user_inputs}")
         return await self.async_step_sensor_train()
