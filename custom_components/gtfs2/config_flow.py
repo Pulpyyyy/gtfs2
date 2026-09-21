@@ -449,7 +449,14 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                 description_placeholders=placeholders,
                 errors=errors,
             )
-        _picked = user_input.get(CONF_ROUTE).split('##')
+        _picked = str(user_input.get(CONF_ROUTE) or "").split('##')
+        if len(_picked) < 2 or not _picked[1]:
+            # the field takes typed text, which is what makes a long list
+            # searchable; text that is not one of the lines left the value
+            # without its route and the step raised. The list comes back,
+            # saying so
+            self._pending_error = "route_not_listed"
+            return await self.async_step_route()
         user_input[CONF_ROUTE_TYPE] = _picked[0]
         user_input[CONF_ROUTE] = _picked[1]
         # the readable part is only used to suggest a sensor name
