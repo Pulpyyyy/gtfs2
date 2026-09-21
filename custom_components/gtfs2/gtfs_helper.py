@@ -978,10 +978,13 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
         if pruned:
             placeholders = ", ".join(f":pr{i}" for i in range(len(pruned)))
             trips_where = f"and (exists (select 1 from trips t where t.route_id = r.route_id) or r.route_id in ({placeholders}))"
-    if data["agency"].split(': ')[0] != "0":
-        agency_where = f"and r.agency_id = '{data['agency'].split(': ')[0]}'"
+    # bound, not written into the query: an agency_id holding a quote
+    # broke the list, and what the flow hands in is the user's pick
+    agency_id = data["agency"].split(': ', 1)[0]
+    if agency_id != "0":
+        agency_where = "and r.agency_id = :agency_id"
     if data["route_type"] != "99":
-        route_type_where = f"and route_type = {data['route_type']}"
+        route_type_where = "and route_type = :route_type"
     sql_routes = f"""
     SELECT r.route_type, r.route_id, r.route_short_name, r.route_long_name, a.agency_name
     from routes r
@@ -995,7 +998,7 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     routes_list = []
     routes = []
     with schedule.engine.connect() as conn:
-        params = {"q": "q"}
+        params = {"agency_id": agency_id, "route_type": data["route_type"]}
         params.update({f"pr{i}": r for i, r in enumerate(sorted(pruned))})
         rows = conn.execute(text(sql_routes), params).fetchall()
     for row_cursor in rows:
