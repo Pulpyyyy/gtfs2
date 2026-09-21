@@ -17,7 +17,7 @@ import homeassistant.util.dt as dt_util
 
 from .const import ATTR_RT_CANCELLED, ATTR_RT_SKIPPED
 from .gtfs_helper import drop_departure_trips, get_next_service_date
-from .gtfs_rt_helper import get_next_services, merge_struck
+from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -90,6 +90,16 @@ async def drop_struck_trips(coordinator, data, run_static):
         coordinator._remember_struck()
         coordinator._data["next_departure_realtime_attr"] = coordinator._get_next_service
         coordinator._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
+        # the alerts were read for the departure just struck out: its trip,
+        # its stop, the board behind it. Read again for the one now shown,
+        # or the old departure's sentence stayed on the new one. The feed
+        # is still in the cycle's cache, nothing is downloaded twice
+        try:
+            coordinator._get_rt_alerts = await coordinator.hass.async_add_executor_job(
+                get_rt_alerts, coordinator)
+            coordinator._data["alert"] = coordinator._get_rt_alerts
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Error reading the alerts again for %s: %s", data["origin"], ex)
     # the trips struck since the last static refresh, whichever
     # reading turned them up
     coordinator._get_next_service[ATTR_RT_CANCELLED] = sorted(coordinator._struck_cancelled)
