@@ -73,6 +73,7 @@ from .stations import get_station_list, get_station_modes
 from .route_names import get_route_options_from_zip, get_agencies_in_zip, LINE_MODES, with_modes
 from .notifications import _async_text
 from .coordinator import close_schedule
+from .source_refresh import source_lock
 
 from .rt_source import (
     RT_OPTION_KEYS,
@@ -304,7 +305,11 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                 errors=errors,
             )
         try:
-            removed = remove_datasource(self.hass, DEFAULT_PATH, user_input[CONF_FILE], True)
+            # file deletions, off the event loop, and never under a refresh
+            # or an import still writing the same files
+            async with source_lock(self.hass, user_input[CONF_FILE]):
+                removed = await self.hass.async_add_executor_job(
+                    remove_datasource, self.hass, DEFAULT_PATH, user_input[CONF_FILE], True)
             _LOGGER.debug(f"Removed gtfs data source: {removed}")
         except Exception as ex:
             _LOGGER.error("Error while deleting : %s", {ex})
