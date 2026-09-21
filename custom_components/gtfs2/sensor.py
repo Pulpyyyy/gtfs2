@@ -21,6 +21,9 @@ from .const import (
     ATTR_DUE_IN,
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
+    ATTR_NEXT_RT_TRIPS,
+    ATTR_RT_CANCELLED,
+    ATTR_RT_SKIPPED,
     ATTR_DROP_OFF_DESTINATION,
     ATTR_DROP_OFF_ORIGIN,
     ATTR_FIRST,
@@ -250,6 +253,26 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
     # sensor.gtfs_x_y_x_y. The entity takes the device name instead.
     _attr_has_entity_name = True
     _attr_name = None
+
+    # What the recorder does not keep. The lists of the next departures,
+    # their realtime and the alert stacks are several kilobytes a sensor,
+    # and the two refresh stamps change every minute: together they wrote
+    # a new attributes row per sensor and per minute into the database,
+    # for a history nobody reads. The state, the next departure and the
+    # alert sentences stay recorded; cards read the rest live.
+    _unrecorded_attributes = frozenset({
+        "next_departures", "next_departures_lines", "next_departures_headsign",
+        "next_departures_trips", "next_departures_durations",
+        "next_departures_destination_arrival_times", "next_departures_origin_stop_id",
+        "next_departures_route_types", "next_departures_realtime",
+        "next_delays_realtime", "origin_stop_alerts", "destination_stop_alerts",
+        ATTR_NEXT_RT, ATTR_NEXT_RT_DELAYS, ATTR_NEXT_RT_TRIPS,
+        ATTR_RT_CANCELLED, ATTR_RT_SKIPPED, ATTR_INFO, ATTR_INFO_RT,
+        # the same three lists, under the names realtime_trips writes them
+        "next_departures_realtime_trips", "cancelled_trips_realtime",
+        "skipped_trips_realtime",
+        ATTR_RT_UPDATED_AT, "gtfs_updated_at",
+    })
 
     def __init__(self, coordinator) -> None:
         """Initialize the GTFSsensor."""
@@ -717,6 +740,10 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
 
 class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
     """Implementation of a GTFS local stops departures sensor."""
+
+    # every line's departures at the stop, past the recorder's 16 kB
+    # limit on a busy one, and the refresh stamp that changes each time
+    _unrecorded_attributes = frozenset({"next_departures_lines", "gtfs_updated_at"})
 
     def __init__(self, stop, coordinator, name) -> None:
         """Initialize the GTFSsensor."""
