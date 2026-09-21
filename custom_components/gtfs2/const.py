@@ -317,7 +317,6 @@ CONF_LOCAL_STOP_REFRESH_INTERVAL = "local_stop_refresh_interval"
 CONF_RADIUS = "radius"
 CONF_TIMERANGE = "timerange"
 CONF_REFRESH_INTERVAL = "refresh_interval"
-CONF_OFFSET = "offset"
 CONF_REAL_TIME = "real_time"
 CONF_MAX_LOCAL_STOPS = "max_local_stops"
 
