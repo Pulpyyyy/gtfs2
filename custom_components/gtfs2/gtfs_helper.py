@@ -2710,12 +2710,53 @@ async def get_route_departures(hass, data):
     _LOGGER.debug("Departures returned: %s", _departures)
     return _departures
     
+def _trip_stops(schedule, trips, origin_ids):
+    """The stops each trip calls at from the origin on, "name - HH:MM:SS".
+
+    Read in stop_sequence order, one bound parameter per trip. The origin
+    is found by its stop_id, compared whole: the list was a text search
+    through "trip: name - time (stop_id)" lines, where an id inside
+    another one, or a name holding ": ", threw the match off.
+    """
+    if not trips:
+        return {}
+    marks = ", ".join(f":t{i}" for i in range(len(trips)))
+    sql_stops = f"""
+    SELECT st.trip_id, s.stop_name, time(st.departure_time), s.stop_id
+    from stop_times st
+    inner join stops s on s.stop_id = st.stop_id
+    where st.trip_id in ({marks})
+    order by st.trip_id, st.stop_sequence
+    """  # noqa: S608
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql_stops), {f"t{i}": trip for i, trip in enumerate(trips)}).fetchall()
+    calls = {}
+    for trip_id, name, time_of_day, stop_id in rows:
+        calls.setdefault(str(trip_id), []).append((str(stop_id), f"{name} - {time_of_day}"))
+    origins = {str(stop_id) for stop_id in origin_ids}
+    stopslist = {}
+    for trip in trips:
+        listed, reached = [], False
+        for stop_id, shown in calls.get(str(trip), []):
+            reached = reached or stop_id in origins
+            if reached:
+                listed.append(shown)
+        stopslist[trip] = listed
+    return stopslist
+
+
 async def get_trip_stops(hass, data):
     _LOGGER.debug("Getting stoptimes for trip with: %s", data)
-    state = hass.states.get(data.get("entity_id",""))
-    entity_registry = er.async_get(hass)
-    entry = entity_registry.async_get(data.get("entity_id",""))
-    config_entry = hass.config_entries.async_get_entry(entry.config_entry_id)
+    entity_id = data.get("entity_id", "")
+    state = hass.states.get(entity_id)
+    entry = er.async_get(hass).async_get(entity_id)
+    config_entry = hass.config_entries.async_get_entry(entry.config_entry_id) if entry else None
+    nothing = {"entity": entity_id or "entity-not-found", "origin_station_id": "",
+               "origin_station_name": "", "trip_stops": {}}
+    if state is None or config_entry is None:
+        # a service call naming an entity that is not a gtfs2 sensor
+        _LOGGER.error("No gtfs2 sensor %s to read the trip stops of", entity_id)
+        return nothing
     cf_data = config_entry.data
     origin_station_ids=[]
     origin_station_names=[]
@@ -2724,58 +2765,34 @@ async def get_trip_stops(hass, data):
         for trip in state.attributes.get("next_departures_lines",{}):
             trips.append(trip.get("trip_id",""))
             if trip.get("stop_id","") not in origin_station_ids:
-                        origin_station_ids.append(trip.get("stop_id",""))
+                origin_station_ids.append(trip.get("stop_id",""))
             if trip.get("stop_name","") not in origin_station_names:
-                        origin_station_names.append(trip.get("stop_name",""))                       
+                origin_station_names.append(trip.get("stop_name",""))
     else:
-        trips = state.attributes.get("next_departures_trips", "[]")
+        trips = list(state.attributes.get("next_departures_trips") or [])
         origin_station_ids.append(state.attributes.get("origin_station_stop_id", ""))
         origin_station_names.append(state.attributes.get("origin_station_stop_name", ""))
-    
-    trip_list = str(trips).replace("[","(").replace("]",")")
 
     schedule = await hass.async_add_executor_job(
         get_gtfs, hass, DEFAULT_PATH, cf_data, False
     )
-       
-    sql_stops = f"""
-    SELECT st.trip_id, s.stop_name, time(st.departure_time), s.stop_id
-    from stop_times st 
-    inner join stops s on s.stop_id = st.stop_id
-    where  st.trip_id in {trip_list}
-    order by st.trip_id, st.departure_time, st.stop_sequence
-    """  # noqa: S608
-    stops_list = []
-    stops = []
-    with schedule.engine.connect() as conn:
-        rows = conn.execute(text(sql_stops), {"q": "q"}).fetchall()
-    for row_cursor in rows:
-        row = row_cursor._asdict()
-        stops_list.append(list(row_cursor))
-    for x in stops_list:
-        val = x[0] + ": " + x[1] + ' - ' + str(x[2]) + ' (' + str(x[3]) + ')'
-        stops.append(val)
+    if schedule is None or isinstance(schedule, str):
+        _LOGGER.warning("Datasource %s has no usable schedule (%s), no trip stops",
+                        cf_data.get("file"), schedule or "empty")
+        return nothing
+    try:
+        # off the event loop: the query reads every call of every trip listed
+        stopslist = await hass.async_add_executor_job(
+            _trip_stops, schedule, trips, origin_station_ids)
+    finally:
+        schedule.engine.dispose()
 
-    stopslist = {}
-    for trip in trips:
-        s = []
-        stop_hit = 0
-        for tripstop in stops:
-            for origin_station_id in origin_station_ids:
-                if origin_station_id in tripstop and trip in tripstop:
-                    stop_hit = 1
-                if trip in tripstop and stop_hit == 1:
-                    if tripstop.split(": ")[1] not in s:
-                        s.append(tripstop.split(": ")[1].split(" (")[0])
-                stopslist[trip] = s
-    
     _tripstops = {
-        "entity": data.get("entity_id","entity-not-found"),
-        "origin_station_id": origin_station_ids[0],
-        "origin_station_name": origin_station_names[0],
+        "entity": entity_id or "entity-not-found",
+        "origin_station_id": origin_station_ids[0] if origin_station_ids else "",
+        "origin_station_name": origin_station_names[0] if origin_station_names else "",
         "trip_stops": stopslist,
     }
-    
+
     _LOGGER.debug("Tripstops returned: %s", _tripstops)
-    schedule.engine.dispose()
     return _tripstops
