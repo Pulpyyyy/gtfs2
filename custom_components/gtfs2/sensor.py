@@ -78,6 +78,7 @@ from .departure_attributes import (
     alert_details, map_files, next_departure_lists, next_service_info, realtime_trips,
 )
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.exceptions import PlatformNotReady
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -101,11 +102,17 @@ async def async_setup_entry(
            "coordinator"
         ]
         await coordinator.async_config_entry_first_refresh()
-        if not coordinator.data["extracting"]:
-            for stop in coordinator.data["local_stops_next_departures"]:
-                sensors.append(
-                        GTFSLocalStopSensor(stop, coordinator, coordinator.data.get("name", "No Name"))
-                    )
+        if coordinator.data["extracting"]:
+            # the stops around the person are known only once the source is
+            # unpacked, and nothing created them afterwards: the entry sat
+            # empty until reloaded by hand. Home Assistant retries a platform
+            # that says it is not ready yet
+            raise PlatformNotReady(
+                f"Datasource {coordinator.data.get('file')} is still being unpacked")
+        for stop in coordinator.data["local_stops_next_departures"]:
+            sensors.append(
+                    GTFSLocalStopSensor(stop, coordinator, coordinator.data.get("name", "No Name"))
+                )
         
     else:
         coordinator: GTFSUpdateCoordinator = hass.data[DOMAIN][config_entry.entry_id][

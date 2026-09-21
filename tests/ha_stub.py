@@ -366,7 +366,8 @@ def install() -> None:
             callback=lambda fn: fn)
     _module("homeassistant.config_entries", ConfigEntry=object,
             ConfigEntries=object, SOURCE_IMPORT="import")
-    _module("homeassistant.exceptions", HomeAssistantError=Exception)
+    _module("homeassistant.exceptions", HomeAssistantError=Exception,
+            PlatformNotReady=type("PlatformNotReady", (Exception,), {}))
     if _MissingStub not in sys.meta_path:
         sys.meta_path.append(_MissingStub)
 
