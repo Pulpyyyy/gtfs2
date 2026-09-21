@@ -29,6 +29,7 @@ from .const import DEFAULT_PATH_GEOJSON
 from .feed_window import read_feed_window
 from .gtfs_helper import (
     _call_type, _fetch_departure_rows, _line_ways, departure_query_args, get_next_service_date,
+    gtfs_seconds,
 )
 from .gtfs_rt_helper import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, safe_file_part, stop_relationship, trip_relationship,
@@ -39,35 +40,13 @@ from .gtfs_shape import read_shape
 _LOGGER = logging.getLogger(__name__)
 
 
-def _gtfs_seconds(value):
-    """Seconds since the service day's midnight of a stored stop time, or None.
-
-    pygtfs stores stop_times through SQLAlchemy's Interval, which SQLite
-    keeps as a datetime counted from 1970-01-01: a 01:15 departure after
-    midnight reads '1970-01-02 01:15:00', and a raw query hands that string
-    back as is. Seconds and timedeltas pass through.
-    """
-    if value is None:
-        return None
-    if isinstance(value, datetime.timedelta):
-        return int(value.total_seconds())
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        stored = re.match(r"^1970-01-(\d{2}) (\d{2}):(\d{2}):(\d{2})", str(value))
-        if not stored:
-            return None
-        day, hours, minutes, secs = (int(g) for g in stored.groups())
-        return ((day - 1) * 24 + hours) * 3600 + minutes * 60 + secs
-
-
 def _fmt_gtfs_time(value):
     """Render a stored stop time as the clock the feed wrote in stop_times.txt:
     HH:MM:SS, past 24:00 after midnight (SNCF writes 24:36:00 there). The
     line file has no service day to pin a date on, so it keeps the feed's
     own convention; the leg file, which has one, carries datetimes instead.
     """
-    seconds = _gtfs_seconds(value)
+    seconds = gtfs_seconds(value)
     if seconds is None:
         return str(value) if value is not None else None
     return f"{seconds // 3600:02d}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
@@ -508,7 +487,7 @@ def write_leg_file(hass, data, feed_entities=None):
             origin_row = next((r for r in rows if r[8] == origin_parent), None)
         if origin_row is None:
             origin_row = rows[0]
-        seconds = _gtfs_seconds(origin_row[7])
+        seconds = gtfs_seconds(origin_row[7])
         if seconds is None:
             return None
         try:
@@ -518,7 +497,7 @@ def write_leg_file(hass, data, feed_entities=None):
         return (local - datetime.timedelta(seconds=seconds)).replace(hour=0, minute=0, second=0, microsecond=0)
 
     def at(midnight, stored):
-        seconds = _gtfs_seconds(stored)
+        seconds = gtfs_seconds(stored)
         if midnight is None or seconds is None:
             return None
         return (midnight + datetime.timedelta(seconds=seconds)).astimezone(datetime.timezone.utc).isoformat()

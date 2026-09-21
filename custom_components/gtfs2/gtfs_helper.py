@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime
+import re
 import time
 import logging
 import statistics
@@ -1794,17 +1795,35 @@ def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, 
     return direction
 
 
-def _clock_seconds(value):
-    """Seconds into the service day of a stop_times time, as the database
-    holds it: "07:10:00", or a pygtfs datetime on 1970-01-01, the next day
-    for a time past midnight."""
-    text_value = str(value or "")
+def gtfs_seconds(value):
+    """Seconds since the service day's midnight of a stop time, or None.
+
+    The one reader of stop times for every module: the queries hand them
+    back as pygtfs stores them, a datetime counted from 1970-01-01 (a 01:15
+    departure after midnight reads '1970-01-02 01:15:00'), a database from
+    another pygtfs build as bare text ('25:15:00'), a caller may already
+    hold seconds or a timedelta. Three readers each took some of these
+    forms and refused, or raised on, the others.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime.timedelta):
+        return int(value.total_seconds())
+    if isinstance(value, (int, float)):
+        return int(value)
+    text_value = str(value).strip()
+    if text_value.isdigit():
+        return int(text_value)
     days = 0
-    if " " in text_value:
-        day, text_value = text_value.split(" ", 1)
-        days = max(0, int(day[-2:]) - 1)
-    hours, minutes, seconds = text_value.split(":")[:3]
-    return days * 86400 + int(hours) * 3600 + int(minutes) * 60 + int(float(seconds))
+    stored = re.match(r"^1970-01-(\d{2})[ T](.*)$", text_value)
+    if stored:
+        days = int(stored.group(1)) - 1
+        text_value = stored.group(2)
+    parts = text_value.split(".")[0].split(":")
+    if len(parts) != 3 or not all(part.isdigit() for part in parts):
+        return None
+    hours, minutes, seconds = (int(part) for part in parts)
+    return days * 86400 + hours * 3600 + minutes * 60 + seconds
 
 
 def _quickest_rotations(schedule, route_id, origin_stop_id, destination_stop_id, candidates):
@@ -1836,9 +1855,9 @@ def _quickest_rotations(schedule, route_id, origin_stop_id, destination_stop_id,
             for label, departs, arrives in conn.execute(text(sql), {
                     "route_id": route_id, "origin": origin_stop_id,
                     "destination": destination_stop_id}):
-                if str(label) in candidates:
-                    minutes.setdefault(str(label), []).append(
-                        (_clock_seconds(arrives) - _clock_seconds(departs)) / 60)
+                leaves, reaches = gtfs_seconds(departs), gtfs_seconds(arrives)
+                if str(label) in candidates and leaves is not None and reaches is not None:
+                    minutes.setdefault(str(label), []).append((reaches - leaves) / 60)
     except (TypeError, ValueError) as ex:
         _LOGGER.debug("Could not time the rotations of %s -> %s: %s",
                       origin_stop_id, destination_stop_id, ex)

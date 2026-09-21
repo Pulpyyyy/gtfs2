@@ -31,6 +31,7 @@ import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text
 
 from .const import CONF_DEVICE_TRACKER_ID, CONF_ROUTE, DEFAULT_PATH
+from .gtfs_helper import gtfs_seconds
 from .gtfs_rt_helper import cached_feed_has_future_stop
 from .rt_source import journey_entries
 
@@ -114,31 +115,6 @@ _FREQUENCIES_SQL = _ACTIVE_TRIPS_SQL + """
 """
 
 
-def _gtfs_seconds(value):
-    """A stored stop time as gtfs seconds since the service day's midnight.
-
-    Reads the epoch-datetime form the importer writes ('1970-01-02 01:30:00'
-    is 25:30), and falls back on plain seconds and on bare HH:MM:SS for
-    databases another pygtfs build produced.
-    """
-    if value is None:
-        return None
-    text_value = str(value)
-    try:
-        return int(text_value)
-    except ValueError:
-        pass
-    day = 0
-    if text_value.startswith("1970-01-"):
-        day = int(text_value[8:10]) - 1
-        text_value = text_value[11:]
-    parts = text_value.split(".")[0].split(":")
-    if len(parts) != 3:
-        return None
-    hours, minutes, seconds = (int(p) for p in parts)
-    return day * 86400 + hours * 3600 + minutes * 60 + seconds
-
-
 def _service_envelope(schedule, date_str):
     """(first, last) gtfs second of the service day, or None when it rests."""
     with schedule.engine.connect() as conn:
@@ -147,12 +123,12 @@ def _service_envelope(schedule, date_str):
             "and name = 'gtfs2_trip_key'")).fetchone()
         sql = _ENVELOPE_SQL_INTERNED if interned else _ENVELOPE_SQL
         row = conn.execute(text(sql), {"d": date_str}).fetchone()
-        bounds = [_gtfs_seconds(v) for v in (row or ())]
+        bounds = [gtfs_seconds(v) for v in (row or ())]
         if conn.execute(text(
                 "select 1 from sqlite_master where type in ('table', 'view') "
                 "and name = 'frequencies'")).fetchone():
             freq = conn.execute(text(_FREQUENCIES_SQL), {"d": date_str}).fetchone()
-            bounds += [_gtfs_seconds(v) for v in (freq or ())]
+            bounds += [gtfs_seconds(v) for v in (freq or ())]
     bounds = [b for b in bounds if b is not None]
     if not bounds:
         return None
