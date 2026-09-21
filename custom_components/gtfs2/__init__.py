@@ -44,38 +44,40 @@ _LOGGER = logging.getLogger(__name__)
 hide_keys_in_logs(__name__, __path__)
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
-    """Migrate old entry."""
+    """Migrate old entry.
+
+    Each step hands its version to async_update_entry with the rest: set
+    on the entry itself, Home Assistant refuses it since 2024.3, and the
+    migration failed before it had written anything.
+    """
     _LOGGER.warning("Migrating from version %s", config_entry.version)
-      
+
     if config_entry.version == 4:
 
         new_options = {**config_entry.options}
         new_data = {**config_entry.data}
         new_data['route_type'] = '99'
-        new_options['offset'] = 0
-        new_data.pop('offset')
-        new_data['agency'] = '0: ALL'        
+        # an entry that never had an offset in its data has one of 0
+        new_options['offset'] = new_data.pop('offset', 0)
+        new_data['agency'] = '0: ALL'
 
-        config_entry.version = 9
-        hass.config_entries.async_update_entry(config_entry, data=new_data)
-        hass.config_entries.async_update_entry(config_entry, options=new_options)          
-        
+        hass.config_entries.async_update_entry(
+            config_entry, data=new_data, options=new_options, version=9)
+
     if config_entry.version == 5:
 
         new_data = {**config_entry.data}
         new_data['route_type'] = '99'
         new_data['agency'] = '0: ALL'
 
-        config_entry.version = 9
-        hass.config_entries.async_update_entry(config_entry, data=new_data)  
-        
+        hass.config_entries.async_update_entry(config_entry, data=new_data, version=9)
+
     if config_entry.version == 6:
 
         new_data = {**config_entry.data}
         new_data['agency'] = '0: ALL'
 
-        config_entry.version = 9
-        hass.config_entries.async_update_entry(config_entry, data=new_data)  
+        hass.config_entries.async_update_entry(config_entry, data=new_data, version=9)
 
     if config_entry.version == 7 or config_entry.version == 8 or config_entry.version == 9:
 
@@ -85,20 +87,17 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
             new_options['api_key_name'] = "Authorization"
             new_options['api_key'] = config_entry.options.get('api_key')
         if config_entry.options.get('x_api_key', None):
-            new_options['api_key_name'] = "x_api_key"            
-            new_options['api_key'] = config_entry.options.get('x_api_key')   
+            new_options['api_key_name'] = "x_api_key"
+            new_options['api_key'] = config_entry.options.get('x_api_key')
         if config_entry.options.get('ocp_apim_subscription_key', None):
             new_options['api_key_name'] = "ocp_apim_subscription_key"
             new_options['api_key'] = config_entry.options.get('ocp_apim_subscription_key')
             new_options.pop('ocp_apim_subscription_key')
         if "x_api_key" in config_entry.options:
-            new_options.pop('x_api_key')     
+            new_options.pop('x_api_key')
 
-        
-        config_entry.version = 10
-        
-        hass.config_entries.async_update_entry(config_entry, data=new_data)  
-        hass.config_entries.async_update_entry(config_entry, options=new_options)             
+        hass.config_entries.async_update_entry(
+            config_entry, data=new_data, options=new_options, version=10)
 
     _LOGGER.warning("Migration to version %s successful", config_entry.version)
 
