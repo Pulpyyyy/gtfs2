@@ -10,6 +10,7 @@ import homeassistant.util.dt as dt_util
 import requests
 import voluptuous as vol
 from google.transit import gtfs_realtime_pb2
+from sqlalchemy.sql import text as sql_text
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import ATTR_LATITUDE, ATTR_LONGITUDE, CONF_NAME
 from homeassistant.helpers import entity_registry as er
@@ -747,6 +748,38 @@ def on_service_day(start_date, service_day):
         return True
     return str(service_day or "")[:10].replace("-", "") == str(start_date)[:8]
 
+def _trip_destinations(schedule, trip_ids):
+    """{trip_id: where it goes}: its headsign, or its last stop when the
+    headsign is empty or a code (a train number, a mission code). Read for
+    the vehicles on the map, which each go where their own trip goes."""
+    trip_ids = sorted({str(t) for t in trip_ids if t})
+    if not trip_ids or schedule is None or isinstance(schedule, str):
+        return {}
+    from .route_names import _names_a_place
+    marks = ", ".join(f":t{i}" for i in range(len(trip_ids)))
+    sql = f"""
+    SELECT t.trip_id, t.trip_headsign,
+           (SELECT s.stop_name FROM stop_times st
+            INNER JOIN stops s ON s.stop_id = st.stop_id
+            WHERE st.trip_id = t.trip_id
+            ORDER BY st.stop_sequence DESC LIMIT 1) AS last_stop
+    FROM trips t WHERE t.trip_id IN ({marks})
+    """  # noqa: S608
+    try:
+        with schedule.engine.connect() as conn:
+            rows = conn.execute(sql_text(sql), {f"t{i}": t for i, t in enumerate(trip_ids)}).fetchall()
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.debug("Could not read where the vehicles go: %s", ex)
+        return {}
+    found = {}
+    for trip_id, headsign, last_stop in rows:
+        headsign = str(headsign or "").strip()
+        where = headsign if _names_a_place(headsign) else str(last_stop or "").strip()
+        if where:
+            found[str(trip_id)] = where
+    return found
+
+
 def get_rt_vehicle_positions(self):
     feed_entities = get_gtfs_feed_entities(
         url=self._vehicle_position_url,
@@ -755,6 +788,7 @@ def get_rt_vehicle_positions(self):
         owner=self._data.get("file", ""),
     )
     geojson_body = []
+    titles = []
     geojson_element = {"geometry": {"coordinates":[],"type": "Point"}, "properties": {"id": "", "title": "", "trip_id": "", "route_id": "", "direction_id": "", "vehicle_id": "", "vehicle_label": ""}, "type": "Feature"}
     if feed_entities is None:
         # a failed fetch returns None: iterating it raises, and the caller's
@@ -805,17 +839,9 @@ def get_rt_vehicle_positions(self):
             # the direction of the map it lands on when the feed names none,
             # so its marker id keeps the digit the registry cleanup reads
             _dir = str(seen_direction if seen_direction is not None else self._direction)
-            try:
-                _line = str(self._data.get("next_departure", {}).get("route_short_name") or "").strip()
-                _dest = self.config_entry.data.get("destination", "").split(": ")[-1].split(" (")[0].split(" - ")[0].strip()
-            except Exception: 
-                _line, _dest = "", ""
-            if _line and _dest:
-                _label = _line + " → " + _dest + " " + (_veh or _crc) + "_" + self._icon.split(':')[1]
-            else:
-                _label = str(self._route_id) + "(" + _dir + ")" + _crc + "_" + self._icon.split(':')[1]
             geojson_element["properties"]["id"] = str(self._route_id) + "_" + _dir + "_" + (_veh or _crc)
-            geojson_element["properties"]["title"] = _label
+            # the title is written once every vehicle is known, see below
+            titles.append((geojson_element, str(vehicle["trip"]["trip_id"]), _veh, _crc, _dir))
             geojson_element["properties"]["trip_id"] = vehicle["trip"]["trip_id"]
             geojson_element["properties"]["route_id"] = str(self._route_id)
             geojson_element["properties"]["direction_id"] = seen_direction if seen_direction is not None else _dir
@@ -823,7 +849,25 @@ def get_rt_vehicle_positions(self):
             geojson_element["properties"]["vehicle_label"] = vehicle["vehicle"]["label"]
             geojson_element["properties"][vehicle["trip"]["trip_id"]] = geojson_element["geometry"]["coordinates"]
             geojson_body.append(geojson_element)
-    
+
+    # each vehicle titled after where its own trip goes, read for all of
+    # them at once: the entry's destination was used, which is where the
+    # rider gets off, not where the vehicle goes, and two entries on the
+    # same line wrote the same file with titles of their own in turn
+    try:
+        _line = str(self._data.get("next_departure", {}).get("route_short_name") or "").strip()
+    except Exception:  # pylint: disable=broad-except
+        _line = ""
+    going = _trip_destinations((getattr(self, "_data", None) or {}).get("schedule"),
+                               [trip for _e, trip, _v, _c, _d in titles])
+    icon = self._icon.split(':')[1]
+    for element, trip, veh, crc, direction in titles:
+        where = going.get(trip)
+        if _line and where:
+            element["properties"]["title"] = _line + " → " + where + " " + (veh or crc) + "_" + icon
+        else:
+            element["properties"]["title"] = str(self._route_id) + "(" + direction + ")" + crc + "_" + icon
+
     self.geojson = {"features": geojson_body, "type": "FeatureCollection"}
         
     _LOGGER.debug("Vehicle geojson: %s", json.dumps(self.geojson))
