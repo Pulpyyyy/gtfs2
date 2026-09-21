@@ -6,6 +6,7 @@ import glob
 import os
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
@@ -394,6 +395,45 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
     await async_notify_line_orphaned(hass, filename, label or route)
      
 
+_KEY_LOCATIONS = vol.In(["not_applicable", "header", "query_string"])
+# the fields services.yaml lists, checked before a handler reads them: a
+# missing one used to surface as a KeyError from deep inside. Extra keys
+# still pass, for the automations written against older field lists
+_UPDATE_GTFS_SCHEMA = vol.Schema({
+    vol.Required("file"): cv.string,
+    vol.Optional(CONF_EXTRACT_FROM): vol.In(["url", "zip"]),
+    vol.Optional(CONF_URL): cv.string,
+    vol.Optional(CONF_API_KEY): cv.string,
+    vol.Optional("api_key_name"): cv.string,
+    vol.Optional("api_key_location"): _KEY_LOCATIONS,
+    vol.Optional("clean_feed_info"): cv.boolean,
+    vol.Optional("check_source_dates"): cv.boolean,
+}, extra=vol.ALLOW_EXTRA)
+_UPDATE_GTFS_RT_SCHEMA = vol.Schema({
+    vol.Required("file"): cv.string,
+    vol.Required(CONF_URL): cv.string,
+    vol.Required("rt_type"): vol.In(["trip_data", "vehicle_positions", "alerts"]),
+    vol.Optional(CONF_API_KEY): cv.string,
+    vol.Optional("api_key_name"): cv.string,
+    vol.Optional("api_key_location"): _KEY_LOCATIONS,
+    vol.Optional("accept"): cv.boolean,
+    vol.Optional("entity_for_siri"): cv.entity_id,
+    vol.Optional("debug_output"): cv.boolean,
+}, extra=vol.ALLOW_EXTRA)
+_ENTITY_SCHEMA = vol.Schema({vol.Required("entity_id"): cv.entity_id},
+                            extra=vol.ALLOW_EXTRA)
+_EXTRACT_DEPARTURES_SCHEMA = vol.Schema({
+    vol.Required("config_entry"): cv.string,
+    # the time selector sends 08:15:00, a yaml call often 08:15: both are
+    # read as a time and handed on in the one form the handler parses
+    vol.Optional("from_time"): vol.All(cv.time, lambda t: t.strftime("%H:%M:%S")),
+}, extra=vol.ALLOW_EXTRA)
+_DATASOURCES_SCHEMA = vol.Schema({
+    vol.Optional("file"): vol.Any(None, cv.string, [cv.string]),
+    vol.Optional("dry_run"): cv.boolean,
+}, extra=vol.ALLOW_EXTRA)
+
+
 def setup(hass, config):
     """Setup the service component."""
 
@@ -481,19 +521,23 @@ def setup(hass, config):
         return await async_intern_datasources(hass, call.data)
 
     hass.services.register(
-        DOMAIN, "update_gtfs", update_gtfs)
+        DOMAIN, "update_gtfs", update_gtfs, schema=_UPDATE_GTFS_SCHEMA)
     hass.services.register(
-        DOMAIN, "update_gtfs_rt_local", update_gtfs_rt_local)     
+        DOMAIN, "update_gtfs_rt_local", update_gtfs_rt_local, schema=_UPDATE_GTFS_RT_SCHEMA)
     hass.services.register(
-        DOMAIN, "update_gtfs_local_stops", update_local_stops)
+        DOMAIN, "update_gtfs_local_stops", update_local_stops, schema=_ENTITY_SCHEMA)
     hass.services.register(
-        DOMAIN, "extract_departures", extract_departures,supports_response=SupportsResponse.OPTIONAL)
+        DOMAIN, "extract_departures", extract_departures, schema=_EXTRACT_DEPARTURES_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL)
     hass.services.register(
-        DOMAIN, "extract_trip_stops", extract_trip_stops,supports_response=SupportsResponse.OPTIONAL)     
+        DOMAIN, "extract_trip_stops", extract_trip_stops, schema=_ENTITY_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL)
     hass.services.register(
-        DOMAIN, "prune_datasource", prune_datasource,supports_response=SupportsResponse.OPTIONAL)
+        DOMAIN, "prune_datasource", prune_datasource, schema=_DATASOURCES_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL)
     hass.services.register(
-        DOMAIN, "intern_datasource", intern_datasource,supports_response=SupportsResponse.OPTIONAL)
+        DOMAIN, "intern_datasource", intern_datasource, schema=_DATASOURCES_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL)
     return True
 
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry):

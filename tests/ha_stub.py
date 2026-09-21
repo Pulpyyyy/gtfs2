@@ -82,6 +82,7 @@ from __future__ import annotations
 
 import datetime
 import importlib.util
+import re
 import sys
 import types
 from pathlib import Path
@@ -269,6 +270,64 @@ class _UpdateFailed(Exception):
     pass
 
 
+def _invalid(message):
+    import voluptuous as vol  # at call time: the stub itself stays stdlib
+    return vol.Invalid(message)
+
+
+# homeassistant.helpers.config_validation, the validators the service
+# schemas use, as Home Assistant 2024.11 writes them: a schema test is
+# about which calls pass, so these answer as the real ones do
+def _cv_string(value):
+    if value is None:
+        raise _invalid("string value is None")
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, dict)):
+        raise _invalid("value should be a string")
+    return str(value)
+
+
+def _cv_boolean(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        value = value.lower().strip()
+        if value in ("1", "true", "yes", "on", "enable"):
+            return True
+        if value in ("0", "false", "no", "off", "disable"):
+            return False
+    elif isinstance(value, (int, float)):
+        return value != 0
+    raise _invalid(f"invalid boolean value {value}")
+
+
+def _cv_time(value):
+    """dt_util.parse_time: H:M or H:M:S, anything else refused."""
+    if isinstance(value, datetime.time):
+        return value
+    if not isinstance(value, str):
+        raise _invalid("Not a parseable type")
+    parts = value.split(":")
+    try:
+        if len(parts) not in (2, 3):
+            raise ValueError
+        return datetime.time(*(int(part) for part in parts))
+    except ValueError:
+        raise _invalid(f"Invalid time specified: {value}") from None
+
+
+_OBJECT_ID = r"(?!_)[\da-z_]+(?<!_)"
+_VALID_ENTITY_ID = re.compile(r"^(?!.+__)" + _OBJECT_ID + r"\." + _OBJECT_ID + r"$")
+
+
+def _cv_entity_id(value):
+    str_value = _cv_string(value).lower()
+    if _VALID_ENTITY_ID.match(str_value):
+        return str_value
+    raise _invalid(f"Entity ID {value} is an invalid entity ID")
+
+
 class _EntityShell:
     """The base of the source's entities (update, button): no behaviour,
     so a test builds one and calls its own methods. What Home Assistant
@@ -372,7 +431,8 @@ def install() -> None:
         DEFAULT_TIME_ZONE=_DEFAULT_TIME_ZONE,
     )
     _module("homeassistant.helpers")
-    _module("homeassistant.helpers.config_validation", string=str, boolean=bool)
+    _module("homeassistant.helpers.config_validation", string=_cv_string,
+            boolean=_cv_boolean, time=_cv_time, entity_id=_cv_entity_id)
     _module("homeassistant.helpers.entity", Entity=object)
     _module("homeassistant.helpers.entity_registry",
             async_get=_Unreached("entity_registry.async_get"))
@@ -469,6 +529,9 @@ def load(module_name: str, component: str | Path = COMPONENT,
     if spec is None or spec.loader is None:
         raise ImportError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)
+    if module_name == "__init__":
+        # the package's own module reads __path__, as a package does
+        module.__path__ = [str(component)]
     sys.modules[full] = module
     spec.loader.exec_module(module)
     return module
