@@ -399,10 +399,26 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
         if e_route is not None and e_route != str(route_id):
             continue                      # an alert about another line
         if e_trip:
-            for t in followed:
-                if _same_trip(e_trip, t) and t not in hits["trips"]:
+            named = [t for t in followed if _same_trip(e_trip, t)]
+            if not named:
+                # the fields of one entity hold together: "this trip, at
+                # this stop" is about that trip alone. Read field by field,
+                # an alert on another train calling at your station was
+                # hung on your origin
+                continue
+            for t in named:
+                if t not in hits["trips"]:
                     hits["trips"].append(t)
                     hits["trip"] = True
+            if trip_id is None or str(trip_id) not in named:
+                # a later departure of the board, not the next one: its
+                # stop is kept for the card, but "T2 skips your origin"
+                # says nothing of the next departure's own ends
+                if e_stop is not None and e_stop not in hits["stops"] and (
+                        e_stop in origin_ids or e_stop in destination_ids
+                        or e_stop in journey_ids):
+                    hits["stops"].append(e_stop)
+                continue
         if e_stop is not None and e_stop in origin_ids:
             hits["origin"] = True
         elif e_stop is not None and e_stop in destination_ids:
