@@ -174,7 +174,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             "alert": {}
         }           
         
-        if check_extracting(self.hass, self.hass.config.path(self._data['gtfs_dir']), self._data['file']):   
+        # two file checks, off the event loop like every other file read here
+        if await self.hass.async_add_executor_job(
+                check_extracting, self.hass,
+                self.hass.config.path(self._data['gtfs_dir']), self._data['file']):
             _LOGGER.debug("Cannot update this sensor as still unpacking: %s", self._data["file"])
             self._data.update(previous_data)
             self._data["extracting"] = True
@@ -441,7 +444,10 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat()
 
         
-        if check_extracting(self.hass, self.hass.config.path(self._data['gtfs_dir']), self._data['file']):   
+        # two file checks, off the event loop like every other file read here
+        if await self.hass.async_add_executor_job(
+                check_extracting, self.hass,
+                self.hass.config.path(self._data['gtfs_dir']), self._data['file']):
             _LOGGER.debug("Cannot update this sensor as still unpacking: %s", self._data["file"])
             self._data.update(previous_data)
             self._data["extracting"] = True
