@@ -398,6 +398,31 @@ def _scheduled_departures(self):
     return due
 
 
+def _names_trip(watched, seen):
+    """Whether a realtime trip id names the trip being watched.
+
+    Exact, or the watched id standing whole inside a longer one, between
+    separators: a feed may qualify its ids with an agency before or a date
+    after, which is why a containment test was used at all. Plain, that
+    test let trip 100 take the delays of trip 2100, or of 1005, calling at
+    the same stop.
+    """
+    watched, seen = str(watched or ""), str(seen or "")
+    if not watched or not seen:
+        return False
+    if watched == seen:
+        return True
+    start = seen.find(watched)
+    while start != -1:
+        end = start + len(watched)
+        before = seen[start - 1] if start else ""
+        after = seen[end] if end < len(seen) else ""
+        if not before.isalnum() and not after.isalnum():
+            return True
+        start = seen.find(watched, start + 1)
+    return False
+
+
 def _same_route(configured, seen):
     """Whether a realtime route_id designates the configured route.
 
@@ -520,7 +545,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
                         and _same_route(self._route_id, route_id)
                     )  or trip_id in self._trip_list
                 else:
-                    matched = trip_id == self._trip_id or self._trip_id in trip_id or (trip_id in self._trip_list)
+                    matched = _names_trip(self._trip_id, trip_id) or (trip_id in self._trip_list)
             else:
                 # trip-mode, for local stops which can have multiple routes,
                 # and for the entities of a feed that names no line: the
