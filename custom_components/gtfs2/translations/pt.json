@@ -237,6 +237,7 @@
       }
     },
     "error": {
+      "return_name_taken": "Um sensor já tem o nome que o trajeto de regresso teria: desmarque o regresso ou mude primeiro o nome desse sensor.",
       "source_exists": "Já existe uma fonte com este nome e outro endereço: escolha-a entre as fontes existentes ou dê outro nome a esta.",
       "invalid_source_name": "Apenas letras, algarismos, espaços, hífenes e sublinhados: o nome passa a ser o do ficheiro da fonte.",
       "invalid_source_url": "O endereço deve começar por http:// ou https://",

@@ -377,6 +377,15 @@ def entry_file_part(name) -> str:
     return part
 
 
+def name_in_use(name, taken) -> bool:
+    """Whether an entry name is taken, as a name or as the file part the
+    timetable and leg files are named with: "Orléans" and "Orleans", or
+    "Bus 1 Gare > Centre" and "bus-1 gare - centre", are two names and one
+    file part, and the second entry wrote over the first one's files."""
+    part = entry_file_part(name)
+    return name in taken or any(entry_file_part(t) == part for t in taken if t)
+
+
 def leg_geojson_name(route_id, direction, name):
     """File name of the leg export: the line and direction first, so a
     folder listing reads a line's files together, then the entry's name,

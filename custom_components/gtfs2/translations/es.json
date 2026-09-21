@@ -237,6 +237,7 @@
       }
     },
     "error": {
+      "return_name_taken": "Un sensor ya tiene el nombre que tomaría el trayecto de vuelta: desmarque la vuelta o cambie antes el nombre de ese sensor.",
       "source_exists": "Ya existe una fuente con este nombre y otra dirección: elíjala entre las fuentes existentes o dé otro nombre a esta.",
       "invalid_source_name": "Solo letras, cifras, espacios, guiones y guiones bajos: el nombre pasa a ser el del archivo de la fuente.",
       "invalid_source_url": "La dirección debe empezar por http:// o https://",

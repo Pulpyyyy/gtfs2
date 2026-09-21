@@ -42,6 +42,7 @@ from .const import (
     ENTRY_KIND_DATASOURCE,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
+from .geojson import name_in_use
 from .gtfs_helper import get_direction_labels, get_pair_direction, has_trip_between
 
 _LOGGER = logging.getLogger(__name__)
@@ -171,16 +172,22 @@ class JourneyScreens:
         # departure, so the journey exists; whether a bus is due right now is
         # the coordinator's business: a sensor created in the evening, or on
         # a day the line does not run, is still valid
-        if add_return:
-            await self._create_return_trip()
         # async_create_entry ends the flow, so the sensor is created through a
         # second flow, the same way the return journey already is. That leaves
         # this one alive to offer what comes next.
         # a name already taken would create an entry the sensor platform then
         # drops as a duplicate unique_id: say so here instead
-        if any(e.data.get(CONF_NAME) == user_input[CONF_NAME]
-               for e in self.hass.config_entries.async_entries(DOMAIN)):
+        taken = {e.data.get(CONF_NAME) for e in self.hass.config_entries.async_entries(DOMAIN)}
+        if name_in_use(user_input[CONF_NAME], taken):
             errors["base"] = "name_taken"
+            return _show(errors, user_input)
+        # the return's own name, checked the same way and before anything is
+        # created: it was never looked at, so a taken one was dropped with a
+        # warning in the log the rider never read, after the rider had asked
+        # for it
+        return_name = (self._return_trip or {}).get(CONF_NAME)
+        if add_return and name_in_use(return_name, taken | {user_input[CONF_NAME]}):
+            errors["base"] = "return_name_taken"
             return _show(errors, user_input)
         # the second flow can still refuse - a unique_id taken between the check
         # above and here, or an import step that aborts - and announcing a
@@ -195,6 +202,10 @@ class JourneyScreens:
             errors["base"] = "not_created"
             return _show(errors, user_input)
         self._created_name = user_input[CONF_NAME]
+        # the return only once the journey itself exists: created first, as it
+        # was, a refused journey left its return behind on its own
+        if add_return:
+            await self._create_return_trip()
         return await self.async_step_finished()
 
     async def async_step_finished(self, user_input: dict | None = None) -> FlowResult:

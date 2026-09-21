@@ -29,6 +29,7 @@ from .const import (
     DOMAIN,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
+from .geojson import name_in_use
 from .notifications import _async_text
 from .stations import get_station_modes, get_train_destination_list, has_train_trip_between
 
@@ -177,13 +178,16 @@ class TrainScreens:
         add_return = user_input.pop(CONF_ADD_RETURN, False)
         # a name already taken would create an entry the sensor platform then
         # drops as a duplicate unique_id: say so here instead
-        if any(e.data.get(CONF_NAME) == user_input[CONF_NAME]
-               for e in self.hass.config_entries.async_entries(DOMAIN)):
+        taken = {e.data.get(CONF_NAME) for e in self.hass.config_entries.async_entries(DOMAIN)}
+        if name_in_use(user_input[CONF_NAME], taken):
             errors["base"] = "name_taken"
             return _show(errors, user_input)
-        if add_return:
-            # spawned as its own flow, like the outward below
-            await self._create_return_trip()
+        # the return's own name, checked before anything is created, as the
+        # bus flow does: a taken one was dropped with a warning in the log
+        return_name = (self._return_trip or {}).get(CONF_NAME)
+        if add_return and name_in_use(return_name, taken | {user_input[CONF_NAME]}):
+            errors["base"] = "return_name_taken"
+            return _show(errors, user_input)
         self._user_inputs.update(user_input)
         # async_create_entry ends the flow, so the sensor is created through a
         # second flow, like the bus sensor. That leaves this one alive to offer
@@ -198,4 +202,8 @@ class TrainScreens:
             errors["base"] = "not_created"
             return _show(errors, user_input)
         self._created_name = user_input[CONF_NAME]
+        # the return only once the journey itself exists: made first, a
+        # refused journey left its return behind on its own
+        if add_return:
+            await self._create_return_trip()
         return await self.async_step_finished()
