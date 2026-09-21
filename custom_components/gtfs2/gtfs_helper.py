@@ -1956,16 +1956,32 @@ def get_agency_list(schedule, data):
     _LOGGER.debug(f"agencies: {agencies}")
     return agencies
 
+# the databases a refresh or an import works in beside a source, never
+# sources of their own: <file>.refresh.sqlite, <file>.import.sqlite and the
+# filtered <file>.import.sqlite.zip
+_WORK_FILE_PARTS = (".refresh", ".import")
+
+
+def _list_gtfs_dir(gtfs_dir):
+    os.makedirs(gtfs_dir, exist_ok=True)
+    return os.listdir(gtfs_dir)
+
+
 async def get_datasources(hass, path) -> dict[str]:
+    """The datasources in the gtfs2 folder, by name.
+
+    The whole name before ".sqlite": cut at the first dot, a name holding
+    one came back short and named a source that does not exist, and the
+    working files of a refresh or an import only folded into their source
+    by the same accident.
+    """
     _LOGGER.debug(f"Getting datasources for path: {path}")
     gtfs_dir = hass.config.path(path)
-    os.makedirs(gtfs_dir, exist_ok=True)
-    files = await hass.async_add_executor_job(
-            os.listdir, gtfs_dir)
-    datasources = []
-    for file in files:
-        if file.endswith(".sqlite"):
-            datasources.append(file.split(".")[0])        
+    files = await hass.async_add_executor_job(_list_gtfs_dir, gtfs_dir)
+    datasources = sorted(
+        file[:-len(".sqlite")] for file in files
+        if file.endswith(".sqlite")
+        and not file[:-len(".sqlite")].endswith(_WORK_FILE_PARTS))
     _LOGGER.debug(f"Datasources in folder: {datasources}")
     return datasources
 
@@ -1978,12 +1994,13 @@ async def get_zipfiles(hass, path) -> list[str]:
     one instead of typing its name.
     """
     gtfs_dir = hass.config.path(path)
-    os.makedirs(gtfs_dir, exist_ok=True)
-    files = await hass.async_add_executor_job(os.listdir, gtfs_dir)
+    files = await hass.async_add_executor_job(_list_gtfs_dir, gtfs_dir)
     zipfiles = sorted(
         f[:-4] for f in files
         if f.endswith(".zip") and not f.endswith("_temp.zip")
         and not f.endswith("_temp_out.zip")
+        # the filtered copy an import leaves while it runs
+        and not f.endswith(".import.sqlite.zip")
     )
     _LOGGER.debug(f"Zip files in folder: {zipfiles}")
     return zipfiles
