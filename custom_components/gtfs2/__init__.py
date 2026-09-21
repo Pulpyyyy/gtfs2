@@ -6,7 +6,6 @@ import glob
 import os
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
-from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
@@ -322,11 +321,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.data.get('device_tracker_id',None):
         coordinator = GTFSLocalStopUpdateCoordinator(hass, entry)
     else:
-        coordinator = GTFSUpdateCoordinator(hass, entry)    
+        coordinator = GTFSUpdateCoordinator(hass, entry)
 
-    if not coordinator.last_update_success:
-        raise ConfigEntryNotReady
-      
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator
     }
