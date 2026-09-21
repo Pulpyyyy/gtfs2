@@ -683,6 +683,32 @@ def write_leg_file(hass, data, feed_entities=None):
         {**body, "properties": {**properties,
                                 "updated_at": dt_util.utcnow().isoformat()}},
         body)
+    if _LEG_FILES.get(name) != file:
+        _drop_other_legs(geojson_dir, name, file)
+        _LEG_FILES[name] = file
+
+
+# the leg file each entry last wrote, by entry name
+_LEG_FILES: dict[str, str] = {}
+
+
+def _drop_other_legs(geojson_dir, name, kept):
+    """Remove the entry's leg files other than the one just written.
+
+    The leg file is named after the line and the direction of the departure
+    as well as the entry: when those change, the file of the old line stayed
+    until the entry was removed, and a card still found it. Looked for once
+    per new name, with the globs the entry's removal uses.
+    """
+    for pattern in leg_geojson_pattern(name):
+        for path in glob.glob(os.path.join(geojson_dir, pattern)):
+            if os.path.abspath(path) == os.path.abspath(kept):
+                continue
+            try:
+                os.remove(path)
+                _LOGGER.debug("Removed the leg file of an earlier line: %s", path)
+            except OSError as ex:
+                _LOGGER.warning("Could not remove %s: %s", path, ex)
 
 
 # The service days the timetable holds: the one under way and the two after
