@@ -39,6 +39,7 @@ from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck, stru
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
 from .refresh_steps import drop_struck_trips, next_service_date_for
+from .departure_attributes import departure_records
 from .exports import export_leg, export_route_shape, export_timetable
 
 _LOGGER = logging.getLogger(__name__)
@@ -251,6 +252,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 await drop_struck_trips(self, data, run_static)
             except Exception as ex:  # pylint: disable=broad-except
                 _LOGGER.error("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
+                await self._read_records()
                 return self._data
             # the trip updates just read, kept for the leg file below:
             # they carry the realtime of every stop, the sensor reads one
@@ -276,7 +278,31 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         if run_static or rt_feed is not None:
             await export_leg(self, data, rt_feed)
 
+        await self._read_records()
         return self._data
+
+    async def _read_records(self) -> None:
+        """Read, off the loop, the rows the sensor describes the departure with.
+
+        Read again when the departure shown names other ones, or at each
+        static refresh: the stops, trip and route of one departure do not
+        move from a minute to the next, and five lookups a sensor a minute
+        add up. The records outlive the schedule they came from, which is
+        reopened every cycle: they are plain rows, read in full.
+        """
+        departure = self._data.get("next_departure") or {}
+        key = (departure.get("origin_stop_id"), departure.get("destination_stop_id"),
+               departure.get("trip_id"), departure.get("route_id"),
+               self._data.get("route"), self._data.get("gtfs_updated_at"))
+        if key == getattr(self, "_records_key", None) and self._data.get("records"):
+            return
+        try:
+            self._data["records"] = await self.hass.async_add_executor_job(
+                departure_records, self._pygtfs, self._data)
+            self._records_key = key
+        except Exception as ex:  # pylint: disable=broad-except
+            # the attributes that read them go without for a cycle
+            _LOGGER.debug("Could not read the departure's records: %s", ex)
 
     def _remember_struck(self) -> None:
         """Fold what the last realtime reading struck out into what this

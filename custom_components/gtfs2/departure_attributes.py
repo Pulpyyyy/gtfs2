@@ -26,6 +26,54 @@ from .const import (
 )
 
 
+def departure_records(schedule, data):
+    """The rows the sensor describes its departure with, read in one go.
+
+    The two stops, the trip, the route and its agency, which the sensor
+    used to fetch itself from inside its state callback: that runs on the
+    event loop, and four or five SQLite reads a sensor a minute there hold
+    everything else up, the whole of Home Assistant waiting on a database
+    a prune or a swap may be holding. The coordinator runs this in the
+    executor and the sensor reads the answer.
+
+    Returns {"origin", "destination", "trip", "route", "agency"}, each the
+    pygtfs record or None; a train entry names its ends by station, so its
+    two stops are the names as the entry holds them.
+    """
+    records = {"origin": None, "destination": None, "trip": None,
+               "route": None, "agency": None}
+    if schedule is None or isinstance(schedule, str) or data.get("extracting"):
+        return records
+    origin = (data.get("origin") or "").split(": ")[0]
+    destination = (data.get("destination") or "").split(": ")[0]
+    departure = data.get("next_departure") or {}
+    if data.get("route_type") == "2":
+        records["origin"], records["destination"] = origin, destination
+    else:
+        # the record the vehicle really calls at first, often the pole
+        # across the road from the entry's own, then the entry's
+        for key, own, called in (("origin", origin, departure.get("origin_stop_id")),
+                                 ("destination", destination, departure.get("destination_stop_id"))):
+            stops = (schedule.stops_by_id(called) if called else None) or schedule.stops_by_id(own)
+            records[key] = stops[0] if stops else None
+    if departure:
+        trips = schedule.trips_by_id(departure.get("trip_id"))
+        records["trip"] = trips[0] if trips else None
+        route_id = departure.get("route_id")
+    else:
+        # the line of the entry itself, so a card can still name and colour
+        # it on a day it does not run
+        route_id = (data.get("route") or "").split(": ")[0]
+    if route_id:
+        routes = schedule.routes_by_id(route_id)
+        records["route"] = routes[0] if routes else None
+    if records["route"] is not None:
+        agencies = schedule.agencies_by_id(records["route"].agency_id)
+        # False, not None: the agency was looked for and is not there
+        records["agency"] = agencies[0] if agencies else False
+    return records
+
+
 def next_service_info(attributes, state, next_service, offset):
     """When the line next runs, as a date, a count of days and a sentence.
 

@@ -365,70 +365,32 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._available = False
         self._state: datetime.datetime | None = None
         self._attr_device_class = SensorDeviceClass.TIMESTAMP
-        self._trip = None
-        self._route = None
-        self._agency = None
-        self._origin = None
-        self._destination = None
-        # The entry holds one record of each end's place; the departure says
-        # which record the vehicle really calls at, often the pole across the
-        # road from the entry's one. The station attributes, its position
-        # among them, describe where to wait, so they follow the departure.
-        departure_ends = self._departure or {}
-        origin_id = departure_ends.get("origin_stop_id") or self.origin
-        destination_id = departure_ends.get("destination_stop_id") or self.destination
-        # Fetch valid stop information once
-        # exclude check if route_type =2 (trains) as no ID is used
-        if not self._origin and not self.extracting and self._route_type != "2":
-            stops = self._pygtfs.stops_by_id(origin_id) or self._pygtfs.stops_by_id(self.origin)
-            if not stops:
+        # The stops, the trip, the route and its agency, as the coordinator
+        # read them in the executor (departure_records): this runs on the
+        # event loop, where the four or five SQLite reads it used to make
+        # held the whole of Home Assistant up at every update.
+        records = self.coordinator.data.get("records") or {}
+        self._origin = records.get("origin")
+        self._destination = records.get("destination")
+        self._trip = records.get("trip")
+        self._route = records.get("route")
+        self._agency = records.get("agency")
+        if not self.extracting and self._route_type != "2":
+            if not self._origin:
                 self._available = False
                 _LOGGER.warning("Origin stop ID %s not found", self.origin)
                 return
-            self._origin = stops[0]
-        else: 
-            self._origin = self.origin
-        # exclude check if route_type =2 (trains) as no ID is used
-        if not self._destination and not self.extracting and self._route_type != "2":
-            stops = (self._pygtfs.stops_by_id(destination_id)
-                     or self._pygtfs.stops_by_id(self.destination))
-            if not stops:
+            if not self._destination:
                 self._available = False
                 _LOGGER.warning(
                     "Destination stop ID %s not found", self.destination
                 )
                 return
-            self._destination = stops[0]
-        else:
-            self._destination = self.destination
-
-        # Fetch trip and route details once, unless updated
-        if not self._departure:
-            self._trip = None
-            # The line is a property of the entry, not of its departures: it is
-            # still line 41 on a Sunday. Resolving it from the configured route
-            # keeps route_short_name, route_color and route_type published when
-            # no bus runs, so a card can still name and colour the line.
-            route_id = (self.coordinator.data.get("route") or "").split(": ")[0]
-            if route_id and not self.extracting and (
-                not self._route or self._route.route_id != route_id
-            ):
-                routes = self._pygtfs.routes_by_id(route_id)
-                self._route = routes[0] if routes else None
-        else:
-            trip_id = self._departure.get("trip_id")
-            if not self.extracting and (not self._trip or self._trip.trip_id != trip_id):
-                _LOGGER.debug("Fetching trip details for %s", trip_id)
-                # an id the datasource does not carry returns an empty list, and
-                # indexing it used to raise and abort the whole platform setup
-                trips = self._pygtfs.trips_by_id(trip_id)
-                self._trip = trips[0] if trips else None
-
-            route_id = self._departure.get("route_id")
-            if not self.extracting and (not self._route or self._route.route_id != route_id):
-                _LOGGER.debug("Fetching route details for %s", route_id)
-                routes = self._pygtfs.routes_by_id(route_id)
-                self._route = routes[0] if routes else None
+        elif self._route_type == "2" or self.extracting:
+            # a train names its ends by station, and while extracting there
+            # is nothing to read: the entry's own names stand
+            self._origin = self._origin or self.origin
+            self._destination = self._destination or self.destination
 
         # fetch next departures
         self._departure = self.coordinator.data["next_departure"]
@@ -437,21 +399,15 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         else:
             self._next_departures = self._departure.get("next_departures",None)
 
-        # Fetch agency details exactly once
-        if self._agency is None and self._route:
-            _LOGGER.debug("Fetching agency details for %s", self._route.agency_id)
-            try:
-                self._agency = self._pygtfs.agencies_by_id(self._route.agency_id)[0]
-            except IndexError:
-                _LOGGER.debug(
-                    (
-                        "Agency ID '%s' was not found in agency table, "
-                        "you may want to update the routes database table "
-                        "to fix this missing reference"
-                    ),
-                    self._route.agency_id,
-                )
-                self._agency = False
+        if self._agency is False:
+            _LOGGER.debug(
+                (
+                    "Agency ID '%s' was not found in agency table, "
+                    "you may want to update the routes database table "
+                    "to fix this missing reference"
+                ),
+                getattr(self._route, "agency_id", None),
+            )
 
         # Define the state as a Agency TZ, then help TZ (which is UTC if no HA TZ set)
         if not self._departure:

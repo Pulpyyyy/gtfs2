@@ -311,8 +311,10 @@ def test_coordinator_case(case_id: str, case_dir: Path):
     result = _normalize_datetimes(result)
     # the rows kept for a later realtime refresh are this case's own input
     # file, not an output: compared through what the coordinator made of
-    # them, never repeated in the capture
-    for key in ("departure_rows", "departure_rows_origin"):
+    # them, never repeated in the capture. The records are the same kind of
+    # thing, the database rows the sensor describes the departure with,
+    # read for it off the loop; against this fake schedule they are empty
+    for key in ("departure_rows", "departure_rows_origin", "records"):
         result.pop(key, None)
     assert result == expected, (
         f"[{case_id}] ({label}) coordinator.data did not match "
