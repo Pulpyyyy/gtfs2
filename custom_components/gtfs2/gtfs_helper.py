@@ -2481,16 +2481,21 @@ def _interpret_local_stop_rows(self, rows):
 
         # check if local file created
         if check != "ok":
-            _LOGGER.error("Could not download RT data from: %s", self._trip_update_url)
-            return {}
+            # the timetable still stands: the departures are listed without
+            # their delays this cycle, where they all went with the feed
+            _LOGGER.warning("Could not download RT data from %s, listing the "
+                            "timetable alone", self._trip_update_url)
         else:
             # use local file created as new url
             self._trip_update_url = "file://" + DEFAULT_PATH_RT + "/" + self._data["name"] + "_localstop.rt"
 
     # Fetch + parse the RT feed once for this refresh cycle.
     feed_entities = None
-    if self._realtime:
-
+    if self._realtime and not self._trip_update_url.startswith("file://"):
+        # the download failed: an empty feed, so the lines below do not
+        # each go and ask the host again
+        feed_entities = []
+    elif self._realtime:
         feed_entities = get_gtfs_feed_entities(
             url=self._trip_update_url, headers=self._headers, label="trip_data"
         ) or []
@@ -2549,14 +2554,14 @@ def get_local_stops_next_departures(self):
     _LOGGER.debug("Get local stop departure with data: %s", self._data)
     if check_extracting(self.hass, self._data['gtfs_dir'],self._data['file']):
         _LOGGER.warning("Cannot get next depurtures on this datasource as still unpacking: %s", self._data["file"])
-        return {}
+        return []
     """Get next departures from data."""
     schedule = self._data["schedule"]
     # same contract as get_next_departure: a sentinel or None instead of a
     # schedule means nothing to offer, not a traceback
     if schedule is None or isinstance(schedule, str):
         _LOGGER.warning("Datasource %s has no usable schedule (%s), no local stops", self._data["file"], schedule or "empty")
-        return {}
+        return []
     offset = self._data["offset"]
     now = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset)
     now_date = now.strftime(dt_util.DATE_STR_FORMAT)
