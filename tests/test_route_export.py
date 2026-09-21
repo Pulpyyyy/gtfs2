@@ -105,3 +105,37 @@ def test_a_new_zip_or_another_trip_writes_it_in_the_background(tmp_path, monkeyp
     _files(tmp_path, trip="an older trip")
     written, started = _run(tmp_path, monkeypatch)
     assert written == [TRIP] and len(started) == 1
+
+
+def test_the_trip_drawn_is_picked_once_per_database(tmp_path, monkeypatch):
+    _files(tmp_path)
+    picked = []
+    monkeypatch.setattr(exports_mod, "get_representative_trip",
+                        lambda *args: picked.append(args[1:]) or TRIP)
+
+    async def run(me, edition, origin="A: a"):
+        me._pygtfs_edition = edition
+        await exports_mod.export_route_shape(me, {"route": ROUTE, "direction": DIRECTION,
+                                                  "origin": origin, "destination": "B: b"})
+
+    async def main():
+        async def executor(fn, *args):
+            return fn(*args)
+
+        me = object.__new__(coordinator_mod.GTFSUpdateCoordinator)
+        me.hass = types.SimpleNamespace(
+            config=types.SimpleNamespace(path=lambda *parts: str(tmp_path.joinpath(*parts))),
+            async_add_executor_job=executor,
+            async_create_background_task=lambda coro, name: asyncio.get_running_loop().create_task(coro))
+        me._route_export_trip = None
+        me._route_task = None
+        me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "IDFM",
+                    "next_departure": {"route_id": ROUTE, "trip_direction_id": DIRECTION}}
+        await run(me, "1:1:1")
+        await run(me, "1:1:1")          # same database, same stops: kept
+        await run(me, "2:2:2")          # a refresh swapped a new one in
+        await run(me, "2:2:2", "C: c")  # another stop asked
+        await run(me, None)             # no edition known: always picked
+
+    asyncio.run(main())
+    assert len(picked) == 4

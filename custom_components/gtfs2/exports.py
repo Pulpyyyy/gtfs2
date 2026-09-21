@@ -92,13 +92,22 @@ async def export_route_shape(coordinator, data) -> None:
     # departure, the entry's once the last one of the day is gone
     origin_id = departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0]
     destination_id = departure.get("destination_stop_id") or (data.get("destination") or "").split(": ")[0]
-    try:
-        trip_id = await coordinator.hass.async_add_executor_job(
-            get_representative_trip, coordinator._data["schedule"], route_id, direction,
-            origin_id, destination_id)
-    except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Error picking the trip to draw route %s: %s", route_id, ex)
-        return
+    # picking it reads every trip of the line, 0.3 s for Orleans line A, and
+    # it ran on every refresh of every entry: the pick only changes with
+    # the stops asked and the database, so it is kept until one of them does
+    pick = (route_id, direction, origin_id, destination_id,
+            getattr(coordinator, "_pygtfs_edition", None))
+    if pick[-1] is not None and pick == getattr(coordinator, "_representative_pick", None):
+        trip_id = coordinator._representative_trip
+    else:
+        try:
+            trip_id = await coordinator.hass.async_add_executor_job(
+                get_representative_trip, coordinator._data["schedule"], route_id, direction,
+                origin_id, destination_id)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.error("Error picking the trip to draw route %s: %s", route_id, ex)
+            return
+        coordinator._representative_pick, coordinator._representative_trip = pick, trip_id
     if not trip_id:
         return
     # rewritten when the trip changes, when the zip does, and when the
