@@ -323,9 +323,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     else:
         coordinator = GTFSUpdateCoordinator(hass, entry)
 
-    hass.data[DOMAIN][entry.entry_id] = {
-        "coordinator": coordinator
-    }
+    # the entry's own, on the entry: hass.data[DOMAIN] is the store the
+    # sources share, their locks, checks and flags
+    entry.runtime_data = coordinator
 
     entry.async_on_unload(entry.add_update_listener(update_listener))
       
@@ -341,11 +341,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # listener unloads itself
         return await hass.config_entries.async_unload_platforms(entry, DATASOURCE_PLATFORMS)
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        stored = hass.data[DOMAIN].pop(entry.entry_id)
         # the schedule it held open: every reload used to leave one behind
-        coordinator = (stored or {}).get("coordinator")
         await hass.async_add_executor_job(
-            close_schedule, getattr(coordinator, "_pygtfs", None))
+            close_schedule, getattr(entry.runtime_data, "_pygtfs", None))
 
     return unload_ok
 
@@ -508,7 +506,7 @@ async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
     have a local stops sensor walk every stop around a person every minute
     until the next restart.
     """
-    coordinator = hass.data[DOMAIN][entry.entry_id]['coordinator']
+    coordinator = entry.runtime_data
     if isinstance(coordinator, GTFSLocalStopUpdateCoordinator):
         coordinator.update_interval = timedelta(minutes=entry.options.get(
             "local_stop_refresh_interval", DEFAULT_LOCAL_STOP_REFRESH_INTERVAL))
