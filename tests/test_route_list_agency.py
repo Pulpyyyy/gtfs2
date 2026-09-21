@@ -47,3 +47,13 @@ def test_every_agency_and_one_route_type(tmp_path):
         _schedule(tmp_path), {"agency": "0: ALL", "route_type": "0", "file": "src"},
         gtfs_dir=str(tmp_path))
     assert _ids(routes) == ["R3"]
+
+
+def test_the_count_is_the_list_length(tmp_path):
+    # the route screen shows this number beside the list it offers
+    schedule = _schedule(tmp_path)
+    for agency in ("0: ALL", "TAO: TAO", "L'Autocar: L'Autocar"):
+        for route_type in ("99", "3", "0"):
+            data = {"agency": agency, "route_type": route_type, "file": "src"}
+            assert gtfs_helper.get_route_count(schedule, data) == len(
+                gtfs_helper.get_route_list(schedule, data)), data

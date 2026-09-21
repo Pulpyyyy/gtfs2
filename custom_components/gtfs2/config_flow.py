@@ -46,6 +46,7 @@ from .const import (
 from .gtfs_helper import (
     get_gtfs,
     get_next_departure,
+    get_route_count,
     get_route_list,
     get_stop_list,
     get_destination_stop_list,
@@ -460,9 +461,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                     reason="no_routes_with_trips",
                     description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                 )
-            total = len(usable) if fresh else len(
-                await self.hass.async_add_executor_job(
-                    get_route_list, self._pygtfs, self._user_inputs))
+            total = len(usable) if fresh else await self.hass.async_add_executor_job(
+                get_route_count, self._pygtfs, self._user_inputs)
             # the mode goes after the label where lines of one number differ
             words = {mode: await _async_text(self.hass, f"line_mode_{mode}", mode)
                      for mode in LINE_MODES}

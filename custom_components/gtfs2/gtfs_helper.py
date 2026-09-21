@@ -1060,6 +1060,23 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     _LOGGER.debug(f"routes: {routes}")
     return routes
 
+
+def get_route_count(schedule, data):
+    """How many routes get_route_list lists without with_trips_only.
+
+    The route screen only shows that number. Building the whole list to
+    count it read the ends of every line with no long name from
+    stop_times: IDFM with every operator, 1837 lines, 25 to 47 s once many
+    lines are imported, and the screen waited for it.
+    """
+    agency_id = data["agency"].split(': ', 1)[0]
+    agency_where = "and agency_id = :agency_id" if agency_id != "0" else ""
+    route_type_where = "and route_type = :route_type" if data["route_type"] != "99" else ""
+    sql = f"select count(*) from routes where 1=1 {agency_where} {route_type_where}"  # noqa: S608
+    with schedule.engine.connect() as conn:
+        return conn.execute(
+            text(sql), {"agency_id": agency_id, "route_type": data["route_type"]}).scalar()
+
 # The trips of one direction ride a handful of distinct stop patterns, a
 # few thousand times each over the feed's calendar (TAO tram A: 4214 trips,
 # 27 stops). The walk only needs each pattern once, so one trip stands for
