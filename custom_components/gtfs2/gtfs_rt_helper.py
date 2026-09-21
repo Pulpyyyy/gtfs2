@@ -236,10 +236,31 @@ def _fetch_gtfs_feed_entities(url: str, headers, label: str):
     if label == "alerts":
         _LOGGER.debug("Feed : %s", feed)
 
-    try:
-        json_object = json.loads(response.text)
-        feed = json.loads(response.text)
-    except ValueError as e:
+    # json or protobuf: a json body opens with a brace or a bracket. Asking
+    # response.text of a protobuf first ran the charset detection over
+    # megabytes of binary, then parsed the result twice, for nothing
+    head = response.content.lstrip()[:1]
+    if head in (b"{", b"["):
+        try:
+            feed = json.loads(response.content)
+        except ValueError:
+            _LOGGER.error("Trying to update %s, and got a 200 whose body is broken json", label)
+            return None
+        if label == "alerts" and isinstance(feed, dict):
+            # the alert reader walks protobuf messages, HasField and all:
+            # handed dicts it raised, and the realtime of the cycle went
+            # with it. A json feed is read into the message it stands for
+            try:
+                from google.protobuf import json_format
+                message = gtfs_realtime_pb2.FeedMessage()
+                json_format.ParseDict(feed, message, ignore_unknown_fields=True)
+                return message.entity
+            except Exception as ex:  # pylint: disable=broad-except
+                _LOGGER.error("Trying to update %s, and got json that is not a GTFS-RT feed: %s",
+                              label, type(ex).__name__)
+                return None
+        return feed.get('entity') if isinstance(feed, dict) else None
+    else:
         _LOGGER.debug("GTFS RT data is not providing format json")
         # a maintenance or error page served with a 200 lands here and is not
         # protobuf either: degrade to no data instead of an uncaught traceback
