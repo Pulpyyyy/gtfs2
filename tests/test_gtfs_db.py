@@ -100,3 +100,61 @@ def test_nothing_done_nothing_swapped(tmp_path):
     assert gtfs_db.on_a_copy(str(tmp_path), "src", lambda d, n: None) is None
     assert (tmp_path / "src.sqlite").stat().st_mtime_ns == stamp
     assert sorted(p.name for p in tmp_path.iterdir()) == ["src.sqlite"]
+
+
+def make_scratch(path):
+    """A scratch database of two routes, in the columns copy_route reads."""
+    conn = sqlite3.connect(path)
+    conn.execute("create table stops (feed_id integer, stop_id varchar, stop_name varchar, "
+                 "primary key (feed_id, stop_id))")
+    conn.execute("create table trips (feed_id integer, trip_id varchar, route_id varchar, "
+                 "primary key (feed_id, trip_id))")
+    conn.execute("create table stop_times (feed_id integer, trip_id varchar, stop_id varchar, "
+                 "stop_sequence integer, arrival_time varchar, departure_time varchar, "
+                 "stop_headsign varchar, pickup_type integer, drop_off_type integer, "
+                 "shape_dist_traveled float, timepoint integer, "
+                 "primary key (feed_id, trip_id, stop_sequence))")
+    conn.executemany("insert into stops values (1, ?, ?)", [("S1", "One"), ("S2", "Two"), ("S3", "Three")])
+    conn.executemany("insert into trips values (1, ?, ?)", [("A1", "A"), ("A2", "A"), ("B1", "B")])
+    rows = [("A1", "S1", 1), ("A1", "S2", 2), ("A2", "S1", 1), ("A2", "S2", 2),
+            ("B1", "S2", 1), ("B1", "S3", 2)]
+    conn.executemany("insert into stop_times values (1, ?, ?, ?, '08:00:00', '08:00:00', "
+                     "null, 0, 0, null, 1)", rows)
+    conn.commit()
+    conn.close()
+
+
+def _import(tmp_path, routes):
+    def build(scratch_file):
+        make_scratch(scratch_file)
+        return True
+    return gtfs_db.import_routes(str(tmp_path), "src", routes, build)
+
+
+def test_import_counts_what_each_route_brings(tmp_path):
+    assert _import(tmp_path, ["A", "B"]) == {"A": 4, "B": 2}
+    conn = sqlite3.connect(tmp_path / "src.sqlite")
+    assert conn.execute("select count(*) from stops").fetchone()[0] == 3
+    assert conn.execute("select count(*) from stop_times").fetchone()[0] == 6
+    conn.close()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["src.sqlite"]
+
+
+def test_import_into_an_interned_database(tmp_path):
+    assert _import(tmp_path, ["A"]) == {"A": 4}
+    assert intern_gtfs_datasource(str(tmp_path), "src")
+    # a second import: the stops are already there, B brings its own rows
+    assert _import(tmp_path, ["A", "B"]) == {"A": 0, "B": 2}
+    conn = sqlite3.connect(tmp_path / "src.sqlite")
+    rows = conn.execute("select trip_id, stop_id from stop_times order by trip_id, stop_sequence").fetchall()
+    conn.close()
+    assert rows == [("A1", "S1"), ("A1", "S2"), ("A2", "S1"), ("A2", "S2"), ("B1", "S2"), ("B1", "S3")]
+
+
+def test_the_real_file_keeps_its_own_schema(tmp_path):
+    # the scratch indexes speed the copy up and go away with the scratch file
+    _import(tmp_path, ["A", "B"])
+    conn = sqlite3.connect(tmp_path / "src.sqlite")
+    names = [r[0] for r in conn.execute("select name from sqlite_master where type = 'index'")]
+    conn.close()
+    assert not [n for n in names if n.startswith("gtfs2_scratch")]
