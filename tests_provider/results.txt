@@ -1,4 +1,4 @@
-provider case results -- 298 case(s)
+provider case results -- 299 case(s)
 
 case: adelaide
   result: PASSED
@@ -856,6 +856,9 @@ case: tests_provider/test_alerts.py::test_alerts_name_their_stops
   result: PASSED
 
 case: tests_provider/test_alerts.py::test_alerts_reach_the_listed_trips
+  result: PASSED
+
+case: tests_provider/test_alerts.py::test_alerts_to_come_say_when
   result: PASSED
 
 case: tests_provider/test_boarding.py::test_a_stop_with_no_way_on_lists_no_local_departure

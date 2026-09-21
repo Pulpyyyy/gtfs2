@@ -141499,13 +141499,37 @@
         },
         {
           "expected": [
-            true
+            null
           ],
           "got": [
-            true
+            null
           ],
           "ok": true,
-          "text": "an alert announced for a later day is marked as such: expected [True], got [True]"
+          "text": "an alert announced for a later day is not about a later departure: expected [None], got [None]"
+        },
+        {
+          "ok": true,
+          "periods": [
+            [
+              {
+                "end": "2026-08-30T22:00:00+00:00",
+                "start": "2026-06-10T09:22:00+00:00"
+              }
+            ]
+          ],
+          "text": "it is marked by its periods, all ahead"
+        },
+        {
+          "expected": [
+            null,
+            null
+          ],
+          "got": [
+            null,
+            null
+          ],
+          "ok": true,
+          "text": "it takes neither the sentence nor the effect: expected (None, None), got (None, None)"
         },
         {
           "expected": [
@@ -141518,12 +141542,163 @@
           ],
           "ok": true,
           "text": "what concerns the next departure ranks first: expected ['now', 'later'], got ['now', 'later']"
+        },
+        {
+          "expected": [
+            "begun",
+            "ahead"
+          ],
+          "got": [
+            "begun",
+            "ahead"
+          ],
+          "ok": true,
+          "text": "what starts after the departure ranks after: expected ['begun', 'ahead'], got ['begun', 'ahead']"
         }
       ],
       "fixture": "sncf",
       "id": "tests_provider/test_alerts.py::test_alerts_reach_the_listed_trips",
       "outcome": "passed",
       "promise": "alerts",
+      "reason": null
+    },
+    {
+      "checks": [
+        {
+          "expected": [
+            "Travaux de modernisation - Trafic interrompu",
+            "Mesures de sécurité - Trafic interrompu"
+          ],
+          "got": [
+            "Travaux de modernisation - Trafic interrompu",
+            "Mesures de sécurité - Trafic interrompu"
+          ],
+          "ok": true,
+          "text": "both are listed: expected ['Travaux de modernisation - Trafic interrompu', 'Mesures de sécurité - Trafic interrompu'], got ['Travaux de modernisation - Trafic interrompu', 'Mesures de sécurité - Trafic interrompu']"
+        },
+        {
+          "expected": [
+            null,
+            null
+          ],
+          "got": [
+            null,
+            null
+          ],
+          "ok": true,
+          "text": "neither is about a later departure: expected [None, None], got [None, None]"
+        },
+        {
+          "expected": [
+            [
+              {
+                "end": "2026-10-12T02:30:00+00:00",
+                "start": "2026-10-11T02:45:00+00:00"
+              },
+              {
+                "end": "2026-10-05T02:30:00+00:00",
+                "start": "2026-10-04T02:45:00+00:00"
+              }
+            ],
+            [
+              {
+                "end": "2026-09-26T02:30:00+00:00",
+                "start": "2026-09-25T20:00:00+00:00"
+              }
+            ]
+          ],
+          "got": [
+            [
+              {
+                "end": "2026-10-12T02:30:00+00:00",
+                "start": "2026-10-11T02:45:00+00:00"
+              },
+              {
+                "end": "2026-10-05T02:30:00+00:00",
+                "start": "2026-10-04T02:45:00+00:00"
+              }
+            ],
+            [
+              {
+                "end": "2026-09-26T02:30:00+00:00",
+                "start": "2026-09-25T20:00:00+00:00"
+              }
+            ]
+          ],
+          "ok": true,
+          "text": "each gives all its periods, in the feed's order: expected [[{'start': '2026-10-11T02:45:00+00:00', 'end': '2026-10-12T02:30:00+00:00'}, {'start': '2026-10-04T02:45:00+00:00', 'end': '2026-10-05T02:30:00+00:00'}], [{'start': '2026-09-25T20:00:00+00:00', 'end': '2026-09-26T02:30:00+00:00'}]], got [[{'start': '2026-10-11T02:45:00+00:00', 'end': '2026-10-12T02:30:00+00:00'}, {'start': '2026-10-04T02:45:00+00:00', 'end': '2026-10-05T02:30:00+00:00'}], [{'start': '2026-09-25T20:00:00+00:00', 'end': '2026-09-26T02:30:00+00:00'}]]"
+        },
+        {
+          "expected": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "got": [
+            null,
+            null,
+            null,
+            null
+          ],
+          "ok": true,
+          "text": "nothing current is said: expected (None, None, None, None), got (None, None, None, None)"
+        },
+        {
+          "expected": [
+            "Trafic ralenti"
+          ],
+          "got": [
+            "Trafic ralenti"
+          ],
+          "ok": true,
+          "text": "what applies now comes first: expected ['Trafic ralenti'], got ['Trafic ralenti']"
+        },
+        {
+          "expected": [
+            null,
+            [
+              {
+                "end": "2026-09-21T22:00:00+00:00",
+                "start": "2026-09-21T20:00:00+00:00"
+              }
+            ]
+          ],
+          "got": [
+            null,
+            [
+              {
+                "end": "2026-09-21T22:00:00+00:00",
+                "start": "2026-09-21T20:00:00+00:00"
+              }
+            ]
+          ],
+          "ok": true,
+          "text": "and is under way: expected (None, [{'start': '2026-09-21T20:00:00+00:00', 'end': '2026-09-21T22:00:00+00:00'}]), got (None, [{'start': '2026-09-21T20:00:00+00:00', 'end': '2026-09-21T22:00:00+00:00'}])"
+        },
+        {
+          "expected": [
+            "Trafic ralenti",
+            "SIGNIFICANT_DELAYS"
+          ],
+          "got": [
+            "Trafic ralenti",
+            "SIGNIFICANT_DELAYS"
+          ],
+          "ok": true,
+          "text": "the sentence and effect are its own: expected ('Trafic ralenti', 'SIGNIFICANT_DELAYS'), got ('Trafic ralenti', 'SIGNIFICANT_DELAYS')"
+        },
+        {
+          "expected": 3,
+          "got": 3,
+          "ok": true,
+          "text": "the two to come are still listed: expected 3, got 3"
+        }
+      ],
+      "fixture": "sncf",
+      "id": "tests_provider/test_alerts.py::test_alerts_to_come_say_when",
+      "outcome": "passed",
+      "promise": "alerts to come",
       "reason": null
     },
     {

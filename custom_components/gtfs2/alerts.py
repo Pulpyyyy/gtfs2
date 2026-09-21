@@ -71,12 +71,25 @@ _ALERT_EFFECT_ORDER = (
 _ALERTS_KEPT = 5
 
 
-def _alert_severity(item):
+def _to_come(item, ride=None):
+    """Whether none of an alert's published periods covers the ride ahead,
+    ride being (now, departure announced) as _stamp writes them. An alert
+    whose every period is over is not published, so one none covers has a
+    period after the departure."""
+    if not ride or not item.get("periods"):
+        return False
+    now, until = ride
+    return not any((not p.get("start") or p["start"] <= until)
+                   and (not p.get("end") or p["end"] >= now)
+                   for p in item["periods"])
+
+
+def _alert_severity(item, ride=None):
     """Rank of one alert. What concerns the next departure comes before what
-    names a later one only; then the effect, and an effect the feed never
-    stated comes last: _alert_kind drops UNKNOWN_EFFECT, so a missing key means
-    the feed said nothing, not that nothing is happening."""
-    later = 1 if item.get("later_only") else 0
+    names a later one only or starts after it; then the effect, and an effect
+    the feed never stated comes last: _alert_kind drops UNKNOWN_EFFECT, so a
+    missing key means the feed said nothing, not that nothing is happening."""
+    later = 1 if item.get("later_only") or _to_come(item, ride) else 0
     try:
         return (later, _ALERT_EFFECT_ORDER.index(item.get("effect")))
     except ValueError:
@@ -121,7 +134,30 @@ def _alert_when(alert, now_ts, until_ts):
     return "later" if later else "over"
 
 
-def _rank_alerts(items):
+def _stamp(ts):
+    """A period bound as the attributes write a time."""
+    return dt_util.utc_from_timestamp(ts).isoformat()
+
+
+def _alert_periods(alert):
+    """Every period of an alert, in the feed's order, as
+    [{"start": iso, "end": iso}], a bound the feed left open left out.
+
+    IDFM announces five Saturdays of works on metro 6 in one alert: which
+    of them to show, and how, is the card's to decide.
+    """
+    out = []
+    for period in getattr(alert, "active_period", None) or []:
+        bounds = {}
+        for field in ("start", "end"):
+            ts = _period_bound(period, field)
+            if ts:
+                bounds[field] = _stamp(ts)
+        out.append(bounds)
+    return out
+
+
+def _rank_alerts(items, ride=None):
     """The alerts of one end of the journey, worst first and without repeats.
 
     SNCF publishes the same alert under two ids, word for word, and the reader
@@ -129,6 +165,7 @@ def _rank_alerts(items):
     together are what one can tell apart: "Travaux" at two stations is two
     alerts. The sort is stable, so at equal effect the feed's own order
     still decides, and the cap is applied last so what is kept is the worst.
+    ride is (now, departure announced), see _to_come.
     """
     seen = set()
     unique = []
@@ -139,7 +176,7 @@ def _rank_alerts(items):
             continue
         seen.add(key)
         unique.append(item)
-    unique.sort(key=_alert_severity)
+    unique.sort(key=lambda item: _alert_severity(item, ride))
     return unique[:_ALERTS_KEPT]
 
 
@@ -563,10 +600,13 @@ def journey_alerts(coordinator, feed_entities):
         # going on
         item = {"text": _alert_text(alert.header_text, language)}
         item.update(_alert_kind(alert))
-        if when == "later":
-            # announced for a later day: kept, since a rider wants to know,
-            # but never ahead of what is happening on this ride
-            item["later_only"] = True
+        # when it applies: a later alert starts after the departure
+        # announced, and is kept, since a rider wants to know, but ranked
+        # after what happens on this ride. A card can say "from Saturday"
+        # rather than show a closure four days ahead as if it were tonight's
+        periods = _alert_periods(alert)
+        if periods:
+            item["periods"] = periods
         stops = _stop_names(data, hits["stops"])
         if stops:
             item["stops"] = stops
@@ -586,22 +626,33 @@ def journey_alerts(coordinator, feed_entities):
             origin_alerts.append(item)
         if hits["destination"] or whole_journey:
             destination_alerts.append(item)
-    origin_alerts = _rank_alerts(origin_alerts)
-    destination_alerts = _rank_alerts(destination_alerts)
+    ride = (_stamp(now_ts), _stamp(until_ts))
+    origin_alerts = _rank_alerts(origin_alerts, ride)
+    destination_alerts = _rank_alerts(destination_alerts, ride)
     # A journey can be under several alerts at once and the strings hold one
     # sentence each, so they take the worst of them instead of whichever the
-    # feed published last. The lists carry the rest, in the same order.
+    # feed published last. The lists carry the rest, in the same order. An
+    # alert for a day to come stays in the list, never in the sentence: on
+    # its own it made metro 6 read "Trafic interrompu" on a quiet evening.
+    # An alert about a later departure of the board only stays in the list
+    # too, hung on its trip: the sentence speaks of the departure shown.
+    origin_now = [i for i in origin_alerts
+                  if not _to_come(i, ride) and not i.get("later_only")]
+    destination_now = [i for i in destination_alerts
+                       if not _to_come(i, ride) and not i.get("later_only")]
     if origin_alerts:
         rt_alerts["origin_stop_alerts"] = origin_alerts
-        rt_alerts["origin_stop_alert"] = origin_alerts[0]["text"]
+    if origin_now:
+        rt_alerts["origin_stop_alert"] = origin_now[0]["text"]
     if destination_alerts:
         rt_alerts["destination_stop_alerts"] = destination_alerts
-        rt_alerts["destination_stop_alert"] = destination_alerts[0]["text"]
+    if destination_now:
+        rt_alerts["destination_stop_alert"] = destination_now[0]["text"]
     # cause and effect have to describe the alert the sentence comes from.
     # Taken from two different alerts, as they were, a card that styles
     # itself on them paints a service notice as an incident. Origin first,
     # because that is the sentence a start/stop card reads.
-    head = (origin_alerts or destination_alerts or [{}])[0]
+    head = (origin_now or destination_now or [{}])[0]
     for field in ("cause", "effect"):
         if field in head:
             rt_alerts["alert_" + field] = head[field]
