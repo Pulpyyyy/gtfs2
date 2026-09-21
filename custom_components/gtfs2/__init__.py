@@ -12,7 +12,7 @@ from homeassistant.helpers import entity_registry as er
 
 from datetime import timedelta
 
-from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
+from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
@@ -498,8 +498,23 @@ def setup(hass, config):
     return True
 
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
-    """Handle options update."""
-    hass.data[DOMAIN][entry.entry_id]['coordinator'].update_interval = timedelta(minutes=1)
+    """Handle options update.
+
+    Each coordinator gets back the pace it was built with. Every one of
+    them used to be set to a minute, the local stops one included, whose
+    own interval is 15 minutes by default: a click on the realtime switch,
+    which rewrites the entries' options through the mirror, was enough to
+    have a local stops sensor walk every stop around a person every minute
+    until the next restart.
+    """
+    coordinator = hass.data[DOMAIN][entry.entry_id]['coordinator']
+    if isinstance(coordinator, GTFSLocalStopUpdateCoordinator):
+        coordinator.update_interval = timedelta(minutes=entry.options.get(
+            "local_stop_refresh_interval", DEFAULT_LOCAL_STOP_REFRESH_INTERVAL))
+    else:
+        # a minute is the journey coordinator's own pace: its static
+        # refresh_interval is read inside the update, not here
+        coordinator.update_interval = timedelta(minutes=1)
     return True
 
 
