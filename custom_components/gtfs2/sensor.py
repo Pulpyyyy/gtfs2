@@ -663,8 +663,11 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         next_departure_lists(self._attributes, self._departure, self._next_departures)
 
       
-        self._attributes["gtfs_updated_at"] = self.coordinator.data[
-            "gtfs_updated_at"]
+        # .get: an options change drops the stamp so the next update reads
+        # the timetable again, and a refresh failing in between must not
+        # take the sensor with it
+        self._attributes["gtfs_updated_at"] = self.coordinator.data.get(
+            "gtfs_updated_at")
 
         map_files(self._attributes, self.coordinator.data)
 
@@ -785,8 +788,11 @@ class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
         self._state = self._stop["stop_name"] + " (" +  str(dt_util.now().replace(tzinfo=None).strftime(TIME_STR_FORMAT)) + ")"
 
         self._attr_native_value = self._state        
-        self._attributes["gtfs_updated_at"] = self.coordinator.data[
-            "gtfs_updated_at"]  
+        # .get: an options change drops the stamp so the next update reads
+        # the timetable again, and a refresh failing in between must not
+        # take the sensor with it
+        self._attributes["gtfs_updated_at"] = self.coordinator.data.get(
+            "gtfs_updated_at")  
         self._attributes["device_tracker_id"] = self.coordinator.data[
             "device_tracker_id"]
         self._attributes["offset"] = self.coordinator.data[

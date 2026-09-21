@@ -515,6 +515,12 @@ async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
         # a minute is the journey coordinator's own pace: its static
         # refresh_interval is read inside the update, not here
         coordinator.update_interval = timedelta(minutes=1)
+    # the options just changed, an offset or an interval: the answer the old
+    # ones gave was served until the next static refresh. Dropping its stamp
+    # has the next update read the timetable again, and it runs now
+    if coordinator.data:
+        coordinator.data.pop("gtfs_updated_at", None)
+    await coordinator.async_request_refresh()
     return True
 
 
