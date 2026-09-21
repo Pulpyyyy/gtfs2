@@ -2669,9 +2669,11 @@ async def get_route_departures(hass, data):
     for instant in instants:
         local = dt_util.as_local(instant).replace(tzinfo=None)
         day = local.strftime(dt_util.DATE_STR_FORMAT)
-        if day == now_date and cutoff_today < local:
+        # from_time is where the list starts: a departure at that very
+        # second is in it, the midnight one of the default 00:00:00 above all
+        if day == now_date and cutoff_today <= local:
             today_departures.append(instant.isoformat())
-        elif day == tomorrow_date and cutoff_tomorrow < local:
+        elif day == tomorrow_date and cutoff_tomorrow <= local:
             tomorrow_departures.append(instant.isoformat())
 
     _departures = {"today": today_departures, "tomorrow": tomorrow_departures}
