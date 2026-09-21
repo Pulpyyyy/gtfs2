@@ -1,25 +1,18 @@
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from urllib.parse import quote
 import json
 import os
 
-import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
 import requests
-import voluptuous as vol
 from google.transit import gtfs_realtime_pb2
 from sqlalchemy.sql import text as sql_text
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import ATTR_LATITUDE, ATTR_LONGITUDE, CONF_NAME
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity import Entity
 import threading
 import time
-from homeassistant.util import Throttle
 import binascii
-import base64
 
 from .requests_testadapter import Resp
 
@@ -40,28 +33,12 @@ from .const import (
     ATTR_NEXT_RT_TRIPS,
     ATTR_RT_CANCELLED,
     ATTR_RT_SKIPPED,
-    ATTR_ICON,
     ATTR_UNIT_OF_MEASUREMENT,
     ATTR_DEVICE_CLASS,
-    ATTR_LATITUDE,
-    ATTR_LONGITUDE,
-
     CONF_API_KEY,
     CONF_API_KEY_NAME,
     CONF_API_KEY_LOCATION,
     CONF_ACCEPT_HEADER_PB,
-    CONF_STOP_ID,
-    CONF_ROUTE,
-    CONF_TRIP_UPDATE_URL,
-    CONF_VEHICLE_POSITION_URL,
-    CONF_ROUTE_DELIMITER,
-    CONF_ICON,
-    CONF_SERVICE_TYPE,
-
-    DEFAULT_SERVICE,
-    DEFAULT_ICON,
-    DEFAULT_DIRECTION,
-    DEFAULT_PATH,
     DEFAULT_PATH_GEOJSON,
 
     TIME_STR_FORMAT

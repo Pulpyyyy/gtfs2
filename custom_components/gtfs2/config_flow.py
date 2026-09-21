@@ -9,27 +9,17 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
-import homeassistant.helpers.config_validation as cv
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
     DEFAULT_PATH,
     DOMAIN,
-    DEFAULT_API_KEY_LOCATION,
     DEFAULT_REFRESH_INTERVAL,
     DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
     DEFAULT_LOCAL_STOP_TIMERANGE,
     DEFAULT_LOCAL_STOP_RADIUS,
     DEFAULT_OFFSET,
-    CONF_API_KEY_LOCATION,
-    CONF_API_KEY,
-    CONF_API_KEY_NAME,
-    CONF_ACCEPT_HEADER_PB,
-    DEFAULT_ACCEPT_HEADER_PB,
-    DEFAULT_API_KEY_NAME,
-    CONF_TRIP_UPDATE_URL,
-    CONF_ALERTS_URL,
     CONF_URL,
     CONF_EXTRACT_FROM,
     CONF_FILE,
@@ -37,7 +27,6 @@ from .const import (
     CONF_AGENCY,
     CONF_ROUTE_TYPE,
     CONF_ROUTE,
-    CONF_DIRECTION,
     CONF_LOOP_DIRECTION,
     CONF_ORIGIN,
     CONF_DESTINATION,
@@ -50,7 +39,6 @@ from .const import (
     CONF_REAL_TIME,
     CONF_KIND,
     ENTRY_KIND_DATASOURCE,
-    ATTR_API_KEY_LOCATIONS,
     DEFAULT_MAX_LOCAL_STOPS,
     CONF_MAX_LOCAL_STOPS,
 )

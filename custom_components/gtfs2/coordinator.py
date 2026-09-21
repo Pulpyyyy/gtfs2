@@ -27,17 +27,13 @@ from .const import (
     CONF_TRIP_UPDATE_URL,
     CONF_VEHICLE_POSITION_URL,
     CONF_ALERTS_URL,
-    ATTR_DUE_IN,
     ATTR_NEXT_RT,
-    ATTR_LATITUDE,
-    ATTR_LONGITUDE,
-    ATTR_RT_UPDATED_AT,
     ICON,
     ICONS
 )    
 from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
-from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck, struck_trips
+from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
 from .refresh_steps import drop_struck_trips, next_service_date_for

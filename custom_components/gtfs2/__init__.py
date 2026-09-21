@@ -5,15 +5,14 @@ import logging
 import glob
 import os
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
 from datetime import timedelta
 
-from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
-from homeassistant.const import CONF_HOST
+from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
 import voluptuous as vol
 from .gtfs_helper import update_gtfs_local_stops, get_route_departures, get_trip_stops, train_entry_routes

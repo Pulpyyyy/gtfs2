@@ -18,7 +18,6 @@ from .const import (
     ATTR_ARRIVAL,
     ATTR_BICYCLE,
     ATTR_DAY,
-    ATTR_DUE_IN,
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
     ATTR_NEXT_RT_TRIPS,

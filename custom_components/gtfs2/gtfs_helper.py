@@ -33,8 +33,9 @@ CONF_API_KEY_LOCATION,
     DOMAIN,
     TIME_STR_FORMAT
     )
-from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, safe_file_part, get_gtfs_feed_entities,
+from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, get_gtfs_feed_entities,
                              struck_trips, on_service_day)
+from .gtfs_rt_helper import safe_file_part  # noqa: F401  a provider test reads it here
 from .route_names import get_routes_in_zip, _adds_to, _look_alikes, _set_apart, _set_apart_by_ends, look_alike_ends, route_ends, _route_label, _natural
 from .freshness import stage_zip, adopt_zip
 from .gtfs_filter import zip_only_future_dates
