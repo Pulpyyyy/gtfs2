@@ -136,7 +136,8 @@ def ensure_source_zip(hass, path, data):
     if not os.path.exists(zip_path):
         try:
             url, headers = _source_request(data)
-            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15)
+            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15,
+                             stream=True)
             r.raise_for_status()
             staged = stage_zip(r, zip_path)
             if staged is None:
@@ -273,7 +274,8 @@ def refresh_datasource(hass, path, data):
         # and must survive a failed or hijacked download
         try:
             url, headers = _source_request(data)
-            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15)
+            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15,
+                             stream=True)
             r.raise_for_status()
             staged = stage_zip(r, zip_path)
             if staged is None:

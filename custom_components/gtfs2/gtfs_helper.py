@@ -843,7 +843,7 @@ def get_gtfs(hass, path, data, update=False):
                 # _headers is None unless an api key is used in a header
                 _get_headers = dict(_headers or {})
                 _get_headers.setdefault("User-Agent", "home-assistant-gtfs2")
-                r = requests.get(url,headers=_get_headers, allow_redirects=True,timeout=15)
+                r = requests.get(url,headers=_get_headers, allow_redirects=True,timeout=15, stream=True)
                 r.raise_for_status()
                 # verify before removing anything: a download that turns out
                 # not to be a zip must leave the datasource as it was

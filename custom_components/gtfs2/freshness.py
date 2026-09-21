@@ -18,6 +18,7 @@ import hashlib
 import json
 import logging
 import os
+import time
 
 import requests
 import homeassistant.util.dt as dt_util
@@ -141,20 +142,35 @@ def fetch_if_new(data, zip_path):
     url, headers = _request_parts(data)
     try:
         response = requests.get(url, headers=headers, allow_redirects=True,
-                                timeout=30)
+                                timeout=30, stream=True)
         response.raise_for_status()
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.error("Could not download %s: %s", data.get("url"), ex)
         return None
-    meta = source_meta(zip_path)
-    if (meta.get("sha256")
-            and hashlib.sha256(response.content).hexdigest() == meta["sha256"]):
-        return False
     staged = stage_zip(response, zip_path)
     if staged is None:
         return None
+    # compared once on disk: the body is not in memory to hash beforehand
+    meta = source_meta(zip_path)
+    if meta.get("sha256") and file_digest(staged)[0] == meta["sha256"]:
+        try:
+            os.remove(staged)
+        except OSError:
+            pass
+        return False
     adopt_zip(response, staged, zip_path)
     return True
+
+
+def file_digest(path):
+    """The sha256 and the size of a file, read a chunk at a time."""
+    digest = hashlib.sha256()
+    size = 0
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(_CHUNK), b""):
+            digest.update(chunk)
+            size += len(chunk)
+    return digest.hexdigest(), size
 
 
 def source_meta_path(zip_path):
@@ -177,6 +193,39 @@ def source_meta(zip_path):
         return {}
 
 
+# a download bigger than this is no feed anyone meant to serve: the
+# largest national feeds are a few hundred megabytes zipped
+FEED_MAX_BYTES = 2 * 1024 ** 3
+# and one that takes longer than this is a host trickling bytes: the
+# request timeout counts between two reads, never the whole transfer
+FEED_DOWNLOAD_DEADLINE = 30 * 60
+_CHUNK = 1024 * 1024
+
+
+def _write_body(response, staged):
+    """Write the body to disk as it comes, never whole in memory.
+
+    Returns the byte count, or a sentence saying why the transfer was cut:
+    too big, or too slow. A response read without stream=True has its body
+    in memory already and is written the same way.
+    """
+    written = 0
+    started = time.monotonic()
+    chunks = (response.iter_content(chunk_size=_CHUNK)
+              if hasattr(response, "iter_content") else [response.content])
+    with open(staged, "wb") as out:
+        for chunk in chunks:
+            if not chunk:
+                continue
+            written += len(chunk)
+            if written > FEED_MAX_BYTES:
+                return f"is over {FEED_MAX_BYTES // 1024 ** 2} MB, cut there"
+            if time.monotonic() - started > FEED_DOWNLOAD_DEADLINE:
+                return f"took over {FEED_DOWNLOAD_DEADLINE // 60} minutes, cut there"
+            out.write(chunk)
+    return written
+
+
 def stage_zip(response, zip_path):
     """Write a downloaded feed beside its target and verify it is a zip.
 
@@ -185,13 +234,24 @@ def stage_zip(response, zip_path):
     nothing. The kept zip is the only full record of the feed, so nothing
     replaces it before proving to be a zip. Returns the staged path, or
     None when the payload is not one.
+
+    The body is streamed to disk, capped in size and in time: read whole
+    into memory, a national feed took a gigabyte of a small machine's
+    memory, and a host sending a byte at a time held the refresh, and the
+    source's lock, for ever.
     """
     staged = zip_path + ".new"
-    with open(staged, "wb") as out:
-        out.write(response.content)
+    try:
+        written = _write_body(response, staged)
+    finally:
+        close = getattr(response, "close", None)
+        if close:
+            close()
     reason = None
-    if not zipfile.is_zipfile(staged):
-        reason = f"is not a zip file ({len(response.content)} bytes)"
+    if isinstance(written, str):
+        reason = written
+    elif not zipfile.is_zipfile(staged):
+        reason = f"is not a zip file ({written} bytes)"
     else:
         # a zip is not yet a feed: a moved url may serve a documentation
         # archive, or an export gone empty, and swapped in that would be
@@ -231,6 +291,9 @@ def adopt_zip(response, staged, zip_path):
     ask "did this change" for the price of one conditional request, and
     the hash, for the hosts that send no validators at all.
     """
+    # the hash and the size come from the file itself: the body was
+    # streamed to disk and is not held in memory any more
+    digest, size = file_digest(staged)
     os.replace(staged, zip_path)
     meta = {
         # the key a query string carried stays out of the file, and out of
@@ -238,8 +301,8 @@ def adopt_zip(response, staged, zip_path):
         "url": hide_keys(response.url),
         "etag": response.headers.get("ETag"),
         "last_modified": response.headers.get("Last-Modified"),
-        "sha256": hashlib.sha256(response.content).hexdigest(),
-        "size": len(response.content),
+        "sha256": digest,
+        "size": size,
         "downloaded_at": dt_util.utcnow().isoformat(),
     }
     try:
