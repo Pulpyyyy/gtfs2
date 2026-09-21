@@ -490,6 +490,10 @@ def install() -> None:
             "google.transit.gtfs_realtime_pb2",
             FeedMessage=_Unreached("gtfs_realtime_pb2.FeedMessage"),
         )
+        # the feed reader imports its decode error at call time
+        _module("google.protobuf")
+        _module("google.protobuf.message",
+                DecodeError=type("DecodeError", (Exception,), {}))
 
     # gtfs_helper.py imports pygtfs and sqlalchemy.sql.text at module level
     # (get_gtfs, _fetch_departure_rows), but every current test either
