@@ -189,16 +189,39 @@ def stage_zip(response, zip_path):
     staged = zip_path + ".new"
     with open(staged, "wb") as out:
         out.write(response.content)
+    reason = None
     if not zipfile.is_zipfile(staged):
-        _LOGGER.error(
-            "The download from %s is not a zip file (%s bytes), "
-            "keeping the current data", response.url, len(response.content))
+        reason = f"is not a zip file ({len(response.content)} bytes)"
+    else:
+        # a zip is not yet a feed: a moved url may serve a documentation
+        # archive, or an export gone empty, and swapped in that would be
+        # the only record of the feed gone for good
+        missing = _missing_tables(staged)
+        if missing:
+            reason = "is a zip but no GTFS feed, it has no " + ", ".join(missing)
+    if reason:
+        _LOGGER.error("The download from %s %s, keeping the current data",
+                      hide_keys(response.url), reason)
         try:
             os.remove(staged)
         except OSError:
             pass
         return None
     return staged
+
+
+# what makes a zip a feed the import can use at all
+_REQUIRED_TABLES = ("routes.txt", "trips.txt", "stop_times.txt")
+
+
+def _missing_tables(path):
+    """The required tables a zip lacks, wherever the feed nested them."""
+    try:
+        with zipfile.ZipFile(path) as zin:
+            names = {name.rsplit("/", 1)[-1] for name in zin.namelist()}
+    except (OSError, zipfile.BadZipFile):
+        return list(_REQUIRED_TABLES)
+    return [table for table in _REQUIRED_TABLES if table not in names]
 
 
 def adopt_zip(response, staged, zip_path):
