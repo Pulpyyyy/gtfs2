@@ -254,13 +254,14 @@ def refresh_source(hass: HomeAssistant, path, data) -> bool:
     known to be what the zip is. The legacy fallback spawns an unpack and
     reports "extracting", which is not yet a built database, so it is not
     recorded either; its import writes the same files the fallback path
-    always did.
+    always did. A None from the fallback is a feed refused for holding only
+    future dates: nothing was built, as when the swap path refuses it.
     """
     result = refresh_datasource(hass, path, data)
     if isinstance(result, dict):
         _record_installed(hass, data.get(CONF_FILE) or data.get("file"))
         return True
-    return result not in (False, "no_data_file", "no_zip_file")
+    return result not in (None, False, "no_data_file", "no_zip_file")
 
 
 def refresh_data_for(hass: HomeAssistant, entry: ConfigEntry) -> dict:
