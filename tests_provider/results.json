@@ -26952,6 +26952,2266 @@
     {
       "checks": [
         {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "821",
+            "origin": "100065"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100065 -> 821: the feed leaves 09-13 01:04:58, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:54:58+09:30",
+            "destination": "821",
+            "origin": "100065"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:54, 100065 -> 821: the feed leaves 09-13 01:04:58, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "779",
+            "origin": "100066"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100066 -> 779: the feed leaves 09-13 00:18:00, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:08:00+09:30",
+            "destination": "779",
+            "origin": "100066"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:08, 100066 -> 779: the feed leaves 09-13 00:18:00, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "2217",
+            "origin": "100083"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100083 -> 2217: the feed leaves 09-13 00:45:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:35:00+09:30",
+            "destination": "2217",
+            "origin": "100083"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:35, 100083 -> 2217: the feed leaves 09-13 00:45:00, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "913",
+            "origin": "100491"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100491 -> 913: the feed leaves 09-13 00:19:41, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:09:41+09:30",
+            "destination": "913",
+            "origin": "100491"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:09, 100491 -> 913: the feed leaves 09-13 00:19:41, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "6914",
+            "origin": "100492"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100492 -> 6914: the feed leaves 09-13 01:02:59, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:52:59+09:30",
+            "destination": "6914",
+            "origin": "100492"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:52, 100492 -> 6914: the feed leaves 09-13 01:02:59, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "100897",
+            "origin": "100654"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100654 -> 100897: the feed leaves 09-13 00:08:58, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "100897",
+            "origin": "100654"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 100654 -> 100897: the feed leaves 09-13 00:08:58, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "100654",
+            "origin": "100655"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100655 -> 100654: the feed leaves 09-13 00:07:00, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "100654",
+            "origin": "100655"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 100655 -> 100654: the feed leaves 09-13 00:07:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+09:30",
+            "destination": "100655",
+            "origin": "100656"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 17
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 100656 -> 100655: the feed leaves 09-21 00:05:00, tomorrow lists 17 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:00:30+09:30",
+            "destination": "100655",
+            "origin": "100656"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 17
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:00, 100656 -> 100655: the feed leaves 09-21 00:05:00, today lists 17 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+09:30",
+            "destination": "100656",
+            "origin": "100657"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 17
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 100657 -> 100656: the feed leaves 09-21 00:03:12, tomorrow lists 17 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:00:30+09:30",
+            "destination": "100656",
+            "origin": "100657"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 17
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:00, 100657 -> 100656: the feed leaves 09-21 00:03:12, today lists 17 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "100491",
+            "origin": "100807"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100807 -> 100491: the feed leaves 09-13 00:19:11, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:09:11+09:30",
+            "destination": "100491",
+            "origin": "100807"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:09, 100807 -> 100491: the feed leaves 09-13 00:19:11, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101420",
+            "origin": "101419"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101419 -> 101420: the feed leaves 09-13 00:04:00, tomorrow lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101420",
+            "origin": "101419"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101419 -> 101420: the feed leaves 09-13 00:04:00, today lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101421",
+            "origin": "101420"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101420 -> 101421: the feed leaves 09-13 00:06:08, tomorrow lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101421",
+            "origin": "101420"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101420 -> 101421: the feed leaves 09-13 00:06:08, today lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101422",
+            "origin": "101421"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101421 -> 101422: the feed leaves 09-13 00:07:48, tomorrow lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101422",
+            "origin": "101421"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101421 -> 101422: the feed leaves 09-13 00:07:48, today lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101423",
+            "origin": "101422"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 2
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101422 -> 101423: the feed leaves 09-09 23:58:00, today lists 2 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101423",
+            "origin": "101422"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101422 -> 101423: the feed leaves 09-10 00:10:00, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101424",
+            "origin": "101423"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101423 -> 101424: the feed leaves 09-09 23:52:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101424",
+            "origin": "101423"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 15
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101423 -> 101424: the feed leaves 09-10 00:12:00, today lists 15 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101425",
+            "origin": "101424"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101424 -> 101425: the feed leaves 09-09 23:54:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101425",
+            "origin": "101424"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101424 -> 101425: the feed leaves 09-10 00:02:00, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101426",
+            "origin": "101425"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101425 -> 101426: the feed leaves 09-09 23:55:26, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101426",
+            "origin": "101425"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101425 -> 101426: the feed leaves 09-10 00:03:26, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101427",
+            "origin": "101426"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101426 -> 101427: the feed leaves 09-09 23:57:20, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101427",
+            "origin": "101426"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101426 -> 101427: the feed leaves 09-10 00:05:20, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101428",
+            "origin": "101427"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101427 -> 101428: the feed leaves 09-09 23:59:51, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101428",
+            "origin": "101427"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101427 -> 101428: the feed leaves 09-10 00:07:51, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101429",
+            "origin": "101428"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101428 -> 101429: the feed leaves 09-10 00:02:40, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101429",
+            "origin": "101428"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101428 -> 101429: the feed leaves 09-10 00:02:40, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101430",
+            "origin": "101429"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101429 -> 101430: the feed leaves 09-10 00:05:00, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101430",
+            "origin": "101429"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101429 -> 101430: the feed leaves 09-10 00:05:00, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101431",
+            "origin": "101430"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101430 -> 101431: the feed leaves 09-10 00:06:32, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101431",
+            "origin": "101430"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101430 -> 101431: the feed leaves 09-10 00:06:32, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101432",
+            "origin": "101431"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101431 -> 101432: the feed leaves 09-10 00:08:42, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101432",
+            "origin": "101431"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101431 -> 101432: the feed leaves 09-10 00:08:42, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101433",
+            "origin": "101432"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101432 -> 101433: the feed leaves 09-13 00:01:10, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101433",
+            "origin": "101432"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101432 -> 101433: the feed leaves 09-13 00:01:10, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101434",
+            "origin": "101433"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101433 -> 101434: the feed leaves 09-13 00:03:32, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101434",
+            "origin": "101433"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101433 -> 101434: the feed leaves 09-13 00:03:32, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101435",
+            "origin": "101434"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101434 -> 101435: the feed leaves 09-13 00:04:43, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101435",
+            "origin": "101434"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101434 -> 101435: the feed leaves 09-13 00:04:43, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101436",
+            "origin": "101435"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101435 -> 101436: the feed leaves 09-13 00:06:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101436",
+            "origin": "101435"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101435 -> 101436: the feed leaves 09-13 00:06:00, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101437",
+            "origin": "101436"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101436 -> 101437: the feed leaves 09-13 00:06:51, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101437",
+            "origin": "101436"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101436 -> 101437: the feed leaves 09-13 00:06:51, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101438",
+            "origin": "101437"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101437 -> 101438: the feed leaves 09-13 00:08:05, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101438",
+            "origin": "101437"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101437 -> 101438: the feed leaves 09-13 00:08:05, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101439",
+            "origin": "101438"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101438 -> 101439: the feed leaves 09-13 00:08:45, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101439",
+            "origin": "101438"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101438 -> 101439: the feed leaves 09-13 00:08:45, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101440",
+            "origin": "101439"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101439 -> 101440: the feed leaves 09-13 00:10:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101440",
+            "origin": "101439"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101439 -> 101440: the feed leaves 09-13 00:10:00, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101442",
+            "origin": "101440"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101440 -> 101442: the feed leaves 09-10 00:00:51, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101442",
+            "origin": "101440"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101440 -> 101442: the feed leaves 09-10 00:00:51, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101443",
+            "origin": "101442"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101442 -> 101443: the feed leaves 09-10 00:03:00, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101443",
+            "origin": "101442"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101442 -> 101443: the feed leaves 09-10 00:03:00, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101444",
+            "origin": "101443"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101443 -> 101444: the feed leaves 09-10 00:05:00, tomorrow lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101444",
+            "origin": "101443"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101443 -> 101444: the feed leaves 09-10 00:05:00, today lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101445",
+            "origin": "101444"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101444 -> 101445: the feed leaves 09-10 00:07:20, tomorrow lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101445",
+            "origin": "101444"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101444 -> 101445: the feed leaves 09-10 00:07:20, today lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "4525",
+            "origin": "101445"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101445 -> 4525: the feed leaves 09-10 00:08:41, tomorrow lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "4525",
+            "origin": "101445"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101445 -> 4525: the feed leaves 09-10 00:08:41, today lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "1067",
+            "origin": "1031"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 1031 -> 1067: the feed leaves 09-13 00:24:00, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:14:00+09:30",
+            "destination": "1067",
+            "origin": "1031"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:14, 1031 -> 1067: the feed leaves 09-13 00:24:00, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "980",
+            "origin": "1034"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 1034 -> 980: the feed leaves 09-13 00:58:44, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:48:44+09:30",
+            "destination": "980",
+            "origin": "1034"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:48, 1034 -> 980: the feed leaves 09-13 00:58:44, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "1034",
+            "origin": "1065"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 1065 -> 1034: the feed leaves 09-13 00:58:03, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:48:03+09:30",
+            "destination": "1034",
+            "origin": "1065"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:48, 1065 -> 1034: the feed leaves 09-13 00:58:03, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "1133",
+            "origin": "1067"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 1067 -> 1133: the feed leaves 09-13 00:25:00, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:15:00+09:30",
+            "destination": "1133",
+            "origin": "1067"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:15, 1067 -> 1133: the feed leaves 09-13 00:25:00, today lists 4 departures"
+        }
+      ],
+      "fixture": "adelaide",
+      "id": "adelaide-service-calendar",
+      "outcome": "passed",
+      "promise": "service",
+      "reason": null,
+      "shape": "calendar"
+    },
+    {
+      "checks": [
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "821",
+            "origin": "100065"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100065 -> 821: the feed leaves 09-13 01:04:58, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:54:58+09:30",
+            "destination": "821",
+            "origin": "100065"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:54, 100065 -> 821: the feed leaves 09-13 01:04:58, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "779",
+            "origin": "100066"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100066 -> 779: the feed leaves 09-13 00:18:00, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:08:00+09:30",
+            "destination": "779",
+            "origin": "100066"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:08, 100066 -> 779: the feed leaves 09-13 00:18:00, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "2217",
+            "origin": "100083"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100083 -> 2217: the feed leaves 09-13 00:45:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:35:00+09:30",
+            "destination": "2217",
+            "origin": "100083"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:35, 100083 -> 2217: the feed leaves 09-13 00:45:00, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "913",
+            "origin": "100491"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100491 -> 913: the feed leaves 09-13 00:19:41, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:09:41+09:30",
+            "destination": "913",
+            "origin": "100491"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:09, 100491 -> 913: the feed leaves 09-13 00:19:41, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "6914",
+            "origin": "100492"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100492 -> 6914: the feed leaves 09-13 01:02:59, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:52:59+09:30",
+            "destination": "6914",
+            "origin": "100492"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:52, 100492 -> 6914: the feed leaves 09-13 01:02:59, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "100897",
+            "origin": "100654"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100654 -> 100897: the feed leaves 09-13 00:08:58, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "100897",
+            "origin": "100654"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 100654 -> 100897: the feed leaves 09-13 00:08:58, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "100654",
+            "origin": "100655"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100655 -> 100654: the feed leaves 09-13 00:07:00, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "100654",
+            "origin": "100655"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 100655 -> 100654: the feed leaves 09-13 00:07:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+09:30",
+            "destination": "100655",
+            "origin": "100656"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 17
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 100656 -> 100655: the feed leaves 09-21 00:05:00, tomorrow lists 17 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:00:30+09:30",
+            "destination": "100655",
+            "origin": "100656"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 17
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:00, 100656 -> 100655: the feed leaves 09-21 00:05:00, today lists 17 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+09:30",
+            "destination": "100656",
+            "origin": "100657"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 17
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 100657 -> 100656: the feed leaves 09-21 00:03:12, tomorrow lists 17 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:00:30+09:30",
+            "destination": "100656",
+            "origin": "100657"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 17
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:00, 100657 -> 100656: the feed leaves 09-21 00:03:12, today lists 17 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "100491",
+            "origin": "100807"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 100807 -> 100491: the feed leaves 09-13 00:19:11, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:09:11+09:30",
+            "destination": "100491",
+            "origin": "100807"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:09, 100807 -> 100491: the feed leaves 09-13 00:19:11, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101420",
+            "origin": "101419"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101419 -> 101420: the feed leaves 09-13 00:04:00, tomorrow lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101420",
+            "origin": "101419"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101419 -> 101420: the feed leaves 09-13 00:04:00, today lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101421",
+            "origin": "101420"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101420 -> 101421: the feed leaves 09-13 00:06:08, tomorrow lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101421",
+            "origin": "101420"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101420 -> 101421: the feed leaves 09-13 00:06:08, today lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101422",
+            "origin": "101421"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101421 -> 101422: the feed leaves 09-13 00:07:48, tomorrow lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101422",
+            "origin": "101421"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 3
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101421 -> 101422: the feed leaves 09-13 00:07:48, today lists 3 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101423",
+            "origin": "101422"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 2
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101422 -> 101423: the feed leaves 09-09 23:58:00, today lists 2 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101423",
+            "origin": "101422"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101422 -> 101423: the feed leaves 09-10 00:10:00, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101424",
+            "origin": "101423"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101423 -> 101424: the feed leaves 09-09 23:52:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101424",
+            "origin": "101423"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 15
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101423 -> 101424: the feed leaves 09-10 00:12:00, today lists 15 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101425",
+            "origin": "101424"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101424 -> 101425: the feed leaves 09-09 23:54:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101425",
+            "origin": "101424"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101424 -> 101425: the feed leaves 09-10 00:02:00, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101426",
+            "origin": "101425"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101425 -> 101426: the feed leaves 09-09 23:55:26, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101426",
+            "origin": "101425"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101425 -> 101426: the feed leaves 09-10 00:03:26, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101427",
+            "origin": "101426"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101426 -> 101427: the feed leaves 09-09 23:57:20, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101427",
+            "origin": "101426"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101426 -> 101427: the feed leaves 09-10 00:05:20, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101428",
+            "origin": "101427"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101427 -> 101428: the feed leaves 09-09 23:59:51, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101428",
+            "origin": "101427"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101427 -> 101428: the feed leaves 09-10 00:07:51, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101429",
+            "origin": "101428"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101428 -> 101429: the feed leaves 09-10 00:02:40, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101429",
+            "origin": "101428"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101428 -> 101429: the feed leaves 09-10 00:02:40, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101430",
+            "origin": "101429"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101429 -> 101430: the feed leaves 09-10 00:05:00, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101430",
+            "origin": "101429"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101429 -> 101430: the feed leaves 09-10 00:05:00, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101431",
+            "origin": "101430"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101430 -> 101431: the feed leaves 09-10 00:06:32, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101431",
+            "origin": "101430"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101430 -> 101431: the feed leaves 09-10 00:06:32, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101432",
+            "origin": "101431"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101431 -> 101432: the feed leaves 09-10 00:08:42, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101432",
+            "origin": "101431"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101431 -> 101432: the feed leaves 09-10 00:08:42, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101433",
+            "origin": "101432"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101432 -> 101433: the feed leaves 09-13 00:01:10, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101433",
+            "origin": "101432"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101432 -> 101433: the feed leaves 09-13 00:01:10, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101434",
+            "origin": "101433"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101433 -> 101434: the feed leaves 09-13 00:03:32, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101434",
+            "origin": "101433"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101433 -> 101434: the feed leaves 09-13 00:03:32, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101435",
+            "origin": "101434"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101434 -> 101435: the feed leaves 09-13 00:04:43, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101435",
+            "origin": "101434"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101434 -> 101435: the feed leaves 09-13 00:04:43, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101436",
+            "origin": "101435"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101435 -> 101436: the feed leaves 09-13 00:06:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101436",
+            "origin": "101435"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101435 -> 101436: the feed leaves 09-13 00:06:00, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101437",
+            "origin": "101436"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101436 -> 101437: the feed leaves 09-13 00:06:51, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101437",
+            "origin": "101436"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101436 -> 101437: the feed leaves 09-13 00:06:51, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101438",
+            "origin": "101437"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101437 -> 101438: the feed leaves 09-13 00:08:05, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101438",
+            "origin": "101437"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101437 -> 101438: the feed leaves 09-13 00:08:05, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101439",
+            "origin": "101438"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101438 -> 101439: the feed leaves 09-13 00:08:45, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101439",
+            "origin": "101438"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101438 -> 101439: the feed leaves 09-13 00:08:45, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "101440",
+            "origin": "101439"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 101439 -> 101440: the feed leaves 09-13 00:10:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:00:30+09:30",
+            "destination": "101440",
+            "origin": "101439"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:00, 101439 -> 101440: the feed leaves 09-13 00:10:00, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101442",
+            "origin": "101440"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101440 -> 101442: the feed leaves 09-10 00:00:51, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101442",
+            "origin": "101440"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101440 -> 101442: the feed leaves 09-10 00:00:51, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101443",
+            "origin": "101442"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101442 -> 101443: the feed leaves 09-10 00:03:00, tomorrow lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101443",
+            "origin": "101442"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 16
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101442 -> 101443: the feed leaves 09-10 00:03:00, today lists 16 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101444",
+            "origin": "101443"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101443 -> 101444: the feed leaves 09-10 00:05:00, tomorrow lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101444",
+            "origin": "101443"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101443 -> 101444: the feed leaves 09-10 00:05:00, today lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "101445",
+            "origin": "101444"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101444 -> 101445: the feed leaves 09-10 00:07:20, tomorrow lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "101445",
+            "origin": "101444"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101444 -> 101445: the feed leaves 09-10 00:07:20, today lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-09T23:50:00+09:30",
+            "destination": "4525",
+            "origin": "101445"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-09 23:50, 101445 -> 4525: the feed leaves 09-10 00:08:41, tomorrow lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-10T00:00:30+09:30",
+            "destination": "4525",
+            "origin": "101445"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 21
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-10 00:00, 101445 -> 4525: the feed leaves 09-10 00:08:41, today lists 21 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "1067",
+            "origin": "1031"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 1031 -> 1067: the feed leaves 09-13 00:24:00, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:14:00+09:30",
+            "destination": "1067",
+            "origin": "1031"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:14, 1031 -> 1067: the feed leaves 09-13 00:24:00, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "980",
+            "origin": "1034"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 1034 -> 980: the feed leaves 09-13 00:58:44, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:48:44+09:30",
+            "destination": "980",
+            "origin": "1034"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:48, 1034 -> 980: the feed leaves 09-13 00:58:44, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "1034",
+            "origin": "1065"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 1065 -> 1034: the feed leaves 09-13 00:58:03, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:48:03+09:30",
+            "destination": "1034",
+            "origin": "1065"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:48, 1065 -> 1034: the feed leaves 09-13 00:58:03, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-12T23:50:00+09:30",
+            "destination": "1133",
+            "origin": "1067"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-12 23:50, 1067 -> 1133: the feed leaves 09-13 00:25:00, tomorrow lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-13T00:15:00+09:30",
+            "destination": "1133",
+            "origin": "1067"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-13 00:15, 1067 -> 1133: the feed leaves 09-13 00:25:00, today lists 4 departures"
+        }
+      ],
+      "fixture": "adelaide",
+      "id": "adelaide-service-calendar_dates",
+      "outcome": "passed",
+      "promise": "service",
+      "reason": null,
+      "shape": "calendar_dates"
+    },
+    {
+      "checks": [
+        {
           "expected": [
             null,
             null,
@@ -76773,6 +79033,2266 @@
     {
       "checks": [
         {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3979966",
+            "origin": "3979684"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3979684 -> 3979966: the feed leaves 10-01 00:51:19, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:41:19+02:00",
+            "destination": "3979966",
+            "origin": "3979684"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:41, 3979684 -> 3979966: the feed leaves 10-01 00:51:19, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980994",
+            "origin": "3979739"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3979739 -> 3980994: the feed leaves 08-31 23:55:37, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:37+02:00",
+            "destination": "3980994",
+            "origin": "3979739"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, 3979739 -> 3980994: the feed leaves 09-01 00:13:37, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3980498",
+            "origin": "3979766"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3979766 -> 3980498: the feed leaves 09-07 00:32:00, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:22:00+02:00",
+            "destination": "3980498",
+            "origin": "3979766"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:22, 3979766 -> 3980498: the feed leaves 09-07 00:32:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3980235",
+            "origin": "3979838"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3979838 -> 3980235: the feed leaves 09-21 00:41:11, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:31:11+02:00",
+            "destination": "3980235",
+            "origin": "3979838"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:31, 3979838 -> 3980235: the feed leaves 09-21 00:41:11, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3981181",
+            "origin": "3979846"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3979846 -> 3981181: the feed leaves 09-07 00:27:42, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:17:42+02:00",
+            "destination": "3981181",
+            "origin": "3979846"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:17, 3979846 -> 3981181: the feed leaves 09-07 00:27:42, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980469",
+            "origin": "3979897"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3979897 -> 3980469: the feed leaves 09-15 00:24:12, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:14:12+02:00",
+            "destination": "3980469",
+            "origin": "3979897"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:14, 3979897 -> 3980469: the feed leaves 09-15 00:24:12, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3979684",
+            "origin": "3979948"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3979948 -> 3979684: the feed leaves 10-01 00:49:30, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:39:30+02:00",
+            "destination": "3979684",
+            "origin": "3979948"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:39, 3979948 -> 3979684: the feed leaves 10-01 00:49:30, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3979897",
+            "origin": "3980004"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980004 -> 3979897: the feed leaves 09-15 00:22:34, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:12:34+02:00",
+            "destination": "3979897",
+            "origin": "3980004"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:12, 3980004 -> 3979897: the feed leaves 09-15 00:22:34, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980831",
+            "origin": "3980013"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980013 -> 3980831: the feed leaves 09-01 00:35:55, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:25:55+02:00",
+            "destination": "3980831",
+            "origin": "3980013"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:25, 3980013 -> 3980831: the feed leaves 09-01 00:35:55, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980231",
+            "origin": "3980050"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980050 -> 3980231: the feed leaves 09-15 00:39:29, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:29:29+02:00",
+            "destination": "3980231",
+            "origin": "3980050"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:29, 3980050 -> 3980231: the feed leaves 09-15 00:39:29, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980062",
+            "origin": "3980090"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980090 -> 3980062: the feed leaves 09-27 00:12:00, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:02:00+02:00",
+            "destination": "3980062",
+            "origin": "3980090"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:02, 3980090 -> 3980062: the feed leaves 09-27 00:12:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3981217",
+            "origin": "3980113"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980113 -> 3981217: the feed leaves 09-15 00:47:27, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:37:27+02:00",
+            "destination": "3981217",
+            "origin": "3980113"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:37, 3980113 -> 3981217: the feed leaves 09-15 00:47:27, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980268",
+            "origin": "3980128"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980128 -> 3980268: the feed leaves 09-01 00:10:51, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:51+02:00",
+            "destination": "3980268",
+            "origin": "3980128"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, 3980128 -> 3980268: the feed leaves 09-01 00:10:51, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3981380",
+            "origin": "3980180"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980180 -> 3981380: the feed leaves 09-15 00:28:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:18:00+02:00",
+            "destination": "3981380",
+            "origin": "3980180"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:18, 3980180 -> 3981380: the feed leaves 09-15 00:28:00, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3980180",
+            "origin": "3980182"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3980182 -> 3980180: the feed leaves 10-01 00:33:35, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:23:35+02:00",
+            "destination": "3980180",
+            "origin": "3980182"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:23, 3980182 -> 3980180: the feed leaves 10-01 00:33:35, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3979851",
+            "origin": "3980204"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980204 -> 3979851: the feed leaves 09-15 00:44:18, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:34:18+02:00",
+            "destination": "3979851",
+            "origin": "3980204"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:34, 3980204 -> 3979851: the feed leaves 09-15 00:44:18, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3981140",
+            "origin": "3980235"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3980235 -> 3981140: the feed leaves 09-21 00:42:51, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:32:51+02:00",
+            "destination": "3981140",
+            "origin": "3980235"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:32, 3980235 -> 3981140: the feed leaves 09-21 00:42:51, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980246",
+            "origin": "3980252"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980252 -> 3980246: the feed leaves 09-01 00:51:13, tomorrow lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:41:13+02:00",
+            "destination": "3980246",
+            "origin": "3980252"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:41, 3980252 -> 3980246: the feed leaves 09-01 00:51:13, today lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980701",
+            "origin": "3980268"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980268 -> 3980701: the feed leaves 09-01 00:13:00, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:00+02:00",
+            "destination": "3980701",
+            "origin": "3980268"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, 3980268 -> 3980701: the feed leaves 09-01 00:13:00, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3981052",
+            "origin": "3980349"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980349 -> 3981052: the feed leaves 09-01 00:19:19, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:09:19+02:00",
+            "destination": "3981052",
+            "origin": "3980349"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:09, 3980349 -> 3981052: the feed leaves 09-01 00:19:19, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980250",
+            "origin": "3980438"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980438 -> 3980250: the feed leaves 09-01 00:31:05, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:21:05+02:00",
+            "destination": "3980250",
+            "origin": "3980438"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:21, 3980438 -> 3980250: the feed leaves 09-01 00:31:05, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980605",
+            "origin": "3980480"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980480 -> 3980605: the feed leaves 09-27 00:42:30, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:32:30+02:00",
+            "destination": "3980605",
+            "origin": "3980480"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:32, 3980480 -> 3980605: the feed leaves 09-27 00:42:30, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3981110",
+            "origin": "3980498"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980498 -> 3981110: the feed leaves 09-27 00:36:40, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:26:40+02:00",
+            "destination": "3981110",
+            "origin": "3980498"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:26, 3980498 -> 3981110: the feed leaves 09-27 00:36:40, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3980418",
+            "origin": "3980562"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3980562 -> 3980418: the feed leaves 09-07 00:49:50, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:39:50+02:00",
+            "destination": "3980418",
+            "origin": "3980562"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:39, 3980562 -> 3980418: the feed leaves 09-07 00:49:50, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980752",
+            "origin": "3980593"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980593 -> 3980752: the feed leaves 09-27 00:18:00, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:08:00+02:00",
+            "destination": "3980752",
+            "origin": "3980593"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:08, 3980593 -> 3980752: the feed leaves 09-27 00:18:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3979725",
+            "origin": "3980601"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3980601 -> 3979725: the feed leaves 09-21 00:46:55, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:36:55+02:00",
+            "destination": "3979725",
+            "origin": "3980601"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:36, 3980601 -> 3979725: the feed leaves 09-21 00:46:55, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980992",
+            "origin": "3980629"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980629 -> 3980992: the feed leaves 09-27 00:46:29, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:36:29+02:00",
+            "destination": "3980992",
+            "origin": "3980629"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:36, 3980629 -> 3980992: the feed leaves 09-27 00:46:29, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3979841",
+            "origin": "3980663"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980663 -> 3979841: the feed leaves 09-01 00:00:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "destination": "3979841",
+            "origin": "3980663"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, 3980663 -> 3979841: the feed leaves 09-01 00:18:00, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980743",
+            "origin": "3980711"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980711 -> 3980743: the feed leaves 09-15 00:50:20, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:40:20+02:00",
+            "destination": "3980743",
+            "origin": "3980711"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:40, 3980711 -> 3980743: the feed leaves 09-15 00:50:20, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980596",
+            "origin": "3980752"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980752 -> 3980596: the feed leaves 09-27 00:19:22, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:09:22+02:00",
+            "destination": "3980596",
+            "origin": "3980752"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:09, 3980752 -> 3980596: the feed leaves 09-27 00:19:22, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980806",
+            "origin": "3980798"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980798 -> 3980806: the feed leaves 09-01 00:38:38, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:28:38+02:00",
+            "destination": "3980806",
+            "origin": "3980798"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:28, 3980798 -> 3980806: the feed leaves 09-01 00:38:38, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3981021",
+            "origin": "3980814"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3980814 -> 3981021: the feed leaves 09-07 00:34:26, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:24:26+02:00",
+            "destination": "3981021",
+            "origin": "3980814"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:24, 3980814 -> 3981021: the feed leaves 09-07 00:34:26, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980590",
+            "origin": "3980882"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980882 -> 3980590: the feed leaves 09-01 00:15:22, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:05:22+02:00",
+            "destination": "3980590",
+            "origin": "3980882"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:05, 3980882 -> 3980590: the feed leaves 09-01 00:15:22, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "4149767",
+            "origin": "3980919"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3980919 -> 4149767: the feed leaves 10-01 00:41:30, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:31:30+02:00",
+            "destination": "4149767",
+            "origin": "3980919"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:31, 3980919 -> 4149767: the feed leaves 10-01 00:41:30, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980162",
+            "origin": "3980974"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980974 -> 3980162: the feed leaves 09-01 00:46:55, tomorrow lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:36:55+02:00",
+            "destination": "3980162",
+            "origin": "3980974"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:36, 3980974 -> 3980162: the feed leaves 09-01 00:46:55, today lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3981133",
+            "origin": "3981052"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981052 -> 3981133: the feed leaves 09-01 00:21:13, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:11:13+02:00",
+            "destination": "3981133",
+            "origin": "3981052"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:11, 3981052 -> 3981133: the feed leaves 09-01 00:21:13, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "4015596",
+            "origin": "3981110"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3981110 -> 4015596: the feed leaves 09-27 00:38:28, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:28:28+02:00",
+            "destination": "4015596",
+            "origin": "3981110"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:28, 3981110 -> 4015596: the feed leaves 09-27 00:38:28, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980252",
+            "origin": "3981165"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981165 -> 3980252: the feed leaves 09-01 00:49:00, tomorrow lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:39:00+02:00",
+            "destination": "3980252",
+            "origin": "3981165"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:39, 3981165 -> 3980252: the feed leaves 09-01 00:49:00, today lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980711",
+            "origin": "3981217"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3981217 -> 3980711: the feed leaves 09-15 00:48:38, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:38:38+02:00",
+            "destination": "3980711",
+            "origin": "3981217"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:38, 3981217 -> 3980711: the feed leaves 09-15 00:48:38, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980320",
+            "origin": "3981287"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981287 -> 3980320: the feed leaves 08-31 23:54:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:02:00+02:00",
+            "destination": "3980320",
+            "origin": "3981287"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:02, 3981287 -> 3980320: the feed leaves 09-01 00:12:00, today lists 5 departures"
+        }
+      ],
+      "fixture": "gvb",
+      "id": "gvb-service-calendar",
+      "outcome": "passed",
+      "promise": "service",
+      "reason": null,
+      "shape": "calendar"
+    },
+    {
+      "checks": [
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3979966",
+            "origin": "3979684"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3979684 -> 3979966: the feed leaves 10-01 00:51:19, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:41:19+02:00",
+            "destination": "3979966",
+            "origin": "3979684"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:41, 3979684 -> 3979966: the feed leaves 10-01 00:51:19, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980994",
+            "origin": "3979739"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3979739 -> 3980994: the feed leaves 08-31 23:55:37, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:37+02:00",
+            "destination": "3980994",
+            "origin": "3979739"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, 3979739 -> 3980994: the feed leaves 09-01 00:13:37, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3980498",
+            "origin": "3979766"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3979766 -> 3980498: the feed leaves 09-07 00:32:00, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:22:00+02:00",
+            "destination": "3980498",
+            "origin": "3979766"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:22, 3979766 -> 3980498: the feed leaves 09-07 00:32:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3980235",
+            "origin": "3979838"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3979838 -> 3980235: the feed leaves 09-21 00:41:11, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:31:11+02:00",
+            "destination": "3980235",
+            "origin": "3979838"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:31, 3979838 -> 3980235: the feed leaves 09-21 00:41:11, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3981181",
+            "origin": "3979846"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3979846 -> 3981181: the feed leaves 09-07 00:27:42, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:17:42+02:00",
+            "destination": "3981181",
+            "origin": "3979846"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:17, 3979846 -> 3981181: the feed leaves 09-07 00:27:42, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980469",
+            "origin": "3979897"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3979897 -> 3980469: the feed leaves 09-15 00:24:12, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:14:12+02:00",
+            "destination": "3980469",
+            "origin": "3979897"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:14, 3979897 -> 3980469: the feed leaves 09-15 00:24:12, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3979684",
+            "origin": "3979948"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3979948 -> 3979684: the feed leaves 10-01 00:49:30, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:39:30+02:00",
+            "destination": "3979684",
+            "origin": "3979948"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:39, 3979948 -> 3979684: the feed leaves 10-01 00:49:30, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3979897",
+            "origin": "3980004"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980004 -> 3979897: the feed leaves 09-15 00:22:34, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:12:34+02:00",
+            "destination": "3979897",
+            "origin": "3980004"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:12, 3980004 -> 3979897: the feed leaves 09-15 00:22:34, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980831",
+            "origin": "3980013"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980013 -> 3980831: the feed leaves 09-01 00:35:55, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:25:55+02:00",
+            "destination": "3980831",
+            "origin": "3980013"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:25, 3980013 -> 3980831: the feed leaves 09-01 00:35:55, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980231",
+            "origin": "3980050"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980050 -> 3980231: the feed leaves 09-15 00:39:29, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:29:29+02:00",
+            "destination": "3980231",
+            "origin": "3980050"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:29, 3980050 -> 3980231: the feed leaves 09-15 00:39:29, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980062",
+            "origin": "3980090"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980090 -> 3980062: the feed leaves 09-27 00:12:00, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:02:00+02:00",
+            "destination": "3980062",
+            "origin": "3980090"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:02, 3980090 -> 3980062: the feed leaves 09-27 00:12:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3981217",
+            "origin": "3980113"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980113 -> 3981217: the feed leaves 09-15 00:47:27, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:37:27+02:00",
+            "destination": "3981217",
+            "origin": "3980113"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:37, 3980113 -> 3981217: the feed leaves 09-15 00:47:27, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980268",
+            "origin": "3980128"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980128 -> 3980268: the feed leaves 09-01 00:10:51, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:51+02:00",
+            "destination": "3980268",
+            "origin": "3980128"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, 3980128 -> 3980268: the feed leaves 09-01 00:10:51, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3981380",
+            "origin": "3980180"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980180 -> 3981380: the feed leaves 09-15 00:28:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:18:00+02:00",
+            "destination": "3981380",
+            "origin": "3980180"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:18, 3980180 -> 3981380: the feed leaves 09-15 00:28:00, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "3980180",
+            "origin": "3980182"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3980182 -> 3980180: the feed leaves 10-01 00:33:35, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:23:35+02:00",
+            "destination": "3980180",
+            "origin": "3980182"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:23, 3980182 -> 3980180: the feed leaves 10-01 00:33:35, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3979851",
+            "origin": "3980204"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980204 -> 3979851: the feed leaves 09-15 00:44:18, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:34:18+02:00",
+            "destination": "3979851",
+            "origin": "3980204"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:34, 3980204 -> 3979851: the feed leaves 09-15 00:44:18, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3981140",
+            "origin": "3980235"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3980235 -> 3981140: the feed leaves 09-21 00:42:51, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:32:51+02:00",
+            "destination": "3981140",
+            "origin": "3980235"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:32, 3980235 -> 3981140: the feed leaves 09-21 00:42:51, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980246",
+            "origin": "3980252"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980252 -> 3980246: the feed leaves 09-01 00:51:13, tomorrow lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:41:13+02:00",
+            "destination": "3980246",
+            "origin": "3980252"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:41, 3980252 -> 3980246: the feed leaves 09-01 00:51:13, today lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980701",
+            "origin": "3980268"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980268 -> 3980701: the feed leaves 09-01 00:13:00, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:03:00+02:00",
+            "destination": "3980701",
+            "origin": "3980268"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:03, 3980268 -> 3980701: the feed leaves 09-01 00:13:00, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3981052",
+            "origin": "3980349"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980349 -> 3981052: the feed leaves 09-01 00:19:19, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:09:19+02:00",
+            "destination": "3981052",
+            "origin": "3980349"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:09, 3980349 -> 3981052: the feed leaves 09-01 00:19:19, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980250",
+            "origin": "3980438"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980438 -> 3980250: the feed leaves 09-01 00:31:05, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:21:05+02:00",
+            "destination": "3980250",
+            "origin": "3980438"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:21, 3980438 -> 3980250: the feed leaves 09-01 00:31:05, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980605",
+            "origin": "3980480"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980480 -> 3980605: the feed leaves 09-27 00:42:30, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:32:30+02:00",
+            "destination": "3980605",
+            "origin": "3980480"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:32, 3980480 -> 3980605: the feed leaves 09-27 00:42:30, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3981110",
+            "origin": "3980498"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980498 -> 3981110: the feed leaves 09-27 00:36:40, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:26:40+02:00",
+            "destination": "3981110",
+            "origin": "3980498"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:26, 3980498 -> 3981110: the feed leaves 09-27 00:36:40, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3980418",
+            "origin": "3980562"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3980562 -> 3980418: the feed leaves 09-07 00:49:50, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:39:50+02:00",
+            "destination": "3980418",
+            "origin": "3980562"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:39, 3980562 -> 3980418: the feed leaves 09-07 00:49:50, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980752",
+            "origin": "3980593"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980593 -> 3980752: the feed leaves 09-27 00:18:00, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:08:00+02:00",
+            "destination": "3980752",
+            "origin": "3980593"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:08, 3980593 -> 3980752: the feed leaves 09-27 00:18:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-20T23:50:00+02:00",
+            "destination": "3979725",
+            "origin": "3980601"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-20 23:50, 3980601 -> 3979725: the feed leaves 09-21 00:46:55, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-21T00:36:55+02:00",
+            "destination": "3979725",
+            "origin": "3980601"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-21 00:36, 3980601 -> 3979725: the feed leaves 09-21 00:46:55, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980992",
+            "origin": "3980629"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980629 -> 3980992: the feed leaves 09-27 00:46:29, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:36:29+02:00",
+            "destination": "3980992",
+            "origin": "3980629"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:36, 3980629 -> 3980992: the feed leaves 09-27 00:46:29, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3979841",
+            "origin": "3980663"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980663 -> 3979841: the feed leaves 09-01 00:00:00, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:00:30+02:00",
+            "destination": "3979841",
+            "origin": "3980663"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 4
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:00, 3980663 -> 3979841: the feed leaves 09-01 00:18:00, today lists 4 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980743",
+            "origin": "3980711"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3980711 -> 3980743: the feed leaves 09-15 00:50:20, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:40:20+02:00",
+            "destination": "3980743",
+            "origin": "3980711"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:40, 3980711 -> 3980743: the feed leaves 09-15 00:50:20, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "3980596",
+            "origin": "3980752"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3980752 -> 3980596: the feed leaves 09-27 00:19:22, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:09:22+02:00",
+            "destination": "3980596",
+            "origin": "3980752"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:09, 3980752 -> 3980596: the feed leaves 09-27 00:19:22, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980806",
+            "origin": "3980798"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980798 -> 3980806: the feed leaves 09-01 00:38:38, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:28:38+02:00",
+            "destination": "3980806",
+            "origin": "3980798"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:28, 3980798 -> 3980806: the feed leaves 09-01 00:38:38, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-06T23:50:00+02:00",
+            "destination": "3981021",
+            "origin": "3980814"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-06 23:50, 3980814 -> 3981021: the feed leaves 09-07 00:34:26, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-07T00:24:26+02:00",
+            "destination": "3981021",
+            "origin": "3980814"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-07 00:24, 3980814 -> 3981021: the feed leaves 09-07 00:34:26, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980590",
+            "origin": "3980882"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980882 -> 3980590: the feed leaves 09-01 00:15:22, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:05:22+02:00",
+            "destination": "3980590",
+            "origin": "3980882"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:05, 3980882 -> 3980590: the feed leaves 09-01 00:15:22, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-30T23:50:00+02:00",
+            "destination": "4149767",
+            "origin": "3980919"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-30 23:50, 3980919 -> 4149767: the feed leaves 10-01 00:41:30, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-10-01T00:31:30+02:00",
+            "destination": "4149767",
+            "origin": "3980919"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-10-01 00:31, 3980919 -> 4149767: the feed leaves 10-01 00:41:30, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980162",
+            "origin": "3980974"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3980974 -> 3980162: the feed leaves 09-01 00:46:55, tomorrow lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:36:55+02:00",
+            "destination": "3980162",
+            "origin": "3980974"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:36, 3980974 -> 3980162: the feed leaves 09-01 00:46:55, today lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3981133",
+            "origin": "3981052"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981052 -> 3981133: the feed leaves 09-01 00:21:13, tomorrow lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:11:13+02:00",
+            "destination": "3981133",
+            "origin": "3981052"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 6
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:11, 3981052 -> 3981133: the feed leaves 09-01 00:21:13, today lists 6 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-26T23:50:00+02:00",
+            "destination": "4015596",
+            "origin": "3981110"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-26 23:50, 3981110 -> 4015596: the feed leaves 09-27 00:38:28, tomorrow lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-27T00:28:28+02:00",
+            "destination": "4015596",
+            "origin": "3981110"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-27 00:28, 3981110 -> 4015596: the feed leaves 09-27 00:38:28, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980252",
+            "origin": "3981165"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981165 -> 3980252: the feed leaves 09-01 00:49:00, tomorrow lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:39:00+02:00",
+            "destination": "3980252",
+            "origin": "3981165"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 10
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:39, 3981165 -> 3980252: the feed leaves 09-01 00:49:00, today lists 10 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-14T23:50:00+02:00",
+            "destination": "3980711",
+            "origin": "3981217"
+          },
+          "got": {
+            "day": "tomorrow",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-09-14 23:50, 3981217 -> 3980711: the feed leaves 09-15 00:48:38, tomorrow lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-15T00:38:38+02:00",
+            "destination": "3980711",
+            "origin": "3981217"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-15 00:38, 3981217 -> 3980711: the feed leaves 09-15 00:48:38, today lists 5 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-08-31T23:50:00+02:00",
+            "destination": "3980320",
+            "origin": "3981287"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 1
+          },
+          "ok": true,
+          "text": "at 23:50 on 2026-08-31 23:50, 3981287 -> 3980320: the feed leaves 08-31 23:54:00, today lists 1 departures"
+        },
+        {
+          "asked": {
+            "at": "2026-09-01T00:02:00+02:00",
+            "destination": "3980320",
+            "origin": "3981287"
+          },
+          "got": {
+            "day": "today",
+            "has_it": true,
+            "listed": 5
+          },
+          "ok": true,
+          "text": "before the call on 2026-09-01 00:02, 3981287 -> 3980320: the feed leaves 09-01 00:12:00, today lists 5 departures"
+        }
+      ],
+      "fixture": "gvb",
+      "id": "gvb-service-calendar_dates",
+      "outcome": "passed",
+      "promise": "service",
+      "reason": null,
+      "shape": "calendar_dates"
+    },
+    {
+      "checks": [
+        {
           "expected": [
             "25082026",
             "2027-01-03",
@@ -98396,7 +102916,7 @@
         },
         {
           "ok": true,
-          "text": "station modes {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Montbarrey': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
+          "text": "station modes {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
         }
       ],
       "direction": 0,
@@ -100245,7 +104765,7 @@
         },
         {
           "ok": true,
-          "text": "station modes {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Montbarrey': {'coach', 'train'}, 'Arc-et-Senans': {'coach', 'train'}, 'Champagnole Paul-Émile Victor': {'coach', 'train'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
+          "text": "station modes {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}, the trips call at {'Dole': {'train', 'coach'}, 'Mouchard': {'train', 'coach'}, 'Champagnole': {'train', 'coach'}, 'La Chaux-des-Crotenay': {'train', 'coach'}, 'La Chaumusse - Fort-du-Plasne': {'train', 'coach'}, 'Saint-Laurent-en-Grandvaux': {'train', 'coach'}, 'Morbier': {'train', 'coach'}, 'Morez': {'train', 'coach'}, 'Saint-Claude': {'train', 'coach'}, 'Andelot': {'train', 'coach'}, 'Montbarrey': {'train', 'coach'}, 'Arc-et-Senans': {'train', 'coach'}, 'Champagnole Paul-Émile Victor': {'train', 'coach'}, 'Besançon Viotte': {'train'}, 'Franois': {'train'}}"
         }
       ],
       "direction": 1,

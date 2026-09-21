@@ -1,4 +1,4 @@
-provider case results -- 294 case(s)
+provider case results -- 298 case(s)
 
 case: adelaide
   result: PASSED
@@ -97,6 +97,12 @@ case: adelaide-route-calendar
   result: PASSED
 
 case: adelaide-route-calendar_dates
+  result: PASSED
+
+case: adelaide-service-calendar
+  result: PASSED
+
+case: adelaide-service-calendar_dates
   result: PASSED
 
 case: boarding
@@ -325,6 +331,12 @@ case: gvb-route-calendar
   result: PASSED
 
 case: gvb-route-calendar_dates
+  result: PASSED
+
+case: gvb-service-calendar
+  result: PASSED
+
+case: gvb-service-calendar_dates
   result: PASSED
 
 case: palmbus

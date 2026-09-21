@@ -126,6 +126,14 @@ def _as_utc(value: datetime.datetime) -> datetime.datetime:
     return value.astimezone(datetime.timezone.utc)
 
 
+def _as_local(value: datetime.datetime) -> datetime.datetime:
+    """An instant read in the configured zone; a naive one is taken as UTC,
+    as the real implementation does."""
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=datetime.timezone.utc)
+    return value.astimezone(_DEFAULT_TIME_ZONE)
+
+
 def _get_time_zone(name: str) -> datetime.tzinfo:
     """The tzinfo of a zone name, the way Home Assistant hands it out.
 
@@ -334,6 +342,7 @@ def install() -> None:
         utcnow=_utcnow,
         now=_now,
         as_utc=_as_utc,
+        as_local=_as_local,
         utc_from_timestamp=_utc_from_timestamp,
         get_time_zone=_get_time_zone,
         set_default_time_zone=_set_default_time_zone,

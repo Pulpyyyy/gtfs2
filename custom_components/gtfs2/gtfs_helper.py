@@ -2623,6 +2623,9 @@ async def get_route_departures(hass, data):
     now = dt_util.now()
     now_date = now.strftime(dt_util.DATE_STR_FORMAT)
     tomorrow_date = (now + datetime.timedelta(days=1)).strftime(dt_util.DATE_STR_FORMAT)
+    # yesterday's service runs past midnight: its 24:40 is today's 00:40,
+    # which a window starting today left out
+    yesterday_date = (now - datetime.timedelta(days=1)).strftime(dt_util.DATE_STR_FORMAT)
     from_time = data.get('from_time', '00:00:00')
     cutoff_today = datetime.datetime.strptime(now_date + ' ' + from_time, "%Y-%m-%d %H:%M:%S")
     cutoff_tomorrow = datetime.datetime.strptime(tomorrow_date + ' ' + from_time, "%Y-%m-%d %H:%M:%S")
@@ -2656,7 +2659,7 @@ async def get_route_departures(hass, data):
         }
     try:
         instants = await hass.async_add_executor_job(
-            _route_departures_between, _data, now_date, tomorrow_date)
+            _route_departures_between, _data, yesterday_date, tomorrow_date)
     finally:
         # released whatever happens: this schedule was opened for the call
         try:

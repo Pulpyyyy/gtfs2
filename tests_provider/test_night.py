@@ -10,6 +10,10 @@ call, the morning after:
                 answers the first departure the feed has after now
     local_stop  get_local_stops_next_departures at that stop lists exactly
                 the departures the feed has within the next hour
+    service     get_route_departures, the service of the same entry as the
+                route promise, lists that first departure under "today" or
+                "tomorrow", the calendar day it leaves on: a call past 24:00
+                of yesterday's service is today's
 
 The expected side is laid out from the fixture itself: every call, on every
 day its service runs (calendar windows by weekday minus their removals, plus
@@ -37,6 +41,8 @@ import zipfile
 import zoneinfo
 from pathlib import Path
 
+from unittest.mock import patch
+
 import pytest
 from freezegun import freeze_time
 from sqlalchemy.sql import text
@@ -52,7 +58,7 @@ import fixture_db  # noqa: E402
 gtfs_helper = ha_stub.load("gtfs_helper")
 
 FIXTURES = Path(__file__).parent / "fixtures"
-PROMISES = ("route", "local_stop")
+PROMISES = ("route", "local_stop", "service")
 SHAPES = ("calendar_dates", "calendar")
 RAIL = {2, *range(100, 118)}
 WINDOW = 60     # minutes a local stop lists ahead
@@ -74,7 +80,8 @@ def _rows(archive, name):
 
 def _night_promises():
     """(fixture, promise) for each fixture whose trips call past 24:00: the
-    local stop always, the route when one of those trips is not a train."""
+    local stop always, the route and its service when one of those trips is
+    not a train."""
     found = []
     for path in sorted(FIXTURES.iterdir()):
         archive_path = path / "static.zip"
@@ -90,6 +97,7 @@ def _night_promises():
                     if _hours(row.get("route_type")) in RAIL}
         if any(route_of.get(trip_id) not in rail for trip_id in night):
             found.append((path.name, "route"))
+            found.append((path.name, "service"))
         found.append((path.name, "local_stop"))
     return found
 
@@ -223,7 +231,7 @@ def _night_calls(conn, promise):
         "ORDER BY st.stop_id, st.departure_time, st.trip_id")).fetchall()
     seen, calls = set(), []
     for row in rows:
-        if promise == "route":
+        if promise in ("route", "service"):
             if row.next_stop is None or int(row.route_type) in RAIL:
                 continue
             key = (row.stop_id, row.next_stop)
@@ -358,6 +366,49 @@ def check_route(conn, schedule, days, names, zone_name, zone, call, label, now):
                     "trip": result.get("trip_id") if result else None}}
 
 
+def check_service(conn, schedule, days, names, zone_name, zone, call, label, now):
+    """The departures service of the route promise's entry, over its two days."""
+    entry = types.SimpleNamespace(options={}, data={
+        "file": "fixture", "name": "night", "route_type": str(call.route_type),
+        "origin": f"{call.stop_id}: {names.get(call.stop_id)}",
+        "destination": f"{call.next_stop}: {names.get(call.next_stop)}",
+        "route": call.route_id, "direction": str(call.direction_id)})
+    hass = _hass(zone_name)
+    hass.config_entries = types.SimpleNamespace(async_get_entry=lambda _id: entry)
+
+    async def job(fn, *args):
+        return fn(*args)
+
+    hass.async_add_executor_job = job
+    want = _instant(_first_ride(conn, days, call, zone, now))
+    # the service opens the datasource itself and lets it go after; this
+    # one is the fixture's, and its engine is kept for the next case
+    with patch.object(gtfs_helper, "get_gtfs", return_value=schedule), \
+            patch.object(schedule.engine, "dispose", lambda: None):
+        result = _drive(gtfs_helper.get_route_departures(hass, {"config_entry": "e"}))
+    today = now.astimezone(zone).date()
+    if want is None:
+        return {"ok": True, "text": f"{label}: nothing to list", "asked": {}, "got": {}}
+    day = "today" if want.astimezone(zone).date() == today else "tomorrow"
+    listed = {_instant(value) for value in result.get(day, [])}
+    return {"ok": want in listed,
+            "text": (f"{label} on {now:%Y-%m-%d %H:%M}, {call.stop_id} -> {call.next_stop}: "
+                     f"the feed leaves {_show(want, zone)}, {day} lists "
+                     f"{len(listed)} departures" + ("" if want in listed else ", not that one")),
+            "asked": {"origin": call.stop_id, "destination": call.next_stop,
+                      "at": now.isoformat()},
+            "got": {"day": day, "listed": len(listed), "has_it": want in listed}}
+
+
+def _drive(coro):
+    """Run a coroutine that awaits nothing but the stand-ins above."""
+    try:
+        coro.send(None)
+    except StopIteration as done:
+        return done.value
+    raise RuntimeError("the service awaited something the test does not stand in for")
+
+
 def check_local_stop(conn, schedule, days, where, zone_name, zone, call, label, now):
     me = types.SimpleNamespace(
         hass=_hass(zone_name, where), _realtime=False,
@@ -422,6 +473,9 @@ def test_night(record_property, fixture, promise, shape):
                         if promise == "route":
                             checks.append(check_route(conn, schedule, days, names, zone_name,
                                                       zone, call, label, now))
+                        elif promise == "service":
+                            checks.append(check_service(conn, schedule, days, names, zone_name,
+                                                        zone, call, label, now))
                         else:
                             checks.append(check_local_stop(conn, schedule, days,
                                                            places[call.stop_id], zone_name,
