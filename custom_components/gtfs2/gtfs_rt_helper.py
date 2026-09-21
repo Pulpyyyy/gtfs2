@@ -1008,7 +1008,7 @@ def get_gtfs_rt(hass, path, data):
                 _LOGGER.debug("Not writing to file as json because of error: %s", ex)
                 open(os.path.join(gtfs_dir, file_all), "w").write(str(feed_entities))              
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.info("Ìssues with converting GTFS RT data to JSON, output to string") 
+            _LOGGER.info("Issues with converting GTFS RT data to JSON, output to string") 
     return "ok"   
         
 class LocalFileAdapter(requests.adapters.HTTPAdapter):

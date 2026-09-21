@@ -531,7 +531,8 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
 
         idx = (depart_dt_str, str(row["trip_id"]))
         if idx in timetable:
-            _LOGGER.warning("Duplicate timetable key: %s, trip_id: %s", idx, row["trip_id"])
+            # a trip reached from two quays of the origin: expected, kept once
+            _LOGGER.debug("Duplicate timetable key: %s, trip_id: %s", idx, row["trip_id"])
             continue
         timetable[idx] = {**row, "day": day_label, "first": False, "last": False}
 
@@ -546,7 +547,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
     item = {}
     for key in sorted(timetable.keys()):
         item = timetable[key]
-        _LOGGER.info("Departure(s) found for station %s @ %s -> %s", start_station_id, key, item)
+        _LOGGER.debug("Departure(s) found for station %s @ %s -> %s", start_station_id, key, item)
         break
     _LOGGER.debug("Item(s) from SQL: %s", item)
 
@@ -556,7 +557,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
         # non-empty "there is nothing" would be read as a departure and crash.
         # The date of the next service is published separately, by the
         # coordinator, through get_next_service_date.
-        _LOGGER.info("No items found in gtfs")
+        _LOGGER.debug("No items found in gtfs")
         return {}
 
     # Define timezone related attribs
@@ -606,7 +607,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
     if item == {}:
         # every departure found is already gone: the same empty dict as
         # when none was found, for the same callers
-        _LOGGER.info("No items found in gtfs")
+        _LOGGER.debug("No items found in gtfs")
         return {}
 
     # create upcoming timetable with line info, headsign and trips
@@ -2158,10 +2159,10 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
         for table, column, index_name in DATASOURCE_INDEXES:
             if table in views or any(t == table and column in (n or "") for t, n in indexed):
                 continue
-            _LOGGER.warning("Adding index %s to improve performance", index_name)
+            _LOGGER.info("Adding index %s to improve performance", index_name)
             conn.execute(text(f"create index {index_name} on {table}({column})"))  # noqa: S608
         if conn.execute(text(sql_check_route_agency)).scalar():
-            _LOGGER.warning("Fix missing agency_id in routes table")
+            _LOGGER.info("Fix missing agency_id in routes table")
             conn.execute(text(sql_fix_route_agency))
         conn.commit()
     try:
@@ -2531,7 +2532,7 @@ def _interpret_local_stop_rows(self, rows):
 def get_local_stops_next_departures(self):
     _LOGGER.debug("Get local stop departure with data: %s", self._data)
     if check_extracting(self.hass, self._data['gtfs_dir'],self._data['file']):
-        _LOGGER.warning("Cannot get next depurtures on this datasource as still unpacking: %s", self._data["file"])
+        _LOGGER.debug("Cannot get next departures on this datasource as still unpacking: %s", self._data["file"])
         return []
     """Get next departures from data."""
     schedule = self._data["schedule"]

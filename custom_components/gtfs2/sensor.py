@@ -778,7 +778,8 @@ class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
         self._state: str | None = None
         # if no data or extracting, stop
         if self.coordinator.data["extracting"]:  
-            _LOGGER.warning("Extracting datasource: %s ,for sensor: %s", self.coordinator.data["file"], self._name)
+            # every minute of the unpacking: the flow and its notification say it already
+            _LOGGER.debug("Extracting datasource: %s ,for sensor: %s", self.coordinator.data["file"], self._name)
             self._attr_native_value = None
             self._attributes = {"extracting": True}
             self._attr_extra_state_attributes = self._attributes
