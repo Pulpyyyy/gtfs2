@@ -208,17 +208,38 @@ def _set_apart_by_ends(options, ends):
 _HEADSIGN_ENDS = {}
 
 
-def _names_a_place(headsign):
+def _names_a_place(headsign, places=frozenset()):
     """Whether a trip_headsign reads as a destination rather than a code.
 
     SNCF writes the train number there ("44930"), IDFM the RER mission code
     ("UZAR", "NATO"): neither tells a rider where the line goes. A short
-    word in capitals with no space is taken for such a code.
+    word in capitals with no space is taken for such a code, unless the
+    feed has a place of that name: places holds its stop names and their
+    first words, casefolded, so NICE or PAU, a town written in capitals,
+    is still the destination it is.
     """
     headsign = str(headsign or "").strip()
     if not any(character.isalpha() for character in headsign):
         return False
-    return not (headsign.isupper() and " " not in headsign and len(headsign) <= 5)
+    if headsign.isupper() and " " not in headsign and len(headsign) <= 5:
+        return headsign.casefold() in places
+    return True
+
+
+def _read_place_words(zin):
+    """The stop names of an open feed and their first words, casefolded."""
+    member = next((n for n in zin.namelist()
+                   if n.rsplit("/", 1)[-1] == "stops.txt"), None)
+    if member is None:
+        return frozenset()
+    words = set()
+    with zin.open(member) as fh:
+        for row in csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig", newline="")):
+            name = (row.get("stop_name") or "").strip().casefold()
+            if name:
+                words.add(name)
+                words.add(re.split(r"[\s\-/]", name, 1)[0])
+    return frozenset(words)
 
 
 def _read_headsign_ends(zip_path):
@@ -240,6 +261,7 @@ def _read_headsign_ends(zip_path):
                 for row in reader:
                     shown[row.get("route_id")][row.get("direction_id") or ""][
                         (row.get("trip_headsign") or "").strip()] += 1
+            place_words = _read_place_words(zin)
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not read the trips of %s: %s", zip_path, ex)
         return {}
@@ -250,7 +272,7 @@ def _read_headsign_ends(zip_path):
             counts = directions[direction]
             # a feed without direction_id puts both ways under one key
             wanted = 2 if direction == "" else 1
-            named = [(h, n) for h, n in counts.most_common() if _names_a_place(h)]
+            named = [(h, n) for h, n in counts.most_common() if _names_a_place(h, place_words)]
             if sum(n for _, n in named) * 2 < sum(counts.values()):
                 continue
             places += [h for h, _ in named[:wanted]]
