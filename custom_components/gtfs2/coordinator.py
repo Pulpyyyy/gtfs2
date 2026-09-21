@@ -27,6 +27,7 @@ from .const import (
     CONF_VEHICLE_POSITION_URL,
     CONF_ALERTS_URL,
     ATTR_DUE_IN,
+    ATTR_NEXT_RT,
     ATTR_LATITUDE,
     ATTR_LONGITUDE,
     ATTR_RT_UPDATED_AT,
@@ -43,6 +44,23 @@ from .departure_attributes import departure_records
 from .exports import export_leg, export_route_shape, export_timetable
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def shown_departure_left(previous, now) -> bool:
+    """Whether the departure the sensor shows has left, and nothing says otherwise.
+
+    The departures are read again at the static refresh interval, 15
+    minutes by default, and until then the sensor kept its state on a bus
+    already gone. A departure whose time is past is read again at once,
+    unless the realtime still has one coming: a late bus stays on the
+    board as long as the feed says it has not left.
+    """
+    shown = (previous.get("next_departure") or {}).get("departure_time")
+    if not (hasattr(shown, "tzinfo") and shown.tzinfo is not None) or shown > now:
+        return False
+    coming = (previous.get("next_departure_realtime_attr") or {}).get(ATTR_NEXT_RT) or []
+    return not any(hasattr(moment, "tzinfo") and moment.tzinfo is not None and moment > now
+                   for moment in coming)
 
 
 class GTFSUpdateCoordinator(DataUpdateCoordinator):
@@ -133,6 +151,9 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         ) > dt_util.utcnow() + timedelta(seconds=1):
             run_static = False
             _LOGGER.debug("No run static refresh: sensor exists but not yet refresh for name: %s", data["name"])
+            if shown_departure_left(previous_data, dt_util.utcnow()):
+                run_static = True
+                _LOGGER.debug("Run static refresh: the departure shown for %s has left", data["name"])
         else:
             run_static = True
             _LOGGER.debug("Run static refresh: sensor without gtfs data OR refresh for name: %s", data["name"])
