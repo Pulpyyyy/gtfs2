@@ -22,7 +22,7 @@ from .const import CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME
 from .direction_repair import repair_trip_directions
 from .freshness import adopt_zip, stage_zip
 from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in, swap_in
-from .gtfs_filter import filter_gtfs_zip, zip_only_future_dates
+from .gtfs_filter import filter_gtfs_zip, read_zip_routes, zip_only_future_dates
 from .gtfs_helper import check_extracting, get_gtfs, remove_from_zip
 from .notifications import async_notify_lines_missing
 
@@ -168,6 +168,65 @@ def open_datasource(gtfs_dir, filename):
     return pygtfs.Schedule(f"{sqlite_file}?check_same_thread=False&timeout=60")
 
 
+def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
+    """Rebuild a source some sensor reads whole: every line of the new edition.
+
+    A train or a local stops sensor matches across the whole feed, so its
+    source holds every line. The route by route refresh took the lines to
+    keep from the database being replaced, and a line the new edition
+    brought never came in, at any refresh. Here the new edition decides:
+    all its lines go through the filter, which keeps the zip on disk
+    untouched where the unfiltered import strips it of its shapes, and the
+    import is the new database itself, no copy between two. Swapped in the
+    same way as the route by route one.
+    """
+    routes = sorted({row["route_id"] for row in read_zip_routes(zip_path)})
+    if not routes:
+        _LOGGER.error("Refresh of %s aborted, the new edition names no line, "
+                      "the current data stays", filename)
+        return False
+    real = real_path(gtfs_dir, filename)
+    staging = filename + ".refresh"
+    new_real = real_path(gtfs_dir, staging)
+    try:
+        if os.path.exists(new_real):
+            os.remove(new_real)
+        if not build_scratch_database(gtfs_dir, zip_name, new_real,
+                                      data.get("clean_feed_info", False),
+                                      only_routes=routes):
+            _LOGGER.error("Refresh of %s aborted, the new edition could not be "
+                          "imported, the current data stays", filename)
+            return False
+        loaded = routes_in(new_real)
+        if not loaded:
+            _LOGGER.error("Refresh of %s aborted, the new database holds no "
+                          "trip, the current data stays", filename)
+            return False
+        # a route sensor may share the source with the whole-feed readers:
+        # its line must still run in the new edition, as the route by route
+        # refresh requires, or the swap leaves that sensor empty unsaid
+        missing = set(data.get("read_routes") or ()) - loaded
+        if missing:
+            _LOGGER.error("Refresh of %s aborted, the new edition has no trip "
+                          "for %s, the current data stays", filename, sorted(missing))
+            data["lines_missing"] = sorted(missing)
+            return False
+        optimise_datasource(gtfs_dir, staging)
+        if not swap_in(new_real, real):
+            return False
+    finally:
+        for leftover in (new_real, new_real + "-journal"):
+            if os.path.exists(leftover):
+                try:
+                    os.remove(leftover)
+                except OSError as ex:
+                    _LOGGER.warning("Could not remove %s: %s", leftover, ex)
+    _LOGGER.info("Refreshed datasource %s from its source, whole: %s lines",
+                 filename, len(loaded))
+    # the same answer as the route by route refresh, for refresh_source
+    return {route: None for route in sorted(loaded)}
+
+
 def refresh_datasource(hass, path, data):
     """Refresh a datasource from its source, keeping the sensors served.
 
@@ -236,6 +295,9 @@ def refresh_datasource(hass, path, data):
         _LOGGER.info("New file contains only dates in the future, "
                      "keeping the current data")
         return False
+
+    if data.get("whole_feed"):
+        return _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data)
 
     # the new real database is built under its own datasource name, so every
     # existing helper works on it unchanged and nothing it does can touch the

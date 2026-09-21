@@ -293,6 +293,17 @@ def _lines_read(hass: HomeAssistant, file) -> list[str]:
     })
 
 
+def _reads_whole_feed(hass: HomeAssistant, file) -> bool:
+    """Whether a sensor of the source reads it whole: a train or local stops
+    entry, or one naming no line, matches across every line of the feed,
+    so a refresh has to bring every line of the new edition in."""
+    return any(
+        entry.data.get("device_tracker_id")
+        or entry.data.get("route") in (None, "", "train")
+        for entry in journey_entries(hass, file)
+    )
+
+
 async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
     """One rebuild of a source from an assembled data dict, serialised per
     source, recorded, and told to its entities. The three triggers meet
@@ -302,7 +313,8 @@ async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
         _LOGGER.info("A refresh of %s is already running", file)
         return False
     # read here, on the loop: the entries are not for the executor to walk
-    data = {**data, "read_routes": _lines_read(hass, file)}
+    data = {**data, "read_routes": _lines_read(hass, file),
+            "whole_feed": _reads_whole_feed(hass, file)}
     async with lock:
         ok = await hass.async_add_executor_job(
             refresh_source, hass, DEFAULT_PATH, data)
