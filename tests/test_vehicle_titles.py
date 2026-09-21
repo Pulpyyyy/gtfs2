@@ -51,3 +51,29 @@ def test_each_vehicle_titled_after_its_trip(tmp_path, monkeypatch):
     titles = sorted(e["properties"]["title"] for e in body)
     assert titles == ["N1 → Lac 101_bus", "N1 → Stade 102_bus"]
     schedule.engine.dispose()
+
+
+def test_the_database_direction_places_the_vehicle(tmp_path, monkeypatch):
+    # the import repaired T1 to direction 0 and T2 to 1; the feed still
+    # carries the provider's, the other way round
+    engine = create_engine(f"sqlite:///{tmp_path / 'dir.sqlite'}")
+    with engine.begin() as conn:
+        conn.execute(text("create table trips (trip_id varchar, route_id varchar, "
+                          "direction_id integer, trip_headsign varchar)"))
+        conn.execute(text("create table stops (stop_id varchar, stop_name varchar)"))
+        conn.execute(text("create table stop_times (trip_id varchar, stop_id varchar, stop_sequence integer)"))
+        conn.execute(text("insert into trips values ('T1', 'R1', 0, 'Lac'), ('T2', 'R1', 1, 'Gare')"))
+    schedule = types.SimpleNamespace(engine=engine)
+    feed = [_vehicle("T1", "101"), _vehicle("T2", "102")]
+    feed[0]["vehicle"]["trip"]["direction_id"] = "1"
+    feed[1]["vehicle"]["trip"]["direction_id"] = "0"
+    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities", lambda **kw: feed)
+    monkeypatch.setattr(gtfs_rt_helper, "update_geojson", lambda me: None)
+    me = types.SimpleNamespace(
+        _vehicle_position_url="http://feed.invalid/vp", _headers={}, _trip_id="T9",
+        _trip_list=[], _direction="0", _route_id="R1", _icon="mdi:bus",
+        _data={"file": "src", "schedule": schedule, "next_departure": {"route_short_name": "N1"}})
+    body = gtfs_rt_helper.get_rt_vehicle_positions(me)
+    assert [e["properties"]["trip_id"] for e in body] == ["T1"]
+    assert body[0]["properties"]["direction_id"] == "0"
+    engine.dispose()

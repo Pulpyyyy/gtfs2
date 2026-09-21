@@ -780,6 +780,23 @@ def _trip_destinations(schedule, trip_ids):
     return found
 
 
+def _trip_directions(schedule, trip_ids):
+    """{trip_id: direction_id} as the database has them, repairs included."""
+    trip_ids = sorted({str(t) for t in trip_ids if t})
+    if not trip_ids or schedule is None or isinstance(schedule, str):
+        return {}
+    marks = ", ".join(f":t{i}" for i in range(len(trip_ids)))
+    try:
+        with schedule.engine.connect() as conn:
+            rows = conn.execute(
+                sql_text(f"SELECT trip_id, direction_id FROM trips WHERE trip_id IN ({marks})"),  # noqa: S608
+                {f"t{i}": t for i, t in enumerate(trip_ids)}).fetchall()
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.debug("Could not read the directions of the vehicles' trips: %s", ex)
+        return {}
+    return {str(trip): str(direction) for trip, direction in rows if direction is not None}
+
+
 def get_rt_vehicle_positions(self):
     feed_entities = get_gtfs_feed_entities(
         url=self._vehicle_position_url,
@@ -803,9 +820,20 @@ def get_rt_vehicle_positions(self):
         # road, which is an answer: written as such, the map empties. Left
         # alone, the last buses of the evening sat on it all night
         _LOGGER.debug("The vehicle feed is empty, taking the vehicles off the map")
+    # the direction each candidate's trip has in the database: the import
+    # repairs direction_id where the provider mixed its trips up (80 trips
+    # of four GVB trams), and the vehicle feed still carries the provider's,
+    # which put those vehicles on the other direction's map
+    board = {str(t) for t in (getattr(self, "_trip_list", None) or ())}
+    static_direction = _trip_directions(
+        (getattr(self, "_data", None) or {}).get("schedule"),
+        [e["vehicle"]["trip"]["trip_id"] for e in feed_entities
+         if e["vehicle"]["trip"]["trip_id"]
+         and (str(e["vehicle"]["trip"]["trip_id"]) in board
+              or _same_route(self._route_id, e["vehicle"]["trip"]["route_id"]))])
     for entity in feed_entities:
         vehicle = entity["vehicle"]
-        
+
         if not vehicle["trip"]["trip_id"]:
             # Vehicle is not in service
             continue
@@ -815,7 +843,8 @@ def get_rt_vehicle_positions(self):
         # add data if trip found or if route in the selected direction; a
         # vehicle whose feed names no direction is placed by its trip, one of
         # the board's, rather than on whichever map 0 happens to be
-        seen_direction = vehicle["trip"].get("direction_id")
+        seen_direction = static_direction.get(str(vehicle["trip"]["trip_id"]),
+                                              vehicle["trip"].get("direction_id"))
         if seen_direction is None:
             on_this_way = str(vehicle["trip"]["trip_id"]) in {
                 str(t) for t in (getattr(self, "_trip_list", None) or ())}
