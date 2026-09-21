@@ -336,6 +336,31 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         """Icon to use in the frontend, if any."""
         return self._icon
 
+    def _say_once(self, message, *args):
+        """Log why the sensor shows nothing, when the reason is new.
+
+        The sensor is updated every minute, and saying the same thing every
+        minute buried everything else in the log: an extraction of twenty
+        minutes was twenty lines per sensor.
+        """
+        text = message % args if args else message
+        if text != getattr(self, "_nothing_said", None):
+            _LOGGER.warning(text)
+            self._nothing_said = text
+
+    def _show_nothing(self, message, *args):
+        """Clear the sensor rather than leave the last departure it showed.
+
+        An early return used to keep the state and the attributes of the
+        refresh before: a stop the new timetable renamed, or a datasource
+        gone, and the sensor announced its last bus for ever.
+        """
+        self._attr_native_value = None
+        self._attributes = {}
+        self._attr_extra_state_attributes = self._attributes
+        self._say_once(message, *args)
+        return self._attributes
+
     def _update_attrs(self):  # noqa: C901 PLR0911
         _LOGGER.debug("SENSOR update attr data: %s", self.coordinator.data)
         self._icon = ICON
@@ -347,7 +372,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
             self._attr_extra_state_attributes = self._attributes
             return self._attributes
         if self.coordinator.data["extracting"]:  
-            _LOGGER.warning("Extracting datasource: %s ,for sensor: %s", self.coordinator.data["file"], self._name)
+            self._say_once("Extracting datasource: %s ,for sensor: %s", self.coordinator.data["file"], self._name)
             self._attr_native_value = None
             self._attributes = {"extracting": True}
             self._attr_extra_state_attributes = self._attributes
@@ -355,6 +380,11 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._attributes = {}
         
         self._pygtfs = self.coordinator.data["schedule"]
+        if self._pygtfs is None or isinstance(self._pygtfs, str):
+            # a sentinel of get_gtfs: no zip, no database, a feed all in
+            # the future. Nothing to describe, and nothing to query
+            return self._show_nothing("Datasource %s has no usable schedule (%s), nothing to show for %s",
+                                      self.coordinator.data.get("file"), self._pygtfs or "empty", self._name)
         self.extracting = self.coordinator.data.get("extracting", False)
         self.origin = self.coordinator.data["origin"].split(": ")[0]
         self.destination = self.coordinator.data["destination"].split(": ")[0]
@@ -378,19 +408,17 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         if not self.extracting and self._route_type != "2":
             if not self._origin:
                 self._available = False
-                _LOGGER.warning("Origin stop ID %s not found", self.origin)
-                return
+                return self._show_nothing("Origin stop ID %s not found", self.origin)
             if not self._destination:
                 self._available = False
-                _LOGGER.warning(
-                    "Destination stop ID %s not found", self.destination
-                )
-                return
+                return self._show_nothing("Destination stop ID %s not found", self.destination)
         elif self._route_type == "2" or self.extracting:
             # a train names its ends by station, and while extracting there
             # is nothing to read: the entry's own names stand
             self._origin = self._origin or self.origin
             self._destination = self._destination or self.destination
+        # the sensor has something to say again: a later problem is news
+        self._nothing_said = None
 
         # fetch next departures
         self._departure = self.coordinator.data["next_departure"]
