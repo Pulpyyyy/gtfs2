@@ -269,6 +269,25 @@ class _UpdateFailed(Exception):
     pass
 
 
+class _EntityShell:
+    """The base of the source's entities (update, button): no behaviour,
+    so a test builds one and calls its own methods. What Home Assistant
+    derives from them, state and attributes, is HA's to answer."""
+
+
+class _UpdateEntityFeature(int):
+    """The flag values of homeassistant.components.update."""
+    INSTALL = 1
+    SPECIFIC_VERSION = 2
+    PROGRESS = 4
+    BACKUP = 8
+
+
+class _EntityCategory:
+    CONFIG = "config"
+    DIAGNOSTIC = "diagnostic"
+
+
 class _Platform:
     SENSOR = "sensor"
     BINARY_SENSOR = "binary_sensor"
@@ -335,6 +354,7 @@ def install() -> None:
         Platform=_Platform,
         ATTR_LATITUDE="latitude",
         ATTR_LONGITUDE="longitude",
+        EntityCategory=_EntityCategory,
     )
     _module("homeassistant.util", Throttle=lambda *a, **k: (lambda fn: fn))
     _DT_MODULE = _module(
@@ -361,13 +381,23 @@ def install() -> None:
     _module("homeassistant.helpers.translation",
             async_get_translations=_Unreached("async_get_translations"))
     _module("homeassistant.helpers.dispatcher",
-            async_dispatcher_send=_Unreached("async_dispatcher_send"))
+            async_dispatcher_send=_Unreached("async_dispatcher_send"),
+            async_dispatcher_connect=_Unreached("async_dispatcher_connect"))
+    _module("homeassistant.helpers.device_registry",
+            DeviceEntryType=types.SimpleNamespace(SERVICE="service"),
+            DeviceInfo=dict,
+            async_get=_Unreached("device_registry.async_get"))
+    _module("homeassistant.helpers.entity_platform", AddEntitiesCallback=object)
+    _module("homeassistant.helpers.restore_state", RestoreEntity=type("RestoreEntity", (), {}))
     _module("homeassistant.helpers.event",
             async_call_later=_Unreached("async_call_later"),
             async_track_time_change=_Unreached("async_track_time_change"))
     _module("homeassistant.components")
     _module("homeassistant.components.sensor",
             PLATFORM_SCHEMA=_Unreached("PLATFORM_SCHEMA"))
+    _module("homeassistant.components.update",
+            UpdateEntity=_EntityShell, UpdateEntityFeature=_UpdateEntityFeature)
+    _module("homeassistant.components.button", ButtonEntity=_EntityShell)
     _module("homeassistant.components.persistent_notification",
             async_create=_Unreached("persistent_notification.async_create"),
         async_dismiss=_Unreached("persistent_notification.async_dismiss"),

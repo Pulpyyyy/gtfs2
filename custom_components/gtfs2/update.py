@@ -75,7 +75,11 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
     _attr_has_entity_name = True
     _attr_name = "Static feed"
     _attr_should_poll = False
-    _attr_supported_features = UpdateEntityFeature.INSTALL
+    # PROGRESS: HA reads in_progress below only with it, and without it
+    # shows a rebuild only when started from this entity, not the night
+    # check's nor the update service's
+    _attr_supported_features = (UpdateEntityFeature.INSTALL
+                                | UpdateEntityFeature.PROGRESS)
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.hass = hass

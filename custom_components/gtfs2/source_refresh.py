@@ -364,6 +364,9 @@ async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
     data = {**data, "read_routes": _lines_read(hass, file),
             "whole_feed": _reads_whole_feed(hass, file)}
     async with lock:
+        # told at the start too, so the update entity shows the rebuild
+        # running whichever of the three triggers started it
+        async_dispatcher_send(hass, SIGNAL_SOURCE_REFRESH.format(file))
         ok = await hass.async_add_executor_job(
             refresh_source, hass, DEFAULT_PATH, data)
     async_dispatcher_send(hass, SIGNAL_SOURCE_REFRESH.format(file))
