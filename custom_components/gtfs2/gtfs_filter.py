@@ -253,12 +253,13 @@ def zip_only_future_dates(zip_path):
                 if member is None:
                     continue
                 rows = _rows(zin, member)
-                header = next(rows)
-                if column not in header:
+                header = next(rows, None)
+                if not header or column not in header:
                     continue
                 index = header.index(column)
                 for row in rows:
-                    value = row[index].strip()
+                    # a row short of the column says nothing about dates
+                    value = row[index].strip() if len(row) > index else ""
                     if value and (earliest is None or value < earliest):
                         earliest = value
     except (OSError, ValueError, zipfile.BadZipFile, csv.Error) as ex:

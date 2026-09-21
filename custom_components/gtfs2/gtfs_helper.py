@@ -45,6 +45,7 @@ from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, safe_file_
                              struck_trips, on_service_day)
 from .route_names import get_routes_in_zip, _adds_to, _look_alikes, _set_apart, _set_apart_by_ends, look_alike_ends, route_ends, _route_label, _natural
 from .freshness import stage_zip, adopt_zip
+from .gtfs_filter import zip_only_future_dates
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -802,8 +803,16 @@ def get_gtfs(hass, path, data, update=False):
         _pending_remove = os.path.exists(os.path.join(gtfs_dir, file))
     else:
         _pending_remove = False
+    # a feed whose every service lies ahead is refused BEFORE anything is
+    # removed: the check used to run once the database was gone, so its
+    # "keeping the current data" had nothing left to keep
+    if (check_source_dates and update and data["extract_from"] == "zip"
+            and os.path.exists(os.path.join(gtfs_dir, file))
+            and zip_only_future_dates(os.path.join(gtfs_dir, file))):
+        _LOGGER.info("New file contains only dates in the future, keeping the current data")
+        return
     if update and data["extract_from"] == "zip" and os.path.exists(os.path.join(gtfs_dir, file)) and os.path.exists(os.path.join(gtfs_dir, sqlite)):
-        os.remove(os.path.join(gtfs_dir, sqlite))  
+        os.remove(os.path.join(gtfs_dir, sqlite))
         if os.path.exists(journal):
                 os.remove(journal)        
     if data["extract_from"] == "zip":
@@ -824,6 +833,12 @@ def get_gtfs(hass, path, data, update=False):
                 staged = stage_zip(r, os.path.join(gtfs_dir, file))
                 if staged is None:
                     return "no_data_file"
+                if check_source_dates and update and zip_only_future_dates(staged):
+                    # read on the download itself, before the current data
+                    # is removed or the zip replaced
+                    _LOGGER.info("New file contains only dates in the future, keeping the current data")
+                    os.remove(staged)
+                    return
                 if _pending_remove:
                     remove_datasource(hass, path, filename, True)
                 adopt_zip(r, staged, os.path.join(gtfs_dir, file))
@@ -831,13 +846,7 @@ def get_gtfs(hass, path, data, update=False):
                 _LOGGER.error("The given URL or GTFS data file/folder was not found: %s", ex)
                 return "no_data_file"
     
-    # if update (servicecall) then check if new file does not only have future dates
-    if check_source_dates:
-        if update and not check_calendar_dates_from_zip(gtfs_dir, file):
-            _LOGGER.info('New file contains only dates in the future, extracting terminated')
-            return
-    
-    (gtfs_root, _) = os.path.splitext(file)    
+    (gtfs_root, _) = os.path.splitext(file)
     sqlite_file = f"{gtfs_root}.sqlite?check_same_thread=False&timeout=60"
     joined_path = os.path.join(gtfs_dir, sqlite_file)  
 
@@ -868,51 +877,6 @@ def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file):
 
     
 
-
-def check_calendar_dates_from_zip(gtfs_dir,file):
-    _LOGGER.debug("Checking if file contains only future data: %s ", file)
-    filename = os.path.join(gtfs_dir, file)
-    # Rename existing sqlite if existing (i.e. in case of a fresh install)
-    if os.path.exists(os.path.join(gtfs_dir, file[:-4] + ".sqlite")):
-        os.rename (os.path.join(gtfs_dir, file[:-4] + '.sqlite'), os.path.join(gtfs_dir, file[:-4] + '.sqlite_current'))
-    #Load the ZIP archive
-    zin = zipfile.ZipFile (f"{os.path.join(gtfs_dir, filename)}", 'r')
-    check_list=[]
-    try:
-        for item in zin.infolist():
-            if item.filename[0:8] == 'calendar' :
-                if item.filename == 'calendar.txt':
-                    column = 'start_date'
-                else:
-                    column = 'date'
-                with open(zin.extract(item.filename)) as f:
-                    header = f.readline().strip('\n')   #
-                    data = f.readlines() 
-                    index =header.replace('"','').split(',').index(column)           
-                    list = []
-                    for line in data:
-                        list.append(line.split(',')[index])
-                    check_list.append(min(list))
-        min_date = datetime.datetime.strptime(min(check_list),"%Y%m%d")
-        _LOGGER.debug("Youngest calender date from new files: %s, is: %s", check_list, min_date)
-        if min_date > datetime.datetime.now()  :
-            _LOGGER.info("New file contains only dates in the future, keeping current")
-            if os.path.exists(os.path.join(gtfs_dir, file[:-4] + ".sqlite")):
-                os.remove(os.path.join(gtfs_dir, file[:-4] + ".sqlite"))
-            os.rename (os.path.join(gtfs_dir, file[:-4] + '.sqlite_current'), os.path.join(gtfs_dir, file[:-4] + '.sqlite'))
-            return False
-    except Exception as ex:
-        _LOGGER.error("Error getting earliest dates from zip, continuing with extract, error: %s", ex)
-        _LOGGER.debug(f"Removing/restoring sqlite after error")
-        if os.path.exists(os.path.join(gtfs_dir, file[:-4] + ".sqlite")):
-            os.remove(os.path.join(gtfs_dir, file[:-4] + ".sqlite"))
-        if os.path.exists(os.path.join(gtfs_dir, file[:-4] + ".sqlite")):
-            os.rename (os.path.join(gtfs_dir, file[:-4] + '.sqlite'), os.path.join(gtfs_dir, file[:-4] + '.sqlite_current'))
-        return False
-    _LOGGER.debug(f"New file is not containing only newer dates, removing current/copied sqlite")    
-    if os.path.exists(os.path.join(gtfs_dir, file[:-4] + ".sqlite_current")):
-        os.remove(os.path.join(gtfs_dir, file[:-4] + ".sqlite_current"))
-    return True
 
 def remove_from_zip(delmelist,gtfs_dir,file):
     """Rewrite a kept zip without the members listed, or leave it as it was.
