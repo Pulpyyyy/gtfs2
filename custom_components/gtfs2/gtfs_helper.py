@@ -2078,7 +2078,30 @@ def check_extracting(hass, gtfs_dir,file):
     return False    
 
 
+# the indexes the queries lean on, by table and column, under the names
+# they have always been created with
+DATASOURCE_INDEXES = (
+    ("stop_times", "trip_id", "gtfs2_stop_times_trip_id"),
+    ("stop_times", "stop_id", "gtfs2_stop_times_stop_id"),
+    ("shapes", "shape_id", "gtfs2_shapes_shape_id"),
+    ("stops", "stop_name", "gtfs2_stops_stop_name"),
+    ("routes", "route_type", "gtfs2_routes_route_type"),
+    ("trips", "route_id", "gtfs2_trips_route_id"),
+)
+
+# the database file each datasource was last checked as, (inode, mtime,
+# size): the same file needs no second look, a rebuilt one gets one
+_INDEX_CHECKED = {}
+
+
 def check_datasource_index(hass, schedule, gtfs_dir, file):
+    """Give a datasource the indexes the queries need, and its routes an agency.
+
+    Runs before every refresh of every sensor, and asked sqlite_master
+    seven times over as many connections each time. Now one connection
+    reads it once, and a database file already checked is not read again
+    until it changes.
+    """
     _LOGGER.debug("Check datasource index for file: %s", file)
     if check_extracting(hass, gtfs_dir,file):
         _LOGGER.warning("Cannot check indexes on this datasource as still unpacking: %s", file)
@@ -2088,150 +2111,55 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
     if schedule is None or isinstance(schedule, str):
         _LOGGER.warning("Cannot check indexes: datasource %s has no usable schedule (%s)", file, schedule or "empty")
         return
-    sql_index_1 = f"""
-    SELECT count(*) as checkidx
-    FROM sqlite_master
-    WHERE
-    (type= 'index' and tbl_name = 'stop_times' and name like '%trip_id%')
-    -- an interned datasource exposes stop_times as a view: its indexes
-    -- live on gtfs2_stop_times and must not be recreated here
-    or (type = 'view' and name = 'stop_times');
-    """
-    sql_index_2 = f"""
-    SELECT count(*) as checkidx
-    FROM sqlite_master
-    WHERE
-    (type= 'index' and tbl_name = 'stop_times' and name like '%stop_id%')
-    -- an interned datasource exposes stop_times as a view: its indexes
-    -- live on gtfs2_stop_times and must not be recreated here
-    or (type = 'view' and name = 'stop_times');
-    """
-    sql_index_3 = f"""
-    SELECT count(*) as checkidx
-    FROM sqlite_master
-    WHERE
-    type= 'index' and tbl_name = 'shapes' and name like '%shape_id%';
-    """
-    sql_index_4 = f"""
-    SELECT count(*) as checkidx
-    FROM sqlite_master
-    WHERE
-    type= 'index' and tbl_name = 'stops' and name like '%stop_name%';
-    """
-    sql_index_5 = f"""
-    SELECT count(*) as checkidx
-    FROM sqlite_master
-    WHERE
-    type= 'index' and tbl_name = 'routes' and name like '%route_type%';
-    """
-    sql_index_6 = f"""
-    SELECT count(*) as checkidx
-    FROM sqlite_master
-    WHERE
-    type= 'index' and tbl_name = 'trips' and name like '%route_id%';
-    """
-    sql_add_index_1 = f"""
-    create index gtfs2_stop_times_trip_id on stop_times(trip_id)
-    """
-    sql_add_index_2 = f"""
-    create index gtfs2_stop_times_stop_id on stop_times(stop_id)
-    """
-    sql_add_index_3 = f"""
-    create index gtfs2_shapes_shape_id on shapes(shape_id)
-    """
-    sql_add_index_4 = f"""
-    create index gtfs2_stops_stop_name on stops(stop_name)
-    """    
-    sql_add_index_5 = f"""
-    create index gtfs2_routes_route_type on routes(route_type)
-    """
-    sql_add_index_6 = f"""
-    create index gtfs2_trips_route_id on trips(route_id)
-    """
+    db_file = os.path.join(hass.config.path(gtfs_dir), file + ".sqlite")
+    try:
+        stat = os.stat(db_file)
+        edition = (stat.st_ino, stat.st_mtime_ns, stat.st_size)
+    except OSError:
+        edition = None
+    if edition is not None and _INDEX_CHECKED.get(db_file) == edition:
+        return
+
     # A single-agency feed may leave agency_id out of routes.txt, and out
     # of agency.txt as well (TAO does): then there is nothing to copy, the
     # two tables already agree on the missing value, and copying it back
     # would only log the "fix" again at every refresh. So only count the
     # routes when the agency table has an id to give them.
-    sql_check_route_agency = f"""
+    sql_check_route_agency = """
     SELECT count(*) as check_agency
     FROM routes where (agency_id='None' or agency_id is null)
     and exists (select 1 from agency
                 where agency_id is not null and agency_id not in ('None', ''))
     """
-    sql_fix_route_agency = f"""
+    sql_fix_route_agency = """
     update routes set agency_id = (select agency_id from agency
                                    where agency_id is not null
                                    and agency_id not in ('None', '') limit 1)
         where agency_id='None' or agency_id is null
     """
-    
     with schedule.engine.connect() as conn:
-        rows_1a = conn.execute(text(sql_index_1), {"q": "q"}).fetchall()
-    for row_cursor in rows_1a:
-        _LOGGER.debug("IDX result1: %s", row_cursor._asdict())
-        if row_cursor._asdict()['checkidx'] == 0:
-            _LOGGER.warning("Adding index 1 to improve performance")
-            with schedule.engine.connect() as conn:
-                conn.execute(text(sql_add_index_1), {"q": "q"})       
-        
-    with schedule.engine.connect() as conn:
-        rows_2a = conn.execute(text(sql_index_2), {"q": "q"}).fetchall()
-    for row_cursor in rows_2a:
-        _LOGGER.debug("IDX result2: %s", row_cursor._asdict())
-        if row_cursor._asdict()['checkidx'] == 0:
-            _LOGGER.warning("Adding index 2 to improve performance")
-            with schedule.engine.connect() as conn:
-                conn.execute(text(sql_add_index_2), {"q": "q"})
-                
-    with schedule.engine.connect() as conn:
-        rows_3a = conn.execute(text(sql_index_3), {"q": "q"}).fetchall()
-    for row_cursor in rows_3a:
-        _LOGGER.debug("IDX result3: %s", row_cursor._asdict())
-        if row_cursor._asdict()['checkidx'] == 0:
-            _LOGGER.warning("Adding index 3 to improve performance")
-            with schedule.engine.connect() as conn:
-                conn.execute(text(sql_add_index_3), {"q": "q"})
-                
-    with schedule.engine.connect() as conn:
-        rows_4a = conn.execute(text(sql_index_4), {"q": "q"}).fetchall()
-    for row_cursor in rows_4a:
-        _LOGGER.debug("IDX result4: %s", row_cursor._asdict())
-        if row_cursor._asdict()['checkidx'] == 0:
-            _LOGGER.warning("Adding index 4 to improve performance")
-            with schedule.engine.connect() as conn:
-                conn.execute(text(sql_add_index_4), {"q": "q"})
-                
-    with schedule.engine.connect() as conn:
-        rows_5a = conn.execute(text(sql_index_5), {"q": "q"}).fetchall()
-    for row_cursor in rows_5a:
-        _LOGGER.debug("IDX result5: %s", row_cursor._asdict())
-        if row_cursor._asdict()['checkidx'] == 0:
-            _LOGGER.warning("Adding index 5 to improve performance")
-            with schedule.engine.connect() as conn:
-                conn.execute(text(sql_add_index_5), {"q": "q"})
-
-    with schedule.engine.connect() as conn:
-        rows_6a = conn.execute(text(sql_index_6), {"q": "q"}).fetchall()
-    for row_cursor in rows_6a:
-        _LOGGER.debug("IDX result6: %s", row_cursor._asdict())
-        if row_cursor._asdict()['checkidx'] == 0:
-            _LOGGER.warning("Adding index 6 to improve performance")
-            with schedule.engine.connect() as conn:
-                conn.execute(text(sql_add_index_6), {"q": "q"})
-
-    with schedule.engine.connect() as conn:
-        rows_8a = conn.execute(text(sql_check_route_agency), {"q": "q"}).fetchall()
-    for row_cursor in rows_8a:
-        _LOGGER.debug("Agency 'None' in routes: %s", row_cursor._asdict())
-        if row_cursor._asdict()['check_agency'] > 0:
+        master = conn.execute(text(
+            "SELECT type, name, tbl_name FROM sqlite_master WHERE type in ('index', 'view')")).fetchall()
+        # an interned datasource exposes stop_times as a view: its indexes
+        # live on gtfs2_stop_times and must not be recreated here
+        views = {name for kind, name, _table in master if kind == "view"}
+        indexed = [(table, name) for kind, name, table in master if kind == "index"]
+        for table, column, index_name in DATASOURCE_INDEXES:
+            if table in views or any(t == table and column in (n or "") for t, n in indexed):
+                continue
+            _LOGGER.warning("Adding index %s to improve performance", index_name)
+            conn.execute(text(f"create index {index_name} on {table}({column})"))  # noqa: S608
+        if conn.execute(text(sql_check_route_agency)).scalar():
             _LOGGER.warning("Fix missing agency_id in routes table")
-            with schedule.engine.connect() as conn:
-                conn.execute(text(sql_fix_route_agency), {"q": "q"})
-                conn.commit()
+            conn.execute(text(sql_fix_route_agency))
+        conn.commit()
+    try:
+        stat = os.stat(db_file)
+        _INDEX_CHECKED[db_file] = (stat.st_ino, stat.st_mtime_ns, stat.st_size)
+    except OSError:
+        pass
 
 
-    
 def _tracker_position(hass, entity_id):
     """Where a person or zone is, (latitude, longitude), or (None, None).
 
