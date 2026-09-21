@@ -25,7 +25,6 @@ from .key_mask import fetch
 from .rt_source import with_query_key
 from .gtfs_filter import filter_gtfs_zip, read_zip_routes, zip_only_future_dates
 from .gtfs_helper import check_extracting, get_gtfs, remove_from_zip
-from .notifications import async_notify_lines_missing
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -330,9 +329,9 @@ def refresh_datasource(hass, path, data):
         if gone and (read or len(gone) == len(routes)):
             _LOGGER.error("Refresh of %s aborted, the new edition has no trip "
                           "for %s, the current data stays", filename, sorted(gone))
-            # every line gone says the file is broken, so every line is named
-            hass.create_task(async_notify_lines_missing(
-                hass, filename, sorted(gone if len(gone) == len(routes) else read)))
+            # every line gone says the file is broken, so every line is named;
+            # the caller, back on the loop, tells the user
+            data["lines_missing"] = sorted(gone if len(gone) == len(routes) else read)
             return False
         # intern only: everything in this file was just copied on purpose
         optimise_datasource(gtfs_dir, staging)

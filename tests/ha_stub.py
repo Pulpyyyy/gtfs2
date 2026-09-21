@@ -360,6 +360,7 @@ def install() -> None:
             PLATFORM_SCHEMA=_Unreached("PLATFORM_SCHEMA"))
     _module("homeassistant.components.persistent_notification",
             async_create=_Unreached("persistent_notification.async_create"),
+        async_dismiss=_Unreached("persistent_notification.async_dismiss"),
             create=_Unreached("persistent_notification.create"))
     _module("homeassistant.core", HomeAssistant=object, ServiceCall=object,
             SupportsResponse=_Unreached("SupportsResponse"),

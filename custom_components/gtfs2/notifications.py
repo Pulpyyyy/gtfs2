@@ -151,25 +151,41 @@ async def async_notify_line_orphaned(hass, filename, line):
     Raised by the entry removal hook. Deliberately not a prune: the user may
     be reshuffling sensors and want the line right back, so the notification
     names what is now dead weight and the service that drops it, and the
-    choice stays theirs.
+    choice stays theirs. One notification per line: two sensors removed
+    one after the other used to leave only the second line named.
     """
     _LOGGER.info("No sensor reads line %s of %s any more", line, filename)
-    await _async_notify(hass, "line_orphaned", f"gtfs2_prune_{filename}",
+    await _async_notify(hass, "line_orphaned", f"gtfs2_prune_{filename}_{line}",
                         file=filename, line=line)
 
 
 async def async_notify_lines_missing(hass, filename, routes):
     """Say that a refresh was refused: the new edition lost lines sensors read.
 
-    Raised by the refresh itself. The current timetable stays, so the
-    sensors keep running on it; what is left to the user is telling a
-    renumbered line from a retired one, which no feed says. Same id as the
-    orphaned-line notification: one notification per source sums up the
-    state of its lines.
+    The current timetable stays, so the sensors keep running on it; what
+    is left to the user is telling a renumbered line from a retired one,
+    which no feed says. Under the refresh's own id, which a refresh that
+    goes through clears.
     """
     lines = ", ".join(r.split(":")[-1] for r in routes)
-    await _async_notify(hass, "lines_missing", f"gtfs2_prune_{filename}",
+    await _async_notify(hass, "lines_missing", f"gtfs2_refresh_{filename}",
                         file=filename, lines=lines)
+
+
+async def async_notify_refresh(hass, filename, ok, lines_missing=None):
+    """Say how a rebuild of a source ended, when it did not go through.
+
+    A refresh started by the nightly check has nobody watching: failed, it
+    said nothing, and the source stayed on its old edition unnoticed. A
+    rebuild that goes through clears what an earlier one left.
+    """
+    if ok:
+        persistent_notification.async_dismiss(hass, f"gtfs2_refresh_{filename}")
+    elif lines_missing:
+        await async_notify_lines_missing(hass, filename, lines_missing)
+    else:
+        await _async_notify(hass, "refresh_failed", f"gtfs2_refresh_{filename}",
+                            file=filename)
 
 
 async def _async_notify(hass, key, notification_id, **values):

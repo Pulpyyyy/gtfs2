@@ -561,6 +561,8 @@
     "line_orphaned": "The last sensor reading line **{line}** was removed, but its timetable is still in {file}.\n\nThe service gtfs2.prune_datasource drops every line no sensor reads; call it with dry_run first to see what would go. Keeping the line only costs disk space, and adding a sensor on it uses it again.",
     "lines_missing_title": "GTFS: {file} was not updated",
     "lines_missing": "The new version of {file} no longer carries any trip for **{lines}**. The current timetable stays in place and the sensors keep running on it.\n\nIf the operator renumbered the line, recreate its sensor on the new line; if the line is gone, remove its sensor. The next update then goes through. If every line is listed, the file itself is probably broken.",
+    "refresh_failed_title": "GTFS: {file} was not updated",
+    "refresh_failed": "The update of {file} did not go through. The current timetable stays in place and the sensors keep running on it.\n\nThe log says why. The next check tries again.",
     "reason_no_database": "no database was produced",
     "reason_cannot_open": "the database cannot be opened",
     "reason_tables_missing": "unpacking stopped before it wrote every table",

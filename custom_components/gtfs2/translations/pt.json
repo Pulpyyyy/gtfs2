@@ -561,6 +561,8 @@
     "line_orphaned": "O último sensor a ler a linha **{line}** foi removido, mas o seu horário continua em {file}.\n\nO serviço gtfs2.prune_datasource remove as linhas que nenhum sensor lê; chame-o primeiro com dry_run para ver o que sairia. Manter a linha só custa espaço em disco, e um novo sensor nessa linha volta a usá-la.",
     "lines_missing_title": "GTFS: {file} não foi atualizado",
     "lines_missing": "A nova versão de {file} já não contém nenhuma viagem para **{lines}**. O horário atual mantém-se e os sensores continuam a usá-lo.\n\nSe o operador renumerou a linha, volte a criar o sensor na nova linha; se a linha já não existe, remova o sensor. A próxima atualização passará então. Se todas as linhas estiverem listadas, o próprio ficheiro está provavelmente danificado.",
+    "refresh_failed_title": "GTFS: {file} não foi atualizado",
+    "refresh_failed": "A atualização de {file} não foi concluída. O horário atual mantém-se e os sensores continuam a usá-lo.\n\nO registo indica o motivo. A próxima verificação tentará de novo.",
     "reason_no_database": "não foi produzida nenhuma base de dados",
     "reason_cannot_open": "a base de dados não pode ser aberta",
     "reason_tables_missing": "a descompactação parou antes de escrever todas as tabelas",

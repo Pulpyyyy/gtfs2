@@ -62,7 +62,7 @@ from .freshness import (
 )
 from .source_zip import refresh_datasource
 from .freshness import source_meta
-from .notifications import _async_notify
+from .notifications import _async_notify, async_notify_refresh
 from .rt_source import journey_entries, static_feed_config
 
 _LOGGER = logging.getLogger(__name__)
@@ -347,6 +347,7 @@ async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
         ok = await hass.async_add_executor_job(
             refresh_source, hass, DEFAULT_PATH, data)
     async_dispatcher_send(hass, SIGNAL_SOURCE_REFRESH.format(file))
+    await async_notify_refresh(hass, file, ok, data.get("lines_missing"))
     return ok
 
 
