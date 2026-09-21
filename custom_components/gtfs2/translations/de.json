@@ -237,6 +237,7 @@
       }
     },
     "error": {
+      "local_stops_exists": "Die nahen Haltestellen für diesen Tracker kommen bereits aus dieser Quelle.",
       "return_name_taken": "Ein Sensor trägt bereits den Namen, den die Rückfahrt bekäme: Rückfahrt abwählen oder zuerst jenen Sensor umbenennen.",
       "source_exists": "Eine Quelle dieses Namens gibt es bereits mit einer anderen Adresse: Wählen Sie sie unter den vorhandenen Quellen, oder geben Sie dieser einen anderen Namen.",
       "invalid_source_name": "Nur Buchstaben, Ziffern, Leerzeichen, Binde- und Unterstriche: der Name wird zum Dateinamen der Quelle.",

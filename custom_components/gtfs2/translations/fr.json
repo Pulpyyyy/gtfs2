@@ -237,6 +237,7 @@
       }
     },
     "error": {
+      "local_stops_exists": "Les arrêts proches de ce suivi viennent déjà de cette source.",
       "return_name_taken": "Un capteur porte déjà le nom que prendrait le trajet retour : décochez le retour, ou renommez d'abord ce capteur.",
       "source_exists": "Une source de ce nom existe déjà avec une autre adresse : choisissez-la parmi les sources existantes, ou donnez un autre nom à celle-ci.",
       "invalid_source_name": "Lettres, chiffres, espaces, tirets et soulignés uniquement : le nom devient celui du fichier de la source.",

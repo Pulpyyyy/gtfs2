@@ -237,6 +237,7 @@
       }
     },
     "error": {
+      "local_stops_exists": "Local stops for this tracker already come from this source.",
       "return_name_taken": "A sensor already has the name the return journey would get: untick the return, or rename that sensor first.",
       "source_exists": "A source of this name already exists with another address: pick it among the existing sources, or give this one another name.",
       "invalid_source_name": "Letters, digits, spaces, dashes and underscores only: the name becomes the source's file name.",

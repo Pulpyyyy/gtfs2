@@ -262,6 +262,21 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                           for key in (CONF_FILE, CONF_DEVICE_TRACKER_ID, CONF_NAME)}
         user_input[CONF_URL] = "na"
         user_input[CONF_EXTRACT_FROM] = "zip"    
+        # the stop sensors are named after the stop and the tracker, so a
+        # second entry for the same tracker on the same source made sensors
+        # the platform then dropped as duplicates; a name in use is refused
+        # as on the journey screen
+        entries = [e.data for e in self.hass.config_entries.async_entries(DOMAIN)]
+        if user_input[CONF_NAME] in {e.get(CONF_NAME) for e in entries}:
+            errors["base"] = "name_taken"
+            return await _show(errors, user_input)
+        if any(e.get(CONF_DEVICE_TRACKER_ID) == user_input[CONF_DEVICE_TRACKER_ID]
+               and e.get(CONF_FILE) == user_input[CONF_FILE] for e in entries):
+            errors["base"] = "local_stops_exists"
+            return await _show(errors, user_input)
+        await self.async_set_unique_id(
+            f"gtfs-local-{user_input[CONF_FILE]}-{user_input[CONF_DEVICE_TRACKER_ID]}")
+        self._abort_if_unique_id_configured()
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Local Stops: {self._user_inputs}") 
         check_data = await self._check_data(self._user_inputs)
