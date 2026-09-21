@@ -198,9 +198,12 @@ def forget_stale_stops(data):
     if _EDITIONS.get(file) == edition:
         return
     _EDITIONS[file] = edition
-    for cache in (_STOP_ALIASES, _STOP_NAMES):
-        for key in [k for k in cache if k[0] == file]:
-            del cache[key]
+    # the coordinators of a source run this in threads of their own: the
+    # keys are copied in one go before any goes, and one already gone is
+    # no error, so a thread filling the cache meanwhile breaks nothing
+    for cache in (_STOP_ALIASES, _STOP_NAMES, _ROUTE_FACTS):
+        for key in [k for k in list(cache) if k[0] == file]:
+            cache.pop(key, None)
     _LOGGER.debug("Stops of %s read afresh, its database has changed", file)
 
 
@@ -221,8 +224,10 @@ def _stop_aliases(data, stop_id):
     if schedule is None:
         return frozenset({stop_id})
     key = (data.get("file"), stop_id)
-    if key in _STOP_ALIASES:
-        return _STOP_ALIASES[key]
+    # read once: tested then read, the entry could go in between
+    cached = _STOP_ALIASES.get(key)
+    if cached is not None:
+        return cached
     aliases = {stop_id}
     try:
         with schedule.engine.connect() as conn:
@@ -241,8 +246,43 @@ def _stop_aliases(data, stop_id):
     # used to add the arrival's own aliases to it with |=, which grew the
     # entry of one stop with the platforms of another and handed those
     # alerts to every sensor departing from there
-    _STOP_ALIASES[key] = frozenset(aliases)
-    return _STOP_ALIASES[key]
+    aliases = frozenset(aliases)
+    _STOP_ALIASES[key] = aliases
+    return aliases
+
+
+# the agency and route_type of a line, per datasource, as _STOP_ALIASES
+_ROUTE_FACTS = {}
+
+
+def _route_facts(data, route_id):
+    """(agency_id, route_type) of the line, as strings, None where unknown.
+
+    An alert may name a whole agency, or every line of one kind, and
+    nothing else: what the line itself is tells whether it is concerned.
+    """
+    data = data or {}
+    schedule = data.get("schedule")
+    route_id = str(route_id or "")
+    if schedule is None or not route_id:
+        return None, None
+    key = (data.get("file"), route_id)
+    cached = _ROUTE_FACTS.get(key)
+    if cached is not None:
+        return cached
+    try:
+        with schedule.engine.connect() as conn:
+            row = conn.execute(
+                sql_text("select agency_id, route_type from routes where route_id = :route_id"),
+                {"route_id": route_id}).fetchone()
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.debug("Could not read line %s: %s", route_id, ex)
+        return None, None
+    facts = (None, None)
+    if row is not None:
+        facts = tuple(str(v) if v not in (None, "", "None") else None for v in row)
+    _ROUTE_FACTS[key] = facts
+    return facts
 
 
 # the name a stop is shown by, per datasource, as _STOP_ALIASES
@@ -266,7 +306,8 @@ def _stop_names(data, stop_ids):
         return names
     for stop_id in stop_ids:
         key = (data.get("file"), str(stop_id))
-        if key not in _STOP_NAMES:
+        name = _STOP_NAMES.get(key)
+        if name is None:
             try:
                 with schedule.engine.connect() as conn:
                     row = conn.execute(
@@ -284,8 +325,8 @@ def _stop_names(data, stop_ids):
                 # database. Not remembered, since the next edition may
                 # bring it in
                 continue
-            _STOP_NAMES[key] = str(row[0]).strip()
-        name = _STOP_NAMES[key]
+            name = str(row[0]).strip()
+            _STOP_NAMES[key] = name
         if name and name not in names:
             names.append(name)
     return names
@@ -367,7 +408,7 @@ def _alert_text(translated, language):
 
 
 def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
-                 journey_ids=None, trip_ids=()):
+                 journey_ids=None, trip_ids=(), route_facts=(None, None), direction=None):
     """Which end of this journey an alert names, over ALL its informed entities.
 
     The loop used to reassign stop_id and route_id on every turn and compare
@@ -387,8 +428,20 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
     one naming the first, and reading the head alone hid it. hits["trips"]
     says which of them, head first, so a card can hang the alert on the
     right departure.
+
+    The fields of one entity hold together, as the spec reads them: an
+    agency, a kind of line (route_type) or a direction other than the
+    journey's make the entity about something else, and one naming an
+    agency or a kind of line and nothing narrower is about the whole
+    line. route_facts is the line's (agency_id, route_type), direction the
+    journey's; an unknown one judges nothing. The line is compared the way
+    the trip updates are (_same_route): a feed that qualifies its ids
+    named the line and was read as another one.
     """
+    from .gtfs_rt_helper import _same_route  # it imports this module
     journey_ids = journey_ids or set()
+    route_agency, route_type = route_facts
+    direction = str(direction) if str(direction) in ("0", "1") else None
     hits = {"origin": False, "destination": False, "route": False,
             "trip": False, "journey": False, "trips": [], "stops": []}
     followed = [str(t) for t in [trip_id, *trip_ids] if t]
@@ -396,8 +449,17 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
         e_stop = x.stop_id if x.HasField("stop_id") else None
         e_route = x.route_id if x.HasField("route_id") else None
         e_trip = x.trip.trip_id if x.HasField("trip") else None
-        if e_route is not None and e_route != str(route_id):
+        e_agency = x.agency_id if x.HasField("agency_id") else None
+        e_type = str(x.route_type) if x.HasField("route_type") else None
+        e_direction = str(x.direction_id) if x.HasField("direction_id") else None
+        if e_route is not None and not _same_route(route_id, e_route):
             continue                      # an alert about another line
+        if e_agency is not None and route_agency is not None and e_agency != route_agency:
+            continue                      # another operator's
+        if e_type is not None and route_type is not None and e_type != route_type:
+            continue                      # another kind of line
+        if e_direction is not None and direction is not None and e_direction != direction:
+            continue                      # the other way
         if e_trip:
             named = [t for t in followed if _same_trip(e_trip, t)]
             if not named:
@@ -425,7 +487,8 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
             hits["destination"] = True
         elif e_stop is not None and e_stop in journey_ids:
             hits["journey"] = True
-        elif e_stop is None and e_route == str(route_id):
+        elif e_stop is None and (e_route is not None or (
+                not e_trip and (e_agency is not None or e_type is not None))):
             hits["route"] = True
             continue
         else:
@@ -463,6 +526,7 @@ def journey_alerts(coordinator, feed_entities):
         # wrote one sensor's arrival into another's entry
         destination_ids = destination_ids | _stop_aliases(data, arrival)
     journey_ids = _journey_stops(data, trip_id)
+    route_facts = _route_facts(data, route_id)
     language = _alert_language(getattr(coordinator, "hass", None))
     # the trips on the board: the next departure, then the ones listed
     # behind it, so an alert naming any of them is read
@@ -490,7 +554,8 @@ def journey_alerts(coordinator, feed_entities):
             # it applied to a day gone by; the feed drops it later
             continue
         hits = _alert_scope(alert, origin_ids, destination_ids,
-                            route_id, head, journey_ids, listed)
+                            route_id, head, journey_ids, listed,
+                            route_facts, getattr(coordinator, "_direction", None))
         if not any(hits.values()):
             continue
         # an alert with no readable header still carries its cause and its
