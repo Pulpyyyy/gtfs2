@@ -87,3 +87,22 @@ def test_timetable_state_counts_the_days_left():
     assert timetable_state(window, datetime.date(2026, 12, 25)) == ("expired", -1)
     assert timetable_state({}, datetime.date(2026, 9, 15)) == ("unknown", None)
     assert timetable_state({"last_service_day": "soon"}, datetime.date(2026, 9, 15)) == ("unknown", None)
+
+
+def test_two_sources_read_in_turn_keep_their_last_day(tmp_path, monkeypatch):
+    # every entry of a source asks for its last day; two sources asked in
+    # turn each read their zip once, and again only for a new edition
+    a, b = tmp_path / "a.zip", tmp_path / "b.zip"
+    write_zip(a, {"calendar.txt": CALENDAR})
+    write_zip(b, {"calendar_dates.txt": DATES})
+    reads = []
+    real = feed_window.read_feed_window
+    monkeypatch.setattr(feed_window, "read_feed_window", lambda p: reads.append(p) or real(p))
+    feed_window._LAST_SERVICE_DAY.clear()
+    for _ in range(3):
+        assert feed_window.last_service_day(str(a)) == "2026-12-19"
+        assert feed_window.last_service_day(str(b)) == "2026-12-24"
+    assert len(reads) == 2
+    write_zip(a, {"calendar.txt": CALENDAR, "calendar_dates.txt": DATES})
+    assert feed_window.last_service_day(str(a)) == "2026-12-24"
+    assert len(reads) == 3

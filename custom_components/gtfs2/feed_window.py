@@ -25,6 +25,7 @@ import csv
 import datetime
 import io
 import logging
+import os
 import zipfile
 
 _LOGGER = logging.getLogger(__name__)
@@ -126,3 +127,26 @@ def timetable_state(window, today):
     if days_left <= ENDING_DAYS:
         return "ending", days_left
     return "valid", days_left
+
+
+# the last service day of each zip, read once per edition: every entry of
+# a source asks, and a national zip takes a second to read
+_LAST_SERVICE_DAY = {}
+
+
+def last_service_day(zip_path):
+    """read_feed_window's last_service_day, cached per edition of the zip;
+    None without a zip."""
+    try:
+        stat = os.stat(zip_path)
+    except OSError:
+        return None
+    edition = (stat.st_size, stat.st_mtime_ns)
+    cached = _LAST_SERVICE_DAY.get(zip_path)
+    if cached is None or cached[0] != edition:
+        # one entry per source, replaced by its next edition: emptied on
+        # every miss, two sources read in turn evicted each other and every
+        # call read its zip again
+        cached = (edition, (read_feed_window(zip_path) or {}).get("last_service_day"))
+        _LAST_SERVICE_DAY[zip_path] = cached
+    return cached[1]

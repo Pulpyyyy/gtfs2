@@ -26,7 +26,7 @@ from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
-from .feed_window import read_feed_window
+from .feed_window import last_service_day
 from .gtfs_helper import (
     _call_type, _fetch_departure_rows, _line_ways, departure_query_args, get_next_service_date,
     gtfs_seconds,
@@ -777,23 +777,6 @@ def timetable_doc(name, rows, service_dates, zone, next_departure=None, until=No
     }
 
 
-# the last service day of each zip, read once per edition: the file is
-# small but every entry of a source asks, every day
-_UNTIL = {}
-
-
-def _feed_until(zip_path):
-    try:
-        stat = os.stat(zip_path)
-    except OSError:
-        return None
-    key = (zip_path, stat.st_size, stat.st_mtime_ns)
-    if key not in _UNTIL:
-        _UNTIL.clear()
-        _UNTIL[key] = (read_feed_window(zip_path) or {}).get("last_service_day")
-    return _UNTIL[key]
-
-
 def write_timetable_file(hass, data, today, zip_path):
     """Write www/gtfs2/timetable_<entry>.json: every departure of the entry
     from now to the end of the third service day, today's included.
@@ -835,7 +818,7 @@ def write_timetable_file(hass, data, today, zip_path):
             window=(day, day), limit=1, **args)
         if later:
             next_departure = _local(later[0].get("origin_depart_dt"), zone)
-    doc = timetable_doc(name, rows, service_dates, zone, next_departure, _feed_until(zip_path))
+    doc = timetable_doc(name, rows, service_dates, zone, next_departure, last_service_day(zip_path))
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     os.makedirs(geojson_dir, exist_ok=True)
     file = timetable_name(name)
