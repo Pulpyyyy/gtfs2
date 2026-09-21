@@ -250,8 +250,6 @@
       "invalid_source_url": "O endereço deve começar por http:// ou https://",
       "route_not_listed": "Não é uma das linhas desta fonte: escolha uma da lista, escrever parte do nome encontra-a.",
       "no_destination": "Nenhuma paragem é alcançável a partir da origem selecionada nesta direção",
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
       "unknown": "[%key:common::config_flow::error::unknown%]",
       "stop_incorrect": "Nenhuma partida encontrada entre estas duas cidades. Verifique a grafia do operador e se estão na mesma linha.",
       "generic_failure": "Falha geral, verifique os logs",

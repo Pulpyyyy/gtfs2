@@ -250,8 +250,6 @@
       "invalid_source_url": "The address must start with http:// or https://",
       "route_not_listed": "That is not one of the lines of this source: pick one in the list, typing part of its name finds it.",
       "no_destination": "No stop can be reached from the selected origin in this direction",
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
       "unknown": "[%key:common::config_flow::error::unknown%]",
       "stop_incorrect": "No departure found between these two cities. Check the spelling against the operator's own, and that they are on the same line.",
       "generic_failure": "Overall failure, check logs",
