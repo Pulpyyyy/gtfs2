@@ -210,6 +210,42 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     return str(result)[:10] if result else None
 
 
+def _feed_now(schedule, route=None):
+    """This moment as the feed writes its clocks: in its agency's zone.
+
+    The query lays the stored clocks on service days and compares them
+    with now, and a clock is the local time where the network runs.
+    SQLite's own 'now', 'localtime' is the zone of the process, often UTC
+    in a container, and Home Assistant's is where the user lives: either
+    way a network in another zone, or a process left on UTC, dropped or
+    kept the wrong hours of departures. The route's agency first, the
+    feed's first agency otherwise, Home Assistant's zone when the feed
+    names none. Naive, as the query's own datetimes are.
+    """
+    name = None
+    try:
+        with schedule.engine.connect() as conn:
+            row = None
+            if route:
+                row = conn.execute(text(
+                    "SELECT agency.agency_timezone FROM routes "
+                    "JOIN agency ON agency.agency_id = routes.agency_id "
+                    "WHERE routes.route_id = :route"), {"route": route}).fetchone()
+            if not row or not row[0]:
+                row = conn.execute(text(
+                    "SELECT agency_timezone FROM agency "
+                    "WHERE agency_timezone IS NOT NULL AND agency_timezone <> '' "
+                    "LIMIT 1")).fetchone()
+            name = row[0] if row else None
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.debug("Could not read the agency's zone, using Home Assistant's: %s", ex)
+    zone = dt_util.get_time_zone(name) if name else None
+    moment = dt_util.now()
+    if zone is not None:
+        moment = moment.astimezone(zone)
+    return moment.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
+
+
 def _fetch_departure_rows(route_type, origin, destination, schedule, direction=None, route=None,
                           line=None, origin_names=None, destination_names=None,
                           window=None, limit=30):
@@ -303,7 +339,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
               AND {_alights("destination_stop_time")}
           ),
           cal_expand(service_id, d, end_date, monday, tuesday, wednesday, thursday, friday, saturday, sunday) AS (
-            SELECT service_id, MAX(start_date, date('now', 'localtime', '-1 day')), end_date,
+            SELECT service_id, MAX(start_date, date(:now, '-1 day')), end_date,
                    monday, tuesday, wednesday, thursday, friday, saturday, sunday
             FROM calendar
             WHERE service_id IN (SELECT service_id FROM candidate_trips)
@@ -379,7 +415,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
                 vd.date || ' ' || time(origin_stop_time.departure_time),
                 CASE WHEN date(origin_stop_time.departure_time) = '1970-01-02'
                 THEN '+1 day' ELSE '+0 day' END
-              ) >= datetime('now', 'localtime')
+              ) >= datetime(:now)
           {window_where}
         ORDER BY vd.date, origin_stop_time.departure_time
         LIMIT {int(limit)};
@@ -415,6 +451,8 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
                 "route_type": route_type,
                 "window_first": window[0] if window else None,
                 "window_last": window[1] if window else None,
+                # this moment on the network's clock, see _feed_now
+                "now": _feed_now(schedule, route),
                 **name_params,
             },
         )
@@ -437,8 +475,17 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
             _LOGGER.warning("Could not parse departure datetime: %s", depart_dt_str)
             continue
 
-        if depart_dt <= now:
-            continue  # already departed; SQL now filters by real instant, not just date
+        # already departed? The row's clock is the network's, so it is laid
+        # in the network's zone before it is compared: read naive against
+        # Home Assistant's clock, a network in another zone lost or kept
+        # the wrong hour of departures
+        row_zone_name = row.get("agency_timezone") or row.get("origin_stop_timezone")
+        row_zone = dt_util.get_time_zone(row_zone_name) if row_zone_name else None
+        if row_zone is not None:
+            if depart_dt.replace(tzinfo=row_zone) <= now_local_tz:
+                continue
+        elif depart_dt <= now:
+            continue
 
         day_label = service_date  # real ISO date beyond tomorrow
 
