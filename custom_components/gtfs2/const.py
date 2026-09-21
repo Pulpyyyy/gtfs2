@@ -18,7 +18,6 @@ DEFAULT_PATH_GEOJSON = "www/gtfs2"
 DEFAULT_PATH_RT = "www/gtfs2"
 DEFAULT_API_KEY_LOCATION = "not_applicable"
 
-CONF_DATA = "data"
 
 # the entry kind separates the datasource entries (one per source, carrying
 # its realtime feeds) from the journey and local-stop entries; an entry
@@ -49,7 +48,6 @@ DATASOURCE_PLATFORMS = [Platform.BUTTON, Platform.SENSOR, Platform.SWITCH, Platf
 
 # constants used in helpers
 ATTR_API_KEY_LOCATIONS = ["not_applicable","header","query_string"]
-ATTR_API_KEY_NAMES = ["api_key","x_api_key", "apiKey","Ocp-Apim-Subscription-Key"]
 ATTR_ARRIVAL = "arrival"
 ATTR_BICYCLE = "trip_bikes_allowed_state"
 ATTR_DAY = "day"
@@ -90,7 +88,6 @@ ATTR_NEXT_RT_DELAYS = "Next Services RT Delays"
 ATTR_NEXT_RT_TRIPS = "Next Services RT Trips"
 ATTR_RT_CANCELLED = "Cancelled Trips RT"
 ATTR_RT_SKIPPED = "Skipped Trips RT"
-ATTR_ICON = "Icon"
 ATTR_UNIT_OF_MEASUREMENT = "unit_of_measurement"
 ATTR_DEVICE_CLASS = "device_class"
 ATTR_LATITUDE = "latitude"
@@ -322,25 +319,16 @@ CONF_TIMERANGE = "timerange"
 CONF_REFRESH_INTERVAL = "refresh_interval"
 CONF_OFFSET = "offset"
 CONF_REAL_TIME = "real_time"
-CONF_SOURCE_TIMEZONE_CORRECTION = "source_timezone_correction"
 CONF_MAX_LOCAL_STOPS = "max_local_stops"
 
 # gtfs_rt specific
 CONF_API_KEY = "api_key"
 CONF_API_KEY_NAME = "api_key_name"
 CONF_ACCEPT_HEADER_PB = "accept"
-CONF_STOP_ID = "stopid"
 CONF_TRIP_UPDATE_URL = "trip_update_url"
 CONF_VEHICLE_POSITION_URL = "vehicle_position_url"
 CONF_ALERTS_URL = "alerts_url"
-CONF_ROUTE_DELIMITER = "route_delimiter"
-CONF_ICON = "icon"
-CONF_SERVICE_TYPE = "service_type"
 
-DEFAULT_ACCEPT_HEADER_PB = False
-DEFAULT_SERVICE = "Service"
-DEFAULT_ICON = "mdi:bus"
-DEFAULT_DIRECTION = "0"
 DEFAULT_API_KEY_NAME = "api_key"
 
 TIME_STR_FORMAT = "%H:%M"
