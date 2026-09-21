@@ -831,11 +831,15 @@ def get_gtfs(hass, path, data, update=False):
         os.remove(os.path.join(gtfs_dir, sqlite))
         if os.path.exists(journal):
                 os.remove(journal)        
-    if data["extract_from"] == "zip":
+    # a built database answers on its own: the zip only matters to rebuild
+    # it. Missing, it was fetched again on every call, and a host down
+    # turned a working datasource into "no_data_file"
+    served = not update and os.path.exists(os.path.join(gtfs_dir, sqlite))
+    if data["extract_from"] == "zip" and not served:
         if not os.path.exists(os.path.join(gtfs_dir, file)):
             _LOGGER.error("The given GTFS zipfile was not found")
             return "no_zip_file"
-    if data["extract_from"] == "url":
+    if data["extract_from"] == "url" and not served:
         if update or not os.path.exists(os.path.join(gtfs_dir, file)):
             try:
                 # some providers answer 403 to the default requests user agent;
@@ -869,7 +873,12 @@ def get_gtfs(hass, path, data, update=False):
     joined_path = os.path.join(gtfs_dir, sqlite_file)  
 
     gtfs = pygtfs.Schedule(joined_path)
-   
+    if served and not gtfs.feeds and not os.path.exists(os.path.join(gtfs_dir, file)):
+        # a database file with nothing in it, and no zip to fill it from
+        _LOGGER.error("Datasource %s is empty and its zip is gone", filename)
+        gtfs.engine.dispose()
+        return "no_zip_file" if data["extract_from"] == "zip" else "no_data_file"
+
     if not gtfs.feeds: 
         if data.get("clean_feed_info", False):
             _fork_ctx = multiprocessing.get_context("fork")
