@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 from datetime import datetime, time, timedelta
 
 import homeassistant.util.dt as dt_util
@@ -47,6 +48,10 @@ OVERTIME_CAP = timedelta(hours=2)
 # a prune changes the hours the source runs, and the answer kept from this
 # morning would hold the realtime shut on the line added this afternoon.
 _ENVELOPES: dict[tuple[str, str, str], tuple[int, int] | None] = {}
+# every coordinator runs the gate in an executor thread, on the first cycle
+# of the day all at once: one walking the cache to clean it while another
+# added to it raised, and each read the same envelope for itself
+_ENVELOPES_LOCK = threading.Lock()
 # per file: what the gate last decided, read back by the diagnostic entity
 _STATE: dict[str, dict] = {}
 
@@ -209,9 +214,10 @@ def _feed_zone(hass, file, schedule):
 def _window_for(hass, file, schedule, day):
     """The polling window of one service day, in naive local time, or None."""
     key = (file, _edition_of(hass, file), day.isoformat())
-    if key not in _ENVELOPES:
-        _ENVELOPES[key] = _service_envelope(schedule, day.isoformat())
-    envelope = _ENVELOPES[key]
+    with _ENVELOPES_LOCK:
+        if key not in _ENVELOPES:
+            _ENVELOPES[key] = _service_envelope(schedule, day.isoformat())
+        envelope = _ENVELOPES[key]
     if envelope is None:
         return None
     midnight = datetime.combine(day, time())
@@ -274,10 +280,11 @@ def _gate(hass, file, schedule, trip_update_url, now=None):
 
     cutoff = (today - timedelta(days=1)).isoformat()
     edition = _edition_of(hass, file)
-    for key in [k for k in _ENVELOPES
-                if k[2] < cutoff or (k[0] == file and k[1] != edition)]:
-        # the day is gone, or the database it was read from is
-        del _ENVELOPES[key]
+    with _ENVELOPES_LOCK:
+        for key in [k for k in _ENVELOPES
+                    if k[2] < cutoff or (k[0] == file and k[1] != edition)]:
+            # the day is gone, or the database it was read from is
+            del _ENVELOPES[key]
 
     win_yesterday = _window_for(hass, file, schedule, today - timedelta(days=1))
     win_today = _window_for(hass, file, schedule, today)
