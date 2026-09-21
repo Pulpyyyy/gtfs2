@@ -164,6 +164,16 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         # first night slot
         return self._installed
 
+    def version_is_newer(self, latest_version: str, installed_version: str) -> bool:
+        """Any other version is the newer one.
+
+        The versions are labels, a Last-Modified date, an etag or a hash
+        prefix, not version numbers: HA only asks once they differ, and
+        its AwesomeVersion order read an all-digit hash as a number, so a
+        new feed whose hash happened to be smaller read as up to date.
+        """
+        return True
+
     @property
     def in_progress(self) -> bool:
         return source_lock(self.hass, self._file).locked()
