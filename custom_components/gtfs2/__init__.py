@@ -554,8 +554,9 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
         await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_patterns, own)
         return
     # an entry set up without a direction wrote its files under the
-    # direction of the departures it followed, either one
-    directions = [str(direction)] if direction is not None else ["0", "1"]
+    # direction of the departures it followed, either one, or under "none"
+    # when the feed has no direction_id at all
+    directions = [str(direction)] if direction is not None else ["0", "1", "None"]
     names = list(own)
     for d in directions:
         still_used = any(
