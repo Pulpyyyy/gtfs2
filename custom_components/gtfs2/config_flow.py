@@ -72,6 +72,7 @@ from .gtfs_helper import (
 from .stations import get_station_list, get_station_modes
 from .route_names import get_route_options_from_zip, get_agencies_in_zip, LINE_MODES, with_modes
 from .notifications import _async_text
+from .coordinator import close_schedule
 
 from .rt_source import (
     RT_OPTION_KEYS,
@@ -145,6 +146,19 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         # the line and direction picked, where another journey on the same
         # line starts from once this one is created
         self._line: dict | None = None
+
+    @callback
+    def async_remove(self) -> None:
+        """Let the datasource the flow opened go, however the flow ended.
+
+        The flow opens the source's schedule to list its lines and stops,
+        and held it to the end: never closed, the file stayed open until
+        garbage collection, long enough on Windows to refuse the swap of a
+        refresh started meanwhile.
+        """
+        if self._pygtfs and hasattr(self._pygtfs, "session"):
+            self.hass.async_add_executor_job(close_schedule, self._pygtfs)
+        self._pygtfs = ""
 
     async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
         """Handle the source."""
@@ -724,6 +738,19 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
         self._pygtfs = ""
         self._data: dict[str, str] = {}
         self._user_inputs: dict = {}
+
+    @callback
+    def async_remove(self) -> None:
+        """Let the datasource the flow opened go, however the flow ended.
+
+        The flow opens the source's schedule to list its lines and stops,
+        and held it to the end: never closed, the file stayed open until
+        garbage collection, long enough on Windows to refuse the swap of a
+        refresh started meanwhile.
+        """
+        if self._pygtfs and hasattr(self._pygtfs, "session"):
+            self.hass.async_add_executor_job(close_schedule, self._pygtfs)
+        self._pygtfs = ""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
