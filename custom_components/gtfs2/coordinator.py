@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime
 from datetime import timedelta
 import logging
+import os
 import re
 
 from homeassistant.config_entries import ConfigEntry
@@ -44,6 +45,53 @@ from .departure_attributes import departure_records
 from .exports import export_leg, export_route_shape, export_timetable
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def close_schedule(schedule) -> None:
+    """Let a schedule go: its session, then its engine's connections."""
+    if schedule and hasattr(schedule, "session"):
+        try:
+            schedule.session.close()
+            schedule.engine.dispose()
+        except Exception:  # pylint: disable=broad-except
+            pass
+
+
+def _database_edition(hass, file):
+    """The source's database as far as reopening it goes: which file, its size, its last write.
+
+    The file first: a refresh swaps another one in under the same name, and
+    a schedule opened on the old one goes on reading it.
+    """
+    try:
+        stat = os.stat(os.path.join(hass.config.path(DEFAULT_PATH), file + ".sqlite"))
+    except (OSError, TypeError):
+        return None
+    return f"{stat.st_ino}:{int(stat.st_mtime)}:{stat.st_size}"
+
+
+async def schedule_for(coordinator, data):
+    """The source's schedule, reopened only when its database changed.
+
+    Opening one is an engine, a create_all over every table and a query of
+    the feeds, and every coordinator did it every minute, closing the one
+    before. The database only changes when a refresh swaps a new one in or
+    a writer adds to it, which its size and last write tell: until then the
+    schedule opened is the one used. get_gtfs still decides whenever there
+    is no schedule, or the file is not there, which is where it downloads.
+    """
+    hass = coordinator.hass
+    edition = await hass.async_add_executor_job(_database_edition, hass, data["file"])
+    current = coordinator._pygtfs
+    if (edition is not None and edition == getattr(coordinator, "_pygtfs_edition", None)
+            and hasattr(current, "session")):
+        return current
+    await hass.async_add_executor_job(close_schedule, current)
+    # get_gtfs opens the sqlite file and, when it is missing, downloads
+    # and unpacks the feed: blocking work that has no place on the loop
+    schedule = await hass.async_add_executor_job(get_gtfs, hass, DEFAULT_PATH, data, False)
+    coordinator._pygtfs_edition = edition if hasattr(schedule, "session") else None
+    return schedule
 
 
 def shown_departure_left(previous, now) -> bool:
@@ -99,18 +147,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         previous_data = {} if self.data is None else self.data.copy()
         _LOGGER.debug("Previous data: %s", previous_data)  
 
-        if self._pygtfs and hasattr(self._pygtfs, 'session'):
-            try:
-                self._pygtfs.session.close()
-                self._pygtfs.engine.dispose()
-            except Exception:
-                pass
-
-        # get_gtfs opens the sqlite file and, when it is missing, downloads
-        # and unpacks the feed: blocking work that has no place on the loop
-        self._pygtfs = await self.hass.async_add_executor_job(
-            get_gtfs, self.hass, DEFAULT_PATH, data, False
-        )
+        # the same schedule as long as the database is the same one
+        self._pygtfs = await schedule_for(self, data)
 
         self._data = {
             "schedule": self._pygtfs,
@@ -386,18 +424,8 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         previous_data = {} if self.data is None else self.data.copy()
         _LOGGER.debug("Previous data: %s", previous_data)
 
-        if self._pygtfs and hasattr(self._pygtfs, 'session'):
-            try:
-                self._pygtfs.session.close()
-                self._pygtfs.engine.dispose()
-            except Exception:
-                pass
-
-        # get_gtfs opens the sqlite file and, when it is missing, downloads
-        # and unpacks the feed: blocking work that has no place on the loop
-        self._pygtfs = await self.hass.async_add_executor_job(
-            get_gtfs, self.hass, DEFAULT_PATH, data, False
-        )
+        # the same schedule as long as the database is the same one
+        self._pygtfs = await schedule_for(self, data)
 
         self._data = {
             "schedule": self._pygtfs,

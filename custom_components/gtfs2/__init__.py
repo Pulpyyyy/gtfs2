@@ -14,7 +14,7 @@ from datetime import timedelta
 
 from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_REFRESH_INTERVAL, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
 from homeassistant.const import CONF_HOST
-from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
+from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
 import voluptuous as vol
 from .gtfs_helper import update_gtfs_local_stops, get_route_departures, get_trip_stops
 from .notifications import async_notify_line_orphaned
@@ -344,7 +344,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # listener unloads itself
         return await hass.config_entries.async_unload_platforms(entry, DATASOURCE_PLATFORMS)
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
+        stored = hass.data[DOMAIN].pop(entry.entry_id)
+        # the schedule it held open: every reload used to leave one behind
+        coordinator = (stored or {}).get("coordinator")
+        await hass.async_add_executor_job(
+            close_schedule, getattr(coordinator, "_pygtfs", None))
 
     return unload_ok
 
