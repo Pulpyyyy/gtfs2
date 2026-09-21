@@ -392,6 +392,25 @@ def leg_geojson_pattern(name) -> tuple[str, ...]:
     return tuple(f"*_{direction}_leg_{part}.json" for direction in LEG_DIRECTIONS)
 
 
+def owns_leg_file(path, name) -> bool:
+    """Whether a file a leg glob found is this entry's own.
+
+    The glob's star takes anything, another entry's name included: "Tram 1
+    leg Centre" writes r_0_leg_tram_1_leg_centre.json, which the "Centre"
+    glob *_1_leg_centre.json finds. What stands before the entry's own
+    ending is a line id, which never holds a leg ending of its own: a
+    prefix that does is the start of another entry's file.
+    """
+    part = entry_file_part(name)
+    base = os.path.basename(path)
+    for direction in LEG_DIRECTIONS:
+        ending = f"_{direction}_leg_{part}.json"
+        if base.endswith(ending):
+            prefix = f"_{base[:-len(ending)]}_"
+            return not any(f"_{d}_leg_" in prefix for d in LEG_DIRECTIONS)
+    return False
+
+
 def _leg_timezone(schedule, route_id, departure, hass):
     """The zone the line's clocks are written in: the agency's, as the
     departure query reads it, else the origin stop's, else Home Assistant's."""
@@ -681,7 +700,7 @@ def _drop_other_legs(geojson_dir, name, kept):
     """
     for pattern in leg_geojson_pattern(name):
         for path in glob.glob(os.path.join(geojson_dir, pattern)):
-            if os.path.abspath(path) == os.path.abspath(kept):
+            if os.path.abspath(path) == os.path.abspath(kept) or not owns_leg_file(path, name):
                 continue
             try:
                 os.remove(path)

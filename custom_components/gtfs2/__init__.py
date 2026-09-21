@@ -16,9 +16,9 @@ from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAUL
 from homeassistant.const import CONF_HOST
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
 import voluptuous as vol
-from .gtfs_helper import update_gtfs_local_stops, get_route_departures, get_trip_stops
+from .gtfs_helper import update_gtfs_local_stops, get_route_departures, get_trip_stops, train_entry_routes
 from .notifications import async_notify_line_orphaned
-from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern, timetable_name
+from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern, owns_leg_file, timetable_name
 from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
@@ -545,13 +545,33 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     # the leg file is this entry's own, nobody else writes or reads it; found
     # by its entry part, the line part being the departure's, not the entry's
-    leg_patterns = leg_geojson_pattern(entry.data["name"]) if entry.data.get("name") else ()
+    leg_owner = entry.data.get("name")
     # the timetable is the entry's own too, named after it alone
     own = [timetable_name(entry.data["name"])] if entry.data.get("name") else []
     route = (entry.data.get("route") or "").split(": ")[0]
     direction = entry.data.get("direction")
+    if route == "train":
+        # a train entry's departures ride whatever line serves its two
+        # stations, and each wrote its files under that line: read back
+        # which lines those are, the database is still there
+        routes = await hass.async_add_executor_job(
+            train_entry_routes, hass.config.path(DEFAULT_PATH), entry.data)
+        names = list(own)
+        for route_id in routes:
+            for d in ("0", "1", "None"):
+                still_used = any(
+                    e.entry_id != entry.entry_id
+                    and ((e.data.get("route") or "").split(": ")[0] == route_id
+                         # another train entry on this source may ride it too
+                         or (e.data.get("route") == "train"
+                             and e.data.get("file") == entry.data.get("file")))
+                    for e in hass.config_entries.async_entries(DOMAIN))
+                if not still_used:
+                    names += [vehicle_positions_name(route_id, d), route_geojson_name(route_id, d)]
+        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, names)
+        return
     if not route:
-        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_patterns, own)
+        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, own)
         return
     # an entry set up without a direction wrote its files under the
     # direction of the departures it followed, either one, or under "none"
@@ -577,15 +597,17 @@ async def _remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None
         if os.path.basename(legacy) == legacy and ".." not in legacy:
             names += [legacy + ".json", legacy + "_route.json"]
     # a disk walk: the glob and the removals run in the executor, never on the loop
-    await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_patterns, names)
+    await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, names)
 
 
-def _remove_geojson_files(geojson_dir, leg_patterns, names):
-    """Delete the leg files matching leg_patterns and the named files under
-    geojson_dir, logging each removal. Blocking file work, made for the
-    executor."""
-    paths = [path for pattern in leg_patterns or ()
-             for path in glob.glob(os.path.join(geojson_dir, pattern))]
+def _remove_geojson_files(geojson_dir, leg_owner, names):
+    """Delete the leg files of the entry named leg_owner and the named files
+    under geojson_dir, logging each removal. Blocking file work, made for
+    the executor."""
+    paths = [path for pattern in (leg_geojson_pattern(leg_owner) if leg_owner else ())
+             for path in glob.glob(os.path.join(geojson_dir, pattern))
+             # the glob can reach another entry's file, see owns_leg_file
+             if owns_leg_file(path, leg_owner)]
     paths += [os.path.join(geojson_dir, name) for name in dict.fromkeys(names)]
     for path in paths:
         if not os.path.exists(path):
