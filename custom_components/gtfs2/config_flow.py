@@ -779,7 +779,9 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
             return await self.async_step_source_menu()
         if user_input is not None:
             if self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None):
-                _data = user_input
+                # a copy: the entry's data is only needed for the check,
+                # and written into user_input it ended up in the options
+                _data = dict(user_input)
                 _data["file"] = self.config_entry.data["file"]
                 _data["url"] = self.config_entry.data["url"]
                 _data["extract_from"] = self.config_entry.data["extract_from"]
