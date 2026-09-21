@@ -1841,33 +1841,40 @@ def get_direction_labels(schedule, route_id):
     The label trip is the longest one of its direction: an arbitrary trip
     would as easily be a short turn, naming the line after a partial run
     (GVB tram 1 read "Surinameplein → Azartplein" for a Matterhorn line).
+
+    A trip with no direction_id counts as direction 0, in the query itself:
+    grouped apart there and merged here, the longest trip of each went into
+    one list, and the label read the start of one and the end of the other.
     """
     _LOGGER.debug("Getting direction labels for route: %s", route_id)
     sql = """
-    SELECT t.direction_id, s.stop_name, st.stop_sequence
-    from trips t
-    inner join stop_times st on st.trip_id = t.trip_id
-    inner join stops s on s.stop_id = st.stop_id
-    where t.trip_id in (
-        select trip_id from (
-            select st2.trip_id as trip_id, t2.direction_id as d,
-                   count(*) as n
-            from trips t2
-            inner join stop_times st2 on st2.trip_id = t2.trip_id
-            where t2.route_id = :route_id
-            group by st2.trip_id
+    with runs as (
+        select st2.trip_id as trip_id, coalesce(t2.direction_id, 0) as d,
+               count(*) as n
+        from trips t2
+        inner join stop_times st2 on st2.trip_id = t2.trip_id
+        where t2.route_id = :route_id
+        group by st2.trip_id
+    ),
+    picked as (
+        select trip_id, d from (
+            select trip_id, d,
+                   row_number() over (partition by d order by n desc, trip_id) as r
+            from runs
         )
-        group by d
-        having n = max(n)
+        where r = 1
     )
-    order by t.direction_id, st.stop_sequence
+    SELECT p.d, s.stop_name, st.stop_sequence
+    from picked p
+    inner join stop_times st on st.trip_id = p.trip_id
+    inner join stops s on s.stop_id = st.stop_id
+    order by p.d, st.stop_sequence
     """
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql), {"route_id": route_id}).fetchall()
     stops = {}
     for direction, name, _seq in rows:
-        key = str(direction if direction is not None else 0)
-        stops.setdefault(key, []).append(name)
+        stops.setdefault(str(direction), []).append(name)
     labels = {}
     for key, names in stops.items():
         if not names or not names[0] or not names[-1]:
