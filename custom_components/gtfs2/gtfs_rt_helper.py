@@ -112,6 +112,10 @@ FEED_CACHE_TTL = 30
 # back is read within the minute
 _FEED_FAILED: dict[tuple[str, str, str], float] = {}
 FEED_FAIL_TTL = 15
+# how long a feed nobody asks for any more is kept: a key holds the url it
+# was read from, so a rotating query key, a source removed or a feed url
+# edited left its last answer in memory for the life of the process
+FEED_CACHE_KEEP = 600
 
 RT_USER_AGENT = "GTFS2-HomeAssistant/1.0 (+https://github.com/vingerha/gtfs2)"
 
@@ -145,6 +149,7 @@ def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
     key = (owner, url, label)
     with _FEED_CACHE_GUARD:
         lock = _FEED_CACHE_LOCKS.setdefault(key, threading.Lock())
+        _forget_old_feeds(key)
 
     with lock:
         cached = _FEED_CACHE.get(key)
@@ -173,6 +178,25 @@ def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
         else:
             _FEED_FAILED[key] = time.time()
         return entities
+
+
+def _forget_old_feeds(current):
+    """Drop the feeds nothing has asked for in a while.
+
+    Read under the guard, so the caller's own key is spared whatever its
+    age: a feed read once an hour must find its lock where it left it.
+    """
+    old = time.time() - FEED_CACHE_KEEP
+    for key, (when, _entities) in list(_FEED_CACHE.items()):
+        if key != current and when < old:
+            del _FEED_CACHE[key]
+            _FEED_CACHE_LOCKS.pop(key, None)
+            _FEED_FAILED.pop(key, None)
+            _LOGGER.debug("Forgot the feed nothing reads any more: %s", key[2])
+    for key, when in list(_FEED_FAILED.items()):
+        if key != current and when < old:
+            del _FEED_FAILED[key]
+            _FEED_CACHE_LOCKS.pop(key, None)
 
 
 def _fetch_gtfs_feed_entities(url: str, headers, label: str):
