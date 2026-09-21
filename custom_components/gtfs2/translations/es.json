@@ -234,6 +234,12 @@
           "api_key_location": "En la dirección web, o en la cabecera de la petición.",
           "accept": "Solo se aplica si la clave va en la cabecera."
         }
+      },
+      "extracting": {
+        "title": "Descomprimiendo {file}"
+      },
+      "importing": {
+        "title": "Restaurando líneas desde {file}"
       }
     },
     "error": {

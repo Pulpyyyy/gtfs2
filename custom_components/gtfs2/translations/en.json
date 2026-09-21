@@ -234,6 +234,12 @@
           "api_key_location": "In the web address, or in the request header.",
           "accept": "Only applies when the key goes in the header."
         }
+      },
+      "extracting": {
+        "title": "Unpacking {file}"
+      },
+      "importing": {
+        "title": "Bringing lines back from {file}"
       }
     },
     "error": {

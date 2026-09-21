@@ -234,6 +234,12 @@
           "api_key_location": "No endereço web, ou no cabeçalho do pedido.",
           "accept": "Só se aplica se a chave for no cabeçalho."
         }
+      },
+      "extracting": {
+        "title": "A descompactar {file}"
+      },
+      "importing": {
+        "title": "A repor linhas a partir de {file}"
       }
     },
     "error": {

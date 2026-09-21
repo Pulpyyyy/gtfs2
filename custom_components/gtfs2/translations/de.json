@@ -234,6 +234,12 @@
           "api_key_location": "In der Web-Adresse oder im Anfrage-Header.",
           "accept": "Nur wirksam, wenn der Schlüssel im Header steht."
         }
+      },
+      "extracting": {
+        "title": "{file} wird entpackt"
+      },
+      "importing": {
+        "title": "Linien aus {file} werden wiederhergestellt"
       }
     },
     "error": {
