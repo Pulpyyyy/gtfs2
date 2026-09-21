@@ -16,12 +16,12 @@ import logging
 import os
 
 import pygtfs
-import requests
 
 from .const import CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME
 from .direction_repair import repair_trip_directions
 from .freshness import adopt_zip, stage_zip
 from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in, swap_in
+from .key_mask import fetch
 from .rt_source import with_query_key
 from .gtfs_filter import filter_gtfs_zip, read_zip_routes, zip_only_future_dates
 from .gtfs_helper import check_extracting, get_gtfs, remove_from_zip
@@ -136,7 +136,7 @@ def ensure_source_zip(hass, path, data):
     if not os.path.exists(zip_path):
         try:
             url, headers = _source_request(data)
-            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15,
+            r = fetch("get", url, headers=headers, allow_redirects=True, timeout=15,
                              stream=True)
             r.raise_for_status()
             staged = stage_zip(r, zip_path)
@@ -274,7 +274,7 @@ def refresh_datasource(hass, path, data):
         # and must survive a failed or hijacked download
         try:
             url, headers = _source_request(data)
-            r = requests.get(url, headers=headers, allow_redirects=True, timeout=15,
+            r = fetch("get", url, headers=headers, allow_redirects=True, timeout=15,
                              stream=True)
             r.raise_for_status()
             staged = stage_zip(r, zip_path)

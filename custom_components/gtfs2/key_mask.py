@@ -6,11 +6,15 @@ the exceptions requests raises, which quote the full url. Guarding each of
 the hundred-odd log lines one by one would miss the next one written, so a
 single filter sits on the integration's loggers and writes KEY_MASK
 wherever a known key shows up. The flow's key screens show the same mask
-for a stored key, so the key itself never goes back to the browser.
+for a stored key, so the key itself never goes back to the browser. And a
+key sent in a header goes to the host it was given for, not to the one a
+redirect points at (see fetch).
 """
 import logging
 import pkgutil
 from urllib.parse import quote
+
+import requests
 
 from .const import CONF_API_KEY
 
@@ -76,6 +80,38 @@ class _HideKeys(logging.Filter):
         if hidden != message:
             record.msg, record.args = hidden, None
         return True
+
+
+# the headers the integration sends that carry nothing of the user's
+_SAFE_ON_REDIRECT = frozenset({"user-agent", "accept"})
+
+
+class _KeyStaysHome(requests.Session):
+    """A session that sends the caller's headers to their own host only.
+
+    requests drops Authorization when a redirect leads to another host,
+    and nothing else: a key in a header of its own (x-api-key, apikey...)
+    followed the redirect to the CDN or the bucket serving the file. The
+    same rule now covers every header the caller gave, the harmless ones
+    apart.
+    """
+
+    def __init__(self, headers):
+        super().__init__()
+        self._given = {name.lower() for name in (headers or {})} - _SAFE_ON_REDIRECT
+
+    def rebuild_auth(self, prepared_request, response):
+        super().rebuild_auth(prepared_request, response)
+        if self.should_strip_auth(response.request.url, prepared_request.url):
+            for name in list(prepared_request.headers):
+                if name.lower() in self._given:
+                    del prepared_request.headers[name]
+
+
+def fetch(method, url, headers=None, **kwargs):
+    """requests.request, with the caller's headers kept from other hosts."""
+    with _KeyStaysHome(headers) as session:
+        return session.request(method, url, headers=headers, **kwargs)
 
 
 def hide_keys_in_logs(package, path):

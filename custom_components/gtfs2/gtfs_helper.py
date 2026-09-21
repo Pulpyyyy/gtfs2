@@ -9,7 +9,6 @@ import os
 import shutil
 import glob
 import json
-import requests
 import pygtfs
 from sqlalchemy.sql import text
 import multiprocessing
@@ -46,6 +45,7 @@ from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, safe_file_
 from .route_names import get_routes_in_zip, _adds_to, _look_alikes, _set_apart, _set_apart_by_ends, look_alike_ends, route_ends, _route_label, _natural
 from .freshness import stage_zip, adopt_zip
 from .gtfs_filter import zip_only_future_dates
+from .key_mask import fetch
 from .rt_source import with_query_key
 
 _LOGGER = logging.getLogger(__name__)
@@ -842,7 +842,7 @@ def get_gtfs(hass, path, data, update=False):
                 # _headers is None unless an api key is used in a header
                 _get_headers = dict(_headers or {})
                 _get_headers.setdefault("User-Agent", "home-assistant-gtfs2")
-                r = requests.get(url,headers=_get_headers, allow_redirects=True,timeout=15, stream=True)
+                r = fetch("get", url, headers=_get_headers, allow_redirects=True, timeout=15, stream=True)
                 r.raise_for_status()
                 # verify before removing anything: a download that turns out
                 # not to be a zip must leave the datasource as it was

@@ -66,6 +66,7 @@ from .const import (
     TIME_STR_FORMAT
 )
 from .alerts import journey_alerts
+from .key_mask import fetch
 from .rt_source import with_query_key
 
 _UNSAFE_FILE_PART = re.compile(r"[^a-z0-9._-]+")
@@ -214,7 +215,7 @@ def _fetch_gtfs_feed_entities(url: str, headers, label: str):
             requests_session.mount('file://', LocalFileAdapter())
             response = requests_session.get(url)
         else:
-            response = requests.get(url, headers=_with_user_agent(headers), timeout=20)
+            response = fetch("get", url, headers=_with_user_agent(headers), timeout=20)
     except requests.RequestException as ex:
         # a host that is down, a name that no longer resolves, a certificate
         # that expired: the caller reads None as "no realtime this cycle",
@@ -886,7 +887,7 @@ def get_gtfs_rt(hass, path, data):
             return "no_rt_data_file" 
         return "ok"                                
     try:
-        r = requests.get(url, headers=_with_user_agent(_headers), allow_redirects=True, timeout=20)
+        r = fetch("get", url, headers=_with_user_agent(_headers), allow_redirects=True, timeout=20)
         if r.status_code != 200:
             # written first, an error page replaced the last good feed on
             # disk and the readers parsed that instead
@@ -1082,7 +1083,7 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
     
     # the url may already carry a query of its own, or none at all
     url = url + ("&" if "?" in url else "?") + f"MonitoringRef={quote(str(stop_id))}"
-    response = requests.get(url, headers=_with_user_agent(headers), timeout=20)
+    response = fetch("get", url, headers=_with_user_agent(headers), timeout=20)
     if response.status_code != 200:
         _LOGGER.error("Trying to read the SIRI feed, and got response(code): %s with text: %s",
                       response.status_code, response.text[:200])

@@ -20,7 +20,6 @@ import logging
 import os
 import time
 
-import requests
 import homeassistant.util.dt as dt_util
 
 from . import zip_file as zipfile
@@ -30,7 +29,7 @@ from .const import (
     CONF_API_KEY_NAME,
     DEFAULT_API_KEY_NAME,
 )
-from .key_mask import hide_keys
+from .key_mask import fetch, hide_keys
 from .rt_source import with_query_key
 
 _LOGGER = logging.getLogger(__name__)
@@ -91,12 +90,12 @@ def probe_source(data, zip_path):
     url, headers = _request_parts(data)
     headers.update(conditions)
     try:
-        response = requests.head(url, headers=headers, allow_redirects=True,
+        response = fetch("head", url, headers=headers, allow_redirects=True,
                                  timeout=15)
         if response.status_code in (405, 501):
             # a host that refuses HEAD still answers a conditional GET with
             # 304 for free; on a real change the body is left unread
-            response = requests.get(url, headers=headers,
+            response = fetch("get", url, headers=headers,
                                     allow_redirects=True, timeout=15,
                                     stream=True)
             response.close()
@@ -141,7 +140,7 @@ def fetch_if_new(data, zip_path):
     """
     url, headers = _request_parts(data)
     try:
-        response = requests.get(url, headers=headers, allow_redirects=True,
+        response = fetch("get", url, headers=headers, allow_redirects=True,
                                 timeout=30, stream=True)
         response.raise_for_status()
     except Exception as ex:  # pylint: disable=broad-except
