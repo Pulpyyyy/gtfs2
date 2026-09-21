@@ -2370,6 +2370,14 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
     ## valid_dates is then used in the main query
     sql_query = f"""    
         WITH
+          -- the stops within the radius first, then their calls: on an
+          -- interned database stop_times is a view whose stop_id index the
+          -- planner cannot see, and it read every call of the network to
+          -- keep those of a few stops (4 to 8 s on the Orleans feed)
+          nearby AS MATERIALIZED (
+            SELECT stop_id FROM stops
+            WHERE abs(stop_lat - :latitude) < :radius AND abs(stop_lon - :longitude) < :radius
+          ),
           candidate_stops AS MATERIALIZED (
             SELECT stop.stop_id, stop.stop_name, stop.stop_lat AS latitude, stop.stop_lon AS longitude,
                    stop.stop_timezone AS stop_timezone, agency.agency_timezone AS agency_timezone,
@@ -2378,10 +2386,10 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
                    st.departure_time AS departure_time_raw,
                    st.stop_sequence AS stop_sequence,
                    route.route_long_name, route.route_short_name, route.route_type, route.route_id
-            FROM trips trip
-            INNER JOIN stop_times st ON trip.trip_id = st.trip_id
+            FROM nearby
+            CROSS JOIN stop_times st ON st.stop_id = nearby.stop_id
             INNER JOIN stops stop ON stop.stop_id = st.stop_id
-              AND abs(stop.stop_lat - :latitude) < :radius AND abs(stop.stop_lon - :longitude) < :radius
+            INNER JOIN trips trip ON trip.trip_id = st.trip_id
             INNER JOIN routes route ON route.route_id = trip.route_id
             INNER JOIN agency agency ON route.agency_id = agency.agency_id
             WHERE {_boards("st")}
