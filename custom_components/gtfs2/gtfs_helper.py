@@ -339,6 +339,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
        WITH RECURSIVE
           candidate_trips AS MATERIALIZED (
             SELECT trip.trip_id, trip.service_id,
+                   CAST(julianday(date(origin_stop_time.departure_time)) - julianday('1970-01-01') AS INTEGER) AS day_offset,
                    origin_stop_time.stop_id AS origin_stop_id,
                    destination_stop_time.stop_id AS destination_stop_id,
                    origin_stop_time.stop_sequence AS origin_stop_sequence,
@@ -357,8 +358,14 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
               AND {_boards("origin_stop_time")}
               AND {_alights("destination_stop_time")}
           ),
+          -- the service days read start as far back as the latest departure
+          -- of these trips asks for: a call at 48:10 leaves two days after
+          -- its service day, at least yesterday
+          back_days(n) AS (
+            SELECT max(1, coalesce(max(day_offset), 0)) FROM candidate_trips
+          ),
           cal_expand(service_id, d, end_date, monday, tuesday, wednesday, thursday, friday, saturday, sunday) AS (
-            SELECT service_id, MAX(start_date, date(:now, '-1 day')), end_date,
+            SELECT service_id, MAX(start_date, date(:now, '-' || (SELECT n FROM back_days) || ' days')), end_date,
                    monday, tuesday, wednesday, thursday, friday, saturday, sunday
             FROM calendar
             WHERE service_id IN (SELECT service_id FROM candidate_trips)
