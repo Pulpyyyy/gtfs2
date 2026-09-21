@@ -174,6 +174,38 @@ def _edition_of(hass, file):
     return f"{int(stat.st_mtime)}:{stat.st_size}"
 
 
+# the zone a source's clocks are written in, by (file, edition): one small
+# query per source, asked again when the database is rebuilt
+_ZONES: dict[tuple[str, str], object] = {}
+
+
+def _feed_zone(hass, file, schedule):
+    """The zone the source's timetable is written in: its agency's.
+
+    The envelope is made of the feed's own clocks, so the moment to
+    compare them with is the local one where the network runs. Read on
+    Home Assistant's clock instead, a network an hour away had its
+    realtime cut while its buses were still out, or polled for an hour
+    after the last one was in. Falls back on Home Assistant's zone, which
+    is what a network at home is anyway.
+    """
+    key = (file, _edition_of(hass, file))
+    if key not in _ZONES:
+        name = None
+        try:
+            with schedule.engine.connect() as conn:
+                row = conn.execute(text(
+                    "select agency_timezone from agency "
+                    "where agency_timezone is not null and agency_timezone <> '' "
+                    "limit 1")).fetchone()
+            name = row[0] if row else None
+        except Exception:  # pylint: disable=broad-except
+            name = None
+        _ZONES[key] = dt_util.get_time_zone(name) if name else None
+        _LOGGER.debug("Realtime window of %s reads the clocks of %s", file, name or "this server")
+    return _ZONES[key]
+
+
 def _window_for(hass, file, schedule, day):
     """The polling window of one service day, in naive local time, or None."""
     key = (file, _edition_of(hass, file), day.isoformat())
@@ -232,6 +264,11 @@ def rt_window_gate(hass, file, schedule, trip_update_url, now=None):
 
 def _gate(hass, file, schedule, trip_update_url, now=None):
     now_aware = now or dt_util.now()
+    zone = _feed_zone(hass, file, schedule)
+    if zone is not None:
+        # the envelope is the feed's own clocks: read the moment in the
+        # zone they are written in, not in this server's
+        now_aware = now_aware.astimezone(zone)
     now_local = now_aware.replace(tzinfo=None)
     today = now_local.date()
 
