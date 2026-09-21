@@ -106,7 +106,8 @@ def station_names_in(prefix, names):
 
 def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3",
                           horizon=NEXT_SERVICE_HORIZON_DAYS, line=None,
-                          origin_names=None, dest_names=None):
+                          origin_names=None, dest_names=None, route=None,
+                          direction=None):
     """Return the first date on or after from_date that this trip runs, or None.
 
     include_tomorrow only ever reaches J+1, so a line that rests over the
@@ -126,6 +127,12 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     dest_names, when given, are every station the entry ticked at each end,
     and line holds the answer to the line the flow picked, as the departures
     are held to it.
+
+    route and direction hold the answer to the entry's line and, at a
+    loop's terminus, its way round, as the departures are held to them:
+    without them a day this line rests but another line serves the same
+    two places read as a day it runs, and the sensor announced a service
+    that does not exist.
     """
     # the coordinator calls this with whatever get_gtfs returned, which is a
     # sentinel string or None when the datasource is unusable. Matched by
@@ -143,17 +150,27 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
                         f"where stop_name in {origin_in})")
         dest_where = ("x.stop_id in (select stop_id from stops "
                       f"where stop_name in {dest_in})")
+        # held to rail, as the departures are: two stations of one name can
+        # also be served by a bus the train sensor never lists
+        line_join = "inner join routes r on r.route_id = t.route_id"
+        line_where = ("and r.route_type in (2,100,101,102,103,104,105,106,107,"
+                      "108,109,110,111,112,113,114,115,116,117)")
         if line:
             # without it, a day the line rests but another one serves the
             # same stations (P8 beside K8+) read as a day it runs
-            line_join = "inner join routes r on r.route_id = t.route_id"
-            line_where = "and r.route_short_name = :line"
+            line_where += " and r.route_short_name = :line"
             params["line"] = line
     else:
         # the whole place at each end, as the departures are matched
         origin_where = "o.stop_id in " + _place_group("origin")
         dest_where = "x.stop_id in " + _place_group("dest")
         params = {"origin": origin_id, "dest": dest_id}
+        if route:
+            line_where = "and t.route_id = :route"
+            params["route"] = route
+        if str(direction) in ("0", "1"):
+            line_where += " and (t.direction_id = :direction or t.direction_id is null)"
+            params["direction"] = int(direction)
 
     sql = f"""
         with recursive dates(d) as (

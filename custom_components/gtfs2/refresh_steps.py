@@ -43,6 +43,10 @@ async def next_service_date_for(hass, schedule, data, offset):
             line=data.get("line"),
             origin_names=data.get("origin_stations"),
             dest_names=data.get("destination_stations"),
+            # the line and, at a loop's terminus, the way round the
+            # departures themselves are held to
+            route=(data.get("route") or "").split(": ")[0] or None,
+            direction=data.get("loop_direction"),
         ))
     except Exception as ex:  # pylint: disable=broad-except
         # only enriches an attribute: never fail the update over it
