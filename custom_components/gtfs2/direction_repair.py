@@ -50,12 +50,23 @@ CIRCULAR_MONOTONY = 0.8
 MAX_PASSES = 4
 
 
+# how long a pattern has to be, against the longest, to stand for the route
+CANONICAL_LENGTH_RATIO = 0.9
+
+
 def _canonical(patterns):
-    """The modal longest stop pattern: the route as most riders ride it."""
+    """The stop pattern the route is ridden along: among the patterns nearly
+    as long as the longest, the one most trips follow.
+
+    The longest alone was taken, however few trips rode it: on the SNCF K4
+    one train each way ran on to Versailles, both toward Paris, and the
+    route read as a direction_id without sense, left unrepaired with a
+    warning, where 60 of its 170 trips were filed under the wrong way.
+    """
     maxlen = max(len(p) for p in patterns)
     return max(
-        (p for p in patterns if len(p) == maxlen),
-        key=lambda p: len(patterns[p]),
+        (p for p in patterns if len(p) >= CANONICAL_LENGTH_RATIO * maxlen),
+        key=lambda p: (len(patterns[p]), len(p)),
     )
 
 
