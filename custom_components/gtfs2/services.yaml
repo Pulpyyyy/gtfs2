@@ -183,7 +183,9 @@ update_gtfs_local_stops:
           
 extract_departures: 
   name: Extract Departures
-  description: Extracts all next departures from your entity up-until tomorrow EOD
+  description: >-
+    Extracts all next departures from your entity up-until tomorrow EOD, the
+    first one after that (next) and the last service day of the feed (until)
   fields:       
     config_entry:
       name: Route

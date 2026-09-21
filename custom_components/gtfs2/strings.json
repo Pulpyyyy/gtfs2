@@ -506,7 +506,7 @@
     },
     "extract_departures": {
       "name": "Extract departures",
-      "description": "Extracts all next departures from your entity up-until tomorrow day end",
+      "description": "Extracts all next departures from your entity up-until tomorrow day end, the first one after that (next) and the last service day of the feed (until)",
       "fields": {
         "config_entry": {
           "name": "Route from which to extract",

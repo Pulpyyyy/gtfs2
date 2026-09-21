@@ -506,7 +506,7 @@
     },
     "extract_departures": {
       "name": "Extraer salidas",
-      "description": "Extrae todas las próximas salidas de su entidad hasta el final del día de mañana",
+      "description": "Extrae todas las próximas salidas de su entidad hasta el final del día de mañana, la primera salida posterior (next) y el último día de servicio del feed (until)",
       "fields": {
         "config_entry": {
           "name": "Ruta de la que extraer",

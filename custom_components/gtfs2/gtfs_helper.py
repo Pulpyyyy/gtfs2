@@ -39,6 +39,7 @@ from .gtfs_rt_helper import safe_file_part  # noqa: F401  a provider test reads 
 from .route_names import get_routes_in_zip, _adds_to, _look_alikes, _set_apart, _set_apart_by_ends, look_alike_ends, route_ends, _route_label, _natural
 from .freshness import stage_zip, adopt_zip
 from .gtfs_filter import zip_only_future_dates
+from .feed_window import last_service_day
 from .key_mask import fetch
 from .rt_source import with_query_key
 
@@ -2568,7 +2569,7 @@ async def update_gtfs_local_stops(hass, data):
         await hass.config_entries.async_reload(cf_entry)
     return
     
-def _route_departures_between(data, first, last):
+def _route_departures_between(data, first, last, limit=5000):
     """Every departure of an entry over two service days, as UTC instants.
 
     The window read the timetable export makes, rather than the sensor's
@@ -2579,7 +2580,7 @@ def _route_departures_between(data, first, last):
     """
     rows, _origin = _fetch_departure_rows(
         data["route_type"], data["origin"], data["destination"], data["schedule"],
-        window=(first, last), limit=5000, **departure_query_args(data))
+        window=(first, last), limit=limit, **departure_query_args(data))
     instants, seen = [], set()
     for row in rows:
         key = (row.get("origin_depart_dt"), row.get("trip_id"))
@@ -2596,10 +2597,35 @@ def _route_departures_between(data, first, last):
     return sorted(instants)
 
 
+def _route_departure_from(data, first_day):
+    """The entry's first departure on the service day first_day or after,
+    as a UTC instant, or None when the calendar has none in its horizon."""
+    args = departure_query_args(data)
+    day = get_next_service_date(
+        data["schedule"], data["origin"].split(": ")[0], data["destination"].split(": ")[0],
+        first_day, data["route_type"], line=args["line"],
+        origin_names=data.get("origin_stations"), dest_names=data.get("destination_stations"),
+        route=args["route"], direction=args["direction"])
+    if not day:
+        return None
+    # the rows come in time order: the first is the one
+    instants = _route_departures_between(data, day, day, limit=1)
+    return instants[0] if instants else None
+
+
 async def get_route_departures(hass, data):
+    """The entry's departures today and tomorrow, from from_time on, and
+    what lies past them.
+
+    Two empty lists said the same for a line that resumes on Thursday, a
+    line suspended and a feed that ran out. As the timetable file does,
+    next is the first departure after the two days, None when the
+    calendar has none, and until the last service day the feed publishes:
+    an empty answer with no next reads "nothing published until then".
+    """
     _LOGGER.debug("Getting route departures with data: %s", data)
     config_entry = hass.config_entries.async_get_entry(data.get("config_entry",""))
-    empty = {"today": [], "tomorrow": []}
+    empty = {"today": [], "tomorrow": [], "next": None, "until": None}
     if config_entry is None:
         # a service call naming an entry that is not there, or not gtfs2's
         _LOGGER.error("No gtfs2 entry %s to read the departures of", data.get("config_entry"))
@@ -2652,9 +2678,21 @@ async def get_route_departures(hass, data):
             "loop_direction": cf_data.get("loop_direction"),
             "line": cf_data.get("line"),
         }
+    day_after = (now + datetime.timedelta(days=2)).strftime(dt_util.DATE_STR_FORMAT)
     try:
+        # one service day more than the two listed: the query costs about
+        # the same (TAO tram A, 1.8 s for a day or three), and the next
+        # departure is usually in it, a run of tomorrow's service after
+        # midnight or the day after's first
         instants = await hass.async_add_executor_job(
-            _route_departures_between, _data, yesterday_date, tomorrow_date)
+            _route_departures_between, _data, yesterday_date, day_after)
+        later = [i for i in instants
+                 if dt_util.as_local(i).strftime(dt_util.DATE_STR_FORMAT) > tomorrow_date]
+        next_instant = later[0] if later else await hass.async_add_executor_job(
+            _route_departure_from, _data,
+            (now + datetime.timedelta(days=3)).strftime(dt_util.DATE_STR_FORMAT))
+        until = await hass.async_add_executor_job(
+            last_service_day, os.path.join(hass.config.path(DEFAULT_PATH), cf_data["file"] + ".zip"))
     finally:
         # released whatever happens: this schedule was opened for the call
         try:
@@ -2674,7 +2712,9 @@ async def get_route_departures(hass, data):
         elif day == tomorrow_date and cutoff_tomorrow <= local:
             tomorrow_departures.append(instant.isoformat())
 
-    _departures = {"today": today_departures, "tomorrow": tomorrow_departures}
+    _departures = {"today": today_departures, "tomorrow": tomorrow_departures,
+                   "next": next_instant.isoformat() if next_instant else None,
+                   "until": until}
     _LOGGER.debug("Departures returned: %s", _departures)
     return _departures
     

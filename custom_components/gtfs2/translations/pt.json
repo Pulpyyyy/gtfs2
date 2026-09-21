@@ -506,7 +506,7 @@
     },
     "extract_departures": {
       "name": "Extrair partidas",
-      "description": "Extrai todos os próximos jogos da tua entidade até ao final do dia de amanhã",
+      "description": "Extrai todas as próximas partidas da tua entidade até ao final do dia de amanhã, a primeira partida seguinte (next) e o último dia de serviço do feed (until)",
       "fields": {
         "config_entry": {
           "name": "Rota a partir da qual extrair",

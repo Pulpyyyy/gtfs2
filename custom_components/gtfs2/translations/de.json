@@ -506,7 +506,7 @@
     },
     "extract_departures": {
       "name": "Abfahrten extrahieren",
-      "description": "Extrahiert alle nächsten Abfahrten von Ihrer Entität bis zum morgigen Tagesende",
+      "description": "Extrahiert alle nächsten Abfahrten von Ihrer Entität bis zum morgigen Tagesende, die erste Abfahrt danach (next) und den letzten Betriebstag des Feeds (until)",
       "fields": {
         "config_entry": {
           "name": "Route, von der extrahiert werden soll",
