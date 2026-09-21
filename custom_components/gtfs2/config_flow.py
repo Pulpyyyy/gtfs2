@@ -229,13 +229,16 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         async def _show(errors, previous=None):
             """Render the form, keeping what the user already typed."""
             previous = previous or {}
+            tracker = previous.get(CONF_DEVICE_TRACKER_ID)
             datasources = await get_datasources(self.hass, DEFAULT_PATH)
             return self.async_show_form(
                 step_id="local_stops",
                 data_schema=vol.Schema(
                     {
                         vol.Required(CONF_FILE, default=previous.get(CONF_FILE, "")): vol.In(datasources),
-                        vol.Required(CONF_DEVICE_TRACKER_ID): selector.EntitySelector(
+                        vol.Required(
+                            CONF_DEVICE_TRACKER_ID, **({"default": tracker} if tracker else {}),
+                        ): selector.EntitySelector(
                             selector.EntitySelectorConfig(domain=["person","zone"]),                          
                         ),
                         vol.Required(CONF_NAME, default=previous.get(CONF_NAME, "")): str, 
@@ -249,7 +252,13 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             if self._pending_error:
                 errors["base"] = self._pending_error
                 self._pending_error = None
-            return await _show(errors)
+                return await _show(errors, self._user_inputs)
+            if not self._user_inputs.get(CONF_DEVICE_TRACKER_ID):
+                return await _show(errors)
+            # back from the unpacking wait: what was submitted before it goes
+            # on, instead of an empty screen asking for all of it again
+            user_input = {key: self._user_inputs.get(key)
+                          for key in (CONF_FILE, CONF_DEVICE_TRACKER_ID, CONF_NAME)}
         user_input[CONF_URL] = "na"
         user_input[CONF_EXTRACT_FROM] = "zip"    
         self._user_inputs.update(user_input)
