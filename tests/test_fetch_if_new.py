@@ -1,0 +1,84 @@
+"""fetch_if_new: the hash decides, and only a refreshing source adopts.
+
+The download answers "is the feed new" by its sha256 against the kept
+zip's. A new feed is swapped in for a source that refreshes itself; one
+that only notifies keeps its zip, the edition its database was built
+from, and hears the new file's sha256 instead.
+"""
+from __future__ import annotations
+
+import io
+import json
+import types
+import zipfile
+
+import ha_stub
+
+freshness = ha_stub.load("freshness")
+
+TABLES = {
+    "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,Europe/Paris\n",
+    "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\nS1,One,0,0\n",
+    "routes.txt": "route_id,route_type\nR1,3\n",
+    "trips.txt": "route_id,service_id,trip_id\nR1,WK,T1\n",
+    "stop_times.txt": "trip_id,arrival_time,departure_time,stop_id,stop_sequence\nT1,08:00:00,08:00:00,S1,1\n",
+    "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                     "start_date,end_date\nWK,1,1,1,1,1,0,0,20260101,20261231\n"),
+}
+
+
+def feed_bytes(edition):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zout:
+        for name, body in TABLES.items():
+            zout.writestr(name, body)
+        zout.writestr("feed_info.txt", f"feed_publisher_name,feed_version\nX,{edition}\n")
+    return buffer.getvalue()
+
+
+def answering(body, **headers):
+    def fetch(method, url, **kwargs):
+        return types.SimpleNamespace(
+            status_code=200, url=url, headers=headers, content=body,
+            raise_for_status=lambda: None, close=lambda: None)
+    return fetch
+
+
+def kept_zip(tmp_path, edition):
+    zip_path = tmp_path / "src.zip"
+    zip_path.write_bytes(feed_bytes(edition))
+    digest, size = freshness.file_digest(zip_path)
+    (tmp_path / "src.zip.meta.json").write_text(json.dumps(
+        {"sha256": digest, "size": size, "last_modified": "Mon, 01 Sep 2026 00:00:00 GMT"}))
+    return str(zip_path)
+
+
+DATA = {"url": "https://h/src.zip", "file": "src"}
+
+
+def test_same_bytes_are_not_new(tmp_path, monkeypatch):
+    zip_path = kept_zip(tmp_path, "1")
+    monkeypatch.setattr(freshness, "fetch", answering(feed_bytes("1")))
+    assert freshness.fetch_if_new(DATA, zip_path) is False
+    assert not (tmp_path / "src.zip.new").exists()
+
+
+def test_new_bytes_are_adopted_by_default(tmp_path, monkeypatch):
+    zip_path = kept_zip(tmp_path, "1")
+    monkeypatch.setattr(freshness, "fetch", answering(feed_bytes("2")))
+    assert freshness.fetch_if_new(DATA, zip_path) is True
+    assert (tmp_path / "src.zip").read_bytes() == feed_bytes("2")
+
+
+def test_new_bytes_are_only_told_without_adopting(tmp_path, monkeypatch):
+    zip_path = kept_zip(tmp_path, "1")
+    meta_before = (tmp_path / "src.zip.meta.json").read_text()
+    monkeypatch.setattr(freshness, "fetch", answering(feed_bytes("2")))
+    answer = freshness.fetch_if_new(DATA, zip_path, adopt=False)
+    new = tmp_path / "check.zip"
+    new.write_bytes(feed_bytes("2"))
+    assert answer == freshness.file_digest(new)[0]
+    # the kept zip and its record stay the edition the database was built from
+    assert (tmp_path / "src.zip").read_bytes() == feed_bytes("1")
+    assert (tmp_path / "src.zip.meta.json").read_text() == meta_before
+    assert not (tmp_path / "src.zip.new").exists()

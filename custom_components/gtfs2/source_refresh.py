@@ -396,14 +396,22 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
     use_zip = False
     if probe["result"] == PROBE_UNKNOWN:
         # the host publishes no validators, only the download can answer;
-        # when it does turn out new, the fetched feed is kept in the zip so
-        # nothing is downloaded twice
-        fetched = await hass.async_add_executor_job(fetch_if_new, data, zip_path)
+        # when it does turn out new and the source refreshes itself, the
+        # fetched feed is kept in the zip so nothing is downloaded twice. A
+        # source that only notifies keeps its zip: the database was built
+        # from it, and a line added before the install must come from it too
+        auto = mode == STATIC_REFRESH_AUTO
+        fetched = await hass.async_add_executor_job(
+            fetch_if_new, data, zip_path, auto)
         if fetched is True:
             changed, use_zip = True, True
             state["result"] = PROBE_CHANGED
             state["latest"] = version_label(
                 await hass.async_add_executor_job(source_meta, zip_path))
+        elif isinstance(fetched, str):
+            changed = True
+            state["result"] = PROBE_CHANGED
+            state["latest"] = version_label({"sha256": fetched})
         elif fetched is False:
             state["result"] = PROBE_UNCHANGED
     async_dispatcher_send(hass, SIGNAL_SOURCE_REFRESH.format(file))

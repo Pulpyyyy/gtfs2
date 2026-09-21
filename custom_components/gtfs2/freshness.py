@@ -126,7 +126,7 @@ def probe_source_freshness(data, zip_path):
     return probe_source(data, zip_path)["result"]
 
 
-def fetch_if_new(data, zip_path):
+def fetch_if_new(data, zip_path, adopt=True):
     """Download the feed and keep it only when it really is new.
 
     The hash decides, not the validators: this is the fallback for hosts
@@ -137,6 +137,11 @@ def fetch_if_new(data, zip_path):
     kept zip is untouched. The caller owns the rebuild: after a True, the
     fresh feed sits in the zip and a refresh from it picks it up without
     downloading again.
+
+    With adopt False the download only answers the question: a new feed
+    is not swapped in, and the answer is its sha256 instead of True. A
+    source that only notifies keeps the zip its database was built from,
+    so a line added from the zip meanwhile comes from the same edition.
     """
     url, headers = _request_parts(data)
     try:
@@ -157,6 +162,13 @@ def fetch_if_new(data, zip_path):
         except OSError:
             pass
         return False
+    if not adopt:
+        digest = file_digest(staged)[0]
+        try:
+            os.remove(staged)
+        except OSError:
+            pass
+        return digest
     adopt_zip(response, staged, zip_path)
     return True
 
