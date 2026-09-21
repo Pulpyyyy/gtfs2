@@ -2205,12 +2205,26 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
 
 
     
+def _tracker_position(hass, entity_id):
+    """Where a person or zone is, (latitude, longitude), or (None, None).
+
+    The entity may be gone, renamed or not loaded yet at start: its state
+    is then None, and reading its attributes raised on every refresh and
+    in the options screen alike.
+    """
+    state = hass.states.get(entity_id)
+    if state is None:
+        return None, None
+    return state.attributes.get("latitude", None), state.attributes.get("longitude", None)
+
+
 def get_local_stop_list(hass, schedule, data):
     _LOGGER.debug("Getting local stops list with data: %s", data)
-    device_tracker = hass.states.get(data['device_tracker_id'])
-    latitude = device_tracker.attributes.get("latitude", None)
-    longitude = device_tracker.attributes.get("longitude", None) 
-    radius = data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
+    latitude, longitude = _tracker_position(hass, data['device_tracker_id'])
+    if not latitude or not longitude:
+        # nowhere to look around: no stop is near
+        return 0
+    radius= data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
     sql_query = f"""
         SELECT stop.stop_id, stop.stop_name
         FROM stops stop
@@ -2546,10 +2560,8 @@ def get_local_stops_next_departures(self):
     offset = self._data["offset"]
     now = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset)
     now_date = now.strftime(dt_util.DATE_STR_FORMAT)
-    device_tracker = self.hass.states.get(self._data['device_tracker_id'])
-    latitude = device_tracker.attributes.get("latitude", None)
-    longitude = device_tracker.attributes.get("longitude", None)
-    time_range = str('+' + str(self._data.get("timerange", DEFAULT_LOCAL_STOP_TIMERANGE)) + ' minute')
+    latitude, longitude = _tracker_position(self.hass, self._data['device_tracker_id'])
+    time_range= str('+' + str(self._data.get("timerange", DEFAULT_LOCAL_STOP_TIMERANGE)) + ' minute')
     time_range_history = str('-' + str(self._data.get("timerange_history", DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY)) + ' minute')
     radius = self._data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
     if not latitude or not longitude:
