@@ -32,6 +32,7 @@ from .gtfs_helper import (
 )
 from .gtfs_rt_helper import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, safe_file_part, stop_relationship, trip_relationship,
+    write_json_file,
 )
 from .gtfs_shape import read_shape
 
@@ -108,8 +109,7 @@ def clear_vehicle_file(hass, route_id, direction) -> bool:
     except (OSError, ValueError):
         # unreadable: write it afresh rather than leave whatever it holds
         pass
-    with open(file, "w") as outfile:
-        json.dump({"features": [], "type": "FeatureCollection"}, outfile)
+    write_json_file(file, {"features": [], "type": "FeatureCollection"})
     _LOGGER.debug("Vehicles taken off the map: %s", file)
     return True
 
@@ -310,20 +310,19 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
     # they are made ones: see safe_file_part
     file = os.path.join(geojson_dir, route_geojson_name(route_id, direction))
     _LOGGER.debug("Creating route geojson file: %s", file)
-    with open(file, "w") as outfile:
-        json.dump({
-            "type": "FeatureCollection",
-            "properties": {
-                "trip_id": trip_id,
-                "route_id": str(route_id),
-                "direction_id": str(direction),
-                # the trip stands for the line, it is not the one about to leave
-                "representative": True,
-                # the shape drawn, None when the stops alone draw the line
-                "shape_id": shape_id,
-            },
-            "features": features,
-        }, outfile)
+    write_json_file(file, {
+        "type": "FeatureCollection",
+        "properties": {
+            "trip_id": trip_id,
+            "route_id": str(route_id),
+            "direction_id": str(direction),
+            # the trip stands for the line, it is not the one about to leave
+            "representative": True,
+            # the shape drawn, None when the stops alone draw the line
+            "shape_id": shape_id,
+        },
+        "features": features,
+    })
 
 
 # how many of the listed departures the leg file times stop by stop: a board
@@ -353,8 +352,7 @@ def write_json_if_changed(file, doc, stable) -> bool:
     if _WRITTEN.get(file) == digest and os.path.exists(file):
         _LOGGER.debug("Unchanged since the last write, left alone: %s", file)
         return False
-    with open(file, "w") as outfile:
-        json.dump(doc, outfile)
+    write_json_file(file, doc)
     _WRITTEN[file] = digest
     return True
 

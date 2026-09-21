@@ -849,13 +849,42 @@ def get_rt_alerts(self):
 
     return rt_alerts
     
-def update_geojson(self):    
+def write_json_file(file, doc):
+    """Write a json file the way a reader can never catch it half written.
+
+    The map cards fetch these files while the sensors rewrite them, every
+    minute for the vehicles: written in place, a fetch landing mid-write
+    read a truncated document and dropped the layer. The file is written
+    beside its target and renamed over it, which a reader sees whole.
+    """
+    # a name of its own per writer: two entries on one line write the same
+    # file in the same second, and a shared staging name had each rename
+    # the other's half-written file, or find it gone
+    staged = f"{file}.{os.getpid()}.{threading.get_ident()}.tmp"
+    try:
+        with open(staged, "w") as outfile:
+            json.dump(doc, outfile)
+        for attempt in range(5):
+            try:
+                os.replace(staged, file)
+                break
+            except PermissionError:
+                # Windows refuses a rename onto a file another writer is
+                # renaming onto at that instant; it is free a moment later
+                if attempt == 4:
+                    raise
+                time.sleep(0.02)
+    finally:
+        if os.path.exists(staged):
+            os.remove(staged)
+
+
+def update_geojson(self):
     geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)
     os.makedirs(geojson_dir, exist_ok=True)
     file = os.path.join(geojson_dir, self._route_dir + ".json")
     _LOGGER.debug("Creating geojson file: %s", file)
-    with open(file, "w") as outfile:
-        json.dump(self.geojson, outfile)
+    write_json_file(file, self.geojson)
     
 def get_gtfs_rt(hass, path, data):
     """Get gtfs rt data."""
