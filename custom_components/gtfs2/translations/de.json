@@ -80,6 +80,16 @@
           "file": "Die `.zip`-Dateien in Ihrem `gtfs2`-Ordner."
         }
       },
+      "inner_zip": {
+        "title": "Welches Netz",
+        "description": "Diese Quelle enthält {zips} Netze, je eine ZIP-Datei. Nur das gewählte wird heruntergeladen.\n\n[documentation]({docu_select_source})",
+        "data": {
+          "inner_zip": "Netz"
+        },
+        "data_description": {
+          "inner_zip": "Die ZIP-Datei in der Quelle, so benannt wie ihr Herausgeber sie nennt."
+        }
+      },
       "agency": {
         "data": {
           "agency": "Betreiber"
@@ -255,6 +265,7 @@
       "generic_failure": "Gesamtfehler, Protokolle prüfen",
       "no_data_file": "Die Datei konnte nicht heruntergeladen werden. Prüfen Sie die Adresse und ob die Quelle von Home Assistant aus erreichbar ist. Manche Anbieter lehnen automatisierte Downloads ab.",
       "no_zip_file": "Problem bei der Datenerfassung: ZIP-Datei nicht im richtigen Ordner",
+      "zip_holds_zips": "Die ZIP-Datei enthält weitere ZIP-Dateien und keine konnte angeboten werden: Entpacken Sie sie und geben Sie die innere ZIP-Datei des gewünschten Netzes an",
       "name_taken": "Ein Sensor trägt diesen Namen bereits. Wählen Sie einen anderen.",
       "not_created": "Der Sensor konnte nicht erstellt werden. Prüfen Sie das Protokoll und versuchen Sie einen anderen Namen.",
       "reload_failed": "Diese Linie konnte nicht wiederhergestellt werden. Die Quelle blieb unverändert; wählen Sie eine andere Linie oder versuchen Sie es erneut."
@@ -267,6 +278,7 @@
       "no_stops": "Problem bei der Datenerfassung: wahrscheinlich keine Stops für die gewählte Route",
       "no_data_file": "Problem bei der Datenerfassung: URL falsch oder Dateiname nicht im richtigen Ordner",
       "no_zip_file": "Problem bei der Datenerfassung: ZIP-Datei ist nicht im richtigen Ordner vorhanden. Beachten Sie, dass Groß- und Kleinschreibung berücksichtigt werden muss",
+      "zip_holds_zips": "Die ZIP-Datei enthält weitere ZIP-Dateien und keine konnte angeboten werden: Entpacken Sie sie und geben Sie die innere ZIP-Datei des gewünschten Netzes an",
       "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern",
       "extracting": "Es werden (noch) Daten extrahiert, dies wird einige Zeit dauern [Dokumentation]({docu_extracting})",
       "no_zip_in_folder": "Keine .zip-Datei in {folder} gefunden. Legen Sie dort Ihre GTFS-Zip-Datei ab und beginnen Sie erneut.",

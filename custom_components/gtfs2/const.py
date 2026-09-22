@@ -296,6 +296,9 @@ WHEELCHAIR_BOARDING_OPTIONS = {1: True, 2: False}
 
 CONF_API_KEY_LOCATION = "api_key_location"
 CONF_URL = "url"
+# the member of an envelope of zips this source is built from, kept so the
+# automatic refresh fetches the same network again and not the envelope
+CONF_INNER_ZIP = "inner_zip"
 CONF_EXTRACT_FROM = "extract_from"
 CONF_FILE = "file"
 CONF_DEVICE_TRACKER_ID = "device_tracker_id"

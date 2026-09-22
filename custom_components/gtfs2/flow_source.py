@@ -31,6 +31,7 @@ from .const import (
     CONF_DEVICE_TRACKER_ID,
     CONF_EXTRACT_FROM,
     CONF_FILE,
+    CONF_INNER_ZIP,
     CONF_NEEDS_API_KEY,
     CONF_RT_ENABLED,
     CONF_STATIC_CHECK_INTERVAL,
@@ -256,6 +257,12 @@ class SourceScreens:
         check_data = await self.hass.async_add_executor_job(
             ensure_source_zip, self.hass, DEFAULT_PATH, user_input)
         if check_data:
+            if check_data == "zip_holds_zips":
+                # the source is an envelope of networks: which one it
+                # follows is asked before anything is downloaded
+                self._inner_zips = user_input.pop("inner_zips", [])
+                self._user_inputs.update(user_input)
+                return await self.async_step_inner_zip()
             # "extracting" is not a user error: the datasource is being unpacked,
             # there is nothing to correct, so it keeps its own abort message.
             if check_data == "extracting":
@@ -266,6 +273,45 @@ class SourceScreens:
             return _show(errors, user_input)
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInputs Source url: {self._user_inputs}")
+        return await self.async_step_source_rt()
+
+    async def async_step_inner_zip(self, user_input: dict | None = None) -> FlowResult:
+        """Pick which network a source that holds several is built from.
+
+        Some publishers answer one zip holding one zip per network, SEPTA's
+        bus and rail among them. The names come from the envelope's table of
+        contents, read over the network without downloading it, so this
+        screen costs a few hundred bytes and the network picked is the only
+        one fetched. The pick is kept on the entry: every refresh asks for
+        that member again, never for the envelope.
+        """
+        if user_input is None:
+            return self.async_show_form(
+                step_id="inner_zip",
+                data_schema=vol.Schema(
+                    {
+                        vol.Required(
+                            CONF_INNER_ZIP, default=self._inner_zips[0]
+                        ): selector.SelectSelector(
+                            selector.SelectSelectorConfig(options=[
+                                selector.SelectOptionDict(value=name, label=name)
+                                for name in self._inner_zips])),
+                    },
+                ),
+                description_placeholders={
+                    **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                    "zips": str(len(self._inner_zips)),
+                },
+            )
+        self._user_inputs[CONF_INNER_ZIP] = user_input[CONF_INNER_ZIP]
+        check_data = await self.hass.async_add_executor_job(
+            ensure_source_zip, self.hass, DEFAULT_PATH, self._user_inputs)
+        if check_data:
+            if check_data == "extracting":
+                self._ensure_datasource_entry()
+                return await self.async_step_unpacking()
+            return await self._back_to_source(check_data)
+        _LOGGER.debug("UserInputs inner zip: %s", self._user_inputs)
         return await self.async_step_source_rt()
 
     async def async_step_unpacking(self, user_input: dict | None = None) -> FlowResult:
@@ -315,6 +361,11 @@ class SourceScreens:
         check_data = await self.hass.async_add_executor_job(
             ensure_source_zip, self.hass, DEFAULT_PATH, self._user_inputs)
         if check_data:
+            if check_data == "zip_holds_zips":
+                # an envelope behind a key: its networks are offered here as
+                # on the url screen, the key kept for the member's download
+                self._inner_zips = self._user_inputs.pop("inner_zips", [])
+                return await self.async_step_inner_zip()
             if check_data == "extracting":
                 self._ensure_datasource_entry()
                 return await self.async_step_extracting()
@@ -371,7 +422,7 @@ class SourceScreens:
             self.hass, inputs.get(CONF_FILE),
             url=inputs.get(CONF_URL) or "na",
             extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip",
-            api=inputs)
+            api=inputs, inner_zip=inputs.get(CONF_INNER_ZIP))
         source = datasource_entry(self.hass, inputs.get(CONF_FILE))
         if source is None:
             _LOGGER.error("No datasource entry to store the realtime config on: %s",
@@ -418,6 +469,12 @@ class SourceScreens:
         check_data = await self.hass.async_add_executor_job(
             ensure_source_zip, self.hass, DEFAULT_PATH, user_input)
         if check_data:
+            if check_data == "zip_holds_zips":
+                # the source is an envelope of networks: which one it
+                # follows is asked before anything is downloaded
+                self._inner_zips = user_input.pop("inner_zips", [])
+                self._user_inputs.update(user_input)
+                return await self.async_step_inner_zip()
             if check_data == "extracting":
                 self._user_inputs.update(user_input)
                 self._ensure_datasource_entry()
@@ -441,7 +498,7 @@ class SourceScreens:
                 self.hass, inputs.get(CONF_FILE),
                 url=inputs.get(CONF_URL) or "na",
                 extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip",
-                api=inputs),
+                api=inputs, inner_zip=inputs.get(CONF_INNER_ZIP)),
             name=f"gtfs2 datasource entry {inputs.get(CONF_FILE)}",
         )
 

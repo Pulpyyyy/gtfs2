@@ -140,6 +140,7 @@ Files:
 ```text
 rt_source.py        the datasource entries, owning the realtime feeds and keys
 source_zip.py       the zip beside a datasource: fetched, kept, refreshed
+zip_peek.py         read a remote zip's contents, take one member out of it
 freshness.py        ask the host whether the feed changed, without downloading
 source_refresh.py   automatic refresh of the static feeds, per source and mode
 rt_window.py        when the realtime feeds are worth reading

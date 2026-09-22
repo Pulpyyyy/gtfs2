@@ -17,12 +17,16 @@ import os
 
 import pygtfs
 
-from .const import CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME
+from . import zip_file as zipfile
+from .const import (CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME,
+                    CONF_INNER_ZIP)
 from .direction_repair import repair_trip_directions
 from .freshness import adopt_zip, stage_zip
 from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in, swap_in
 from .key_mask import fetch
 from .rt_source import with_query_key
+from .zip_peek import (extract_member, inner_zips, inner_zips_in_file,
+                       member_out_of, open_member)
 from .gtfs_filter import filter_gtfs_zip, read_zip_routes, zip_only_future_dates
 from .gtfs_helper import check_extracting, get_gtfs, remove_from_zip
 
@@ -111,6 +115,74 @@ def _source_request(data):
     return url, headers
 
 
+def _open_source(data, url, headers):
+    """The response whose body is this source's feed.
+
+    The url's own body, or the member of it the source was built from: one
+    call that both the first download and every refresh go through, so a
+    source that named a network keeps getting that network. A host that
+    stops answering ranges falls back to the whole envelope, which
+    member_out_of then thins down to the same member.
+    """
+    inner = data.get(CONF_INNER_ZIP)
+    if inner:
+        member = open_member(url, headers, inner)
+        if member is not None:
+            return member
+        _LOGGER.info("Fetching the whole envelope to take %s out of it", inner)
+    return fetch("get", url, headers=headers, allow_redirects=True, timeout=15,
+                 stream=True)
+
+
+def _offer_or_take(data, zip_path):
+    """Handle a zip on disk that holds zips: offer its networks, or take one.
+
+    Returns an error code for the flow, or None when the file is usable as
+    it is. The user's own file is left where it is until a network is
+    picked, so a wrong pick is one screen back and not one download again.
+    """
+    inner = inner_zips_in_file(zip_path)
+    if not inner:
+        return None
+    chosen = data.get(CONF_INNER_ZIP)
+    if chosen not in inner:
+        # nothing picked yet, or an edition that dropped the network this
+        # source followed: either way the list is what the user needs
+        data["inner_zips"] = inner
+        return "zip_holds_zips"
+    staged = zip_path + ".new"
+    if not extract_member(zip_path, chosen, staged):
+        return "no_data_file"
+    os.replace(staged, zip_path)
+    _LOGGER.info("Kept %s as the feed of %s", chosen, zip_path)
+    return None
+
+
+def _holds_a_feed(zip_path):
+    """None when the zip is a GTFS feed, else why it cannot be one.
+
+    Some publishers answer a perfectly valid zip that holds other zips:
+    SEPTA's gtfs_public.zip carries google_bus.zip and google_rail.zip, one
+    per network. Everything downstream then reads a feed without routes and
+    the route screen ends on "no routes with trips", which says the lines
+    carry no timetable when the truth is that no lines were ever read.
+    """
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            members = {name.rsplit("/", 1)[-1] for name in zin.namelist()}
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.error("Could not read the source zip %s: %s", zip_path, ex)
+        return "no_zip_file"
+    if "routes.txt" in members:
+        return None
+    inner = sorted(name for name in members if name.endswith(".zip"))
+    if inner:
+        _LOGGER.error("%s holds zips, not a feed: %s", zip_path, ", ".join(inner))
+        return "zip_holds_zips"
+    _LOGGER.error("No routes.txt in %s: %s", zip_path, ", ".join(sorted(members)[:6]))
+    return "no_data_file"
+
+
 def ensure_source_zip(hass, path, data):
     """Make sure the source zip is in place, without starting any import.
 
@@ -122,7 +194,7 @@ def ensure_source_zip(hass, path, data):
     and one that ends on a progress notification.
 
     Returns None when the zip is ready, else the code the flow already
-    words: "extracting", "no_zip_file", "no_data_file".
+    words: "extracting", "no_zip_file", "no_data_file", "zip_holds_zips".
     """
     gtfs_dir = hass.config.path(path)
     os.makedirs(gtfs_dir, exist_ok=True)
@@ -131,21 +203,33 @@ def ensure_source_zip(hass, path, data):
     if check_extracting(hass, path, filename):
         return "extracting"
     if data["extract_from"] == "zip":
-        return None if os.path.exists(zip_path) else "no_zip_file"
+        if not os.path.exists(zip_path):
+            return "no_zip_file"
+        return _offer_or_take(data, zip_path) or _holds_a_feed(zip_path)
     if not os.path.exists(zip_path):
         try:
             url, headers = _source_request(data)
-            r = fetch("get", url, headers=headers, allow_redirects=True, timeout=15,
-                             stream=True)
+            # what the url answers is read before it is fetched: an envelope
+            # of zips holds one network per member, and the user picks which
+            # before a byte of the wrong one is downloaded
+            if not data.get(CONF_INNER_ZIP):
+                inner = inner_zips(url, headers)
+                if inner:
+                    data["inner_zips"] = inner
+                    return "zip_holds_zips"
+            r = _open_source(data, url, headers)
             r.raise_for_status()
-            staged = stage_zip(r, zip_path)
+            staged = stage_zip(r, zip_path, data.get(CONF_INNER_ZIP),
+                               envelope_ok=not data.get(CONF_INNER_ZIP))
             if staged is None:
                 return "no_data_file"
             adopt_zip(r, staged, zip_path)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.error("The given URL or GTFS data file/folder was not found: %s", ex)
             return "no_data_file"
-    return None
+    # a host that refuses ranges answered the envelope whole: the networks
+    # are offered from the file, and the pick taken out of it
+    return _offer_or_take(data, zip_path) or _holds_a_feed(zip_path)
 
 
 def open_datasource(gtfs_dir, filename):
@@ -273,10 +357,11 @@ def refresh_datasource(hass, path, data):
         # and must survive a failed or hijacked download
         try:
             url, headers = _source_request(data)
-            r = fetch("get", url, headers=headers, allow_redirects=True, timeout=15,
-                             stream=True)
+            r = _open_source(data, url, headers)
             r.raise_for_status()
-            staged = stage_zip(r, zip_path)
+            # a host that stopped answering ranges sends the whole envelope:
+            # the network picked is taken out of it here
+            staged = stage_zip(r, zip_path, data.get(CONF_INNER_ZIP))
             if staged is None:
                 return False
             adopt_zip(r, staged, zip_path)

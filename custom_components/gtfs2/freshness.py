@@ -25,11 +25,13 @@ import homeassistant.util.dt as dt_util
 from . import zip_file as zipfile
 from .const import (
     CONF_API_KEY,
+    CONF_INNER_ZIP,
     CONF_API_KEY_LOCATION,
     CONF_API_KEY_NAME,
     DEFAULT_API_KEY_NAME,
 )
 from .key_mask import fetch, hide_keys
+from .zip_peek import inner_zips_in_file, member_out_of, open_member
 from .rt_source import with_query_key
 
 _LOGGER = logging.getLogger(__name__)
@@ -146,14 +148,18 @@ def fetch_if_new(data, zip_path, adopt=True):
     so a line added from the zip meanwhile comes from the same edition.
     """
     url, headers = _request_parts(data)
+    inner = data.get(CONF_INNER_ZIP)
     try:
-        response = fetch("get", url, headers=headers, allow_redirects=True,
-                                timeout=30, stream=True)
+        # a source built from one network of an envelope asks for that
+        # network again, by its byte range, not for the envelope
+        response = (inner and open_member(url, headers, inner)) or fetch(
+            "get", url, headers=headers, allow_redirects=True,
+            timeout=30, stream=True)
         response.raise_for_status()
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.error("Could not download %s: %s", data.get("url"), ex)
         return None
-    staged = stage_zip(response, zip_path)
+    staged = stage_zip(response, zip_path, inner)
     if staged is None:
         return None
     # compared once on disk: the body is not in memory to hash beforehand
@@ -272,7 +278,7 @@ def _write_body(response, staged):
     return written
 
 
-def stage_zip(response, zip_path):
+def stage_zip(response, zip_path, inner=None, envelope_ok=False):
     """Write a downloaded feed beside its target and verify it is a zip.
 
     A moved or renumbered url often keeps answering HTTP 200 with whatever
@@ -285,6 +291,16 @@ def stage_zip(response, zip_path):
     into memory, a national feed took a gigabyte of a small machine's
     memory, and a host sending a byte at a time held the refresh, and the
     source's lock, for ever.
+
+    inner names the member to keep when the body turns out to be an
+    envelope of zips: the source picked one network, and a host that
+    stopped answering ranges sends the whole envelope instead of it. The
+    member is taken out here, before the feed is checked, so what the check
+    passes or rejects is the feed itself.
+
+    envelope_ok keeps an envelope no network was picked in yet: the source
+    screen then offers its networks from the file, which is how a host
+    that ignores ranges gets its networks offered at all.
     """
     staged = zip_path + ".new"
     try:
@@ -299,11 +315,12 @@ def stage_zip(response, zip_path):
     elif not zipfile.is_zipfile(staged):
         reason = f"is not a zip file ({written} bytes)"
     else:
+        staged = member_out_of(staged, inner)
         # a zip is not yet a feed: a moved url may serve a documentation
         # archive, or an export gone empty, and swapped in that would be
         # the only record of the feed gone for good
         missing = _missing_tables(staged)
-        if missing:
+        if missing and not (envelope_ok and inner_zips_in_file(staged)):
             reason = "is a zip but no GTFS feed, it has no " + ", ".join(missing)
     if reason:
         _LOGGER.error("The download from %s %s, keeping the current data",

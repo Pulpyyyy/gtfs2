@@ -117,6 +117,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         self._extract_task = None
         self._extract_next_step: str | None = None
         self._route_label: str = ""
+        # the networks an envelope of zips offers, while one is being picked
+        self._inner_zips: list = []
         # the directions as the direction screen offered them, and the one
         # picked, recalled on the screens that follow
         self._direction_labels: dict = {}

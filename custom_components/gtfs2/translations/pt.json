@@ -80,6 +80,16 @@
           "file": "Os ficheiros `.zip` encontrados na sua pasta `gtfs2`."
         }
       },
+      "inner_zip": {
+        "title": "Que rede",
+        "description": "Esta fonte contém {zips} redes, um ZIP cada. Apenas a que escolher é descarregada.\n\n[documentation]({docu_select_source})",
+        "data": {
+          "inner_zip": "Rede"
+        },
+        "data_description": {
+          "inner_zip": "O ZIP dentro da fonte, com o nome que o editor lhe deu."
+        }
+      },
       "agency": {
         "data": {
           "agency": "Operador"
@@ -255,6 +265,7 @@
       "generic_failure": "Falha geral, verifique os logs",
       "no_data_file": "Não foi possível descarregar o ficheiro. Verifique o endereço e se a fonte está acessível a partir do Home Assistant. Alguns fornecedores recusam descargas automatizadas.",
       "no_zip_file": "Problema de recolha de dados: Ficheiro ZIP não está na pasta correta",
+      "zip_holds_zips": "O ZIP contém outros ficheiros ZIP e nenhum pôde ser proposto: descompacte-o e indique o ZIP interno da rede pretendida",
       "name_taken": "Já existe um sensor com este nome. Escolha outro.",
       "not_created": "Não foi possível criar o sensor. Consulte o registo e tente outro nome.",
       "reload_failed": "Não foi possível repor essa linha. A fonte não foi alterada; escolha outra linha ou tente novamente."
@@ -267,6 +278,7 @@
       "no_data_file": "Problema de recolha de dados: URL incorreta ou nome do ficheiro não está na pasta correta",
       "no_stops": "Problema de recolha de dados: provavelmente sem paragens para a rota selecionada",
       "no_zip_file": "Problema de recolha de dados: Ficheiro ZIP não existe na pasta correta, note que é sensível a maiúsculas",
+      "zip_holds_zips": "O ZIP contém outros ficheiros ZIP e nenhum pôde ser proposto: descompacte-o e indique o ZIP interno da rede pretendida",
       "stop_limit_reached": "Foi detectado um grande número de paragens neste raio, \nrisco de impacto no desempenho do sistema. \n Pode alterar o limite por sua conta e risco antes de alterar o raio",
       "extracting": "(Ainda) a extrair dados, isso vai demorar [documentação]({docu_extracting})",
       "no_zip_in_folder": "Nenhum ficheiro .zip encontrado em {folder}. Coloque aí o seu ficheiro GTFS e recomece.",

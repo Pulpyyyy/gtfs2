@@ -32,6 +32,7 @@ from .const import (
     CONF_FILE,
     CONF_URL,
     CONF_EXTRACT_FROM,
+    CONF_INNER_ZIP,
     CONF_REAL_TIME,
     CONF_TRIP_UPDATE_URL,
     CONF_VEHICLE_POSITION_URL,
@@ -234,6 +235,9 @@ def static_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
         CONF_URL: data.get(CONF_URL),
         CONF_EXTRACT_FROM: data.get(CONF_EXTRACT_FROM, "url"),
     }
+    if data.get(CONF_INNER_ZIP):
+        # the network picked inside an envelope: every refresh asks for it
+        cfg[CONF_INNER_ZIP] = data[CONF_INNER_ZIP]
     api = (static_key_fields(data) if CONF_API_KEY_LOCATION in data
            else _static_seed(journey_entries(hass, cfg[CONF_FILE])))
     if api.get(CONF_API_KEY):
@@ -242,14 +246,16 @@ def static_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
 
 
 async def async_ensure_datasource_entry(
-        hass: HomeAssistant, file, url=None, extract_from=None, api=None) -> None:
+        hass: HomeAssistant, file, url=None, extract_from=None, api=None,
+        inner_zip=None) -> None:
     """Create the datasource entry of a source, unless it already exists.
 
     Called by the bootstrap and by the flow steps that bring a new source in.
     Idempotent by construction: the file name is the unique_id, so a second
     creation aborts inside the import flow instead of duplicating. The flow
     passes the static key it collected as api; the bootstrap takes it over
-    from the journey entries.
+    from the journey entries. inner_zip is the network picked inside an
+    envelope, kept so every refresh fetches that member again.
     """
     if not file or datasource_entry(hass, file) is not None:
         return
@@ -275,6 +281,7 @@ async def async_ensure_datasource_entry(
             CONF_FILE: file,
             CONF_URL: url,
             CONF_EXTRACT_FROM: extract_from,
+            **({CONF_INNER_ZIP: inner_zip} if inner_zip else {}),
             **(static_key_fields(api) if api is not None
                else _static_seed(entries)),
             # carried through the import step into entry.options, where

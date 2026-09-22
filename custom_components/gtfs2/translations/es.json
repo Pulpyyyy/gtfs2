@@ -80,6 +80,16 @@
           "file": "Los archivos `.zip` encontrados en su carpeta `gtfs2`."
         }
       },
+      "inner_zip": {
+        "title": "Qué red",
+        "description": "Esta fuente contiene {zips} redes, un ZIP cada una. Solo se descarga la que elija.\n\n[documentation]({docu_select_source})",
+        "data": {
+          "inner_zip": "Red"
+        },
+        "data_description": {
+          "inner_zip": "El ZIP dentro de la fuente, con el nombre que le dio su editor."
+        }
+      },
       "agency": {
         "data": {
           "agency": "Operador"
@@ -255,6 +265,7 @@
       "generic_failure": "Fallo general, compruebe los registros",
       "no_data_file": "No se ha podido descargar el archivo. Compruebe la dirección y que la fuente sea accesible desde Home Assistant. Algunos proveedores rechazan las descargas automatizadas.",
       "no_zip_file": "Problema de recopilación de datos: el archivo ZIP no está en la carpeta correcta",
+      "zip_holds_zips": "El ZIP contiene otros archivos ZIP y no se pudo ofrecer ninguno: descomprímalo e indique el ZIP interno de la red que desea",
       "name_taken": "Ya hay un sensor con este nombre. Elija otro.",
       "not_created": "No se ha podido crear el sensor. Consulte el registro y pruebe con otro nombre.",
       "reload_failed": "No se ha podido restaurar esa línea. La fuente no se ha modificado; elija otra línea o vuelva a intentarlo."
@@ -267,6 +278,7 @@
       "no_data_file": "Problema de recopilación de datos: URL incorrecta o nombre de archivo que no está en la carpeta correcta",
       "no_stops": "Problema de recogida de datos: probablemente no hay paradas en la ruta seleccionada",
       "no_zip_file": "Problema con la recogida de datos: El archivo ZIP no existe en la carpeta correcta, tenga en cuenta que es sensible a las mayúsculas",
+      "zip_holds_zips": "El ZIP contiene otros archivos ZIP y no se pudo ofrecer ninguno: descomprímalo e indique el ZIP interno de la red que desea",
       "stop_limit_reached": "Se detectó una gran cantidad de paradas para este radio, \nlo que posiblemente afecte el rendimiento del sistema. \nPuedes cambiar el límite bajo tu propia responsabilidad antes de cambiar el radio",
       "extracting": "(Todavía) extrayendo datos, esto llevará tiempo [documentación]({docu_extracting})",
       "no_zip_in_folder": "No se encontró ningún archivo .zip en {folder}. Coloque allí su archivo GTFS y vuelva a empezar.",

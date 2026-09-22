@@ -80,6 +80,16 @@
           "file": "Les fichiers `.zip` trouvés dans votre dossier `gtfs2`."
         }
       },
+      "inner_zip": {
+        "title": "Quel réseau",
+        "description": "Cette source contient {zips} réseaux, un ZIP chacun. Seul celui que vous choisissez sera téléchargé.\n\n[documentation]({docu_select_source})",
+        "data": {
+          "inner_zip": "Réseau"
+        },
+        "data_description": {
+          "inner_zip": "Le ZIP contenu dans la source, tel que son éditeur l'a nommé."
+        }
+      },
       "agency": {
         "data": {
           "agency": "Exploitant"
@@ -255,6 +265,7 @@
       "generic_failure": "Échec global, vérifiez les logs d'érreur",
       "no_data_file": "Impossible de télécharger le fichier. Vérifiez l'adresse, et que la source est joignable depuis Home Assistant. Certains fournisseurs refusent les téléchargements automatisés.",
       "no_zip_file": "Problème de collecte de données : fichier ZIP ne se trouve pas dans le bon dossier",
+      "zip_holds_zips": "Le ZIP contient d'autres fichiers ZIP et aucun n'a pu être proposé : décompressez-le et indiquez le ZIP interne du réseau voulu",
       "name_taken": "Un capteur porte déjà ce nom. Choisissez-en un autre.",
       "not_created": "Le capteur n'a pas pu être créé. Consultez le journal, puis essayez un autre nom.",
       "reload_failed": "Cette ligne n'a pas pu être rétablie. La source n'a pas été modifiée ; choisissez une autre ligne, ou réessayez."
@@ -267,6 +278,7 @@
       "no_data_file": "Problème de collecte de données : URL incorrecte ou nom de fichier ne se trouve pas dans le bon dossier",
       "no_stops": "Problème de collecte de données : probablement pas des stops pour la route sélectionné",
       "no_zip_file": "Problème de collecte de données : fichier ZIP ne se trouve pas dans le bon dossier, note: sensible à la casse",
+      "zip_holds_zips": "Le ZIP contient d'autres fichiers ZIP et aucun n'a pu être proposé : décompressez-le et indiquez le ZIP interne du réseau voulu",
       "stop_limit_reached": "Un nombre élevé d'arrêts a été détecté pour ce rayon, \nrisque d'impact sur les performances du système. \n Vous pouvez modifier la limite à votre propre risque avant de modifier le rayon",
       "extracting": "Extraction des données en cours, cela prend du temps [documentation]({docu_extracting})",
       "no_zip_in_folder": "Aucun fichier .zip trouvé dans {folder}. Déposez-y votre fichier GTFS, puis recommencez.",

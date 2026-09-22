@@ -23,7 +23,8 @@ from .const import (
 CONF_API_KEY_LOCATION,
     CONF_API_KEY_NAME,
     CONF_ACCEPT_HEADER_PB,
-    DEFAULT_LOCAL_STOP_TIMERANGE, 
+    CONF_INNER_ZIP,
+    DEFAULT_LOCAL_STOP_TIMERANGE,
     DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY,
     DEFAULT_LOCAL_STOP_RADIUS,
     DEFAULT_PATH_RT,
@@ -867,7 +868,9 @@ def get_gtfs(hass, path, data, update=False):
                 r.raise_for_status()
                 # verify before removing anything: a download that turns out
                 # not to be a zip must leave the datasource as it was
-                staged = stage_zip(r, os.path.join(gtfs_dir, file))
+                # a source built from one network of an envelope takes that
+                # member out of it, never the envelope itself
+                staged = stage_zip(r, os.path.join(gtfs_dir, file), data.get(CONF_INNER_ZIP))
                 if staged is None:
                     return "no_data_file"
                 if check_source_dates and update and zip_only_future_dates(staged):
