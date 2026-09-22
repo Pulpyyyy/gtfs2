@@ -26,7 +26,7 @@ def test_towns_in_capitals_stay_destinations(tmp_path):
     with zipfile.ZipFile(zip_path, "w") as zout:
         zout.writestr("stops.txt", STOPS)
         zout.writestr("trips.txt", TRIPS)
-    ends = route_names._read_headsign_ends(str(zip_path))
+    ends = route_names.headsign_ends(str(tmp_path), "src", ["R1", "R2", "R3"])
     assert ends["R1"] == "NICE ↔ Marseille Saint-Charles"
     assert ends["R2"] == "PAU ↔ Bordeaux"
     assert "R3" not in ends
