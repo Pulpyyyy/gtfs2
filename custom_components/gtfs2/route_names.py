@@ -356,6 +356,31 @@ def _read_stop_ends(zip_path, route_ids):
 # the ends read from stop_times.txt, per zip edition: {(path, size, mtime): ends}
 _STOP_ENDS = {}
 
+# the largest stop_times.txt worth walking for a handful of look-alikes.
+# What the read buys does not grow with the feed, what it costs does: Renfe
+# levels 648 look-alikes in 0.5 s (21 MB), SNCF 58 in 1.5 s (54 MB), the
+# German national feed 24 in 95 s (2.2 GB), the British one 11 in 188 s
+# (5.1 GB). Measured on 48 feeds, the rate falls off between 76 MB and
+# 401 MB and never recovers, so the cap sits between the two.
+_STOP_TIMES_CAP = 150 * 1024 * 1024
+
+
+def _stop_times_size(zip_path):
+    """How big stop_times.txt is unpacked, read from the zip's directory.
+
+    The central directory carries every member's size, so this answers in
+    milliseconds without decompressing a byte. Returns None when the member
+    or the zip cannot be read, which leaves the decision to the caller.
+    """
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            for info in zin.infolist():
+                if info.filename.rsplit("/", 1)[-1] == "stop_times.txt":
+                    return info.file_size
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.debug("Could not size the stops of %s: %s", zip_path, ex)
+    return None
+
 
 def look_alike_ends(schedule, gtfs_dir, filename, route_ids):
     """The ends of look-alike lines (see _look_alikes), wherever they are
@@ -367,6 +392,10 @@ def look_alike_ends(schedule, gtfs_dir, filename, route_ids):
     train number and which a filtered import does not carry (54 MB, 1.2 s),
     Renfe's lines named after the product alone (22 MB, 0.4 s). IDFM, NL,
     TAO never reach it. Kept per edition of the zip, like the destinations.
+
+    Past _STOP_TIMES_CAP it is not read at all: nobody waits minutes on the
+    route screen for a dozen better names. Those lines keep the label they
+    have, which is what they wore before this read existed.
     """
     route_ids = [str(r) for r in route_ids]
     if schedule is not None:
@@ -376,6 +405,12 @@ def look_alike_ends(schedule, gtfs_dir, filename, route_ids):
     missing = {r for r in route_ids if r not in ends}
     zip_path = os.path.join(gtfs_dir, filename + ".zip") if gtfs_dir else None
     if not missing or not zip_path or not os.path.exists(zip_path):
+        return ends
+    size = _stop_times_size(zip_path)
+    if size is not None and size > _STOP_TIMES_CAP:
+        _LOGGER.debug(
+            "Not reading the %s MB of stops of %s to name %s look-alike routes",
+            size // (1024 * 1024), filename, len(missing))
         return ends
     stat = os.stat(zip_path)
     key = (zip_path, stat.st_size, stat.st_mtime_ns)
