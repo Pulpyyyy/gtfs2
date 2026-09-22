@@ -16,6 +16,7 @@ import logging
 import os
 import re
 from collections import Counter, defaultdict
+from datetime import date
 
 from sqlalchemy.sql import text
 
@@ -90,6 +91,14 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
             f"{row.get('route_type') or '99'}##{row['route_id']}##{label}##pruned")
     options = _set_apart(options, [names.get(str(row.get("agency_id") or ""), only) for row in rows])
     options = _set_apart_by_ends(options, look_alike_ends(None, gtfs_dir, filename, _look_alikes(options)))
+    # and what still reads the same is the same line published once per
+    # period of validity: the dead ones go, the rest say which period.
+    # Asked only when some line is still ambiguous, so a feed that names
+    # its lines properly never pays for the dates of any of them
+    if _look_alikes(options):
+        spans = route_spans(gtfs_dir, filename, [row["route_id"] for row in rows])
+        options = _leave_out_expired(options, spans)
+        options = _set_apart_by_span(options, spans)
     return sorted(options, key=lambda value: _natural(value.split("##")[2]))
 
 
@@ -179,11 +188,78 @@ def _look_alikes(options):
     Chartres, to Montargis and to Châteaudun). Look-alikes of different
     modes are left out, the flow already names their mode (with_modes):
     Zou's P18 train and P18 coach."""
-    def seen_as(option):
-        return (option.split("##")[2].casefold(), line_mode(option.split("##")[0]))
+    labels = Counter(_shown_as(option) for option in options)
+    return [option.split("##")[1] for option in options if labels[_shown_as(option)] > 1]
 
-    labels = Counter(seen_as(option) for option in options)
-    return [option.split("##")[1] for option in options if labels[seen_as(option)] > 1]
+
+def _shown_as(option):
+    """What tells two options apart before the flow adds the mode."""
+    return (option.split("##")[2].casefold(), line_mode(option.split("##")[0]))
+
+
+def _leave_out_expired(options, spans, today=None):
+    """Drop a line whose days are over when a live line wears its label.
+
+    Publishers who cut their feed by period of validity list one line per
+    period: the Dutch national feed had 46 lines twice, once for the day
+    the old timetable ended and once for the months that follow, reading
+    exactly the same. Picking the wrong one gives a sensor that will never
+    have a departure.
+
+    Only the ones a live twin stands for are dropped. A whole feed can be
+    out of date - two of the eighteen sources surveyed were, one by
+    seventeen months - and there the list has to keep showing the lines it
+    has, expired or not, rather than going empty.
+    """
+    today = today or date.today().strftime("%Y%m%d")
+
+    def over(option):
+        span = spans.get(option.split("##")[1])
+        return bool(span) and span[1] < today
+
+    alive = defaultdict(bool)
+    for option in options:
+        alive[_shown_as(option)] |= not over(option)
+    return [option for option in options
+            if not (over(option) and alive[_shown_as(option)])]
+
+
+def _read_date(stamp):
+    """A GTFS date as the user reads it, or None when it is not one."""
+    try:
+        return date(int(stamp[:4]), int(stamp[4:6]), int(stamp[6:8])).isoformat()
+    except (TypeError, ValueError):
+        return None
+
+
+def _set_apart_by_span(options, spans):
+    """Give the look-alikes that remain the days they run.
+
+    What is left after the agency, the ends and the expired ones: the same
+    line published once per period of validity, which is how Brisbane lists
+    eighteen entries for its airport line, some of them lasting a single
+    day. Their dates are the only thing that differs, so their dates are
+    what the list shows.
+
+    Only where they differ: look-alikes running the very same days are told
+    apart by nothing here, and the dates would lengthen every one of them
+    for no reader's benefit - the rail replacement runs Leipzig publishes
+    under one name, all of them dated the same twelvemonth.
+    """
+    periods = defaultdict(set)
+    for option in options:
+        periods[_shown_as(option)].add(spans.get(option.split("##")[1]))
+    out = []
+    for option in options:
+        parts = option.split("##")
+        span = spans.get(parts[1])
+        if len(periods[_shown_as(option)]) > 1 and span:
+            first, last = _read_date(span[0]), _read_date(span[1])
+            if first and last:
+                parts[2] = f"{parts[2]} · {first}" + (f" → {last}" if last != first else "")
+                option = "##".join(parts)
+        out.append(option)
+    return out
 
 
 def _set_apart_by_ends(options, ends):
@@ -242,29 +318,75 @@ def _read_place_words(zin):
     return frozenset(words)
 
 
-def _read_headsign_ends(zip_path):
-    """{route_id: "A ↔ B"}: the destination each direction of a line shows
-    most often, read from trips.txt. A direction whose trips mostly show a
-    code, or nothing, is left out; a line with none left is not in the
-    answer."""
+def _read_service_spans(zin):
+    """{service_id: (first date, last date)} of an open feed.
+
+    Both calendars count: a feed may give a service a window in
+    calendar.txt, a list of dates in calendar_dates.txt, or a window that
+    exceptions extend. Only the dates a service runs on are read, never
+    the ones it is removed from, so a window never grows on a cancellation.
+    """
+    spans = {}
+    def seen(service, first, last):
+        if not service or not first or not last:
+            return
+        was = spans.get(service)
+        spans[service] = ((min(was[0], first), max(was[1], last)) if was
+                          else (first, last))
+    member = next((n for n in zin.namelist()
+                   if n.rsplit("/", 1)[-1] == "calendar.txt"), None)
+    if member is not None:
+        with zin.open(member) as fh:
+            for row in csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig", newline="")):
+                seen(row.get("service_id"), row.get("start_date"), row.get("end_date"))
+    member = next((n for n in zin.namelist()
+                   if n.rsplit("/", 1)[-1] == "calendar_dates.txt"), None)
+    if member is not None:
+        with zin.open(member) as fh:
+            for row in csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig", newline="")):
+                if (row.get("exception_type") or "1") == "1":
+                    seen(row.get("service_id"), row.get("date"), row.get("date"))
+    return spans
+
+
+def _read_trips(zip_path):
+    """What trips.txt says about every line, in one pass over it.
+
+    Returns ({route_id: "A ↔ B"}, {route_id: (first date, last date)}): the
+    destination each direction shows most often, and the days the line
+    runs. A direction whose trips mostly show a code, or nothing, is left
+    out of the first; a line with none left is not in it. Both answers come
+    from the same reading because that file is the expensive one: 196 MB on
+    the British national feed, and reading it twice showed."""
     shown = defaultdict(lambda: defaultdict(Counter))
+    serves = defaultdict(set)
+    place_words = frozenset()
+    spans = {}
     try:
         with zipfile.ZipFile(zip_path) as zin:
             member = next((n for n in zin.namelist()
                            if n.rsplit("/", 1)[-1] == "trips.txt"), None)
             if member is None:
-                return {}
+                return {}, {}
+            calendar = _read_service_spans(zin)
             with zin.open(member) as fh:
                 reader = csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig", newline=""))
-                if "trip_headsign" not in (reader.fieldnames or []):
-                    return {}
+                names = reader.fieldnames or []
+                headsigns = "trip_headsign" in names
                 for row in reader:
-                    shown[row.get("route_id")][row.get("direction_id") or ""][
-                        (row.get("trip_headsign") or "").strip()] += 1
-            place_words = _read_place_words(zin)
+                    if headsigns:
+                        shown[row.get("route_id")][row.get("direction_id") or ""][
+                            (row.get("trip_headsign") or "").strip()] += 1
+                    service = calendar.get(row.get("service_id"))
+                    if service:
+                        serves[str(row.get("route_id"))].add(service)
+            if headsigns:
+                place_words = _read_place_words(zin)
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not read the trips of %s: %s", zip_path, ex)
-        return {}
+        return {}, {}
+    for route_id, windows in serves.items():
+        spans[route_id] = (min(w[0] for w in windows), max(w[1] for w in windows))
     ends = {}
     for route_id, directions in shown.items():
         places = []
@@ -279,7 +401,7 @@ def _read_headsign_ends(zip_path):
         places = list(dict.fromkeys(places))[:2]
         if places:
             ends[str(route_id)] = " ↔ ".join(places)
-    return ends
+    return ends, spans
 
 
 def headsign_ends(gtfs_dir, filename, route_ids):
@@ -292,17 +414,37 @@ def headsign_ends(gtfs_dir, filename, route_ids):
     some line needs it.
     """
     route_ids = {str(r) for r in route_ids}
-    zip_path = os.path.join(gtfs_dir, filename + ".zip") if gtfs_dir else None
-    if not route_ids or not zip_path or not os.path.exists(zip_path):
+    if not route_ids:
         return {}
+    ends, _ = _from_trips(gtfs_dir, filename)
+    return {r: ends[r] for r in route_ids if r in ends}
+
+
+def _from_trips(gtfs_dir, filename):
+    """The pair _read_trips builds, read once per edition of the zip."""
+    zip_path = os.path.join(gtfs_dir, filename + ".zip") if gtfs_dir else None
+    if not zip_path or not os.path.exists(zip_path):
+        return {}, {}
     stat = os.stat(zip_path)
     key = (zip_path, stat.st_size, stat.st_mtime_ns)
     if key not in _HEADSIGN_ENDS:
         for old in [k for k in _HEADSIGN_ENDS if k[0] == zip_path]:
             del _HEADSIGN_ENDS[old]
-        _HEADSIGN_ENDS[key] = _read_headsign_ends(zip_path)
-    ends = _HEADSIGN_ENDS[key]
-    return {r: ends[r] for r in route_ids if r in ends}
+        _HEADSIGN_ENDS[key] = _read_trips(zip_path)
+    return _HEADSIGN_ENDS[key]
+
+
+def route_spans(gtfs_dir, filename, route_ids):
+    """{route_id: (first date, last date)}: the days these lines run.
+
+    Read from the same pass over trips.txt as the destinations, so a list
+    that already named its lines pays nothing more for their dates.
+    """
+    route_ids = {str(r) for r in route_ids}
+    if not route_ids:
+        return {}
+    _, spans = _from_trips(gtfs_dir, filename)
+    return {r: spans[r] for r in route_ids if r in spans}
 
 
 def _read_stop_ends(zip_path, route_ids):

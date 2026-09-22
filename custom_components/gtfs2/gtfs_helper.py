@@ -37,7 +37,9 @@ CONF_API_KEY_LOCATION,
 from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, get_gtfs_feed_entities,
                              struck_trips, on_service_day)
 from .gtfs_rt_helper import safe_file_part  # noqa: F401  a provider test reads it here
-from .route_names import get_routes_in_zip, _adds_to, _look_alikes, _set_apart, _set_apart_by_ends, look_alike_ends, route_ends, _route_label, _natural
+from .route_names import (get_routes_in_zip, _adds_to, _leave_out_expired, _look_alikes,
+                          _natural, _route_label, _set_apart, _set_apart_by_ends,
+                          _set_apart_by_span, look_alike_ends, route_ends, route_spans)
 from .freshness import stage_zip, adopt_zip
 from .gtfs_filter import zip_only_future_dates
 from .feed_window import last_service_day
@@ -1059,6 +1061,13 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     # and routes one operator publishes under one name get their two ends
     routes = _set_apart_by_ends(
         routes, look_alike_ends(schedule, gtfs_dir, data["file"], _look_alikes(routes)))
+    # and the same line published once per period of validity, which the
+    # zip dates even for a line whose timetable was never imported. Only
+    # when something still reads the same, like the ends above
+    if _look_alikes(routes):
+        spans = route_spans(gtfs_dir, data["file"], [str(x[1]) for x in routes_list])
+        routes = _leave_out_expired(routes, spans)
+        routes = _set_apart_by_span(routes, spans)
     routes.sort(key=lambda value: _natural(value.split("##")[2]))
     _LOGGER.debug(f"routes: {routes}")
     return routes
