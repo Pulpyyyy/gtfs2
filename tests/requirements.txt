@@ -2,3 +2,9 @@ pytest
 freezegun
 requests
 voluptuous
+# what the integration itself requires (manifest.json): several tests
+# build real SQLite databases, which the stub's pygtfs and sqlalchemy
+# stand-ins cannot
+pygtfs==0.1.9
+gtfs-realtime-bindings==1.0.0
+protobuf
