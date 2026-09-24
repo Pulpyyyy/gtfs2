@@ -634,18 +634,33 @@ def rode_past_an_end(schedule, result, origins, destinations):
     return [r[0] for r in rows if r[0] in origins or r[0] in destinations]
 
 
+SPREAD = 6
+
+
+def _spread(first, last, count=SPREAD):
+    """`count` positions from first to last, both included, evenly apart."""
+    if last - first + 1 <= count:
+        return list(range(first, last + 1))
+    return sorted({first + round(n * (last - first) / (count - 1)) for n in range(count)})
+
+
 def sample_origins(pattern):
-    """The first stop, one in the middle, and the one before last."""
-    picks = sorted({0, len(pattern) // 2, max(0, len(pattern) - 2)})
-    return [i for i in picks if i < len(pattern) - 1]
+    """Six stops spread along the ride, the first and the one before last
+    among them (every stop of a short ride): a fault at a stop in the
+    first or last third, a branch point say, is not left to chance."""
+    return _spread(0, max(0, len(pattern) - 2))
 
 
 def sample_pairs(pattern):
-    """First to last, first to middle, middle to last: the ends and a leg."""
+    """First to last, first to middle, middle to last: the ends and a leg;
+    then one hop between each two of six stops spread along the ride, the
+    short journeys most riders make."""
     seen = []
     first, last = 0, len(pattern) - 1
     middle = len(pattern) // 2
-    for pair in ((first, last), (first, middle), (middle, last)):
+    spread = _spread(first, last)
+    for pair in ((first, last), (first, middle), (middle, last),
+                 *zip(spread, spread[1:])):
         o, d = pair
         if o < d and pattern[o] != pattern[d] and pair not in seen:
             seen.append(pair)
