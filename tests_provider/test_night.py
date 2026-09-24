@@ -317,15 +317,31 @@ def _show(at, zone):
     return at.astimezone(zone).strftime("%m-%d %H:%M:%S") if at else "nothing"
 
 
-def _pin_process_zone(name):
-    """The route query asks SQLite for datetime('now', 'localtime'), which
-    follows the process zone, not Home Assistant's: pin it to the agency's
-    where a process can change it (time.tzset is POSIX only). Returns what
-    to put back."""
+# Two zones half a day apart from any agency: -11 and +14
+_AWAY = ("Pacific/Pago_Pago", "Pacific/Kiritimati")
+
+
+def _away_from(name, at):
+    """The zone of _AWAY farthest from this one at that instant."""
+    offset = at.astimezone(zoneinfo.ZoneInfo(name)).utcoffset()
+    return max(_AWAY, key=lambda other: abs(
+        at.astimezone(zoneinfo.ZoneInfo(other)).utcoffset() - offset))
+
+
+def _pin_process_zone(name, at):
+    """Put the process in a zone far from the agency's.
+
+    The component reads its clock in Python in the agency's zone; SQLite's
+    datetime('now', 'localtime') would follow the process zone instead,
+    which is UTC in a container and the user's own zone elsewhere. Pinned to
+    the agency's, a query that went back to SQLite's clock would pass
+    unseen; pinned half a day away, it misses the night calls. Only where a
+    process can change its zone (time.tzset is POSIX only: the CI, not
+    Windows). Returns what to put back."""
     if not hasattr(time, "tzset"):
         return None
     before = os.environ.get("TZ")
-    os.environ["TZ"] = name
+    os.environ["TZ"] = _away_from(name, at)
     time.tzset()
     return (before,)
 
@@ -460,7 +476,7 @@ def test_night(record_property, fixture, promise, shape):
         zone = zoneinfo.ZoneInfo(zone_name)
         dt_util.set_default_time_zone(dt_util.get_time_zone(zone_name))
         checks = []
-        saved = _pin_process_zone(zone_name)
+        saved = _pin_process_zone(zone_name, datetime.datetime.now(UTC))
         try:
             for call in calls:
                 day = _plain_day(days.get(call.service_id, ()), zone)
