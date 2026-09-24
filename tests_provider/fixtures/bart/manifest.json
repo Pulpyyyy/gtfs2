@@ -1,0 +1,39 @@
+{
+  "captured_at": 1790286153,
+  "kept": {
+    "agency": 1,
+    "calendar": 8,
+    "calendar_dates": 20,
+    "feed_info": 1,
+    "routes": 4,
+    "stop_times": 2606,
+    "stops": 92,
+    "trips": 141
+  },
+  "kept_night_trips": true,
+  "provider": "BART, San Francisco Bay Area",
+  "routes_kept": {
+    "BridgeA": [
+      "BB-A"
+    ],
+    "Grey-N": [
+      "19"
+    ],
+    "Yellow-N": [
+      "2"
+    ],
+    "Yellow-S": [
+      "1"
+    ]
+  },
+  "source_totals": {
+    "stop_times": 57188,
+    "trips": 1584
+  },
+  "sources": {
+    "static": "https://www.bart.gov/dev/schedules/google_transit.zip"
+  },
+  "static_only": true,
+  "trip_cap_per_pattern": 5,
+  "why": "a network in a zone behind UTC (America/Los_Angeles), whose calendar runs across the end of summer time on 2026-11-01; one direction per route_id; night trips past 24:00; parent stations"
+}
