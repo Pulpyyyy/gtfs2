@@ -64,7 +64,7 @@ def test_alerts_reach_the_listed_trips(record_property, monkeypatch):
     """An alert naming a later departure of the board is read too, hung on
     the trip it names, and ranked after what concerns the next one."""
     from google.transit import gtfs_realtime_pb2 as rt
-    sncf = fixture_db.build(str(FIXTURE))
+    sncf = fixture_db.shared(str(FIXTURE))
     feed = rt.FeedMessage()
     feed.ParseFromString((FIXTURE / "service_alerts.pb").read_bytes())
     alerts = list(feed.entity)
@@ -150,7 +150,7 @@ def test_alerts_name_their_stops(record_property, monkeypatch):
     name: IDFM closes a station under the header "Travaux" and says which
     only in the stop it addresses, so the sentence alone tells nobody where."""
     from google.transit import gtfs_realtime_pb2 as rt
-    sncf = fixture_db.build(str(FIXTURE))
+    sncf = fixture_db.shared(str(FIXTURE))
     trip = ("OCEEA436011R5235_R:CTE:FR:Line::8440e055-0d15-4156-9e77-017af816441a"
             "::87296442:87296012:5:1327:20260828")
     route = "FR:Line::8440e055-0d15-4156-9e77-017af816441a:"
@@ -207,7 +207,7 @@ def test_alerts_to_come_say_when(record_property, monkeypatch):
     with every period the feed gives, for the card to sort; the sentence,
     the cause and the effect are those of what applies now."""
     from google.transit import gtfs_realtime_pb2 as rt
-    sncf = fixture_db.build(str(FIXTURE))
+    sncf = fixture_db.shared(str(FIXTURE))
     trip = ("OCEEA436011R5235_R:CTE:FR:Line::8440e055-0d15-4156-9e77-017af816441a"
             "::87296442:87296012:5:1327:20260828")
     route = "FR:Line::8440e055-0d15-4156-9e77-017af816441a:"

@@ -68,7 +68,7 @@ BEDARIEUX = "StopPoint:OCETrain TER-87781609"
 
 @pytest.fixture(scope="module")
 def sncf():
-    return fixture_db.build(str(FIXTURE))
+    return fixture_db.shared(str(FIXTURE))
 
 
 @pytest.fixture(scope="module")

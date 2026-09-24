@@ -108,9 +108,12 @@ _SCHEDULES = {}
 def schedule_of(name, shape):
     """The fixture's db, once per shape."""
     if (name, shape) not in _SCHEDULES:
-        schedule = fixture_db.build(str(FIXTURES / name))
         if shape == "calendar":
+            # folding writes into the database: a copy of its own
+            schedule = fixture_db.build(str(FIXTURES / name))
             _fold_to_calendar(schedule)
+        else:
+            schedule = fixture_db.shared(str(FIXTURES / name))
         _SCHEDULES[(name, shape)] = schedule
     return _SCHEDULES[(name, shape)]
 

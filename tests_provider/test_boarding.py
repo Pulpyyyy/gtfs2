@@ -84,12 +84,12 @@ NIGHT_DAY = "2026-08-27"
 
 @pytest.fixture(scope="module")
 def bus():
-    return fixture_db.build(str(FIXTURES / "boarding"))
+    return fixture_db.shared(str(FIXTURES / "boarding"))
 
 
 @pytest.fixture(scope="module")
 def sncf():
-    return fixture_db.build(str(FIXTURES / "sncf"))
+    return fixture_db.shared(str(FIXTURES / "sncf"))
 
 
 @pytest.fixture(autouse=True)
