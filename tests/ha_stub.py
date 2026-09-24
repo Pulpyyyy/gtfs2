@@ -66,6 +66,10 @@ before and after of a change can be pushed the same fixture and diffed:
     old = ha_stub.load("gtfs_helper", component=other_checkout, alias="before")
     new = ha_stub.load("gtfs_helper", alias="after")
 
+The whole of both suites can be run against another checkout's component
+the same way: `pytest tests_provider/ --component path/to/custom_components/gtfs2`
+sets COMPONENT, which every load() without a component reads.
+
 Two errors say the same thing in different ways. An ImportError naming a
 homeassistant module or symbol means install() does not carry it yet. An
 AssertionError naming a stubbed symbol means the test reached one that is there
@@ -508,7 +512,7 @@ def install() -> None:
         _module("sqlalchemy.sql", text=_Unreached("sqlalchemy.sql.text"))
 
 
-def load(module_name: str, component: str | Path = COMPONENT,
+def load(module_name: str, component: str | Path | None = None,
          alias: str = "gtfs2_under_test") -> types.ModuleType:
     """Import one module of a gtfs2 component directory, on its own.
 
@@ -521,7 +525,8 @@ def load(module_name: str, component: str | Path = COMPONENT,
     answer the same fixture in one process.
     """
     install()
-    component = Path(component)
+    # read at call time: pytest --component points COMPONENT elsewhere
+    component = Path(component if component is not None else COMPONENT)
     if alias not in sys.modules:
         package = types.ModuleType(alias)
         package.__path__ = [str(component)]

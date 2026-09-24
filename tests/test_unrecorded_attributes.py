@@ -13,14 +13,13 @@ really produces.
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 
 import ha_stub
 
 const = ha_stub.load("const")
 departure_attributes = ha_stub.load("departure_attributes")
 
-SENSOR = Path(__file__).parents[1] / "custom_components" / "gtfs2" / "sensor.py"
+SENSOR = ha_stub.COMPONENT / "sensor.py"
 
 
 def _unrecorded(class_name):

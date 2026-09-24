@@ -87,11 +87,29 @@ import fixture_db  # noqa: E402
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the platforms and with them the rest of Home Assistant.
 gtfs_helper = ha_stub.load("gtfs_helper")
-stations = ha_stub.load("stations")
-get_next_departure = gtfs_helper.get_next_departure
-get_stop_list = gtfs_helper.get_stop_list
-get_destination_stop_list = gtfs_helper.get_destination_stop_list
-get_next_service_date = gtfs_helper.get_next_service_date
+# the station queries have a module of their own here; a checkout run with
+# --component that keeps them in gtfs_helper is read there, and a function
+# it lacks fails the cases that need it
+stations = (ha_stub.load("stations") if (ha_stub.COMPONENT / "stations.py").is_file()
+            else gtfs_helper)
+
+
+def _function(module, name):
+    """The checkout's function, or, for a checkout run with --component that
+    lacks it, one that fails the cases calling it and only those."""
+    found = getattr(module, name, None)
+    if found is not None:
+        return found
+
+    def missing(*_args, **_kwargs):
+        raise AssertionError(f"this checkout has no {name}")
+    return missing
+
+
+get_next_departure = _function(gtfs_helper, "get_next_departure")
+get_stop_list = _function(gtfs_helper, "get_stop_list")
+get_destination_stop_list = _function(gtfs_helper, "get_destination_stop_list")
+get_next_service_date = _function(gtfs_helper, "get_next_service_date")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 KINDS = ("stop_list", "destinations", "towards", "next_service", "pairs",
