@@ -62,9 +62,12 @@ shared, nothing else is.
 """
 from __future__ import annotations
 
+import csv
 import datetime
+import io
 import json
 import types
+import zipfile
 import zoneinfo
 from pathlib import Path
 
@@ -591,6 +594,39 @@ class Check:
 KNOWN: dict[str, str] = {}
 
 
+def _zip_table(archive, name):
+    """The rows of one table of the zip, headers and values stripped as
+    pygtfs strips them (a feed may pad its columns to a fixed width)."""
+    if name not in archive.namelist():
+        return []
+    with archive.open(name) as raw:
+        reader = csv.DictReader(io.TextIOWrapper(raw, encoding="utf-8-sig"))
+        return [{(k or "").strip(): (v or "").strip() for k, v in row.items()}
+                for row in reader]
+
+
+def _zip_lines(path):
+    """({route_id: route_type}, {route_id: [direction_id]}) read off the zip.
+
+    Collecting the cases only needs which routes are trains and which
+    directions each one runs; reading the two tables costs milliseconds
+    where building the db costs a second a fixture, and the db is then built
+    by the first case that asks for it. The directions are the ones the db
+    holds before any repair: the repair turns a trip round, it never gives a
+    direction to a line that has none.
+    """
+    with zipfile.ZipFile(path / "static.zip") as archive:
+        types_of = {r["route_id"]: int(r["route_type"] or 0)
+                    for r in _zip_table(archive, "routes.txt")}
+        directions = {}
+        for trip in _zip_table(archive, "trips.txt"):
+            value = trip.get("direction_id", "")
+            directions.setdefault(trip["route_id"], set()).add(
+                int(value) if value != "" else None)
+    return types_of, {route: sorted(d for d in found if d is not None) or [None]
+                      for route, found in directions.items()}
+
+
 def _cases():
     cases = []
     if not FIXTURES.is_dir():
@@ -602,14 +638,14 @@ def _cases():
         routes_kept = manifest.get("routes_kept")
         if not manifest.get("static_only") or not routes_kept:
             continue
-        fx = fixture_of(path.name)
+        route_types, directions = _zip_lines(path)
         for label, ids in sorted(routes_kept.items()):
             ids = [ids] if isinstance(ids, str) else ids
             for route_id in ids:
-                train = fx.route_types.get(route_id) == 2
+                train = route_types.get(route_id) == 2
                 kinds = TRAIN_KINDS if train else KINDS
                 shown = label if len(ids) == 1 else f"{label}({route_id[-8:]})"
-                for direction in directions_of(fx.schedule, route_id):
+                for direction in directions.get(route_id, [None]):
                     for kind in kinds:
                         case_id = f"{path.name}-{shown}-d{direction}-{kind}"
                         marks = ([pytest.mark.xfail(strict=True, reason=KNOWN[case_id])]
