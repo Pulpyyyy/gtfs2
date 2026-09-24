@@ -154,9 +154,12 @@ def main():
         if row["stop_id"] in kept_stops or row.get("parent_station") in kept_stops:
             tables["stops.txt"].append(row)
 
-    agencies = {row.get("agency_id") for row in route_rows}
+    # agency_id may be left out of routes.txt, agency.txt or both when the
+    # feed has one agency (BART, Clemson, TransLink): a route naming none
+    # belongs to the only one there is, kept whole
+    agencies = {row.get("agency_id") or None for row in route_rows}
     tables["agency.txt"] = [row for row in rows_of(archive, "agency.txt")
-                            if row["agency_id"] in agencies]
+                            if None in agencies or row.get("agency_id") in agencies]
     names = set(archive.namelist())
     for name in ("calendar.txt", "calendar_dates.txt"):
         if name in names:
