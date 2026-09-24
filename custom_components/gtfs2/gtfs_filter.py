@@ -252,6 +252,37 @@ def _skip_header(rows):
     return rows
 
 
+def feed_info_unreadable(zip_path):
+    """Whether pygtfs would stop the whole import on feed_info.txt.
+
+    feed_start_date and feed_end_date are optional in GTFS, and a feed may
+    publish the columns with nothing in them (Krakow's trams). pygtfs reads
+    every value of those columns as a YYYYMMDD date, and one that is not
+    ends the import on strptime(None): the feed never loads. The import
+    then leaves feed_info.txt out, as the clean_feed_info option always
+    could. No query reads that table from the database; the Timetable
+    sensor reads it from the zip, which the whole-feed import strips in
+    place, so there it loses the publisher and the version, as the option
+    always made it.
+    """
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            member = _member(zin, "feed_info.txt")
+            if member is None:
+                return False
+            for row in table_reader(zin.open(member)):
+                for column in ("feed_start_date", "feed_end_date"):
+                    if column not in row:
+                        continue
+                    try:
+                        time.strptime((row[column] or "").strip(), "%Y%m%d")
+                    except ValueError:
+                        return True
+    except (OSError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
+        _LOGGER.warning("Could not read the feed_info of %s: %s", zip_path, ex)
+    return False
+
+
 def zip_only_future_dates(zip_path):
     """Whether every service date of the feed lies in the future.
 

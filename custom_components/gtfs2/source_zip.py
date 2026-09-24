@@ -27,7 +27,8 @@ from .key_mask import fetch
 from .rt_source import with_query_key
 from .zip_peek import (extract_member, inner_zips, inner_zips_in_file,
                        member_out_of, open_member)
-from .gtfs_filter import filter_gtfs_zip, read_zip_routes, zip_only_future_dates
+from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
+                          zip_only_future_dates)
 from .gtfs_helper import check_extracting, get_gtfs, remove_from_zip
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,6 +54,10 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
     Returns True when the scratch file holds a feed.
     """
     feed_file = os.path.join(gtfs_dir, file)
+    if not clean_feed_info and feed_info_unreadable(feed_file):
+        _LOGGER.warning("The feed_info.txt of %s has dates pygtfs cannot read, "
+                        "importing without it", file)
+        clean_feed_info = True
     filtered = None
     if only_routes:
         candidate = scratch_file + ".zip"

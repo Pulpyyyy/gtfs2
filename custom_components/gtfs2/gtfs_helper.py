@@ -41,7 +41,7 @@ from .route_names import (get_routes_in_zip, _adds_to, _leave_out_expired, _look
                           _natural, _route_label, _set_apart, _set_apart_by_ends,
                           _set_apart_by_span, look_alike_ends, route_ends, route_spans)
 from .freshness import stage_zip, adopt_zip
-from .gtfs_filter import zip_only_future_dates
+from .gtfs_filter import feed_info_unreadable, zip_only_future_dates
 from .feed_window import last_service_day
 from .key_mask import fetch
 from .rt_source import with_query_key
@@ -911,7 +911,8 @@ def get_gtfs(hass, path, data, update=False):
         return "no_zip_file" if data["extract_from"] == "zip" else "no_data_file"
 
     if not gtfs.feeds: 
-        if data.get("clean_feed_info", False):
+        # a feed_info.txt pygtfs cannot read stops the whole import
+        if data.get("clean_feed_info", False) or feed_info_unreadable(os.path.join(gtfs_dir, file)):
             _fork_ctx = multiprocessing.get_context("fork")
             extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,['shapes.txt','transfers.txt','fare_attributes.txt','levels.txt','pathways.txt','translations.txt','feed_info.txt']))
         else: 
