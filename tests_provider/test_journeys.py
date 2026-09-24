@@ -633,6 +633,43 @@ def rides_in_order(piece, size, ends=(), ways=(True, False)):
     return False
 
 
+def variants_disagree(met, others):
+    """The steps of a ride against the list's order, [(a, b)] as list
+    positions, when another ride runs each of them the list's way; None as
+    soon as one step no other ride makes that way.
+
+    Two variants of one way may run the same two places in opposite orders
+    (TEC B0026 round Noduwez both ways, a gtfs-nl variant through Het Kant
+    before De Hoeve where the others pass it after Station Houten): no list
+    can follow both, so the one the component picks is the answer, and the
+    pair is recorded rather than failed."""
+    excused = []
+    for a, b in zip(met, met[1:]):
+        if b >= a:
+            continue
+        if not any(a in other and b in other and other.index(b) < other.index(a)
+                   for other in others):
+            return None
+        excused.append((a, b))
+    return excused
+
+
+def stretches_from(pattern, home, entry_of, ids, at):
+    """Each stretch of a ride after one of its calls at the place `home`,
+    as positions in the list `at` indexes, first meetings only."""
+    stretches, ride, started = [], [], False
+    for stop in list(pattern) + [None]:
+        if stop is None or entry_of.get(stop) == home:
+            if started:
+                stretches.append(list(dict.fromkeys(
+                    at[ids[entry_of[s]]] for s in ride
+                    if s in entry_of and ids[entry_of[s]] in at)))
+            ride, started = [], True
+        else:
+            ride.append(stop)
+    return stretches
+
+
 def line_patterns(schedule, route_id):
     """{stop pattern: [trip_id]} for the whole line, both ways round."""
     patterns = {}
@@ -1026,23 +1063,37 @@ def check_route(check, fx, route_id, direction, kind):
                                and entry_of.get(other[-1]) == entry_of[origin]
                                for other in everything)
                 along = True
+                disagree = []
+                # the other rides' stretches from this place, the list's
+                # way of a pair a variant of the ride runs the other way
+                others = [stretch for other in everything if other != pattern
+                          for stretch in stretches_from(other, entry_of[origin],
+                                                        entry_of, ids, at)]
                 ride = []
                 for stop in pattern[o + 1:] + (None,):
                     if stop is None or entry_of.get(stop) == entry_of[origin]:
                         known = [at[ids[entry_of[s]]] for s in ride
                                  if s in entry_of and ids[entry_of[s]] in at]
                         ends = (known[-1],) if known else ()
-                        along = along and all(
-                            rides_in_order(piece, len(offered) * 4, ends, ways=(True,))
-                            for piece in pieces_of(known))
+                        for piece in pieces_of(known):
+                            if rides_in_order(piece, len(offered) * 4, ends, ways=(True,)):
+                                continue
+                            excused = variants_disagree(piece, others)
+                            if excused:
+                                disagree += [[offered[a], offered[b]] for a, b in excused]
+                            else:
+                                along = False
                         ride = []
                     else:
                         ride.append(stop)
                 check.note(along or terminus,
                            f"the destinations {who} contradict the riding order "
                            f"{pattern[0]} .. {pattern[-1]}"
-                           + (" (a loop's terminus: nearest first applies)" if terminus else ""),
-                           origin=origin, loop_terminus=terminus, along=along)
+                           + (" (a loop's terminus: nearest first applies)" if terminus else "")
+                           + (f" (variants disagree on {listed([' before '.join(p) for p in disagree])})"
+                              if disagree and along else ""),
+                           origin=origin, loop_terminus=terminus, along=along,
+                           variants_disagree=disagree)
         return
 
     if kind == "next_service":
@@ -1525,11 +1576,22 @@ def check_towards(check, fx, route_id, everything, ids, entry_of, home):
         # meets places already listed
         at = {s: i for i, s in enumerate(offered)}
         along = True
-        for ride, _pattern in mine:
-            met = list(dict.fromkeys(at[ids[n]] for n in ride if ids[n] in at))
-            along = along and rides_in_order(met, len(offered) * 4, met[-1:], ways=(True,))
+        disagree = []
+        mets = [list(dict.fromkeys(at[ids[n]] for n in ride if ids[n] in at))
+                for ride, _pattern in mine]
+        for i, met in enumerate(mets):
+            if rides_in_order(met, len(offered) * 4, met[-1:], ways=(True,)):
+                continue
+            excused = variants_disagree(met, mets[:i] + mets[i + 1:])
+            if excused:
+                disagree += [[offered[a], offered[b]] for a, b in excused]
+            else:
+                along = False
         check.note(along, f"towards {label} {who}: the destinations "
-                          f"follow every ride that way", origin=origin, way=way)
+                          f"follow every ride that way"
+                          + (f" (variants disagree on {listed([' before '.join(p) for p in disagree])})"
+                             if disagree and along else ""),
+                   origin=origin, way=way, variants_disagree=disagree)
         if terminus and offered:
             # at a loop's terminus the answer is the rotation: the entry
             # keeps a label the trips riding that way carry
@@ -1885,3 +1947,13 @@ def check_train_destinations(check, fx, route_id, direction):
                        f"from {origin} (line {line}): {len(offered)} offered, "
                        f"{len(expected)} ridden to; missing {missing}, extra {extra}, "
                        f"modes differ at {modes}")
+
+
+def test_variants_disagree_excuses_only_a_pair_another_ride_runs_the_lists_way():
+    # list order 0 1 2 3; this ride meets 2 before 1
+    assert variants_disagree([0, 2, 1, 3], [[0, 1, 2, 3]]) == [(2, 1)]
+    # no other ride runs 1 before 2: the step is the list's fault
+    assert variants_disagree([0, 2, 1, 3], [[0, 2, 3]]) is None
+    assert variants_disagree([0, 2, 1, 3], []) is None
+    # a ride in the list's order has nothing to excuse
+    assert variants_disagree([0, 1, 2, 3], []) == []
