@@ -224,10 +224,17 @@ def main():
             kept_stops.add(row[i_stop])
     tables["stop_times.txt"] = st_rows
 
-    tables["stops.txt"] = []
-    for row in rows_of(archive, "stops.txt"):
-        if row["stop_id"] in kept_stops or row.get("parent_station") in kept_stops:
-            tables["stops.txt"].append(row)
+    # the stops the kept trips call at, the station each belongs to (the
+    # place the flow and the queries group platforms by: left out, a
+    # fixture's stops point at stations it lacks), and the other records a
+    # called station holds
+    stops = list(rows_of(archive, "stops.txt"))
+    parents = {row.get("parent_station") for row in stops
+               if row["stop_id"] in kept_stops and row.get("parent_station")}
+    tables["stops.txt"] = [
+        row for row in stops
+        if row["stop_id"] in kept_stops or row["stop_id"] in parents
+        or row.get("parent_station") in kept_stops]
 
     # agency_id may be left out of routes.txt, agency.txt or both when the
     # feed has one agency (BART, Clemson, TransLink): a route naming none
