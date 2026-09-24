@@ -19,11 +19,15 @@ origin and destination.
     python tests/fixtures/capture_rt.py --out tests/fixtures/other \\
         --static URL --trip-updates URL --alerts URL --provider "Name"
     python tests/fixtures/capture_rt.py --out tests/fixtures/sncf --source-dir raw
+    python tests/fixtures/capture_rt.py --out tests/fixtures/tao \\
+        --static-zip tao_orleans.zip --static URL --provider "TAO Orleans"
 
 SNCF is the default, the feed tests/fixtures/sncf came from. --source-dir
 reuses static.zip, trip_updates.pb and service_alerts.pb already downloaded
 there (the names a fixture uses itself, so a fixture directory can be cut
 down again), which is also the way in for a feed that wants an api key.
+--static-zip freezes a timetable with no realtime at all: every route, one
+trip per route and direction, for what the static feed decides alone.
 """
 from __future__ import annotations
 
@@ -35,6 +39,7 @@ import io
 import json
 import os
 import sys
+import time
 import zipfile
 
 from google.transit import gtfs_realtime_pb2 as pb
@@ -156,6 +161,72 @@ def pick_trip_updates(updates, trips, stations):
     return kept, taken, delayed_trip
 
 
+def capture_static_only(args):
+    """A fixture of the timetable alone, one trip per route and direction.
+
+    Some of what the flow does is decided by the static feed on its own: which
+    lines it offers and how it names them. A feed can be worth freezing for
+    that even when its realtime is not the subject, and a whole network is far
+    too large to keep, so one trip per direction is enough to name a line by
+    its two ends. Every route is kept, even one no trip runs, since the line
+    list is the subject.
+    """
+    with open(args.static_zip, "rb") as handle:
+        static = read_static(handle.read())
+    print(f"  source: {len(static['routes.txt']):,} routes, "
+          f"{len(static['trips.txt']):,} trips, {len(static['stops.txt']):,} stops")
+    stops = {r["stop_id"]: r for r in static["stops.txt"]}
+
+    first = {}  # (route_id, direction_id) -> the first trip the feed lists
+    for row in static["trips.txt"]:
+        first.setdefault((row["route_id"], row.get("direction_id", "")), row)
+    trips_rows = list(first.values())
+    kept = {r["trip_id"] for r in trips_rows}
+    stop_times = [r for r in static["stop_times.txt"] if r["trip_id"] in kept]
+    print(f"  kept {len(kept)} trips, {len(stop_times)} stop_times")
+
+    keep_stops = {r["stop_id"] for r in stop_times}
+    for stop_id in list(keep_stops):
+        parent = stops.get(stop_id, {}).get("parent_station")
+        if parent:
+            keep_stops.add(parent)
+    services = {r["service_id"] for r in trips_rows}
+
+    tables = {
+        "agency.txt": static.get("agency.txt", []),
+        "feed_info.txt": static.get("feed_info.txt", []),
+        "routes.txt": static["routes.txt"],
+        "trips.txt": trips_rows,
+        "stop_times.txt": stop_times,
+        "stops.txt": [stops[s] for s in sorted(keep_stops) if s in stops],
+        "calendar.txt": [r for r in static.get("calendar.txt", [])
+                         if r["service_id"] in services],
+        "calendar_dates.txt": [r for r in static.get("calendar_dates.txt", [])
+                               if r["service_id"] in services],
+    }
+    os.makedirs(args.out, exist_ok=True)
+    write(os.path.join(args.out, "static.zip"), pack(tables))
+    manifest = {
+        "captured_at": int(time.time()),
+        "provider": args.provider,
+        "sources": {"static": args.static},
+        "static_only": True,
+        "kept": {os.path.splitext(name)[0]: len(rows)
+                 for name, rows in tables.items()},
+        "source_totals": {
+            "routes": len(static["routes.txt"]),
+            "trips": len(static["trips.txt"]),
+            "stops": len(static["stops.txt"]),
+        },
+    }
+    if args.why:
+        manifest["why"] = args.why
+    write(os.path.join(args.out, "manifest.json"),
+          json.dumps(manifest, indent=2, sort_keys=True).encode())
+    print(f"\nFixture written to {args.out}")
+    return 0
+
+
 def pack(tables):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -186,9 +257,20 @@ def main():
                         help="reuse static.zip, trip_updates.pb and "
                              "service_alerts.pb found there instead of "
                              "downloading")
+    parser.add_argument("--static-zip",
+                        help="capture the timetable of this zip alone, with no "
+                             "realtime feed to go with it; --static and "
+                             "--provider still name where it came from")
+    parser.add_argument("--why", default="",
+                        help="what the fixture is there for, recorded in the "
+                             "manifest")
     args = parser.parse_args()
     sources = {"static": args.static, "trip_updates": args.trip_updates,
                "service_alerts": args.alerts}
+
+    if args.static_zip:
+        print("Reading the timetable")
+        return capture_static_only(args)
 
     print("Reading the feeds")
     raw = fetch(sources, args.source_dir)
@@ -420,6 +502,8 @@ def main():
         "informed_entity_cap": MAX_INFORMED_ENTITY,
         "informed_entity_dropped": dropped,
     }
+    if args.why:
+        manifest["why"] = args.why
     write(os.path.join(args.out, "manifest.json"),
           json.dumps(manifest, indent=2, sort_keys=True).encode())
     write(os.path.join(args.out, "scenarios.json"),
