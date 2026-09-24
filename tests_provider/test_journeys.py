@@ -123,12 +123,19 @@ class Fixture:
             # drop_off_type, 1 being none; a trip calling twice at a stop
             # counts the call that lets the rider through
             self.ways_on, self.ways_off = set(), set()
-            for trip_id, stop_id, pickup, drop_off in conn.execute(text(
-                    "SELECT trip_id, stop_id, pickup_type, drop_off_type FROM stop_times")):
+            # and the calls the feed times: GTFS lets a call off the
+            # timepoints go untimed (Clemson leaves three in four so), and
+            # a departure is only ever listed between timed calls
+            self.timed = set()
+            for trip_id, stop_id, pickup, drop_off, arrival, departure in conn.execute(text(
+                    "SELECT trip_id, stop_id, pickup_type, drop_off_type, "
+                    "arrival_time, departure_time FROM stop_times")):
                 if _flag(pickup) != 1:
                     self.ways_on.add((trip_id, stop_id))
                 if _flag(drop_off) != 1:
                     self.ways_off.add((trip_id, stop_id))
+                if arrival is not None and departure is not None:
+                    self.timed.add((trip_id, stop_id))
         # get_next_departure compares a departure against "now" in the
         # agency's zone (it overrides the Home Assistant one as soon as the
         # row carries it), so the clock is pinned in that zone: 00:05 UTC is
@@ -160,6 +167,23 @@ class Fixture:
     def alights(self, trip_ids, stop_id):
         """Some of these trips sets riders down at the stop."""
         return any((t, stop_id) in self.ways_off for t in trip_ids)
+
+    def times(self, trip_ids, stop_id):
+        """Some of these trips gives the stop a time."""
+        return any((t, stop_id) in self.timed for t in trip_ids)
+
+    def rider_ends(self, pattern, trip_ids):
+        """(o, d): the first call a rider can get on at and the last one
+        they can get off at, both timed, or None. A turnback or a relief
+        point closing the pattern (Brisbane's G:link: no way on, no way off)
+        is no journey anyone asks."""
+        ons = [i for i, s in enumerate(pattern)
+               if self.boards(trip_ids, s) and self.times(trip_ids, s)]
+        offs = [i for i, s in enumerate(pattern)
+                if self.alights(trip_ids, s) and self.times(trip_ids, s)]
+        if not ons or not offs or ons[0] >= offs[-1]:
+            return None
+        return ons[0], offs[-1]
 
     def siblings_of(self, stop_id):
         """Every record of the place this one belongs to.
@@ -428,8 +452,9 @@ def late_departures(schedule, route_id, direction, origins, destinations,
         ).bindparams(bindparam("origins", expanding=True),
                      bindparam("destinations", expanding=True)),
             params).fetchall()
+    # an untimed call (off the timepoints) leaves at no time anyone lists
     return sorted((str(dep) for service, dep in rows
-                   if service in running
+                   if service in running and dep is not None
                    and gtfs_seconds(dep) >= gtfs_seconds(since)),
                   key=gtfs_seconds)
 
@@ -879,9 +904,16 @@ def check_route(check, fx, route_id, direction, kind):
         return
 
     if kind == "next_service":
-        check_next_service(check, fx, route_type, [
-            (pattern[o], pattern[d]) for pattern in grouped
-            for o, d in sample_pairs(pattern)[:1]])
+        pairs = []
+        for pattern, trip_ids in grouped.items():
+            ends = fx.rider_ends(pattern, trip_ids)
+            if ends is None:
+                check.note(True, f"the ride {pattern[0]} .. {pattern[-1]} has no timed "
+                           f"call to get on at before one to get off at",
+                           no_rider_ends=True)
+                continue
+            pairs.append((pattern[ends[0]], pattern[ends[1]]))
+        check_next_service(check, fx, route_type, pairs)
         return
 
     if kind == "towards":
@@ -903,11 +935,22 @@ def check_route(check, fx, route_id, direction, kind):
                 continue
             day = service_date(schedule, trip_ids)
             if day is None:
-                check.note(False, "no service date for a pattern")
+                # the feed runs these trips on no day (Kraków's all-zero
+                # services, MBTA's "canonical" templates): nothing to ask
+                check.note(True, f"the feed runs no trip of the ride "
+                           f"{pattern[0]} .. {pattern[-1]} on any day",
+                           never_runs=True, trips=len(trip_ids))
                 continue
             if kind == "midnight":
+                ends = fx.rider_ends(pattern, trip_ids)
+                if ends is None:
+                    check.note(True, f"the ride {pattern[0]} .. {pattern[-1]} has no timed "
+                               f"call to get on at before one to get off at",
+                               no_rider_ends=True)
+                    continue
                 check_midnight(check, fx, clock, hass, route_id, route_type,
-                               direction, None, pattern, entries, entry_of)
+                               direction, None, pattern[ends[0]:ends[1] + 1],
+                               entries, entry_of)
                 continue
             clock.move_to(fx.instant_on(day))
             for o, d in sample_pairs(pattern):
@@ -936,6 +979,20 @@ def check_route(check, fx, route_id, direction, kind):
                                f"{route_id}: no way {'on' if not fx.boards(trip_ids, pattern[o]) else 'off'}"
                                f" on this ride, got {got['trip'] if got else 'nothing'}",
                                asked=asked, got=got, forbidden=True)
+                    continue
+                if kind == "pairs" and not (fx.times(trip_ids, pattern[o])
+                                            and fx.times(trip_ids, pattern[d])):
+                    # the feed leaves one end of this ride untimed: its trips
+                    # are never the answer, another ride timed at both
+                    # places may be
+                    result = get_next_departure(hass, data)
+                    asked = asked_of(pattern, o, d, route_id, kept)
+                    got = got_of(result)
+                    check.note(not result or result.get("trip_id") not in trip_ids,
+                               f"asked {pattern[o]} -> {pattern[d]} on {route_id}: "
+                               f"no time at the {'start' if not fx.times(trip_ids, pattern[o]) else 'end'}"
+                               f" of this ride, got {got['trip'] if got else 'nothing'}",
+                               asked=asked, got=got, untimed=True)
                     continue
                 if kind == "pairs":
                     result = get_next_departure(hass, data)
@@ -1025,7 +1082,10 @@ def shape_of(result, short_name):
     above zero. Returned as fields so results.json keeps them."""
     departures = result.get("next_departures") or []
     lengths = {key: len(result.get(key) or []) for key in PARALLEL}
-    lines = sorted({item.rsplit(" (", 1)[-1].rstrip(")").split("/", 1)[0]
+    # an item reads "<instant> (<short>/<long>)"; the long name may hold
+    # brackets of its own (Carris' "Lisboa (Oriente) - Vale da Amoreira"),
+    # the instant never does, so the line starts at the first one
+    lines = sorted({item.split(" (", 1)[-1][:-1].split("/", 1)[0]
                     for item in result.get("next_departures_lines") or []})
     durations = result.get("next_departures_durations") or []
     shape = {
@@ -1187,6 +1247,11 @@ def check_towards(check, fx, route_id, everything, ids, entry_of, home):
     origin = ids[home]
     who = f"from {named(fx, origin)}"
     line = [[entry_of[s] for s in pattern if s in entry_of] for pattern in everything]
+    # the places a ride sets riders down at: a turnback or a relief point
+    # on the way (Brisbane's G:link) is ridden past, never reached
+    set_down = {pattern: {entry_of[s] for s in pattern
+                          if s in entry_of and fx.alights(trip_ids, s)}
+                for pattern, trip_ids in everything.items()}
     loop_termini = {k[0] for k in line if k and k[0] == k[-1]}
     terminus = home in loop_termini
     rides = {}
@@ -1244,7 +1309,8 @@ def check_towards(check, fx, route_id, everything, ids, entry_of, home):
         offered = [e.split(": ", 1)[0] for e in
                    get_destination_stop_list(schedule, route_id, None, origin, way)]
         sides[way] = offered
-        reached = list(dict.fromkeys(ids[n] for ride, _pattern in mine for n in ride))
+        reached = list(dict.fromkeys(ids[n] for ride, pattern in mine for n in ride
+                                     if n in set_down[pattern]))
         missing = [s for s in reached if s not in offered]
         stray = [s for s in offered if s not in reached]
         check.note(bool(mine) and not missing and not stray,
@@ -1384,7 +1450,11 @@ def check_train_route(check, fx, route_id, direction, kind):
         for pattern, trip_ids in sorted(grouped.items()):
             day = service_date(schedule, trip_ids)
             if day is None:
-                check.note(False, "no service date for a pattern")
+                # the feed runs these trips on no day (Kraków's all-zero
+                # services, MBTA's "canonical" templates): nothing to ask
+                check.note(True, f"the feed runs no trip of the ride "
+                           f"{pattern[0]} .. {pattern[-1]} on any day",
+                           never_runs=True, trips=len(trip_ids))
                 continue
             clock.move_to(fx.instant_on(day))
             for o, d in sample_pairs(pattern):
@@ -1489,7 +1559,11 @@ def check_train_stations(check, fx, route_id, direction):
         for pattern, trip_ids in sorted(grouped.items()):
             day = service_date(schedule, trip_ids)
             if day is None:
-                check.note(False, "no service date for a pattern")
+                # the feed runs these trips on no day (Kraków's all-zero
+                # services, MBTA's "canonical" templates): nothing to ask
+                check.note(True, f"the feed runs no trip of the ride "
+                           f"{pattern[0]} .. {pattern[-1]} on any day",
+                           never_runs=True, trips=len(trip_ids))
                 continue
             clock.move_to(fx.instant_on(day))
             name_o = fx.stop_names[pattern[0]]
