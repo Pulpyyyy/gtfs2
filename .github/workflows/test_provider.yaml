@@ -19,3 +19,13 @@ jobs:
 
       - name: Run tests
         run: pytest tests_provider/
+
+      # results.txt / results.json of the run, to read a failure without
+      # running it again
+      - name: Keep the results files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests_provider-results
+          path: test-results/
+          if-no-files-found: ignore
