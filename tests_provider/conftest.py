@@ -41,10 +41,9 @@ _reports = []
 
 
 def pytest_runtest_logreport(report):
-    if not any(f"{name}::" in report.nodeid
-               for name in ("test_journeys.py", "test_night.py", "test_boarding.py",
-                            "test_realtime.py", "test_feed_window.py",
-                            "test_alerts.py")):
+    # every test of this tree, a new file included without naming it here;
+    # a tests/ test run in the same session stays out
+    if not report.nodeid.replace("\\", "/").startswith("tests_provider/"):
         return
     if report.when == "call" or (report.when == "setup" and report.failed):
         _reports.append(report)
