@@ -4,7 +4,8 @@ The cases are the feeds' own: IDFM repeats the number as the long name on
 1837 of its 2024 lines and lists the metro 1 of the RATP beside the bus 1 of
 Terres d'Envol; the Netherlands feed has a tram 4 at GVB and at HTM; SNCF
 leaves the long name at " -" and files fifty lines as "INCONNU" under one
-agency.
+agency. Brisbane publishes its airport line once per period of validity,
+eighteen route_ids reading the same.
 """
 from __future__ import annotations
 
@@ -144,3 +145,84 @@ def test_route_types_basic_and_extended():
         "trolleybus", "monorail"]
     assert [route_names.line_mode(t) for t in ("100", "200", "401", "700", "900", "1300", "99", "x")] == [
         "train", "coach", "metro", "bus", "tram", "aerial_lift", None, None]
+
+
+def test_a_line_whose_days_are_over_gives_way_to_its_live_twin():
+    # the Dutch feed: one line for the day the old timetable ended, one after
+    options = ["3##N1##22", "3##N2##22", "3##X##40", "0##T1##22"]
+    spans = {"N1": ("20260101", "20260301"), "N2": ("20260302", "20261231"),
+             "X": ("20250101", "20250601"), "T1": ("20250101", "20250601")}
+    got = route_names._leave_out_expired(options, spans, today="20260915")
+    # a dead line with no twin stays, and the tram 22 is not the bus 22
+    assert got == ["3##N2##22", "3##X##40", "0##T1##22"]
+
+
+def test_a_feed_entirely_out_of_date_keeps_its_lines():
+    options = ["3##A##7", "3##B##7"]
+    spans = {"A": ("20240101", "20240601"), "B": ("20240602", "20241231")}
+    assert route_names._leave_out_expired(options, spans, today="20260915") == options
+    # nor does a line without dates count as over
+    assert route_names._leave_out_expired(["3##A##7", "3##C##7"], spans, today="20260915") == \
+        ["3##C##7"]
+
+
+def test_look_alikes_of_different_periods_say_their_days():
+    options = ["3##B1##29", "3##B2##29##pruned", "3##U##30"]
+    spans = {"B1": ("20260901", "20261231"), "B2": ("20270104", "20270104"),
+             "U": ("20260101", "20261231")}
+    assert route_names._set_apart_by_span(options, spans) == [
+        "3##B1##29 · 2026-09-01 → 2026-12-31",
+        # a single day is said once
+        "3##B2##29 · 2027-01-04##pruned",
+        "3##U##30"]
+
+
+def test_look_alikes_of_the_same_days_are_not_dated():
+    # Leipzig's rail replacement runs, one name and one twelvemonth
+    options = ["3##S1##SEV", "3##S2##SEV"]
+    spans = {"S1": ("20260101", "20261231"), "S2": ("20260101", "20261231")}
+    assert route_names._set_apart_by_span(options, spans) == options
+    # a date that is not one is not shown
+    assert route_names._set_apart_by_span(
+        options, {"S1": ("20260101", "20261231"), "S2": ("2026", "x")}) == \
+        ["3##S1##SEV · 2026-01-01 → 2026-12-31", "3##S2##SEV"]
+
+
+def _dated_feed(tmp_path, files):
+    import zipfile
+    with zipfile.ZipFile(tmp_path / "feed.zip", "w") as zout:
+        for name, body in files.items():
+            zout.writestr(name, body)
+    return str(tmp_path)
+
+
+def test_the_days_a_line_runs_come_from_both_calendars(tmp_path):
+    gtfs_dir = _dated_feed(tmp_path, {
+        # no trip_headsign: four of the surveyed feeds leave it out
+        "trips.txt": "route_id,service_id,trip_id\n"
+                     "W,WEEK,T1\nW,SAT,T2\nD,DAYS,T3\nN,NONE,T4\n",
+        "calendar.txt": "service_id,start_date,end_date\n"
+                        "WEEK,20260105,20260630\nSAT,20260110,20260627\n",
+        "calendar_dates.txt": "service_id,date,exception_type\n"
+                              # an added day widens the window, a removed one never
+                              "WEEK,20260702,1\nWEEK,20261225,2\n"
+                              "DAYS,20260301,1\nDAYS,20260214,1\n"})
+    assert route_names.route_spans(gtfs_dir, "feed", ["W", "D", "N", "absent"]) == {
+        "W": ("20260105", "20260702"), "D": ("20260214", "20260301")}
+
+
+def test_the_route_list_of_a_feed_cut_by_period(tmp_path):
+    # Brisbane: the code before the dash is the line, the rest its period
+    gtfs_dir = _dated_feed(tmp_path, {
+        "agency.txt": "agency_id,agency_name\nTL,TransLink\n",
+        "routes.txt": "route_id,agency_id,route_short_name,route_long_name,route_type\n"
+                      "AIR-1,TL,AIR,,2\nAIR-2,TL,AIR,,2\nAIR-3,TL,AIR,,2\nGC-1,TL,GC,,2\n",
+        "trips.txt": "route_id,service_id,trip_id\n"
+                     "AIR-1,OLD,T1\nAIR-2,NEXT,T2\nAIR-3,ONE,T3\nGC-1,OLD,T4\n",
+        "calendar.txt": "service_id,start_date,end_date\n"
+                        "OLD,20000101,20000131\nNEXT,20990101,20990630\n",
+        "calendar_dates.txt": "service_id,date,exception_type\nONE,20990701,1\n"})
+    assert route_names.get_route_options_from_zip(gtfs_dir, "feed") == [
+        "2##AIR-2##AIR · 2099-01-01 → 2099-06-30##pruned",
+        "2##AIR-3##AIR · 2099-07-01##pruned",
+        "2##GC-1##GC##pruned"]
