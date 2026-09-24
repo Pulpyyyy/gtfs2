@@ -7,6 +7,13 @@ a few specimens while the fixture stays reviewable. manifest.json records
 where the zip came from, what was kept and, with --why, what the fixture is
 there for.
 
+When the component at --component carries direction_repair, the builder
+checks that the kept trips are repaired exactly as they are in the full
+feed: the repair picks each direction's canonical chain by trip count, so a
+cap can change which chain wins, and a fixture that repairs differently from
+the live feed would test nothing. A checkout without direction_repair.py
+(upstream) skips the check.
+
     python tests/fixtures/build_fixture.py --zip tao_orleans.zip \\
         --out tests/fixtures/tao-journeys --routes 22,N,40,41,A,B \\
         --provider "TAO Orleans" \\
@@ -33,8 +40,66 @@ from collections import defaultdict
 
 csv.field_size_limit(10 ** 9)
 
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 TABLES = ("agency.txt", "routes.txt", "trips.txt", "stop_times.txt",
           "stops.txt", "calendar.txt", "calendar_dates.txt", "feed_info.txt")
+
+
+def load_repair(component):
+    """plan_until_stable, the pass the import runs, or None when the
+    component has no direction_repair to check against."""
+    if not os.path.exists(os.path.join(component, "direction_repair.py")):
+        return None
+    sys.path.insert(0, os.path.join(ROOT, "tests"))
+    import ha_stub
+    return ha_stub.load("direction_repair", component=component).plan_until_stable
+
+
+def repair_patterns(trips, trip_meta, sequences, station):
+    """{route_id: {direction: {station chain: [trip_id]}}}, built the way
+    direction_repair builds them from the imported database: trips without
+    a direction or without calls left out, platforms folded into their
+    station, two calls at one station in a row counted once, only routes
+    with two directions.
+
+    The cap itself stays by stop pattern: a platform variant is a shape of
+    its own for the stop lists, and every station chain keeps a specimen.
+    """
+    patterns = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    for trip_id in sorted(trips):
+        route_id, direction, _ = trip_meta[trip_id]
+        if direction is None or not sequences.get(trip_id):
+            continue
+        chain = []
+        for _, stop_id in sequences[trip_id]:
+            key = station.get(stop_id, stop_id)
+            if not chain or chain[-1] != key:
+                chain.append(key)
+        patterns[route_id][direction][tuple(chain)].append(trip_id)
+    return {route_id: by_dir for route_id, by_dir in patterns.items()
+            if len(by_dir) == 2}
+
+
+def check_repair(plan_until_stable, archive, trip_meta, sequences, kept_trips):
+    """Stop when a kept trip would be repaired otherwise in the fixture than
+    in the full feed."""
+    station = {row["stop_id"]: row.get("parent_station") or row["stop_id"]
+               for row in rows_of(archive, "stops.txt")}
+    full = repair_patterns(trip_meta, trip_meta, sequences, station)
+    kept = repair_patterns(kept_trips, trip_meta, sequences, station)
+    for route_id, by_dir in sorted(kept.items()):
+        # plan_until_stable moves patterns between the dicts it is given
+        full_flips = plan_until_stable(full[route_id])
+        kept_flips = plan_until_stable(by_dir)
+        differ = [t for d in by_dir.values() for trips in d.values()
+                  for t in trips if full_flips.get(t) != kept_flips.get(t)]
+        if differ:
+            raise SystemExit(
+                f"route {route_id}: {len(differ)} kept trips are repaired "
+                "otherwise than in the full feed, raise --cap")
+    print(f"direction repair: {len(kept)} two-direction routes"
+          " classify as in the full feed")
 
 
 def rows_of(archive, name):
@@ -77,6 +142,10 @@ def main():
     parser.add_argument("--why", default="")
     parser.add_argument("--keep-night", action="store_true",
                         help="also keep every trip with a call past 24:00")
+    parser.add_argument("--component",
+                        default=os.path.join(ROOT, "custom_components", "gtfs2"),
+                        help="the gtfs2 checkout whose direction_repair the "
+                             "kept trips are checked against")
     args = parser.parse_args()
 
     archive = zipfile.ZipFile(args.zip)
@@ -131,6 +200,12 @@ def main():
         kept_trips |= night_trips
     print(f"kept trips: {len(kept_trips)} of {len(trip_meta)}"
           f" ({len(night_trips & kept_trips)} with a call past 24:00)")
+    plan_until_stable = load_repair(args.component)
+    if plan_until_stable is None:
+        print(f"direction repair: no direction_repair.py in {args.component},"
+              " not checked")
+    else:
+        check_repair(plan_until_stable, archive, trip_meta, sequences, kept_trips)
 
     tables = {}
     totals = {"stop_times": st_total, "trips": len(trip_meta)}
