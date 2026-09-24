@@ -355,6 +355,26 @@ def line_entries(schedule, route_id):
     return gtfs_helper._entries_of(kept, gtfs_helper._labels_of(kept, station_names))
 
 
+def line_places(fx, route_id):
+    """(entries, ids, entry_of) of a line, as the flow offers them.
+
+    entries is every place of the line, the universe the answers are read
+    against (the origin list is these less the places with no way on), ids
+    their stop ids, and entry_of the position of the entry that stands for
+    each record: the one of its place, the nearer one when two places reach
+    it (TAO N's Liberation-Interives), whichever end the list starts from.
+    """
+    entries = line_entries(fx.schedule, route_id)
+    ids = [entry.split(": ", 1)[0] for entry in entries]
+    claims = {}
+    for n, stop_id in enumerate(ids):
+        for member in fx.siblings_of(stop_id):
+            claims.setdefault(member, []).append(n)
+    entry_of = {member: min(claimants, key=lambda n: (fx.box_distance(ids[n], member), n))
+                for member, claimants in claims.items()}
+    return entries, ids, entry_of
+
+
 _LOADED: dict[str, Fixture] = {}
 
 
@@ -789,23 +809,11 @@ def check_route(check, fx, route_id, direction, kind):
     schedule = fx.schedule
     everything = line_patterns(schedule, route_id)
     grouped = patterns_of(schedule, route_id, direction)
-    # every place of the line, the universe the entries are read against;
-    # the origin list is what the flow offers, the places with a way on
-    entries = line_entries(schedule, route_id)
+    entries, ids, entry_of = line_places(fx, route_id)
     offered = get_stop_list(schedule, route_id, None)
-    ids = [entry.split(": ", 1)[0] for entry in entries]
     # the stops some trip of the line takes riders on at
     boarded = {stop for pattern, trip_ids in everything.items()
                for stop in pattern if fx.boards(trip_ids, stop)}
-    # the entry that stands for each record: the one of its place, the
-    # nearer one when two places reach it (TAO N's Liberation-Interives),
-    # whichever end the list starts from
-    claims = {}
-    for n, stop_id in enumerate(ids):
-        for member in fx.siblings_of(stop_id):
-            claims.setdefault(member, []).append(n)
-    entry_of = {member: min(claimants, key=lambda n: (fx.box_distance(ids[n], member), n))
-                for member, claimants in claims.items()}
 
     if kind == "stop_list":
         offered_ids = [entry.split(": ", 1)[0] for entry in offered]
