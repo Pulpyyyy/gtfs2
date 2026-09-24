@@ -404,6 +404,9 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
                    monday, tuesday, wednesday, thursday, friday, saturday, sunday
             FROM calendar
             WHERE service_id IN (SELECT service_id FROM candidate_trips)
+              -- a period over before the first day read gives no day: its
+              -- first row would otherwise be that day, past its end_date
+              AND end_date >= date(:now, '-' || (SELECT n FROM back_days) || ' days')
             UNION ALL
             SELECT service_id, date(d, '+1 day'), end_date, monday, tuesday, wednesday, thursday, friday, saturday, sunday
             FROM cal_expand
