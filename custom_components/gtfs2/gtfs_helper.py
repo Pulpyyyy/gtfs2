@@ -392,6 +392,12 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
               AND origin_stop_time.stop_sequence < destination_stop_time.stop_sequence
               AND {_boards("origin_stop_time")}
               AND {_alights("destination_stop_time")}
+              -- GTFS lets a call off the timepoints go untimed (Clemson leaves
+              -- three calls in four so): no time, nothing to list
+              AND origin_stop_time.arrival_time IS NOT NULL
+              AND origin_stop_time.departure_time IS NOT NULL
+              AND destination_stop_time.arrival_time IS NOT NULL
+              AND destination_stop_time.departure_time IS NOT NULL
           ),
           -- the service days read start as far back as the latest departure
           -- of these trips asks for: a call at 48:10 leaves two days after
