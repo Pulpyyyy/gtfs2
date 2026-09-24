@@ -3,3 +3,5 @@
 # Notes d'analyse locales, non destinees au depot
 analysis/
 
+# what a test run writes: results.txt / results.json per suite
+test-results/

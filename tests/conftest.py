@@ -11,12 +11,15 @@ Matches any `test_*_case[...]` node id, not one specific function name
 test file following the same one-function-per-case-set pattern,
 without needing an update here each time one is added.
 
-Each test module's results are written next to that module's own case
-folder (e.g. test_static_cases.py's cases -> tests/case_route/results.txt,
-test_route_combined.py's cases -> tests/case_route_combined/results.txt),
+Each test module's results are written under test-results/tests/, in a
+folder named after that module's own case folder (test_route_static.py's
+cases -> test-results/tests/case_route/results.txt, test_route_combined.py's
+cases -> test-results/tests/case_route_combined/results.txt),
 derived from the test file's own name rather than a single hardcoded
 path -- so results from different test files never overwrite each
-other or land in the wrong folder.
+other or land in the wrong folder. test-results/ is ignored by git: a run
+leaves the tree clean. The results.txt kept in the case folders are
+examples of the output, not rewritten by a run.
 """
 from __future__ import annotations
 
@@ -24,6 +27,7 @@ import re
 from pathlib import Path
 
 TESTS_DIR = Path(__file__).parent
+RESULTS_DIR = TESTS_DIR.parent / "test-results" / "tests"
 
 # test_static_cases.py -> case_route, test_route_combined.py -> case_route_combined
 _TEST_FILE_TO_CASE_FOLDER = {
@@ -63,7 +67,7 @@ def pytest_sessionfinish(session, exitstatus):  # noqa: ARG001 - exitstatus requ
             # name rather than silently drop its results.
             case_folder = Path(test_file).stem
 
-        report_path = TESTS_DIR / case_folder / "results.txt"
+        report_path = RESULTS_DIR / case_folder / "results.txt"
 
         lines = [f"{test_file} case results -- {len(case_reports)} case(s)", ""]
         for nodeid, outcome, report in sorted(case_reports, key=lambda item: item[0]):

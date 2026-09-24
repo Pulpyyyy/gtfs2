@@ -7,8 +7,8 @@ does the integration read off Home Assistant". Nothing else of tests/ is
 read from here.
 
 At the end of a session the records each case handed over through
-record_property are written next to this file, the way tests/ writes its
-own results.txt:
+record_property are written to test-results/tests_provider/, beside the
+results.txt files of tests/ under test-results/tests/:
 
     results.txt   one entry per case with its outcome, and for a case that
                   did not pass the lines that broke the promise; to read
@@ -17,7 +17,9 @@ own results.txt:
                   into a tool. Written by a plain full run only, so a -k
                   or --runxfail run does not overwrite a full one
 
-Both files in the repo are the run on main, as examples of the output.
+test-results/ is ignored by git, so a run leaves the tree clean. The two
+files kept next to this one are a past run, as examples of the output;
+a run does not rewrite them.
 """
 from __future__ import annotations
 
@@ -34,6 +36,7 @@ ha_stub.install()
 import json  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
+RESULTS_DIR = HERE.parent / "test-results" / "tests_provider"
 _reports = []
 
 
@@ -97,12 +100,13 @@ def pytest_sessionfinish(session, exitstatus):  # noqa: ARG001
             lines.append("  detail:")
             lines += [f"    {text}" for text in broke]
         lines.append("")
-    (HERE / "results.txt").write_text("\n".join(lines), encoding="utf-8")
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    (RESULTS_DIR / "results.txt").write_text("\n".join(lines), encoding="utf-8")
 
     option = session.config.option
     partial = option.keyword or option.markexpr or option.runxfail
     if partial or exitstatus == 2:  # a -k, -m or --runxfail run, or interrupted
         return
-    (HERE / "results.json").write_text(
+    (RESULTS_DIR / "results.json").write_text(
         json.dumps({"cases": cases}, indent=2, sort_keys=True, ensure_ascii=False)
         + "\n", encoding="utf-8")
