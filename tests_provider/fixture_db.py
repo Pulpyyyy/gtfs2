@@ -20,18 +20,29 @@ import datetime
 import io
 import os
 import tempfile
+import types
 
+import ha_stub
 import pygtfs
 from sqlalchemy import event
 
 
 def build(fixtures):
-    """A pygtfs schedule over fixtures/static.zip, its SQLite clock frozen."""
+    """A pygtfs schedule over fixtures/static.zip, indexed as an install
+    indexes it, its SQLite clock frozen."""
     path = os.path.join(tempfile.mkdtemp(prefix="gtfs2-fixture-"), "fixture.sqlite")
     schedule = pygtfs.Schedule(path)
     # pygtfs prints a line per table it reads
     with contextlib.redirect_stdout(io.StringIO()):
         pygtfs.append_feed(schedule, os.path.join(fixtures, "static.zip"))
+    # and what an install adds before any query: the indexes the queries
+    # lean on, the agency a route may lack. Without the indexes a train
+    # departure took 0.74 s on Metro-North against 0.06 s, and the 48-feed
+    # sweep ran for hours on queries no install makes that slowly
+    directory = os.path.dirname(path)
+    hass = types.SimpleNamespace(config=types.SimpleNamespace(
+        path=lambda *parts: os.path.join(directory, *parts)))
+    ha_stub.load("gtfs_helper").check_datasource_index(hass, schedule, "", "fixture")
     _freeze_sqlite_now(schedule.engine)
     return schedule
 
