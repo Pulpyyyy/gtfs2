@@ -1256,14 +1256,18 @@ def check_towards(check, fx, route_id, everything, ids, entry_of, home):
     terminus = home in loop_termini
     rides = {}
     for known, pattern in zip(line, everything):
-        ride = None
-        for n in known + [home]:
+        # a ride starts at a call at the origin a rider gets on at; the
+        # others still end the ride before (Zou 620 only sets down at Pont
+        # des Gabres on its way into Cannes: no way out there)
+        on = [fx.boards(everything[pattern], s) for s in pattern if s in entry_of]
+        ride, way_on = None, True
+        for n, boards in list(zip(known, on)) + [(home, True)]:
             if n == home:
-                if ride:
+                if ride and way_on:
                     end = known[-1]
                     key = (end, ride[0] if end in loop_termini or end == home else None)
                     rides.setdefault(key, []).append((ride, pattern))
-                ride = []
+                ride, way_on = [], boards
             elif ride is not None:
                 ride.append(n)
     folded = {}

@@ -1493,28 +1493,45 @@ def _loop_termini(trips, place):
             if stops and place.get(stops[0][0]) == place.get(stops[-1][0])}
 
 
-def _calls_out(trips, place, origin_place):
+def _origin_boarding(conn, route_id, origin_stop_id):
+    """The calls of the route at the origin's place a rider can get on at,
+    as {(trip_id, stop_sequence)}: what _calls_out starts a ride from."""
+    return {(row[0], row[1]) for row in conn.execute(text(f"""
+        select st.trip_id, st.stop_sequence
+        from stop_times st
+        inner join trips t on t.trip_id = st.trip_id
+        where t.route_id = :route_id and st.stop_id in {_STOP_GROUP}
+        and {_boards("st")}"""), {"route_id": route_id, "origin": origin_stop_id})}  # noqa: S608
+
+
+def _calls_out(trips, place, origin_place, boarding=None):
     """(ride, trip_id) for each ride out of the origin place, the ride as
     places: from a call at it to the trip's next call at it, or its end. A
     trip passing the origin twice (Palm Bus 21 out and back through Gare
-    Maritime) gives a ride from each."""
+    Maritime) gives a ride from each.
+
+    boarding, when given, holds the (trip_id, stop_sequence) calls at the
+    origin a rider can get on at: a ride from any other call is nobody's
+    way out (Zou 620 only sets down at Pont des Gabres on its way into
+    Cannes) and is left out, the calls still cutting the rides as before."""
     rides = []
     for trip_id, trip_stops in trips.items():
-        ride = None
-        for stop_id, _seq in trip_stops:
+        ride, way_on = None, True
+        for stop_id, seq in trip_stops:
             p = place.get(stop_id, stop_id)
             if p == origin_place:
-                if ride:
+                if ride and way_on:
                     rides.append((ride, trip_id))
                 ride = []
+                way_on = boarding is None or (trip_id, seq) in boarding
             elif ride is not None:
                 ride.append(p)
-        if ride:
+        if ride and way_on:
             rides.append((ride, trip_id))
     return rides
 
 
-def _ways_of(trips, place, origin_place):
+def _ways_of(trips, place, origin_place, boarding=None):
     """The ways out of an origin, {way: [(ride, trip_id)]}: where the bus
     goes, as the bus itself shows it.
 
@@ -1527,11 +1544,11 @@ def _ways_of(trips, place, origin_place):
     Surinameplein) goes the way of the trips that leave for the same next
     stop and pass its end, or every stop of its ride but the end. The way is
     the stop_id of the terminus, the next stop's appended after "|" when it
-    is part of it.
+    is part of it. boarding keeps the rides a rider can start (_calls_out).
     """
     loop_termini = _loop_termini(trips, place)
     rides = {}
-    for ride, trip_id in _calls_out(trips, place, origin_place):
+    for ride, trip_id in _calls_out(trips, place, origin_place, boarding):
         end = place.get(trips[trip_id][-1][0])
         told_by_next = end in loop_termini or end == origin_place
         rides.setdefault((end, ride[0] if told_by_next else None), []).append((ride, trip_id))
@@ -1584,8 +1601,9 @@ def get_towards(schedule, route_id, origin_stop_id):
     """
     with schedule.engine.connect() as conn:
         kept, station_names, place, trips = _line_of(conn, route_id)
+        boarding = _origin_boarding(conn, route_id, origin_stop_id)
     origin_place = place.get(origin_stop_id, origin_stop_id)
-    ways = _ways_of(trips, place, origin_place)
+    ways = _ways_of(trips, place, origin_place, boarding)
     if len(ways) < 2:
         return []
     label = _labels_of(kept, station_names)
@@ -1711,6 +1729,8 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
         rows = conn.execute(text(sql), {**scope, "origin": origin_stop_id}).fetchall()
         trip_count = dict(conn.execute(text(weights_sql), {**scope, "origin": origin_stop_id}).fetchall())
         alighting = {row[0] for row in conn.execute(text(alighting_sql), {**scope, "origin": origin_stop_id})}
+        boarding = (_origin_boarding(conn, route_id, origin_stop_id)
+                    if towards is not None else None)
     alightable = {place[s] for s in alighting if s in place}
     position = {x[0]: i for i, x in enumerate(line)}
     by_place = {x[0]: x for x in line}
@@ -1721,7 +1741,7 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
                        place, origin_place)
     if towards is not None:
         # the rides of the way get_towards offered, read from the same trips
-        way = _ways_of(_line_trips, place, origin_place).get(towards, [])
+        way = _ways_of(_line_trips, place, origin_place, boarding).get(towards, [])
         chosen = {tuple(ride) for ride, _trip_id in way}
         calls = [(ride, trip_id) for ride, trip_id in calls if tuple(ride) in chosen]
     # Riding order first: a place comes after every place some trip calls at
@@ -1799,13 +1819,15 @@ def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, 
         labels = dict(conn.execute(text(
             "select trip_id, direction_id from trips where route_id = :route_id"),
             {"route_id": route_id}).fetchall())
+        boarding = (_origin_boarding(conn, route_id, origin_stop_id)
+                    if towards is not None else None)
     origin = place.get(origin_stop_id, origin_stop_id)
     destination = place.get(destination_stop_id, destination_stop_id)
     termini = _loop_termini(trips, place)
     if origin not in termini and destination not in termini:
         return None
     if towards is not None:
-        way = _ways_of(trips, place, origin).get(towards, [])
+        way = _ways_of(trips, place, origin, boarding).get(towards, [])
         told = {str(labels[trip_id]) for ride, trip_id in way
                 if destination in ride and labels.get(trip_id) is not None}
         if len(told) == 1:
