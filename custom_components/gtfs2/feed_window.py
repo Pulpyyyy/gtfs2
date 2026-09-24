@@ -23,10 +23,11 @@ from __future__ import annotations
 
 import csv
 import datetime
-import io
 import logging
 import os
 import zipfile
+
+from .gtfs_filter import table_reader
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ def read_feed_window(zip_path):
 
         def rows(member):
             with archive.open(names[member]) as raw:
-                yield from csv.DictReader(io.TextIOWrapper(raw, encoding="utf-8-sig", newline=""))
+                yield from table_reader(raw)
 
         try:
             if "feed_info.txt" in names:

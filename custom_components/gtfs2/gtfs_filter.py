@@ -58,17 +58,35 @@ def _rows(zin, member):
     return (row for row in reader if row)
 
 
+def table_reader(raw):
+    """csv.DictReader over a feed table, its columns named as pygtfs names them.
+
+    pygtfs strips every cell it imports, the header included. Renfe pads
+    each line of its tables to a fixed width, so the last column of its
+    calendar is "end_date" followed by a hundred spaces: read as written,
+    row.get("end_date") found nothing, where the database has the date.
+    """
+    reader = csv.DictReader(io.TextIOWrapper(raw, encoding="utf-8-sig", newline=""))
+    reader.fieldnames = [name.strip() for name in reader.fieldnames or []]
+    return reader
+
+
 def _header(rows, name):
     """The header row of a table, or the end of the filtering.
 
     A table with not one line has no columns to filter on. Saying so as a
     ValueError puts it where a feed missing that table already lands: the
-    caller keeps the feed whole rather than writing half of it.
+    caller keeps the feed whole rather than writing half of it. The names
+    are stripped as table_reader strips them, and the filter strips the
+    keys it compares, as pygtfs strips every cell: in a feed padded to a
+    fixed width the last column carries the padding in its name and in
+    its values, and a padded parent_station would otherwise leave every
+    platform without its station. The rows are copied as they are.
     """
     header = next(rows, None)
     if header is None:
         raise ValueError(f"{name} carries no header")
-    return header
+    return [column.strip() for column in header]
 
 
 class _Writer:
@@ -149,10 +167,10 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
             with _Writer(zout, "trips.txt", header) as out:
                 for row in rows:
                     trips_total += 1
-                    if row[i_route] in route_ids:
+                    if row[i_route].strip() in route_ids:
                         out.row(row)
-                        trip_ids.add(row[i_trip])
-                        service_ids.add(row[i_service])
+                        trip_ids.add(row[i_trip].strip())
+                        service_ids.add(row[i_service].strip())
 
             # stop_times is the weight of the feed: one pass, collecting the
             # stops the kept trips call at
@@ -165,9 +183,9 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
             with _Writer(zout, "stop_times.txt", header) as out:
                 for row in rows:
                     st_total += 1
-                    if row[i_trip] in trip_ids:
+                    if row[i_trip].strip() in trip_ids:
                         out.row(row)
-                        stop_ids.add(row[i_stop])
+                        stop_ids.add(row[i_stop].strip())
                         st_kept += 1
 
             # stops: a first pass finds the parent stations of the kept
@@ -181,11 +199,12 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
                 parents = set()
                 if i_parent is not None:
                     for row in _skip_header(_rows(zin, member)):
-                        if row[i_stop] in stop_ids and row[i_parent]:
-                            parents.add(row[i_parent])
+                        if row[i_stop].strip() in stop_ids and row[i_parent].strip():
+                            parents.add(row[i_parent].strip())
                 _copy_filtered(
                     zin, zout, member, "stops.txt",
-                    lambda row: row[i_stop] in stop_ids or row[i_stop] in parents)
+                    lambda row: (row[i_stop].strip() in stop_ids
+                                 or row[i_stop].strip() in parents))
 
             for name, column, wanted in (
                     ("calendar.txt", "service_id", service_ids),
@@ -198,7 +217,7 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
                         continue
                     index = header.index(column)
                     _copy_filtered(zin, zout, member, name,
-                                   lambda row, i=index, w=wanted: row[i] in w)
+                                   lambda row, i=index, w=wanted: row[i].strip() in w)
 
             for name in KEPT_WHOLE:
                 if name == "feed_info.txt" and drop_feed_info:
@@ -253,8 +272,8 @@ def zip_only_future_dates(zip_path):
                 if member is None:
                     continue
                 rows = _rows(zin, member)
-                header = next(rows, None)
-                if not header or column not in header:
+                header = [c.strip() for c in next(rows, None) or []]
+                if column not in header:
                     continue
                 index = header.index(column)
                 for row in rows:
@@ -282,9 +301,7 @@ def read_zip_routes(zip_path):
             if member is None:
                 _LOGGER.warning("No routes.txt in %s", zip_path)
                 return []
-            reader = csv.DictReader(io.TextIOWrapper(
-                zin.open(member), encoding="utf-8-sig", newline=""))
-            return [row for row in reader if row.get("route_id")]
+            return [row for row in table_reader(zin.open(member)) if row.get("route_id")]
     except (OSError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
         _LOGGER.warning("Could not read routes from %s: %s", zip_path, ex)
         return []
@@ -297,9 +314,7 @@ def read_zip_agencies(zip_path):
             member = _member(zin, "agency.txt")
             if member is None:
                 return []
-            reader = csv.DictReader(io.TextIOWrapper(
-                zin.open(member), encoding="utf-8-sig", newline=""))
-            return [row for row in reader if row.get("agency_name")]
+            return [row for row in table_reader(zin.open(member)) if row.get("agency_name")]
     except (OSError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
         _LOGGER.warning("Could not read agencies from %s: %s", zip_path, ex)
         return []

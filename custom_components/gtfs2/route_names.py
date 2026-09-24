@@ -10,8 +10,6 @@ Called from the config flow and from gtfs_helper.get_route_list.
 """
 from __future__ import annotations
 
-import csv
-import io
 import logging
 import os
 import re
@@ -21,7 +19,7 @@ from datetime import date
 from sqlalchemy.sql import text
 
 from . import zip_file as zipfile
-from .gtfs_filter import read_zip_agencies, read_zip_routes
+from .gtfs_filter import read_zip_agencies, read_zip_routes, table_reader
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -310,7 +308,7 @@ def _read_place_words(zin):
         return frozenset()
     words = set()
     with zin.open(member) as fh:
-        for row in csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig", newline="")):
+        for row in table_reader(fh):
             name = (row.get("stop_name") or "").strip().casefold()
             if name:
                 words.add(name)
@@ -328,6 +326,8 @@ def _read_service_spans(zin):
     """
     spans = {}
     def seen(service, first, last):
+        # the last column of a padded table carries the padding (Renfe)
+        first, last = (first or "").strip(), (last or "").strip()
         if not service or not first or not last:
             return
         was = spans.get(service)
@@ -337,14 +337,14 @@ def _read_service_spans(zin):
                    if n.rsplit("/", 1)[-1] == "calendar.txt"), None)
     if member is not None:
         with zin.open(member) as fh:
-            for row in csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig", newline="")):
+            for row in table_reader(fh):
                 seen(row.get("service_id"), row.get("start_date"), row.get("end_date"))
     member = next((n for n in zin.namelist()
                    if n.rsplit("/", 1)[-1] == "calendar_dates.txt"), None)
     if member is not None:
         with zin.open(member) as fh:
-            for row in csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig", newline="")):
-                if (row.get("exception_type") or "1") == "1":
+            for row in table_reader(fh):
+                if (row.get("exception_type") or "1").strip() == "1":
                     seen(row.get("service_id"), row.get("date"), row.get("date"))
     return spans
 
@@ -370,7 +370,7 @@ def _read_trips(zip_path):
                 return {}, {}
             calendar = _read_service_spans(zin)
             with zin.open(member) as fh:
-                reader = csv.DictReader(io.TextIOWrapper(fh, "utf-8-sig", newline=""))
+                reader = table_reader(fh)
                 names = reader.fieldnames or []
                 headsigns = "trip_headsign" in names
                 for row in reader:
@@ -457,7 +457,7 @@ def _read_stop_ends(zip_path, route_ids):
             files = {n.rsplit("/", 1)[-1]: n for n in zin.namelist()}
 
             def rows(name):
-                return csv.DictReader(io.TextIOWrapper(zin.open(files[name]), "utf-8-sig", newline=""))
+                return table_reader(zin.open(files[name]))
 
             for row in rows("trips.txt"):
                 if row.get("route_id") in route_ids:
