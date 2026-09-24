@@ -1299,12 +1299,11 @@ def check_midnight(check, fx, clock, hass, route_id, route_type, direction,
                    query_direction, pattern, entries, stood_for):
     """Asked at 23:50 from the ends of the pattern, on a day the pair runs
     (one followed by another such day when the feed has it): nothing already
-    gone is listed, and what the feed still has to offer is there. Without
-    include_tomorrow that is the day's own late trips, the ones timed past
-    24:00 included, since they leave after the clock turns; with it, the
-    next day's trips too. The expected side is read from stop_times and the
-    calendar tables, so a departure dropped at the day change shows up as a
-    missing crossing."""
+    gone is listed, and what the feed still has to offer is there: the
+    day's own late trips, the ones timed past 24:00 included, since they
+    leave after the clock turns, and the next day's trips. The expected
+    side is read from stop_times and the calendar tables, so a departure
+    dropped at the day change shows up as a missing crossing."""
     schedule = fx.schedule
     origin, destination = pattern[0], pattern[-1]
     origins, destinations = fx.siblings_of(origin), fx.siblings_of(destination)
@@ -1339,7 +1338,14 @@ def check_midnight(check, fx, clock, hass, route_id, route_type, direction,
     clock.move_to(now)
     zone = zoneinfo.ZoneInfo(fx.agency_tz)
     day_date = datetime.date.fromisoformat(day)
-    for include_tomorrow in (False, True):
+    # include_tomorrow is no longer read: the query lists the next
+    # departures whatever day they fall on, so asking without it asked the
+    # same thing again under a looser promise. Recorded, not asked.
+    check.note(True, f"at 23:50 on {day}, {who}: without tomorrow is not an option "
+               f"any more, the departures run on into the next days",
+               origin=origin, destination=destination, include_tomorrow=False,
+               retired=True)
+    for include_tomorrow in (True,):
         data = _data_for(schedule, route_id, route_type, entries, stood_for,
                          origin, destination, query_direction,
                          include_tomorrow=include_tomorrow)
