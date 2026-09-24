@@ -5,7 +5,7 @@ What it is:
 - manifest.json in each says where the bytes came from, what was kept and why; sncf also carries scenarios.json, the journeys its entities make testable
 - fixtures/build_fixture.py cuts any static zip down to named routes, a few trips per stop pattern
 - fixtures/capture_rt.py freezes a static + trip updates + alerts capture, SNCF by default, any feed with --static/--trip-updates/--alerts
-- test_journeys.py reads them: one test per fixture, route, direction and promise (stop list, destinations from an origin, next service date, a valid pair, the swapped pair), through the real query on a db fixture_db.py builds from the zip, no pygtfs import
+- test_journeys.py reads them: one test per fixture, route, direction and promise (stop list, destinations from an origin, next service date, a valid pair, the swapped pair), through the real query on the db pygtfs builds from the zip (fixture_db.py), as an install builds it
 - the clock is pinned with freezegun to a day the trips run, in the agency's zone, so the data never has to be shifted to today
 - the cases known to fail on main are marked xfail with the reason, strict, so a fix has to lift its mark
 
