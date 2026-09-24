@@ -1748,9 +1748,11 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     # just before it on its way from the origin, so two branches that meet
     # again (GVB 1 reaches Leidseplein by Overtoom or by Jan Pieter
     # Heijestraat) keep each ride's order. A later call at the origin starts
-    # the ride again (Palm Bus 21 passes Gare SNCF out and back), and a place
-    # met again on the same ride starts a new stretch rather than closing a
-    # circle.
+    # the ride again (Palm Bus 21 passes Gare SNCF out and back). A place met
+    # again on the same ride orders nothing, and what the ride meets next
+    # comes after the last place it met for the first time: a spur ridden
+    # out and back (Krakow 141 turns off at Rzepakowa for Ruszcza and comes
+    # back through it) sits where the ride serves it, not after the line.
     # Where the rides leave the order open, the branch in progress is
     # finished before another starts, so the stops of one street stay
     # together: interleaving them by distance read as no bus runs (Zou 653
@@ -1759,19 +1761,17 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     # carries, then the nearest.
     reach, before, weight = {}, {}, {}
     for ride, trip_id in calls:
-        count, previous, stretch = 0, None, set()
+        count, newest, met = 0, None, set()
         for p in ride:
             count += 1
             reach[p] = min(reach.get(p, count), count)
             before.setdefault(p, set())
-            if p in stretch:
-                stretch = {p}
-            elif previous is not None and previous != p:
-                before[p].add(previous)
-                stretch.add(p)
-            else:
-                stretch.add(p)
-            previous = p
+            if p in met:
+                continue
+            if newest is not None:
+                before[p].add(newest)
+            met.add(p)
+            newest = p
         for p in set(ride):
             weight[p] = weight.get(p, 0) + trip_count.get(trip_id, 1)
 
