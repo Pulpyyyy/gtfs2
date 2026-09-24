@@ -26,7 +26,10 @@ the rotation get_pair_direction keeps at a loop's terminus.
                 the whole destination list
     pairs       origin before destination on some trip: get_next_departure
                 answers it, on the right places, in riding order, arriving no
-                earlier than it departs, on the shortest ride of its trip
+                earlier than it departs, on the shortest ride of its trip;
+                and the departure it shows, and the first it lists, is the
+                next ride the feed has, asked at 00:05 and at 12:00, read
+                call by call from stop_times and the calendar
     swapped     destination before origin: nothing, or a ride the line really
                 makes, either way round
 
@@ -205,6 +208,68 @@ class Fixture:
         if not ons or not offs or ons[0] >= offs[-1]:
             return None
         return ons[0], offs[-1]
+
+    def next_ride(self, route_id, direction, origins, destinations, now):
+        """(instant, trip_id) of the first ride of the line leaving one of
+        the origin's records at or after now for one of the destination's,
+        or None. Read call by call from stop_times and the calendar tables,
+        the component's query set aside: a trip counts from its last timed
+        call with a way on at the origin before a timed call with a way off
+        at the destination (the shortest ride on it), leaving after now: a
+        ride leaving this very minute is gone. The sensor lists the next
+        departures whatever day they fall on, so the service days are read
+        from yesterday's (a time past 24:00) on, until a day starts after
+        the best ride found or the calendar ends. `direction` None takes
+        either way round, as the pair alone decides then."""
+        if not hasattr(self, "_calls"):
+            self._calls, self._trips = {}, {}
+            with self.schedule.engine.connect() as conn:
+                for trip_id, route, way, service in conn.execute(text(
+                        "SELECT trip_id, route_id, direction_id, service_id FROM trips")):
+                    self._trips[trip_id] = (route, way, service)
+                for trip_id, seq, stop_id, arrival, departure in conn.execute(text(
+                        "SELECT trip_id, stop_sequence, stop_id, arrival_time, "
+                        "departure_time FROM stop_times ORDER BY trip_id, stop_sequence")):
+                    self._calls.setdefault(trip_id, []).append(
+                        (stop_id, arrival, departure))
+            self._running = {}
+            with self.schedule.engine.connect() as conn:
+                ends = [str(row[0])[:10] for row in conn.execute(text(
+                    "SELECT max(end_date) FROM calendar UNION ALL "
+                    "SELECT max(date) FROM calendar_dates")) if row[0]]
+            self._last_day = datetime.date.fromisoformat(max(ends)) if ends else None
+        zone = zoneinfo.ZoneInfo(self.agency_tz)
+        rides = []  # (service_id, seconds from the service day's midnight, trip)
+        for trip_id, (route, way, service) in self._trips.items():
+            if route != route_id or (direction is not None and str(way) != str(direction)):
+                continue
+            leave = None
+            for stop_id, arrival, departure in self._calls.get(trip_id, ()):
+                if (stop_id in destinations and leave is not None and arrival is not None
+                        and (trip_id, stop_id) in self.ways_off):
+                    rides.append((service, gtfs_seconds(leave), trip_id))
+                    break
+                if (stop_id in origins and departure is not None
+                        and (trip_id, stop_id) in self.ways_on):
+                    leave = departure
+        best = None
+        day = now.astimezone(zone).date() - datetime.timedelta(days=1)
+        while rides and self._last_day and day <= self._last_day:
+            midnight = datetime.datetime.combine(day, datetime.time()).replace(tzinfo=zone)
+            if best is not None and midnight > best[0]:
+                break
+            iso = day.isoformat()
+            if iso not in self._running:
+                self._running[iso] = services_on(self.schedule, iso)
+            for service, seconds, trip_id in rides:
+                if service not in self._running[iso]:
+                    continue
+                at = (datetime.datetime.combine(day, datetime.time())
+                      + datetime.timedelta(seconds=seconds)).replace(tzinfo=zone)
+                if at > now and (best is None or at < best[0]):
+                    best = (at, trip_id)
+            day += datetime.timedelta(days=1)
+        return best
 
     def siblings_of(self, stop_id):
         """Every record of the place this one belongs to.
@@ -1099,6 +1164,12 @@ def check_route(check, fx, route_id, direction, kind):
                                    f"trip {got['trip']} calls at an end again on the way"
                                    + (f" ({listed(past)})" if past else ""),
                                    asked=asked, got=got)
+                    # and the first departure listed is the next one the feed
+                    # has, before dawn and at midday: a later ride of the day
+                    # would pass every check above
+                    check_next_ride(check, fx, clock, hass, data, day, result,
+                                    route_id, kept, origin, destination, origins,
+                                    reached, asked)
                 else:
                     swapped = dict(data, origin=data["destination"],
                                    destination=data["origin"],
@@ -1178,6 +1249,50 @@ def shaped(asked, shape):
     if not faults:
         return f"{head}, one line {shape['lines'][0]}, duration {shape['duration']} min"
     return f"{head}: " + "; ".join(faults)
+
+
+NEXT_RIDE_CLOCKS = (datetime.time(0, 5), datetime.time(12, 0))
+
+
+def check_next_ride(check, fx, clock, hass, data, day, result, route_id, kept,
+                    origin, destination, origins, reached, asked):
+    """The first departure get_next_departure lists is the next ride the
+    feed has for the pair (Fixture.next_ride), at 00:05, the answer already
+    in hand, and at 12:00 of the same day, when a fixture's few trips have
+    often all left and the next ride is another day's; with none left in the
+    calendar the answer is empty. The clock is put back to 00:05 for the
+    next pair."""
+    zone = zoneinfo.ZoneInfo(fx.agency_tz)
+    for at in NEXT_RIDE_CLOCKS:
+        now = fx.instant_on(day, at)
+        if at != NEXT_RIDE_CLOCKS[0]:
+            clock.move_to(now)
+            result = get_next_departure(hass, data)
+        expected = fx.next_ride(route_id, kept, origins, reached, now)
+        # the departure the sensor shows, and the head of the list it shows
+        # beside it: the two are built apart, so both are read
+        shown = (result or {}).get("departure_time")
+        shown = shown.astimezone(zone) if isinstance(shown, datetime.datetime) else None
+        listed_first = (result or {}).get("next_departures") or []
+        first = (datetime.datetime.fromisoformat(listed_first[0]).astimezone(zone)
+                 if listed_first else None)
+        if expected is None:
+            ok = shown is None and first is None
+        else:
+            ok = all(got is not None and abs((got - expected[0]).total_seconds()) < 60
+                     for got in (shown, first))
+        check.note(ok, (
+            f"at {at:%H:%M} on {day}, {origin} -> {destination} on {route_id}: "
+            f"the feed's next ride "
+            + (f"leaves {expected[0]:%m-%d %H:%M} (trip {expected[1]})" if expected
+               else "is none left in the calendar")
+            + ", got " + (f"{shown:%m-%d %H:%M}" if shown else "nothing")
+            + ", listed first " + (f"{first:%m-%d %H:%M}" if first else "nothing")),
+            asked=dict(asked, at=f"{at:%H:%M}"), got=got_of(result),
+            next_expected=([expected[0].isoformat(), expected[1]] if expected else None),
+            next_got=shown.isoformat() if shown else None,
+            next_listed=first.isoformat() if first else None)
+    clock.move_to(fx.instant_on(day))
 
 
 def check_midnight(check, fx, clock, hass, route_id, route_type, direction,
