@@ -261,6 +261,20 @@ def open_datasource(gtfs_dir, filename):
     return pygtfs.Schedule(f"{sqlite_file}?check_same_thread=False&timeout=60")
 
 
+def _remove_staging(new_real):
+    """Remove the new database a refresh built, and its journal, if still there.
+
+    Swapped in, the file is gone already; refused or failed, it goes here, so
+    the next refresh starts from nothing it left behind.
+    """
+    for leftover in (new_real, new_real + "-journal"):
+        if os.path.exists(leftover):
+            try:
+                os.remove(leftover)
+            except OSError as ex:
+                _LOGGER.warning("Could not remove %s: %s", leftover, ex)
+
+
 def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
     """Rebuild a source some sensor reads whole: every line of the new edition.
 
@@ -308,16 +322,97 @@ def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
         if not swap_in(new_real, real):
             return False
     finally:
-        for leftover in (new_real, new_real + "-journal"):
-            if os.path.exists(leftover):
-                try:
-                    os.remove(leftover)
-                except OSError as ex:
-                    _LOGGER.warning("Could not remove %s: %s", leftover, ex)
+        _remove_staging(new_real)
     _LOGGER.info("Refreshed datasource %s from its source, whole: %s lines",
                  filename, len(loaded))
     # the same answer as the route by route refresh, for refresh_source
     return {route: None for route in sorted(loaded)}
+
+
+def _download_source(data, zip_path):
+    """Fetch a source's new edition into its kept zip, for a refresh.
+
+    Returns True when the zip now holds the new edition, False when the
+    download failed or was no feed; the kept zip is then as it was.
+    """
+    # download beside the current zip and swap only once complete and
+    # proven to be a zip: the zip is the only full record of the feed
+    # and must survive a failed or hijacked download
+    try:
+        url, headers = _source_request(data)
+        r = _open_source(data, url, headers)
+        r.raise_for_status()
+        # a host that stopped answering ranges sends the whole envelope:
+        # the network picked is taken out of it here
+        staged = stage_zip(r, zip_path, data.get(CONF_INNER_ZIP))
+        if staged is None:
+            return False
+        adopt_zip(r, staged, zip_path)
+    except Exception as ex:  # pylint: disable=broad-except
+        # a host that does not answer says so in one line; the stack is
+        # kept for anything else, an error of our own
+        log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
+        log("Could not download %s: %s", data.get("url"), ex)
+        fresh = zip_path + ".new"
+        if os.path.exists(fresh):
+            try:
+                os.remove(fresh)
+            except OSError:
+                pass
+        return False
+    return True
+
+
+def _refresh_route_by_route(gtfs_dir, filename, zip_name, routes, data):
+    """Rebuild a source line by line: the routes its database follows now.
+
+    The fresh feed is filtered down to those routes, unpacked into the
+    scratch database, copied into a new real file and swapped in, as
+    refresh_datasource tells. Returns {route_id: stop_times}, or False.
+    """
+    real = real_path(gtfs_dir, filename)
+    # the new real database is built under its own datasource name, so every
+    # existing helper works on it unchanged and nothing it does can touch the
+    # file the sensors are reading
+    staging = filename + ".refresh"
+    new_real = real_path(gtfs_dir, staging)
+
+    def _build(scratch_file):
+        return build_scratch_database(
+            gtfs_dir, zip_name, scratch_file,
+            data.get("clean_feed_info", False), only_routes=routes)
+
+    try:
+        if os.path.exists(new_real):
+            os.remove(new_real)
+        added = import_routes(gtfs_dir, staging, routes, _build)
+        if added is None or len(added) < len(routes):
+            _LOGGER.error("Refresh of %s aborted, the current data stays: %s",
+                          filename, added)
+            return False
+        # a line the new edition carries no trip for: renumbered, retired,
+        # or a broken feed. The copy of such a line succeeds with nothing
+        # in it, so swapping would leave its sensors empty without a word.
+        # The current data stays while a sensor still reads one, or when
+        # nothing at all came through; a line nobody reads just goes.
+        gone = {route for route, count in added.items() if not count}
+        read = gone & set(data.get("read_routes") or ())
+        if gone and (read or len(gone) == len(routes)):
+            _LOGGER.error("Refresh of %s aborted, the new edition has no trip "
+                          "for %s, the current data stays", filename, sorted(gone))
+            # every line gone says the file is broken, so every line is named;
+            # the caller, back on the loop, tells the user
+            data["lines_missing"] = sorted(gone if len(gone) == len(routes) else read)
+            return False
+        # intern only: everything in this file was just copied on purpose
+        optimise_datasource(gtfs_dir, staging)
+        if not swap_in(new_real, real):
+            return False
+    finally:
+        _remove_staging(new_real)
+    _LOGGER.info("Refreshed datasource %s from its source: %s stop_times "
+                 "per route", filename, added)
+    return added
 
 
 def refresh_datasource(hass, path, data):
@@ -362,32 +457,8 @@ def refresh_datasource(hass, path, data):
 
     zip_name = filename + ".zip"
     zip_path = os.path.join(gtfs_dir, zip_name)
-    if data.get("extract_from", "url") == "url":
-        # download beside the current zip and swap only once complete and
-        # proven to be a zip: the zip is the only full record of the feed
-        # and must survive a failed or hijacked download
-        try:
-            url, headers = _source_request(data)
-            r = _open_source(data, url, headers)
-            r.raise_for_status()
-            # a host that stopped answering ranges sends the whole envelope:
-            # the network picked is taken out of it here
-            staged = stage_zip(r, zip_path, data.get(CONF_INNER_ZIP))
-            if staged is None:
-                return False
-            adopt_zip(r, staged, zip_path)
-        except Exception as ex:  # pylint: disable=broad-except
-            # a host that does not answer says so in one line; the stack is
-            # kept for anything else, an error of our own
-            log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
-            log("Could not download %s: %s", data.get("url"), ex)
-            fresh = zip_path + ".new"
-            if os.path.exists(fresh):
-                try:
-                    os.remove(fresh)
-                except OSError:
-                    pass
-            return False
+    if data.get("extract_from", "url") == "url" and not _download_source(data, zip_path):
+        return False
     if not os.path.exists(zip_path):
         _LOGGER.error("No source zip to refresh %s from", filename)
         return False
@@ -398,51 +469,4 @@ def refresh_datasource(hass, path, data):
 
     if whole:
         return _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data)
-
-    # the new real database is built under its own datasource name, so every
-    # existing helper works on it unchanged and nothing it does can touch the
-    # file the sensors are reading
-    staging = filename + ".refresh"
-    new_real = real_path(gtfs_dir, staging)
-
-    def _build(scratch_file):
-        return build_scratch_database(
-            gtfs_dir, zip_name, scratch_file,
-            data.get("clean_feed_info", False), only_routes=routes)
-
-    try:
-        if os.path.exists(new_real):
-            os.remove(new_real)
-        added = import_routes(gtfs_dir, staging, routes, _build)
-        if added is None or len(added) < len(routes):
-            _LOGGER.error("Refresh of %s aborted, the current data stays: %s",
-                          filename, added)
-            return False
-        # a line the new edition carries no trip for: renumbered, retired,
-        # or a broken feed. The copy of such a line succeeds with nothing
-        # in it, so swapping would leave its sensors empty without a word.
-        # The current data stays while a sensor still reads one, or when
-        # nothing at all came through; a line nobody reads just goes.
-        gone = {route for route, count in added.items() if not count}
-        read = gone & set(data.get("read_routes") or ())
-        if gone and (read or len(gone) == len(routes)):
-            _LOGGER.error("Refresh of %s aborted, the new edition has no trip "
-                          "for %s, the current data stays", filename, sorted(gone))
-            # every line gone says the file is broken, so every line is named;
-            # the caller, back on the loop, tells the user
-            data["lines_missing"] = sorted(gone if len(gone) == len(routes) else read)
-            return False
-        # intern only: everything in this file was just copied on purpose
-        optimise_datasource(gtfs_dir, staging)
-        if not swap_in(new_real, real):
-            return False
-    finally:
-        for leftover in (new_real, new_real + "-journal"):
-            if os.path.exists(leftover):
-                try:
-                    os.remove(leftover)
-                except OSError as ex:
-                    _LOGGER.warning("Could not remove %s: %s", leftover, ex)
-    _LOGGER.info("Refreshed datasource %s from its source: %s stop_times "
-                 "per route", filename, added)
-    return added
+    return _refresh_route_by_route(gtfs_dir, filename, zip_name, routes, data)
