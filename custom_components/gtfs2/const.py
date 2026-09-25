@@ -190,9 +190,10 @@ ICONS = {
     1702: "mdi:horse-variant",
 }
 LOCATION_TYPE_DEFAULT = "Stop"
+# location_type of stops.txt: 0 (or empty) a stop or platform, 1 a station
 LOCATION_TYPE_OPTIONS = {
-    0: "Station",
-    1: "Stop",
+    0: "Stop",
+    1: "Station",
     2: "Station Entrance/Exit",
     3: "Other",
 }
