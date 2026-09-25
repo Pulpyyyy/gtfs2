@@ -20,7 +20,6 @@
   "gtfs_helper.py get_route_list": 11,
   "gtfs_helper.py remove_datasource": 11,
   "gtfs_rt_helper.py _fetch_gtfs_feed_entities": 12,
-  "gtfs_rt_helper.py get_rt_route_trip_statuses": 35,
   "gtfs_rt_helper.py get_rt_vehicle_positions": 11,
   "route_names.py _read_stop_ends": 14,
   "route_names.py _read_trips": 12,

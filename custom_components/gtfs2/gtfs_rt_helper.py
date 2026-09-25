@@ -477,6 +477,185 @@ def _same_route(configured, seen):
     return not seen[-len(configured) - 1].isalnum()
 
 
+def _feed_route_id(self, trip):
+    ''' The line a trip update names, cut at the source's delimiter '''
+    # a json feed leaves out what it does not know, where the
+    # protobuf reader writes every field: the line, the stop, the
+    # arrival of a first stop are read with their defaults
+    feed_route_id = trip.get("route_id") or ""
+    # If delimiter specified split the route ID in the gtfs rt feed
+    if self._route_delimiter is not None:
+        route_id_split = feed_route_id.split(
+            self._route_delimiter
+        )
+        if route_id_split[0] == self._route_delimiter:
+            return feed_route_id
+        return route_id_split[0]
+    return feed_route_id
+
+
+def _trip_group_route_direction(self, trip):
+    ''' How a trip update is matched (route or trip), its line and direction '''
+    route_id = _feed_route_id(self, trip)
+
+    if trip.get("direction_id") not in ("", None):
+        direction_id = trip["direction_id"]
+    else:
+        direction_id = "nn"
+
+    # for route-based requests, if the rt-data has no route (ex. TER) then the selection should be on matching trip_id or matching RT-id with short_name (ex. MTA Metro North RR)
+    # result will be that only one RT value will be collected
+    # how THIS entity can be matched, not how the sensor asks: an
+    # entity naming no line (a TER, a SIRI feed) can only be read by
+    # trip, and that used to be written on the coordinator, so every
+    # entity read after it was matched by trip too. On a feed that
+    # never names its lines the board then kept its head trip alone
+    group = self._rt_group
+    if not route_id:
+        group = "trip"
+        route_id = self._route_id
+
+    if group == "trip":
+        direction_id = self._direction
+    return group, route_id, direction_id
+
+
+def _follows_trip(self, group, route_id, direction_id, trip_id, entity_id):
+    ''' Whether a trip update is one of the trips this entity follows '''
+    # first part covers start/end and thus multiple RT are possible for the same stop, also, for SIRI route_id do not match so a 'in' is used
+    # the second part covers local stops, i.e. per trip, so only one RT possible for that stop
+    if group == "route":
+        # route-mode, between predefined start/stop
+        if direction_id != "nn":
+            return (
+                str(direction_id) == str(self._direction)
+                and _same_route(self._route_id, route_id)
+            )  or trip_id in self._trip_list
+        return _names_trip(self._trip_id, trip_id) or (trip_id in self._trip_list)
+    # trip-mode, for local stops which can have multiple routes,
+    # and for the entities of a feed that names no line: the
+    # board's own trips count there too, or a journey on such a
+    # feed would only ever hear about its next departure
+    # a local stops context carries no list of its own
+    return (trip_id == self._trip_id
+            or entity_id == self._trip_short_name
+            or trip_id in (getattr(self, "_trip_list", None) or ()))
+
+
+def _stop_time_and_delay(stop, trip_id, scheduled):
+    ''' When the vehicle leaves the stop, and its delay '''
+    # the later of the two 'time' attributes is the one to announce
+    # e.g. at a terminus/layover where the vehicle stands several
+    # minutes at its bay
+    # a json feed may give one of the two only, and
+    # writes its int64 times as strings
+    arrival = stop.get("arrival") or {}
+    departure = stop.get("departure") or {}
+    stop_time = max(int(arrival.get("time") or 0),
+                    int(departure.get("time") or 0))
+
+    if int(departure.get("delay") or 0) >= int(arrival.get("delay") or 0):
+        delay = int(departure.get("delay") or 0)
+    else:
+        delay = int(arrival.get("delay") or 0)
+
+    if not stop_time and delay and scheduled.get(trip_id):
+        # the feed gives the delay and no time: read as
+        # an epoch that would be 1970, which reads as
+        # long past and dropped the departure with it
+        stop_time = scheduled[trip_id] + delay
+        _LOGGER.debug("Trip %s carries a delay and no time: %s + %ss",
+                      trip_id, scheduled[trip_id], delay)
+    return stop_time, delay
+
+
+def _departure_slot(departure_times, route_id, direction_id, stop_id):
+    ''' The departures, delays and trips listed for one stop '''
+    if route_id not in departure_times:
+        departure_times[route_id] = {}
+    if direction_id not in departure_times[route_id]:
+        departure_times[route_id][direction_id] = {}
+    if not departure_times[route_id][direction_id].get(stop_id):
+        departure_times[route_id][direction_id][stop_id] = {}
+    slot = departure_times[route_id][direction_id][stop_id]
+    if not slot.get("departures"):
+        slot["departures"] = []
+        slot["delays"] = []
+        # the trip behind each departure, same order
+        slot["trips"] = []
+    return slot
+
+
+def _read_stop_updates(self, entity, trip_id, direction_id, start_date, departure_times, scheduled):
+    ''' Add the departures a trip update gives at this entity's stop '''
+    entity_id = entity.get("id") or ""
+    for stop in entity["trip_update"].get("stop_time_update") or []:
+        stop_id = stop.get("stop_id") or ""
+        stop_sequence = stop.get("stop_sequence")
+        if not (stop_id == self._stop_id or (stop_id == "" and stop_sequence == self._stop_sequence)):
+            continue
+        _LOGGER.debug("Stop found: %s", stop)
+        # if the data does not contain a stop_id but only a stop_sequence, assume stop_id being the correct stop based on sequence
+        # this does not have to be always correct but best-guess
+        if stop_id == "":
+            stop_id = self._stop_id
+        called = stop_relationship(stop)
+        if called == SKIPPED_STOP:
+            # the vehicle runs but does not call here
+            self._rt_skipped.setdefault(trip_id, set()).add(start_date)
+            _LOGGER.debug("Trip %s skips %s on %s, not a departure", trip_id, stop_id, start_date)
+            continue
+        if called == NO_DATA_STOP:
+            # no prediction for this call: the timetable
+            # stands, and a zero here is not "on time"
+            _LOGGER.debug("Trip %s has no realtime at %s", trip_id, stop_id)
+            continue
+
+        if direction_id == "nn" or self._direction in (None, "None") or entity_id == self._trip_short_name or trip_id in getattr(self, "_trip_list", ()): # in this case the trip_id serves as a basis so one can safely set direction to the requesting entity direction; a trip from the entity's own trip list carries the static (possibly repaired) direction, which overrules what the rt feed announces
+            direction_id = self._direction
+
+        slot = _departure_slot(departure_times, self._route_id, direction_id, stop_id)
+        stop_time, delay = _stop_time_and_delay(stop, trip_id, scheduled)
+
+        # Ignore arrival times in the past
+        departure_dt = dt_util.utc_from_timestamp(stop_time)  # aware UTC, epoch is always UTC
+        if due_in_minutes(departure_dt) >= 0:
+            slot["departures"].append(departure_dt)
+            # the delay belongs to this departure: appending it
+            # outside this branch kept the delays of departures
+            # that were dropped, so delays[n] described some
+            # other departure than departures[n]
+            slot["delays"].append(delay)
+            slot["trips"].append(trip_id)
+            _LOGGER.debug("RT stoptime: %s, in utcfromtimestamp: %s", stop_time, departure_dt)
+        else:
+            _LOGGER.debug("Not using realtime stop data for old due-in-minutes: %s", due_in_minutes(departure_dt))
+
+
+def _sort_departure_slots(departure_times):
+    ''' Sort by time, carrying each delay with its own departure '''
+    # sorting the two lists independently, or only one of them, breaks the
+    # pairing again
+    for route in departure_times:
+        for direction in departure_times[route]:
+            for stop in departure_times[route][direction]:
+                slot = departure_times[route][direction][stop]
+                trips = slot.get("trips") or []
+                if len(slot["delays"]) == len(slot["departures"]) == len(trips):
+                    paired = sorted(zip(slot["departures"], slot["delays"], trips),
+                                    key=lambda p: p[0])
+                    slot["departures"] = [p[0] for p in paired]
+                    slot["delays"] = [p[1] for p in paired]
+                    slot["trips"] = [p[2] for p in paired]
+                elif len(slot["delays"]) == len(slot["departures"]):
+                    paired = sorted(zip(slot["departures"], slot["delays"]),
+                                    key=lambda p: p[0])
+                    slot["departures"] = [p[0] for p in paired]
+                    slot["delays"] = [p[1] for p in paired]
+                else:
+                    slot["departures"].sort()
+
+
 def get_rt_route_trip_statuses(self, feed_entities=None):
     ''' Get next rt departure for route (multiple) or trip (single) '''
     # explanatory logic
@@ -528,185 +707,33 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
 
     for entity in feed_entities:
 
-        if entity.get('trip_update', False):
-            
-            # a json feed leaves out what it does not know, where the
-            # protobuf reader writes every field: the line, the stop, the
-            # arrival of a first stop are read with their defaults
-            feed_route_id = entity["trip_update"]["trip"].get("route_id") or ""
-            # If delimiter specified split the route ID in the gtfs rt feed
-            if self._route_delimiter is not None:
-                route_id_split = feed_route_id.split(
-                    self._route_delimiter
-                )
-                if route_id_split[0] == self._route_delimiter:
-                    route_id = feed_route_id
-                else:
-                    route_id = route_id_split[0]
-            else:
-                route_id = feed_route_id
+        if not entity.get('trip_update', False):
+            continue
 
-            if "direction_id" in entity["trip_update"]["trip"] and entity["trip_update"]["trip"]["direction_id"] not in ("", None):
-                    direction_id = entity["trip_update"]["trip"]["direction_id"]
-            else:
-                direction_id = "nn"
-                
-            # for route-based requests, if the rt-data has no route (ex. TER) then the selection should be on matching trip_id or matching RT-id with short_name (ex. MTA Metro North RR)
-            # result will be that only one RT value will be collected
-            # how THIS entity can be matched, not how the sensor asks: an
-            # entity naming no line (a TER, a SIRI feed) can only be read by
-            # trip, and that used to be written on the coordinator, so every
-            # entity read after it was matched by trip too. On a feed that
-            # never names its lines the board then kept its head trip alone
-            group = self._rt_group
-            if not route_id:
-                group = "trip"
-                route_id = self._route_id
+        trip = entity["trip_update"]["trip"]
+        group, route_id, direction_id = _trip_group_route_direction(self, trip)
+        trip_id = trip.get("trip_id") or ""
+        entity_id = entity.get("id") or ""
 
-            if group == "trip":
-                direction_id = self._direction
+        if not _follows_trip(self, group, route_id, direction_id, trip_id, entity_id):
+            continue
+        _LOGGER.debug("Entity found params - group: %s, route_id: %s, direction_id: %s, self_trip_id: %s, with rt trip: %s, rt id: %s", group, route_id, direction_id, self._trip_id, trip, entity_id)
 
-            trip_id = entity["trip_update"]["trip"].get("trip_id") or ""
-            entity_id = entity.get("id") or ""
-            
-            #_LOGGER.debug("Search for entity with params - group: %s, route_id: %s, direction_id: %s, self_trip_id: %s, with rt trip: %s, rt id: %s", self._rt_group, route_id, direction_id, self._trip_id, entity["trip_update"]["trip"], entity_id)            
-                
-            # first part covers start/end and thus multiple RT are possible for the same stop, also, for SIRI route_id do not match so a 'in' is used 
-            # the second part covers local stops, i.e. per trip, so only one RT possible for that stop         
-            if group == "route":
-                # route-mode, between predefined start/stop
-                if direction_id != "nn":
-                    matched = (
-                        str(direction_id) == str(self._direction)
-                        and _same_route(self._route_id, route_id)
-                    )  or trip_id in self._trip_list
-                else:
-                    matched = _names_trip(self._trip_id, trip_id) or (trip_id in self._trip_list)
-            else:
-                # trip-mode, for local stops which can have multiple routes,
-                # and for the entities of a feed that names no line: the
-                # board's own trips count there too, or a journey on such a
-                # feed would only ever hear about its next departure
-                # a local stops context carries no list of its own
-                matched = (trip_id == self._trip_id
-                           or entity_id == self._trip_short_name
-                           or trip_id in (getattr(self, "_trip_list", None) or ()))
+        start_date = trip.get("start_date") or None
+        relationship = trip_relationship(entity)
+        if relationship in CANCELLED_TRIP:
+            # no departure at all: the stop updates it may still
+            # carry (every stop SKIPPED, a delay left in) say nothing
+            # every day the feed strikes this trip out on, not the
+            # last one read: a strike over two days publishes the
+            # same id twice and today's run used to be forgotten
+            self._rt_cancelled.setdefault(trip_id, set()).add(start_date)
+            _LOGGER.debug("Trip %s is %s on %s, not a departure", trip_id, relationship, start_date)
+            continue
 
-            if matched:
-                _LOGGER.debug("Entity found params - group: %s, route_id: %s, direction_id: %s, self_trip_id: %s, with rt trip: %s, rt id: %s", group, route_id, direction_id, self._trip_id, entity["trip_update"]["trip"], entity_id)
+        _read_stop_updates(self, entity, trip_id, direction_id, start_date, departure_times, scheduled)
 
-                start_date = entity["trip_update"]["trip"].get("start_date") or None
-                relationship = trip_relationship(entity)
-                if relationship in CANCELLED_TRIP:
-                    # no departure at all: the stop updates it may still
-                    # carry (every stop SKIPPED, a delay left in) say nothing
-                    # every day the feed strikes this trip out on, not the
-                    # last one read: a strike over two days publishes the
-                    # same id twice and today's run used to be forgotten
-                    self._rt_cancelled.setdefault(trip_id, set()).add(start_date)
-                    _LOGGER.debug("Trip %s is %s on %s, not a departure", trip_id, relationship, start_date)
-                    continue
-
-                for stop in entity["trip_update"].get("stop_time_update") or []:
-                    stop_id = stop.get("stop_id") or ""
-                    stop_sequence = stop.get("stop_sequence")
-                    if stop_id == self._stop_id or (stop_id == "" and stop_sequence == self._stop_sequence):
-                        _LOGGER.debug("Stop found: %s", stop)
-                        # if the data does not contain a stop_id but only a stop_sequence, assume stop_id being the correct stop based on sequence
-                        # this does not have to be always correct but best-guess
-                        if stop_id == "":
-                            stop_id = self._stop_id
-                        called = stop_relationship(stop)
-                        if called == SKIPPED_STOP:
-                            # the vehicle runs but does not call here
-                            self._rt_skipped.setdefault(trip_id, set()).add(start_date)
-                            _LOGGER.debug("Trip %s skips %s on %s, not a departure", trip_id, stop_id, start_date)
-                            continue
-                        if called == NO_DATA_STOP:
-                            # no prediction for this call: the timetable
-                            # stands, and a zero here is not "on time"
-                            _LOGGER.debug("Trip %s has no realtime at %s", trip_id, stop_id)
-                            continue
-
-                        if self._route_id not in departure_times:
-                            departure_times[self._route_id] = {}
-                                               
-                        if direction_id == "nn" or self._direction in (None, "None") or entity_id == self._trip_short_name or trip_id in getattr(self, "_trip_list", ()): # in this case the trip_id serves as a basis so one can safely set direction to the requesting entity direction; a trip from the entity's own trip list carries the static (possibly repaired) direction, which overrules what the rt feed announces
-                            direction_id = self._direction                   
-
-                        if direction_id not in departure_times[self._route_id]:
-                            departure_times[self._route_id][direction_id] = {}
-                            
-                        if not departure_times[self._route_id][direction_id].get(
-                            stop_id
-                        ):
-                            departure_times[self._route_id][direction_id][stop_id] = {}
-                        
-                        if not departure_times[self._route_id][direction_id][stop_id].get(
-                            "departures"
-                        ):                 
-                            departure_times[self._route_id][direction_id][stop_id]["departures"] = []
-                            departure_times[self._route_id][direction_id][stop_id]["delays"] = []
-                            # the trip behind each departure, same order
-                            departure_times[self._route_id][direction_id][stop_id]["trips"] = []
-
-                        # the later of the two 'time' attributes is the one to announce
-                        # e.g. at a terminus/layover where the vehicle stands several
-                        # minutes at its bay
-                        # a json feed may give one of the two only, and
-                        # writes its int64 times as strings
-                        arrival = stop.get("arrival") or {}
-                        departure = stop.get("departure") or {}
-                        stop_time = max(int(arrival.get("time") or 0),
-                                        int(departure.get("time") or 0))
-
-                        if int(departure.get("delay") or 0) >= int(arrival.get("delay") or 0):
-                            delay = int(departure.get("delay") or 0)
-                        else:
-                            delay = int(arrival.get("delay") or 0)
-
-                        if not stop_time and delay and scheduled.get(trip_id):
-                            # the feed gives the delay and no time: read as
-                            # an epoch that would be 1970, which reads as
-                            # long past and dropped the departure with it
-                            stop_time = scheduled[trip_id] + delay
-                            _LOGGER.debug("Trip %s carries a delay and no time: %s + %ss",
-                                          trip_id, scheduled[trip_id], delay)
-
-                        # Ignore arrival times in the past
-                        departure_dt = dt_util.utc_from_timestamp(stop_time)  # aware UTC, epoch is always UTC
-                        if due_in_minutes(departure_dt) >= 0:
-                            departure_times[self._route_id][direction_id][stop_id]["departures"].append(departure_dt)
-                            # the delay belongs to this departure: appending it
-                            # outside this branch kept the delays of departures
-                            # that were dropped, so delays[n] described some
-                            # other departure than departures[n]
-                            departure_times[self._route_id][direction_id][stop_id]["delays"].append(delay)
-                            departure_times[self._route_id][direction_id][stop_id]["trips"].append(trip_id)
-                            _LOGGER.debug("RT stoptime: %s, in utcfromtimestamp: %s", stop_time, departure_dt)
-                        else:
-                            _LOGGER.debug("Not using realtime stop data for old due-in-minutes: %s", due_in_minutes(departure_dt))
-
-    # Sort by time, carrying each delay with its own departure: sorting the two
-    # lists independently, or only one of them, breaks the pairing again
-    for route in departure_times:
-        for direction in departure_times[route]:
-            for stop in departure_times[route][direction]:
-                slot = departure_times[route][direction][stop]
-                trips = slot.get("trips") or []
-                if len(slot["delays"]) == len(slot["departures"]) == len(trips):
-                    paired = sorted(zip(slot["departures"], slot["delays"], trips),
-                                    key=lambda p: p[0])
-                    slot["departures"] = [p[0] for p in paired]
-                    slot["delays"] = [p[1] for p in paired]
-                    slot["trips"] = [p[2] for p in paired]
-                elif len(slot["delays"]) == len(slot["departures"]):
-                    paired = sorted(zip(slot["departures"], slot["delays"]),
-                                    key=lambda p: p[0])
-                    slot["departures"] = [p[0] for p in paired]
-                    slot["delays"] = [p[1] for p in paired]
-                else:
-                    slot["departures"].sort()
+    _sort_departure_slots(departure_times)
 
     self.info = departure_times
     _LOGGER.debug("Departure times Route Trip: %s", departure_times)
