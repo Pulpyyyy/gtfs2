@@ -201,6 +201,29 @@ extract_departures:
       selector:
         time: {}  
 
+extract_arrivals:
+  name: Extract Arrivals
+  description: >-
+    Extracts the arrivals at your entity's destination of every ride still to
+    leave up-until tomorrow EOD, the first one after that (next) and the last
+    service day of the feed (until)
+  fields:
+    config_entry:
+      name: Route
+      description: Select your start/stop configuration
+      required: true
+      selector:
+        config_entry:
+          integration: "gtfs2"
+    from_time:
+      name: The time after which arrivals are collected
+      required: false
+      description: "The time after which you would like to receive the slots.
+ If left empty then all future slots will be extracted for today/tomorrow.
+ In yaml this has to be 24H format"
+      selector:
+        time: {}
+
 extract_trip_stops: 
   name: Extract Trip Stops
   description: Extracts all stops for the upcoming trips

@@ -1,10 +1,14 @@
-"""What the departures service says past its two days.
+"""What the departures and arrivals services say past their two days.
 
 With nothing today and tomorrow, {"today": [], "tomorrow": []} said the
 same for a line that resumes on Friday, a line suspended and a feed that
 ran out. As the timetable file does, the answer carries next, the first
 departure after the two days, and until, the last service day the feed
 publishes.
+
+The arrivals service is the same read at the other end of each ride: the
+arrival at the destination of every ride still to leave, listed on the
+day it arrives, with next and until alike; no cap on how many.
 """
 from __future__ import annotations
 
@@ -64,7 +68,7 @@ def _feed(tmp_path):
     return schedule
 
 
-def _call(tmp_path, schedule, at):
+def _call(tmp_path, schedule, at, service="get_route_departures"):
     entry = types.SimpleNamespace(options={}, data={
         "file": "fixture", "name": "one", "route_type": "3",
         "origin": "SA: Alpha", "destination": "SB: Bravo", "route": "R1: One"})
@@ -79,7 +83,7 @@ def _call(tmp_path, schedule, at):
     dt_util.set_default_time_zone(dt_util.get_time_zone(ZONE))
     with freeze_time(at), patch.object(gtfs_helper, "get_gtfs", return_value=schedule), \
             patch.object(schedule.engine, "dispose", lambda: None):
-        coro = gtfs_helper.get_route_departures(hass, {"config_entry": "e"})
+        coro = getattr(gtfs_helper, service)(hass, {"config_entry": "e"})
         try:
             coro.send(None)
         except StopIteration as done:
@@ -119,3 +123,22 @@ def test_an_unknown_entry_says_nothing_is_known(tmp_path):
         coro.send(None)
     except StopIteration as done:
         assert done.value == {"today": [], "tomorrow": [], "next": None, "until": None}
+
+
+def test_the_arrivals_are_the_same_rides_at_the_destination(tmp_path):
+    schedule = _feed(tmp_path)
+    # Monday morning: today's ride arrives at 12:10; Tuesday's late service
+    # leaves Wednesday 00:30 and arrives 00:40, which is next
+    got = _call(tmp_path, schedule, "2026-09-21T07:00:00+02:00", "get_route_arrivals")
+    assert got["today"] == [_utc("2026-09-21T12:10:00")]
+    assert got["tomorrow"] == []
+    assert got["next"] == _utc("2026-09-23T00:40:00")
+    assert got["until"] == "2026-09-25"
+    # Wednesday: nothing today or tomorrow, Friday's ride arrives at 08:10
+    got = _call(tmp_path, schedule, "2026-09-23T10:00:00+02:00", "get_route_arrivals")
+    assert (got["today"], got["tomorrow"]) == ([], [])
+    assert got["next"] == _utc("2026-09-25T08:10:00")
+    # past the feed: nothing is known after its last day
+    got = _call(tmp_path, schedule, "2026-09-27T10:00:00+02:00", "get_route_arrivals")
+    assert (got["today"], got["tomorrow"], got["next"]) == ([], [], None)
+    schedule.engine.dispose()

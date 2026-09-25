@@ -530,6 +530,20 @@
         }
       }
     },
+    "extract_arrivals": {
+      "name": "Extrair chegadas",
+      "description": "Extrai as chegadas ao destino da tua entidade de cada viagem que ainda vai partir até ao final do dia de amanhã, a primeira chegada seguinte (next) e o último dia de serviço do feed (until)",
+      "fields": {
+        "config_entry": {
+          "name": "Rota a partir da qual extrair",
+          "description": "Selecione a sua definição de início/paragem"
+        },
+        "from_time": {
+          "name": "O tempo após o qual as chegadas são recolhidas",
+          "description": "O tempo após o qual gostaria de receber os slots. \n Se for deixado em branco, todos os slots futuros serão extraídos para hoje/amanhã. \n No yaml, deve estar no formato 24H"
+        }
+      }
+    },
     "extract_trip_stops": {
       "name": "Extrair as paragens de uma viagem",
       "description": "Devolve as paragens, por ordem, da viagem que um sensor segue atualmente.",

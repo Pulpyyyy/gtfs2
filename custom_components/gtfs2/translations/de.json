@@ -530,6 +530,20 @@
         }
       }
     },
+    "extract_arrivals": {
+      "name": "Ankünfte extrahieren",
+      "description": "Extrahiert die Ankünfte am Ziel Ihrer Entität für jede noch abfahrende Fahrt bis zum morgigen Tagesende, die erste Ankunft danach (next) und den letzten Betriebstag des Feeds (until)",
+      "fields": {
+        "config_entry": {
+          "name": "Route, von der extrahiert werden soll",
+          "description": "Wählen Sie Ihre Start-/Stopp-Konfiguration"
+        },
+        "from_time": {
+          "name": "Die Zeit, nach der Ankünfte extrahiert werden",
+          "description": "Der Zeitpunkt, nach dem Sie die Slots erhalten möchten. \n Wenn leer, werden alle zukünftigen Slots für heute/morgen extrahiert. \n In Yaml muss dies das 24-Stunden-Format sein"
+        }
+      }
+    },
     "extract_trip_stops": {
       "name": "Haltestellen einer Fahrt auslesen",
       "description": "Gibt die Haltestellen der Fahrt zurück, der ein Sensor gerade folgt, in der richtigen Reihenfolge.",

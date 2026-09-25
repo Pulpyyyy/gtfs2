@@ -530,6 +530,20 @@
         }
       }
     },
+    "extract_arrivals": {
+      "name": "Extraire les arrivées",
+      "description": "Extrait les arrivées à la destination de votre entité de chaque trajet encore à partir, jusqu'à la fin de la journée de demain, la première arrivée après (next) et le dernier jour de service du flux (until)",
+      "fields": {
+        "config_entry": {
+          "name": "Itinéraire à partir duquel extraire",
+          "description": "Sélectionnez votre configuration départ/arrivée"
+        },
+        "from_time": {
+          "name": "L'heure après laquelle les arrivées sont récupérées",
+          "description": "Le délai après lequel vous souhaitez recevoir les créneaux. \n S'ils sont laissés vides, tous les futurs emplacements seront extraits pour aujourd'hui/demain. \n En yaml, cela doit être au format 24H"
+        }
+      }
+    },
     "extract_trip_stops": {
       "name": "Extraire les arrêts d'un trajet",
       "description": "Renvoie les arrêts, dans l'ordre, du trajet que suit actuellement un capteur.",

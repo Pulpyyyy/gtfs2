@@ -530,6 +530,20 @@
         }
       }
     },
+    "extract_arrivals": {
+      "name": "Extraer llegadas",
+      "description": "Extrae las llegadas al destino de su entidad de cada viaje que aún no ha salido hasta el final del día de mañana, la primera llegada posterior (next) y el último día de servicio del feed (until)",
+      "fields": {
+        "config_entry": {
+          "name": "Ruta de la que extraer",
+          "description": "Seleccione su configuración de inicio/parada"
+        },
+        "from_time": {
+          "name": "La hora a partir de la cual se recogen las llegadas",
+          "description": "El tiempo después del cual le gustaría recibir los espacios. \n Si se deja vacío, se extraerán todos los espacios futuros para hoy/mañana. \n En yaml este tiene que ser formato 24H"
+        }
+      }
+    },
     "extract_trip_stops": {
       "name": "Extraer las paradas de un viaje",
       "description": "Devuelve las paradas, en orden, del viaje que sigue actualmente un sensor.",

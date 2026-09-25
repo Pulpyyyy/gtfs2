@@ -33,7 +33,7 @@ def test_every_service_has_a_schema():
     services = _registered()
     assert sorted(services) == sorted([
         "update_gtfs", "update_gtfs_rt_local", "update_gtfs_local_stops",
-        "extract_departures", "extract_trip_stops", "prune_datasource",
+        "extract_departures", "extract_arrivals", "extract_trip_stops", "prune_datasource",
         "intern_datasource"])
     assert all(schema is not None for schema in services.values()), services
 
@@ -73,15 +73,16 @@ def test_the_entity_services():
         assert schema({"entity_id": "Zone.Home"}) == {"entity_id": "zone.home"}
 
 
-def test_extract_departures():
-    schema = _registered()["extract_departures"]
-    _refused(schema, {})
-    _refused(schema, {"config_entry": "abc", "from_time": "8h15"})
-    # the selector's form and the short yaml one both reach the handler
-    # as the one it parses
-    for given in ("08:15:00", "08:15"):
-        assert schema({"config_entry": "abc", "from_time": given})["from_time"] == "08:15:00"
-    assert schema({"config_entry": "abc"}) == {"config_entry": "abc"}
+def test_extract_departures_and_arrivals():
+    for name in ("extract_departures", "extract_arrivals"):
+        schema = _registered()[name]
+        _refused(schema, {})
+        _refused(schema, {"config_entry": "abc", "from_time": "8h15"})
+        # the selector's form and the short yaml one both reach the
+        # handler as the one it parses
+        for given in ("08:15:00", "08:15"):
+            assert schema({"config_entry": "abc", "from_time": given})["from_time"] == "08:15:00"
+        assert schema({"config_entry": "abc"}) == {"config_entry": "abc"}
 
 
 def test_the_datasource_services():

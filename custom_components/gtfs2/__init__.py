@@ -15,7 +15,8 @@ from datetime import timedelta
 from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
 import voluptuous as vol
-from .gtfs_helper import update_gtfs_local_stops, get_route_departures, get_trip_stops, train_entry_routes
+from .gtfs_helper import (update_gtfs_local_stops, get_route_departures, get_route_arrivals,
+                          get_trip_stops, train_entry_routes)
 from .notifications import async_notify_line_orphaned
 from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern, owns_leg_file, timetable_name
 from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
@@ -502,6 +503,11 @@ def setup(hass, config):
         _LOGGER.debug("Retrieving next departures with: %s", call.data)
         departures = await get_route_departures(hass, call.data)
         return departures
+
+    async def extract_arrivals(call):
+        """My GTFS Arrivals service."""
+        _LOGGER.debug("Retrieving arrivals with: %s", call.data)
+        return await get_route_arrivals(hass, call.data)
         
     async def extract_trip_stops(call):
         """My GTFS Trip Stops service."""
@@ -527,6 +533,9 @@ def setup(hass, config):
         DOMAIN, "update_gtfs_local_stops", update_local_stops, schema=_ENTITY_SCHEMA)
     hass.services.register(
         DOMAIN, "extract_departures", extract_departures, schema=_EXTRACT_DEPARTURES_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL)
+    hass.services.register(
+        DOMAIN, "extract_arrivals", extract_arrivals, schema=_EXTRACT_DEPARTURES_SCHEMA,
         supports_response=SupportsResponse.OPTIONAL)
     hass.services.register(
         DOMAIN, "extract_trip_stops", extract_trip_stops, schema=_ENTITY_SCHEMA,

@@ -2630,7 +2630,7 @@ async def update_gtfs_local_stops(hass, data):
         await hass.config_entries.async_reload(cf_entry)
     return
     
-def _route_departures_between(data, first, last, limit=5000):
+def _route_departures_between(data, first, last, limit=5000, at="origin_depart_dt"):
     """Every departure of an entry over two service days, as UTC instants.
 
     The window read the timetable export makes, rather than the sensor's
@@ -2638,29 +2638,36 @@ def _route_departures_between(data, first, last, limit=5000):
     the ten the sensor lists all fell on today, so "tomorrow" came back
     empty. Each row is laid in its network's zone before it becomes an
     instant, and a trip reached from two quays of one stop is listed once.
+
+    at is the time of the ride read: origin_depart_dt, its departure from
+    the origin, or dest_arrival_dt, its arrival at the destination (the
+    arrivals service), laid in the destination's zone when the agency
+    names none.
     """
     rows, _origin = _fetch_departure_rows(
         data["route_type"], data["origin"], data["destination"], data["schedule"],
         window=(first, last), limit=limit, **departure_query_args(data))
     instants, seen = [], set()
+    stop_zone = "dest_stop_timezone" if at == "dest_arrival_dt" else "origin_stop_timezone"
     for row in rows:
-        key = (row.get("origin_depart_dt"), row.get("trip_id"))
-        if key in seen or not row.get("origin_depart_dt"):
+        key = (row.get(at), row.get("trip_id"))
+        if key in seen or not row.get(at):
             continue
         seen.add(key)
-        zone_name = row.get("agency_timezone") or row.get("origin_stop_timezone")
+        zone_name = row.get("agency_timezone") or row.get(stop_zone)
         zone = (dt_util.get_time_zone(zone_name) if zone_name else None) or dt_util.DEFAULT_TIME_ZONE
         try:
-            local = datetime.datetime.strptime(row["origin_depart_dt"], "%Y-%m-%d %H:%M:%S")
+            local = datetime.datetime.strptime(row[at], "%Y-%m-%d %H:%M:%S")
         except ValueError:
             continue
         instants.append(dt_util.as_utc(local.replace(tzinfo=zone)))
     return sorted(instants)
 
 
-def _route_departure_from(data, first_day):
+def _route_departure_from(data, first_day, at="origin_depart_dt"):
     """The entry's first departure on the service day first_day or after,
-    as a UTC instant, or None when the calendar has none in its horizon."""
+    as a UTC instant, or None when the calendar has none in its horizon;
+    with at="dest_arrival_dt", that ride's arrival."""
     args = departure_query_args(data)
     day = get_next_service_date(
         data["schedule"], data["origin"].split(": ")[0], data["destination"].split(": ")[0],
@@ -2670,21 +2677,35 @@ def _route_departure_from(data, first_day):
     if not day:
         return None
     # the rows come in time order: the first is the one
-    instants = _route_departures_between(data, day, day, limit=1)
+    instants = _route_departures_between(data, day, day, limit=1, at=at)
     return instants[0] if instants else None
 
 
 async def get_route_departures(hass, data):
     """The entry's departures today and tomorrow, from from_time on, and
-    what lies past them.
+    what lies past them (_route_times)."""
+    return await _route_times(hass, data, "origin_depart_dt")
+
+
+async def get_route_arrivals(hass, data):
+    """The arrivals at the destination of the entry's rides still to leave,
+    today and tomorrow, from from_time on, and what lies past them: the
+    departures service read at the other end of the ride. Every arrival
+    of the two days, not the sensor's next ten nor a hundred."""
+    return await _route_times(hass, data, "dest_arrival_dt")
+
+
+async def _route_times(hass, data, at):
+    """The entry's rides today and tomorrow, from from_time on, and what
+    lies past them, each ride read at `at` (_route_departures_between).
 
     Two empty lists said the same for a line that resumes on Thursday, a
     line suspended and a feed that ran out. As the timetable file does,
-    next is the first departure after the two days, None when the
-    calendar has none, and until the last service day the feed publishes:
-    an empty answer with no next reads "nothing published until then".
+    next is the first one after the two days, None when the calendar has
+    none, and until the last service day the feed publishes: an empty
+    answer with no next reads "nothing published until then".
     """
-    _LOGGER.debug("Getting route departures with data: %s", data)
+    _LOGGER.debug("Getting route %s with data: %s", at, data)
     config_entry = hass.config_entries.async_get_entry(data.get("config_entry",""))
     empty = {"today": [], "tomorrow": [], "next": None, "until": None}
     if config_entry is None:
@@ -2746,12 +2767,12 @@ async def get_route_departures(hass, data):
         # departure is usually in it, a run of tomorrow's service after
         # midnight or the day after's first
         instants = await hass.async_add_executor_job(
-            _route_departures_between, _data, yesterday_date, day_after)
+            _route_departures_between, _data, yesterday_date, day_after, 5000, at)
         later = [i for i in instants
                  if dt_util.as_local(i).strftime(dt_util.DATE_STR_FORMAT) > tomorrow_date]
         next_instant = later[0] if later else await hass.async_add_executor_job(
             _route_departure_from, _data,
-            (now + datetime.timedelta(days=3)).strftime(dt_util.DATE_STR_FORMAT))
+            (now + datetime.timedelta(days=3)).strftime(dt_util.DATE_STR_FORMAT), at)
         until = await hass.async_add_executor_job(
             last_service_day, os.path.join(hass.config.path(DEFAULT_PATH), cf_data["file"] + ".zip"))
     finally:
@@ -2776,7 +2797,7 @@ async def get_route_departures(hass, data):
     _departures = {"today": today_departures, "tomorrow": tomorrow_departures,
                    "next": next_instant.isoformat() if next_instant else None,
                    "until": until}
-    _LOGGER.debug("Departures returned: %s", _departures)
+    _LOGGER.debug("Route %s returned: %s", at, _departures)
     return _departures
     
 def _trip_stops(schedule, trips, origin_ids):
