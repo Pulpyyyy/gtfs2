@@ -459,8 +459,8 @@ def setup(hass, config):
         Refreshes the datasource through the scratch database: the fresh
         feed is filtered down to the routes actually followed, rebuilt
         beside the live file and swapped in, so the sensors never read a
-        half-built database. Falls back to the legacy full extract when
-        the datasource has no routes to refresh.
+        half-built database. A datasource with no line yet, a source this
+        call creates included, is built whole the same way.
 
         A source that exists is refreshed from what it knows about itself,
         exactly like the update entity and the scheduled check: its own

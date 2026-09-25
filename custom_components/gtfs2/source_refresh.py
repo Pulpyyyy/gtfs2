@@ -297,18 +297,17 @@ def version_label(meta: dict):
 def refresh_source(hass: HomeAssistant, path, data) -> bool:
     """The refresh itself plus its record, synchronous for executor jobs.
 
-    Success means the swap rebuild delivered: only then is the database
-    known to be what the zip is. The legacy fallback spawns an unpack and
-    reports "extracting", which is not yet a built database, so it is not
-    recorded either; its import writes the same files the fallback path
-    always did. A None from the fallback is a feed refused for holding only
-    future dates: nothing was built, as when the swap path refuses it.
+    Success means a new database was swapped in, route by route or whole:
+    only then is the database known to be what the zip is, and recorded.
+    Anything else built nothing: a refusal, a failure, and the strings the
+    legacy extract used to answer with ("extracting" among them), which no
+    refresh gives any more.
     """
     result = refresh_datasource(hass, path, data)
-    if isinstance(result, dict):
-        _record_installed(hass, data.get(CONF_FILE) or data.get("file"))
-        return True
-    return result not in (None, False, "no_data_file", "no_zip_file")
+    if not isinstance(result, dict):
+        return False
+    _record_installed(hass, data.get(CONF_FILE) or data.get("file"))
+    return True
 
 
 def refresh_data_for(hass: HomeAssistant, entry: ConfigEntry) -> dict:

@@ -1,10 +1,11 @@
 """What refresh_source counts as a refresh that delivered.
 
-refresh_source turns the many answers of refresh_datasource into one yes
-or no, and the update entity tells the user its install failed on a no.
-A built database is a yes, and so is an unpacking left running; a feed
-refused for holding only future dates built nothing and is a no, the
-same answer the swap path gives it.
+refresh_source turns the answers of refresh_datasource into one yes or
+no, and the update entity tells the user its install failed on a no. A
+database swapped in, route by route or whole, is a yes; anything else
+built nothing. The legacy extract answered "extracting" for an unpacking
+left running, counted a yes; no refresh goes that way any more, and a
+string is a no.
 """
 from __future__ import annotations
 
@@ -18,7 +19,9 @@ source_refresh = ha_stub.load("source_refresh")
 
 ANSWERS = [
     ({"R1": 12}, True),
-    ("extracting", True),
+    # a whole build names its lines, without counts
+    ({"R1": None}, True),
+    ("extracting", False),
     (None, False),
     (False, False),
     ("no_data_file", False),

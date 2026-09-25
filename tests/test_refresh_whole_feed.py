@@ -56,3 +56,46 @@ def test_every_followed_line_there_swaps(tmp_path):
     assert got == {"B1": None}
     assert "lines_missing" not in data
     assert "marker" not in _tables(gtfs_dir / "src.sqlite")
+
+
+def _refresh(gtfs_dir, monkeypatch):
+    """refresh_datasource on a zip source, a fork refused: the legacy
+    extract forked and rebuilt the database in place."""
+    import types
+    gtfs_helper = ha_stub.load("gtfs_helper")
+
+    def no_fork():
+        raise AssertionError("the legacy extract ran")
+    monkeypatch.setattr(gtfs_helper.os, "fork", no_fork, raising=False)
+    hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(gtfs_dir)))
+    return source_zip.refresh_datasource(hass, "gtfs2", {"file": "src", "extract_from": "zip"})
+
+
+def _trips(path):
+    conn = sqlite3.connect(path)
+    try:
+        return conn.execute("select count(*) from trips").fetchone()[0]
+    finally:
+        conn.close()
+
+
+def test_a_source_with_no_database_is_built_whole(tmp_path, monkeypatch):
+    gtfs_dir = tmp_path / "gtfs2"
+    gtfs_dir.mkdir()
+    shutil.copy(FEED, gtfs_dir / "src.zip")
+    sent = (gtfs_dir / "src.zip").read_bytes()
+    assert _refresh(gtfs_dir, monkeypatch) == {"B1": None}
+    assert _trips(gtfs_dir / "src.sqlite") > 0
+    assert (gtfs_dir / "src.zip").read_bytes() == sent
+    assert not list(gtfs_dir.glob("src.refresh*")) and not (gtfs_dir / "src.extracting").exists()
+
+
+def test_a_database_a_first_import_left_empty_is_built_whole(tmp_path, monkeypatch):
+    # the schema of a real file whose first line never came in
+    gtfs_dir = _source(tmp_path)
+    conn = sqlite3.connect(gtfs_dir / "src.sqlite")
+    conn.execute("create table trips (trip_id varchar, route_id varchar)")
+    conn.commit()
+    conn.close()
+    assert _refresh(gtfs_dir, monkeypatch) == {"B1": None}
+    assert _trips(gtfs_dir / "src.sqlite") > 0 and "marker" not in _tables(gtfs_dir / "src.sqlite")

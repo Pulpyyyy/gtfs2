@@ -30,7 +30,7 @@ from .zip_peek import (extract_member, inner_zips, inner_zips_in_file,
                        open_member)
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
-from .gtfs_helper import IMPORT_IGNORED, check_extracting, drop_import_indexes, get_gtfs
+from .gtfs_helper import IMPORT_IGNORED, check_extracting, drop_import_indexes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -332,14 +332,18 @@ def refresh_datasource(hass, path, data):
     The coordinators reopen the file on their next cycle, so they only ever
     see the old complete data or the new complete data.
 
-    Falls back to the legacy full extract when there is nothing to refresh
-    from: no database yet, or one that follows no route.
+    A source that follows no line yet, with no database or one a first
+    import left empty, is built whole, the way the sources a train or local
+    stops sensor reads are refreshed: every line of the feed, into a new
+    file swapped in. It used to go down the legacy extract, which deleted
+    the database and the zip and rebuilt the network in place, in a forked
+    process that outlived the source lock.
 
     data may carry read_routes, the lines the source's sensors name: the
     new edition must still carry trips for those, or the swap is refused.
 
-    Returns {route_id: stop_times} on success, False on failure, and
-    whatever get_gtfs returns when it falls back.
+    Returns {route_id: stop_times} on success ({route_id: None} for a
+    whole build), False on failure.
     """
     gtfs_dir = hass.config.path(path)
     filename = data["file"]
@@ -348,16 +352,14 @@ def refresh_datasource(hass, path, data):
     if loaded is None:
         # the file is there but would not answer: something holds it, a
         # VACUUM or an intern, or it is momentarily unreadable. Reading that
-        # as "follows no route" would send this refresh down the legacy
-        # path, which deletes the database and the zip and rebuilds the
-        # whole network in place
+        # as "follows no route" would rebuild the whole network over it
         _LOGGER.error("Cannot read the routes of %s, keeping its data", filename)
         return False
     routes = sorted(loaded)
+    whole = data.get("whole_feed") or not routes
     if not routes:
-        _LOGGER.info("Datasource %s follows no route yet, extracting it whole",
+        _LOGGER.info("Datasource %s follows no route yet, building it whole",
                      filename)
-        return get_gtfs(hass, path, data, True)
 
     zip_name = filename + ".zip"
     zip_path = os.path.join(gtfs_dir, zip_name)
@@ -395,7 +397,7 @@ def refresh_datasource(hass, path, data):
                      "keeping the current data")
         return False
 
-    if data.get("whole_feed"):
+    if whole:
         return _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data)
 
     # the new real database is built under its own datasource name, so every
