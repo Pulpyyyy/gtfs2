@@ -220,12 +220,14 @@
         "data": {
           "trip_update_url": "Adresse du flux des départs",
           "vehicle_position_url": "Adresse du flux de position des véhicules (facultatif)",
+          "vehicle_max_age": "Âge maximal d'une position de véhicule",
           "alerts_url": "Adresse du flux d'alertes trafic (facultatif)",
           "needs_api_key": "Une clé d'API est nécessaire"
         },
         "data_description": {
           "trip_update_url": "Le retard réel sur votre capteur, au lieu de l'horaire théorique.\n`…/`**`trip-updates`**",
           "vehicle_position_url": "Où se trouvent les véhicules, pour une carte. Laissez vide si vous n'en voulez pas.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minutes au-delà desquelles un véhicule dont la position n'a pas été mise à jour quitte la carte : certains flux continuent de publier les véhicules rentrés au dépôt. 0 garde tous les véhicules.",
           "alerts_url": "Les messages de perturbation de l'exploitant. Laissez vide si vous n'en voulez pas.\n`…/`**`service-alerts`**",
           "needs_api_key": "Cochez si le fournisseur vous a remis une clé pour lire ces flux."
         }
@@ -334,12 +336,14 @@
         "data": {
           "trip_update_url": "Adresse du flux des départs",
           "vehicle_position_url": "Adresse du flux de position des véhicules (facultatif)",
+          "vehicle_max_age": "Âge maximal d'une position de véhicule",
           "alerts_url": "Adresse du flux d'alertes trafic (facultatif)",
           "needs_api_key": "Une clé d'API est nécessaire"
         },
         "data_description": {
           "trip_update_url": "Le retard réel sur votre capteur, au lieu de l'horaire théorique.\n`…/`**`trip-updates`**",
           "vehicle_position_url": "Où se trouvent les véhicules, pour une carte. Laissez vide si vous n'en voulez pas.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minutes au-delà desquelles un véhicule dont la position n'a pas été mise à jour quitte la carte : certains flux continuent de publier les véhicules rentrés au dépôt. 0 garde tous les véhicules.",
           "alerts_url": "Les messages de perturbation de l'exploitant. Laissez vide si vous n'en voulez pas.\n`…/`**`service-alerts`**",
           "needs_api_key": "Cochez si le fournisseur vous a remis une clé pour lire ces flux."
         }

@@ -220,12 +220,14 @@
         "data": {
           "trip_update_url": "Departures feed address",
           "vehicle_position_url": "Vehicle positions feed address (optional)",
+          "vehicle_max_age": "Maximum age of a vehicle position",
           "alerts_url": "Service alerts feed address (optional)",
           "needs_api_key": "This requires an API key"
         },
         "data_description": {
           "trip_update_url": "The real delay on your sensor, instead of the timetable.\n`…/`**`trip-updates`**",
           "vehicle_position_url": "Where the vehicles are, for a map card. Leave empty if you do not want it.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minutes after which a vehicle whose position has not been updated leaves the map: some feeds keep publishing the vehicles back at the depot. 0 keeps every vehicle.",
           "alerts_url": "Disruption messages from the operator. Leave empty if you do not want it.\n`…/`**`service-alerts`**",
           "needs_api_key": "Tick this if the provider gave you a key to read these feeds."
         }
@@ -334,12 +336,14 @@
         "data": {
           "trip_update_url": "Departures feed address",
           "vehicle_position_url": "Vehicle positions feed address (optional)",
+          "vehicle_max_age": "Maximum age of a vehicle position",
           "alerts_url": "Service alerts feed address (optional)",
           "needs_api_key": "This requires an API key"
         },
         "data_description": {
           "trip_update_url": "The real delay on your sensor, instead of the timetable.\n`…/`**`trip-updates`**",
           "vehicle_position_url": "Where the vehicles are, for a map card. Leave empty if you do not want it.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minutes after which a vehicle whose position has not been updated leaves the map: some feeds keep publishing the vehicles back at the depot. 0 keeps every vehicle.",
           "alerts_url": "Disruption messages from the operator. Leave empty if you do not want it.\n`…/`**`service-alerts`**",
           "needs_api_key": "Tick this if the provider gave you a key to read these feeds."
         }

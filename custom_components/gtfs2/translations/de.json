@@ -220,12 +220,14 @@
         "data": {
           "trip_update_url": "Adresse des Abfahrten-Feeds",
           "vehicle_position_url": "Adresse des Fahrzeugpositions-Feeds (optional)",
+          "vehicle_max_age": "Höchstalter einer Fahrzeugposition",
           "alerts_url": "Adresse des Störungsmeldungs-Feeds (optional)",
           "needs_api_key": "Ein API-Schlüssel ist erforderlich"
         },
         "data_description": {
           "trip_update_url": "Die tatsächliche Verspätung an Ihrem Sensor statt des Fahrplans.\n`…/`**`trip-updates`**",
           "vehicle_position_url": "Wo die Fahrzeuge sind, für eine Karte. Leer lassen, wenn nicht gewünscht.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minuten, nach denen ein Fahrzeug, dessen Position nicht aktualisiert wurde, von der Karte verschwindet: manche Feeds melden weiterhin Fahrzeuge, die ins Depot zurückgekehrt sind. 0 behält alle Fahrzeuge.",
           "alerts_url": "Meldungen des Betreibers. Leer lassen, wenn nicht gewünscht.\n`…/`**`service-alerts`**",
           "needs_api_key": "Ankreuzen, wenn der Anbieter Ihnen einen Schlüssel für diese Feeds gegeben hat."
         }
@@ -326,12 +328,14 @@
         "data": {
           "trip_update_url": "Adresse des Abfahrten-Feeds",
           "vehicle_position_url": "Adresse des Fahrzeugpositions-Feeds (optional)",
+          "vehicle_max_age": "Höchstalter einer Fahrzeugposition",
           "alerts_url": "Adresse des Störungsmeldungs-Feeds (optional)",
           "needs_api_key": "Ein API-Schlüssel ist erforderlich"
         },
         "data_description": {
           "trip_update_url": "Die tatsächliche Verspätung an Ihrem Sensor statt des Fahrplans.\n`…/`**`trip-updates`**",
           "vehicle_position_url": "Wo die Fahrzeuge sind, für eine Karte. Leer lassen, wenn nicht gewünscht.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minuten, nach denen ein Fahrzeug, dessen Position nicht aktualisiert wurde, von der Karte verschwindet: manche Feeds melden weiterhin Fahrzeuge, die ins Depot zurückgekehrt sind. 0 behält alle Fahrzeuge.",
           "alerts_url": "Meldungen des Betreibers. Leer lassen, wenn nicht gewünscht.\n`…/`**`service-alerts`**",
           "needs_api_key": "Ankreuzen, wenn der Anbieter Ihnen einen Schlüssel für diese Feeds gegeben hat."
         }

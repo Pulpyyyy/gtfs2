@@ -1367,11 +1367,17 @@ def test_a_source_s_options_hold_its_realtime_feeds_and_its_static_refresh(world
         assert menu["menu_options"] == ["real_time", "static_refresh"]
         feeds = shown(await choose(hass, menu, "real_time", options), FORM, "real_time")
         assert {key: default(feeds, key) for key in fields(feeds)} == {
-            "trip_update_url": "", "vehicle_position_url": "", "alerts_url": "",
+            "trip_update_url": "", "vehicle_position_url": "",
+            "vehicle_max_age": const.DEFAULT_VEHICLE_MAX_AGE, "alerts_url": "",
             "needs_api_key": False}
         shown(await submit(hass, feeds, options, alerts_url="https://rt.example/alerts"), CREATE)
+        # the vehicle age limit is stored only when it is not the default
         assert dict(source.options) == {"alerts_url": "https://rt.example/alerts",
                                         "rt_enabled": False}
+        feeds = await choose(hass, await options_of(hass, source), "real_time", options)
+        shown(await submit(hass, feeds, options, vehicle_max_age=30), CREATE)
+        assert dict(source.options) == {"alerts_url": "https://rt.example/alerts",
+                                        "vehicle_max_age": 30, "rt_enabled": False}
 
         feeds = await choose(hass, await options_of(hass, source), "real_time", options)
         assert default(feeds, "alerts_url") == "https://rt.example/alerts"
@@ -1381,6 +1387,7 @@ def test_a_source_s_options_hold_its_realtime_feeds_and_its_static_refresh(world
                            accept=True), CREATE)
         assert dict(source.options) == {
             "trip_update_url": "https://rt.example/trips", "alerts_url": "https://rt.example/alerts",
+            "vehicle_max_age": 30,
             "api_key": "rt-secret", "api_key_name": "api_key", "api_key_location": "header",
             "accept": True, "rt_enabled": False}
         realtime = dict(source.options)

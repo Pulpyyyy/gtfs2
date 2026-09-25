@@ -38,9 +38,11 @@ from .const import (
     CONF_STATIC_REFRESH_MODE,
     CONF_TRIP_UPDATE_URL,
     CONF_URL,
+    CONF_VEHICLE_MAX_AGE,
     CONF_VEHICLE_POSITION_URL,
     DEFAULT_API_KEY_LOCATION,
     DEFAULT_API_KEY_NAME,
+    DEFAULT_VEHICLE_MAX_AGE,
     DEFAULT_PATH,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
@@ -70,6 +72,15 @@ def _source_rt_schema(opts):
     return {
         vol.Optional(CONF_TRIP_UPDATE_URL, default=opts.get(CONF_TRIP_UPDATE_URL, "")): str,
         vol.Optional(CONF_VEHICLE_POSITION_URL, default=opts.get(CONF_VEHICLE_POSITION_URL, "")): str,
+        vol.Optional(
+            CONF_VEHICLE_MAX_AGE,
+            default=opts.get(CONF_VEHICLE_MAX_AGE, DEFAULT_VEHICLE_MAX_AGE),
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0, max=1440, step=1, unit_of_measurement="min",
+                mode=selector.NumberSelectorMode.BOX,
+            )
+        ),
         vol.Optional(CONF_ALERTS_URL, default=opts.get(CONF_ALERTS_URL, "")): str,
         # the three key fields only matter for the few feeds that need one
         vol.Optional(CONF_NEEDS_API_KEY, default=bool(opts.get(CONF_API_KEY))): selector.BooleanSelector(),
@@ -145,6 +156,11 @@ def _collect_source_rt_options(url_fields, key_fields, previous=None):
         value = (url_fields.get(key) or "").strip()
         if value:
             options[key] = value
+    # the vehicle age limit is kept only when it is not the default, which
+    # the coordinator applies when the options say nothing
+    max_age = url_fields.get(CONF_VEHICLE_MAX_AGE)
+    if max_age is not None and int(max_age) != DEFAULT_VEHICLE_MAX_AGE:
+        options[CONF_VEHICLE_MAX_AGE] = int(max_age)
     if (key_fields.get(CONF_API_KEY) or "").strip():
         options[CONF_API_KEY] = key_fields[CONF_API_KEY].strip()
         options[CONF_API_KEY_NAME] = key_fields.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME)

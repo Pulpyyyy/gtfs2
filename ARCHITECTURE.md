@@ -832,6 +832,12 @@ www/gtfs2/
   timetable_<name>.json                an entry's departures over the next days
 ```
 
+The vehicle file holds the vehicles on a trip whose position is recent:
+some feeds keep publishing the vehicles gone back to the depot under
+their last trip. Older than the source's limit (`vehicle_max_age` on its
+realtime screen, 10 minutes, 0 for no limit) a position is left out; one
+with no timestamp stays, a feed served as json may give none.
+
 `www/` is not where an integration usually writes. It is the one place a
 card can read a file from without a custom HTTP view, which the fork does
 not want to maintain. Each file is written beside its target and renamed,

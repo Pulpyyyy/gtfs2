@@ -220,12 +220,14 @@
         "data": {
           "trip_update_url": "Dirección del flujo de salidas",
           "vehicle_position_url": "Dirección del flujo de posiciones de vehículos (opcional)",
+          "vehicle_max_age": "Antigüedad máxima de la posición de un vehículo",
           "alerts_url": "Dirección del flujo de avisos de servicio (opcional)",
           "needs_api_key": "Se necesita una clave API"
         },
         "data_description": {
           "trip_update_url": "El retraso real en su sensor, en lugar del horario previsto.\n`…/`**`trip-updates`**",
           "vehicle_position_url": "Dónde están los vehículos, para un mapa. Déjelo vacío si no lo quiere.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minutos tras los cuales un vehículo cuya posición no se ha actualizado sale del mapa: algunos feeds siguen publicando los vehículos que han vuelto al depósito. 0 conserva todos los vehículos.",
           "alerts_url": "Mensajes de incidencias del operador. Déjelo vacío si no lo quiere.\n`…/`**`service-alerts`**",
           "needs_api_key": "Marque si el proveedor le dio una clave para leer estos flujos."
         }
@@ -326,12 +328,14 @@
         "data": {
           "trip_update_url": "Dirección del flujo de salidas",
           "vehicle_position_url": "Dirección del flujo de posiciones de vehículos (opcional)",
+          "vehicle_max_age": "Antigüedad máxima de la posición de un vehículo",
           "alerts_url": "Dirección del flujo de avisos de servicio (opcional)",
           "needs_api_key": "Se necesita una clave API"
         },
         "data_description": {
           "trip_update_url": "El retraso real en su sensor, en lugar del horario previsto.\n`…/`**`trip-updates`**",
           "vehicle_position_url": "Dónde están los vehículos, para un mapa. Déjelo vacío si no lo quiere.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minutos tras los cuales un vehículo cuya posición no se ha actualizado sale del mapa: algunos feeds siguen publicando los vehículos que han vuelto al depósito. 0 conserva todos los vehículos.",
           "alerts_url": "Mensajes de incidencias del operador. Déjelo vacío si no lo quiere.\n`…/`**`service-alerts`**",
           "needs_api_key": "Marque si el proveedor le dio una clave para leer estos flujos."
         }

@@ -26,6 +26,8 @@ from .const import (
     CONF_ACCEPT_HEADER_PB,
     CONF_TRIP_UPDATE_URL,
     CONF_VEHICLE_POSITION_URL,
+    CONF_VEHICLE_MAX_AGE,
+    DEFAULT_VEHICLE_MAX_AGE,
     CONF_ALERTS_URL,
     ATTR_NEXT_RT,
     ICON,
@@ -278,6 +280,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             self._route_delimiter = None
             self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
             self._vehicle_position_url = with_query_key(rt_cfg.get(CONF_VEHICLE_POSITION_URL), rt_cfg)
+            self._vehicle_max_age = rt_cfg.get(CONF_VEHICLE_MAX_AGE, DEFAULT_VEHICLE_MAX_AGE)
             self._alerts_url = with_query_key(rt_cfg.get(CONF_ALERTS_URL), rt_cfg)
             self._headers = rt_headers(rt_cfg)
             self._icon = ICONS.get(int(self._data["route_type"]), ICON)

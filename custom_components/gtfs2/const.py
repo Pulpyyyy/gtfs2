@@ -330,6 +330,10 @@ CONF_API_KEY_NAME = "api_key_name"
 CONF_ACCEPT_HEADER_PB = "accept"
 CONF_TRIP_UPDATE_URL = "trip_update_url"
 CONF_VEHICLE_POSITION_URL = "vehicle_position_url"
+# minutes a vehicle position stays on the map: some feeds keep publishing
+# the vehicles gone back to the depot under their last trip. 0 keeps all
+CONF_VEHICLE_MAX_AGE = "vehicle_max_age"
+DEFAULT_VEHICLE_MAX_AGE = 10
 CONF_ALERTS_URL = "alerts_url"
 
 DEFAULT_API_KEY_NAME = "api_key"

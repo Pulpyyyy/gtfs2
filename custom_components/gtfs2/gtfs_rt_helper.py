@@ -38,6 +38,7 @@ from .const import (
     CONF_API_KEY_NAME,
     CONF_API_KEY_LOCATION,
     CONF_ACCEPT_HEADER_PB,
+    DEFAULT_VEHICLE_MAX_AGE,
     DEFAULT_PATH_GEOJSON,
 
     TIME_STR_FORMAT
@@ -832,6 +833,20 @@ def _trip_directions(schedule, trip_ids):
     return {str(trip): str(direction) for trip, direction in rows if direction is not None}
 
 
+def _left_standing(vehicle, max_age, now):
+    """Whether a vehicle's position is older than max_age minutes.
+
+    A position without a timestamp, absent or 0, is kept: a feed served as
+    json may not give one, and a strict rule would empty its map. So is
+    every position when max_age is 0.
+    """
+    try:
+        stamp = int(vehicle.get("timestamp") or 0)
+    except (TypeError, ValueError):
+        return False
+    return bool(max_age and stamp and now - stamp > max_age * 60)
+
+
 def get_rt_vehicle_positions(self):
     feed_entities = get_gtfs_feed_entities(
         url=self._vehicle_position_url,
@@ -860,6 +875,8 @@ def get_rt_vehicle_positions(self):
     # of four GVB trams), and the vehicle feed still carries the provider's,
     # which put those vehicles on the other direction's map
     board = {str(t) for t in (getattr(self, "_trip_list", None) or ())}
+    max_age = getattr(self, "_vehicle_max_age", DEFAULT_VEHICLE_MAX_AGE)
+    now = time.time()
     static_direction = _trip_directions(
         (getattr(self, "_data", None) or {}).get("schedule"),
         [e["vehicle"]["trip"]["trip_id"] for e in feed_entities
@@ -869,8 +886,11 @@ def get_rt_vehicle_positions(self):
     for entity in feed_entities:
         vehicle = entity["vehicle"]
 
-        if not vehicle["trip"]["trip_id"]:
-            # Vehicle is not in service
+        if not vehicle["trip"]["trip_id"] or _left_standing(vehicle, max_age, now):
+            # Vehicle is not in service; nor is one whose position is older
+            # than the source's limit: some feeds keep publishing the
+            # vehicles gone back to the depot under their last trip, stacked
+            # at the terminus among the ones still running
             continue
         if vehicle["trip"]["trip_id"] == self._trip_id: 
             _LOGGER.debug('Adding position for TripId: %s, RouteId: %s, DirectionId: %s, Lat: %s, Lon: %s, crc_trip_id: %s', vehicle["trip"]["trip_id"],vehicle["trip"]["route_id"],vehicle["trip"]["direction_id"],vehicle["position"]["latitude"],vehicle["position"]["longitude"], binascii.crc32((vehicle["trip"]["trip_id"]).encode('utf8')))  
