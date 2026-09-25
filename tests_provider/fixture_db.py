@@ -27,6 +27,7 @@ import os
 import shutil
 import tempfile
 import types
+import zipfile
 
 import ha_stub
 import pygtfs
@@ -61,9 +62,15 @@ def build(fixtures):
     path = os.path.join(directory, "fixture.sqlite")
     schedule = pygtfs.Schedule(path)
     _ENGINES.append(schedule.engine)
+    source = os.path.join(fixtures, "static.zip")
+    if ha_stub.load("gtfs_filter").feed_info_unreadable(source):
+        # feed_info dates pygtfs cannot read (Krakow's trams leave them
+        # empty) stop its whole import: an install then leaves the table
+        # out, and so does this
+        source = _without(source, "feed_info.txt", directory)
     # pygtfs prints a line per table it reads
     with contextlib.redirect_stdout(io.StringIO()):
-        pygtfs.append_feed(schedule, os.path.join(fixtures, "static.zip"))
+        pygtfs.append_feed(schedule, source)
     # and what an install adds before any query: the indexes the queries
     # lean on, the agency a route may lack. Without the indexes a train
     # departure took 0.74 s on Metro-North against 0.06 s, and the 48-feed
@@ -73,6 +80,17 @@ def build(fixtures):
     ha_stub.load("gtfs_helper").check_datasource_index(hass, schedule, "", "fixture")
     _freeze_sqlite_now(schedule.engine)
     return schedule
+
+
+def _without(source, name, directory):
+    """A copy of the zip at source, in directory, without the member name."""
+    copy = os.path.join(directory, "static.zip")
+    with zipfile.ZipFile(source) as zin, \
+            zipfile.ZipFile(copy, "w", zipfile.ZIP_DEFLATED) as zout:
+        for member in zin.namelist():
+            if member.rsplit("/", 1)[-1] != name:
+                zout.writestr(member, zin.read(member))
+    return copy
 
 
 def shared(fixtures):
