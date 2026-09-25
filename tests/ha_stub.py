@@ -85,6 +85,7 @@ want the real thing, and install() steps aside as soon as it is installed.
 from __future__ import annotations
 
 import datetime
+import enum
 import importlib.util
 import re
 import sys
@@ -461,6 +462,330 @@ def _install_sensor_platform() -> None:
 # --- end of the sensor platform ----------------------------------------------
 
 
+# --- config flows ------------------------------------------------------------
+# What a config flow and an options flow are built on, as Home Assistant
+# 2026.2 builds them: the result each step hands back, key for key, the
+# unique_id bookkeeping, the options flow's config_entry, and the selectors.
+# A selector validates a submitted value the way the real one does: a pick
+# among the options offered, a boolean, a number within its bounds, an
+# entity of the domains allowed. What drives a flow (the manager that runs
+# a submission through the screen's schema, calls the next step and files
+# the entry) is the test's own; this only answers what a step calls.
+
+class _FlowResultType(enum.StrEnum):
+    FORM = "form"
+    CREATE_ENTRY = "create_entry"
+    ABORT = "abort"
+    EXTERNAL_STEP = "external"
+    EXTERNAL_STEP_DONE = "external_done"
+    SHOW_PROGRESS = "progress"
+    SHOW_PROGRESS_DONE = "progress_done"
+    MENU = "menu"
+
+
+class _AbortFlow(Exception):
+    """Ends the flow on an abort, raised from anywhere inside a step."""
+
+    def __init__(self, reason, description_placeholders=None) -> None:
+        super().__init__(f"Flow aborted: {reason}")
+        self.reason = reason
+        self.description_placeholders = description_placeholders
+
+
+class _FlowHandler:
+    """The results a step returns, shaped as data_entry_flow.FlowHandler
+    shapes them. The manager sets hass, handler, flow_id and context."""
+
+    VERSION = 1
+    MINOR_VERSION = 1
+    hass = None
+    handler = None
+    flow_id = None
+    cur_step = None
+    init_step = "init"
+
+    @property
+    def source(self):
+        return self.context.get("source")
+
+    def _result(self, **fields):
+        return {"flow_id": self.flow_id, "handler": self.handler, **fields}
+
+    def async_show_form(self, *, step_id=None, data_schema=None, errors=None,
+                        description_placeholders=None, last_step=None, preview=None):
+        result = self._result(type=_FlowResultType.FORM, data_schema=data_schema,
+                              errors=errors, description_placeholders=description_placeholders,
+                              last_step=last_step, preview=preview)
+        if step_id is not None:
+            result["step_id"] = step_id
+        return result
+
+    def async_show_menu(self, *, step_id=None, menu_options, sort=False,
+                        description_placeholders=None):
+        import voluptuous as vol  # at call time: the stub itself stays stdlib
+        result = self._result(type=_FlowResultType.MENU,
+                              data_schema=vol.Schema({"next_step_id": vol.In(menu_options)}),
+                              menu_options=menu_options, sort=sort,
+                              description_placeholders=description_placeholders)
+        if step_id is not None:
+            result["step_id"] = step_id
+        return result
+
+    def async_show_progress(self, *, step_id=None, progress_action,
+                            description_placeholders=None, progress_task=None):
+        result = self._result(type=_FlowResultType.SHOW_PROGRESS,
+                              progress_action=progress_action,
+                              description_placeholders=description_placeholders,
+                              progress_task=progress_task)
+        if step_id is not None:
+            result["step_id"] = step_id
+        return result
+
+    def async_show_progress_done(self, *, next_step_id):
+        return self._result(type=_FlowResultType.SHOW_PROGRESS_DONE, step_id=next_step_id)
+
+    def async_abort(self, *, reason, description_placeholders=None):
+        return self._result(type=_FlowResultType.ABORT, reason=reason,
+                            description_placeholders=description_placeholders)
+
+    def async_create_entry(self, *, title=None, data, description=None,
+                           description_placeholders=None):
+        return self._result(type=_FlowResultType.CREATE_ENTRY, title=title, data=data,
+                            description=description,
+                            description_placeholders=description_placeholders,
+                            version=self.VERSION, minor_version=self.MINOR_VERSION)
+
+    def async_remove(self) -> None:
+        """Called by the manager once the flow is over, however it ended."""
+
+
+class _Handlers(dict):
+    """config_entries.HANDLERS: the flow class of each domain."""
+
+    def register(self, domain):
+        def keep(cls):
+            self[domain] = cls
+            return cls
+        return keep
+
+
+_HANDLERS = _Handlers()
+
+
+class _ConfigFlow(_FlowHandler):
+    """config_entries.ConfigFlow: a unique_id refuses a second entry."""
+
+    def __init_subclass__(cls, *, domain=None, **kwargs) -> None:
+        super().__init_subclass__(**kwargs)
+        if domain is not None:
+            _HANDLERS.register(domain)(cls)
+
+    @property
+    def unique_id(self):
+        return self.context.get("unique_id")
+
+    async def async_set_unique_id(self, unique_id=None, *, raise_on_progress=True):
+        if unique_id is None:
+            self.context["unique_id"] = None
+            return None
+        if raise_on_progress and any(
+                flow["flow_id"] != self.flow_id and flow["context"].get("source") != "reauth"
+                for flow in self.hass.config_entries.flow.async_progress_by_handler(
+                    self.handler, include_uninitialized=True,
+                    match_context={"unique_id": unique_id})):
+            raise _AbortFlow("already_in_progress")
+        self.context["unique_id"] = unique_id
+        return self.hass.config_entries.async_entry_for_domain_unique_id(
+            self.handler, unique_id)
+
+    def _abort_if_unique_id_configured(self, updates=None, reload_on_update=True, *,
+                                       error="already_configured",
+                                       description_placeholders=None) -> None:
+        if self.unique_id is None:
+            return
+        entry = self.hass.config_entries.async_entry_for_domain_unique_id(
+            self.handler, self.unique_id)
+        if entry is None:
+            return
+        if updates is not None:
+            self.hass.config_entries.async_update_entry(entry, data={**entry.data, **updates})
+        raise _AbortFlow(error, description_placeholders)
+
+    def async_create_entry(self, *, title, data, description=None,
+                           description_placeholders=None, options=None, subentries=None):
+        result = super().async_create_entry(
+            title=title, data=data, description=description,
+            description_placeholders=description_placeholders)
+        result["options"] = options or {}
+        result["subentries"] = subentries or ()
+        return result
+
+
+class _OptionsFlow(_FlowHandler):
+    """config_entries.OptionsFlow: the entry is looked up by the handler,
+    which is its entry_id, once the manager has handed the flow a hass."""
+
+    @property
+    def config_entry(self):
+        if self.hass is None:
+            raise ValueError("The config entry is not available during initialisation")
+        return self.hass.config_entries.async_get_known_entry(self.handler)
+
+
+class _SelectSelectorMode(enum.StrEnum):
+    LIST = "list"
+    DROPDOWN = "dropdown"
+
+
+class _NumberSelectorMode(enum.StrEnum):
+    BOX = "box"
+    SLIDER = "slider"
+
+
+class _Selector:
+    """A selector keeps its config, completed with the defaults the real
+    CONFIG_SCHEMA fills in, and refuses a config the real one refuses."""
+
+    def __init__(self, config=None) -> None:
+        self.config = self._checked(dict(config or {}))
+
+    def _checked(self, config):
+        return config
+
+
+class _SelectSelector(_Selector):
+    """One of the options, or a list of them with multiple; any text as
+    well with custom_value. The options are all strings, or all dicts of
+    exactly a string value and a string label."""
+
+    def _checked(self, config):
+        options = config.get("options")
+        if options is None:
+            raise _invalid("required key not provided @ data['options']")
+        as_text = all(isinstance(option, str) for option in options)
+        as_dicts = all(isinstance(option, dict) and set(option) == {"value", "label"}
+                       and all(isinstance(option[k], str) for k in option)
+                       for option in options)
+        if not (as_text or as_dicts):
+            raise _invalid(f"options must all be strings or all value/label dicts: {options!r}")
+        if "mode" in config:
+            config["mode"] = _SelectSelectorMode(config["mode"]).value
+        return {"multiple": False, "custom_value": False, "sort": False, **config}
+
+    def __call__(self, data):
+        import voluptuous as vol
+        values = [option if isinstance(option, str) else option["value"]
+                  for option in self.config["options"]]
+        pick = vol.In(values)
+        if self.config["custom_value"]:
+            pick = vol.Any(pick, str)
+        if not self.config["multiple"]:
+            return pick(vol.Schema(str)(data))
+        if not isinstance(data, list):
+            raise vol.Invalid("Value should be a list")
+        return [pick(vol.Schema(str)(value)) for value in data]
+
+
+class _BooleanSelector(_Selector):
+    def __call__(self, data):
+        import voluptuous as vol
+        return vol.Coerce(bool)(data)
+
+
+class _NumberSelector(_Selector):
+    """A float, within min and max when the config sets them."""
+
+    def _checked(self, config):
+        for bound in ("min", "max"):
+            if bound in config:
+                config[bound] = float(config[bound])
+        config.setdefault("step", 1)
+        if "mode" not in config:
+            config["mode"] = "slider" if "min" in config and "max" in config else "box"
+        config["mode"] = _NumberSelectorMode(config["mode"]).value
+        if config["mode"] == "slider" and not ("min" in config and "max" in config):
+            raise _invalid("min and max are required in slider mode")
+        return config
+
+    def __call__(self, data):
+        import voluptuous as vol
+        value = vol.Coerce(float)(data)
+        if "min" in self.config and value < self.config["min"]:
+            raise vol.Invalid(f"Value {value} is too small")
+        if "max" in self.config and value > self.config["max"]:
+            raise vol.Invalid(f"Value {value} is too large")
+        return value
+
+
+_ENTITY_UUID = re.compile(r"^[0-9a-f]{32}$")
+
+
+class _EntitySelector(_Selector):
+    """An entity id of an allowed domain, or a registry id, which is not
+    looked up here; a list of them with multiple."""
+
+    def _checked(self, config):
+        return {"multiple": False, "reorder": False, **config}
+
+    def __call__(self, data):
+        def validate(value):
+            text = _cv_string(value).lower()
+            if _ENTITY_UUID.match(text):
+                return text
+            entity_id = _cv_entity_id(text)
+            domains = self.config.get("domain") or []
+            domains = [domains] if isinstance(domains, str) else list(domains)
+            if domains and entity_id.split(".", 1)[0] not in domains:
+                raise _invalid(f"Entity {entity_id} belongs to domain "
+                               f"{entity_id.split('.', 1)[0]}, expected {domains}")
+            for key, keep in (("include_entities", True), ("exclude_entities", False)):
+                if key in self.config and (entity_id in self.config[key]) != keep:
+                    raise _invalid(f"Entity {entity_id} is not allowed here")
+            return entity_id
+
+        if not self.config["multiple"]:
+            return validate(data)
+        if not isinstance(data, list):
+            raise _invalid("Value should be a list")
+        return [validate(value) for value in data]
+
+
+class _TextSelector(_Selector):
+    def _checked(self, config):
+        return {"multiline": False, "multiple": False, **config}
+
+    def __call__(self, data):
+        import voluptuous as vol
+        if not self.config["multiple"]:
+            return vol.Schema(str)(data)
+        if not isinstance(data, list):
+            raise vol.Invalid("Value should be a list")
+        return [vol.Schema(str)(value) for value in data]
+
+
+def _install_config_flow() -> None:
+    """Hang the flow bases on config_entries, and register the two modules
+    only a flow reads: data_entry_flow and helpers.selector."""
+    entries = sys.modules["homeassistant.config_entries"]
+    entries.ConfigFlow = _ConfigFlow
+    entries.OptionsFlow = _OptionsFlow
+    entries.HANDLERS = _HANDLERS
+    entries.SOURCE_USER = "user"
+    _module("homeassistant.data_entry_flow", FlowResult=dict,
+            FlowResultType=_FlowResultType, AbortFlow=_AbortFlow)
+    # the config dicts are TypedDicts in Home Assistant: calling one makes a dict
+    _module("homeassistant.helpers.selector",
+            SelectSelector=_SelectSelector, SelectSelectorConfig=dict,
+            SelectSelectorMode=_SelectSelectorMode, SelectOptionDict=dict,
+            BooleanSelector=_BooleanSelector, BooleanSelectorConfig=dict,
+            NumberSelector=_NumberSelector, NumberSelectorConfig=dict,
+            NumberSelectorMode=_NumberSelectorMode,
+            EntitySelector=_EntitySelector, EntitySelectorConfig=dict,
+            TextSelector=_TextSelector, TextSelectorConfig=dict)
+
+# --- end of the config flows -------------------------------------------------
+
+
 def installed() -> bool:
     """Whether a Home Assistant, real or already stubbed, can be imported."""
     if "homeassistant" in sys.modules:
@@ -578,6 +903,7 @@ def install() -> None:
     _module("homeassistant.exceptions", HomeAssistantError=Exception,
             PlatformNotReady=type("PlatformNotReady", (Exception,), {}))
     _install_sensor_platform()
+    _install_config_flow()
     if _MissingStub not in sys.meta_path:
         sys.meta_path.append(_MissingStub)
 
