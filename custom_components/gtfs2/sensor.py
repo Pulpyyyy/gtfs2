@@ -371,7 +371,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._say_once(message, *args)
         return self._attributes
 
-    def _update_attrs(self):  # noqa: C901 PLR0911
+    def _update_attrs(self):  # noqa: PLR0911
         _LOGGER.debug("SENSOR update attr data: %s", self.coordinator.data)
         self._icon = ICON
         if self.coordinator.data is None:
@@ -382,15 +382,16 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
             self._attributes = {}
             self._attr_extra_state_attributes = self._attributes
             return self._attributes
-        if self.coordinator.data["extracting"]:  
+        if self.coordinator.data["extracting"]:
             self._say_once("Extracting datasource: %s ,for sensor: %s", self.coordinator.data["file"], self._name)
             self._attr_native_value = None
             self._attr_attribution = None
             self._attributes = {"extracting": True}
             self._attr_extra_state_attributes = self._attributes
             return self._attributes
+        # built afresh at every update: nothing of the last one is left over
         self._attributes = {}
-        
+
         self._pygtfs = self.coordinator.data["schedule"]
         if self._pygtfs is None or isinstance(self._pygtfs, str):
             # a sentinel of get_gtfs: no zip, no database, a feed all in
@@ -405,7 +406,6 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._departure_rt = self.coordinator.data.get("next_departure_realtime_attr",None)
         self._route_type = self.coordinator.data["route_type"]
         self._available = False
-        self._state: datetime.datetime | None = None
         self._attr_device_class = SensorDeviceClass.TIMESTAMP
         # The stops, the trip, the route and its agency, as the coordinator
         # read them in the executor (departure_records): this runs on the
@@ -419,12 +419,10 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._agency = records.get("agency")
         if not self.extracting and self._route_type != "2":
             if not self._origin:
-                self._available = False
                 return self._show_nothing("Origin stop ID %s not found", self.origin)
             if not self._destination:
-                self._available = False
                 return self._show_nothing("Destination stop ID %s not found", self.destination)
-        elif self._route_type == "2" or self.extracting:
+        else:
             # a train names its ends by station, and while extracting there
             # is nothing to read: the entry's own names stand
             self._origin = self._origin or self.origin
@@ -434,10 +432,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
 
         # fetch next departures
         self._departure = self.coordinator.data["next_departure"]
-        if not self._departure:
-            self._next_departures = None
-        else:
-            self._next_departures = self._departure.get("next_departures",None)
+        self._next_departures = self._departure.get("next_departures") if self._departure else None
 
         if self._agency is False:
             _LOGGER.debug(
@@ -449,36 +444,12 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
                 getattr(self._route, "agency_id", None),
             )
 
-        # Define the state as a Agency TZ, then help TZ (which is UTC if no HA TZ set)
-        if not self._departure:
-            self._state = None
-        #elif self._agency:
-        #    _LOGGER.debug(
-        #        "Self._departure time for state value TZ: %s ",
-        #        {self._departure.get("departure_time")},
-        #    )
-        #    self._state = self._departure["departure_time"].replace(
-        #        tzinfo=dt_util.get_time_zone(self._agency.agency_timezone)
-        #    )
-        else:
-            _LOGGER.debug(
-                "Self._departure time from helper: %s",
-                {self._departure.get("departure_time")},
-            )
-            self._state = self._departure.get("departure_time")
-            
-        # settin state value
+        # the state is the departure the helper read, in its own zone
+        self._state: datetime.datetime | None = self._departure.get("departure_time") if self._departure else None
+        _LOGGER.debug("Self._departure time from helper: %s", self._state)
         self._attr_native_value = self._state
-
-        if self._agency:
-            self._attr_attribution = self._agency.agency_name
-        else:
-            self._attr_attribution = None
-
-        if self._route:
-            self._icon = ICONS.get(self._route.route_type, ICON)
-        else:
-            self._icon = ICON
+        self._attr_attribution = self._agency.agency_name if self._agency else None
+        self._icon = ICONS.get(self._route.route_type, ICON) if self._route else ICON
 
         name = (
             f"{getattr(self._agency, 'agency_name', DEFAULT_NAME)} "
@@ -488,186 +459,17 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
             name = f"{DEFAULT_NAME}"
         self._name = self._name or name
 
-        # Add departure information
-        if self._departure:
-            self._attributes[ATTR_ARRIVAL] = dt_util.as_utc(
-                self._departure.get("arrival_time")
-            ).isoformat()
-            # theoretical journey time in minutes, arrival minus departure
-            self._attributes["duration"] = self._departure.get("duration")
-
-            self._attributes[ATTR_DAY] = self._departure["day"]
-
-            if self._departure[ATTR_FIRST] is not None:
-                self._attributes[ATTR_FIRST] = self._departure["first"]
-            elif ATTR_FIRST in self._attributes:
-                del self._attributes[ATTR_FIRST]
-
-            if self._departure[ATTR_LAST] is not None:
-                self._attributes[ATTR_LAST] = self._departure["last"]
-            elif ATTR_LAST in self._attributes:
-                del self._attributes[ATTR_LAST]
-        else:
-            if ATTR_ARRIVAL in self._attributes:
-                del self._attributes[ATTR_ARRIVAL]
-            if ATTR_DAY in self._attributes:
-                del self._attributes[ATTR_DAY]
-            if ATTR_FIRST in self._attributes:
-                del self._attributes[ATTR_FIRST]
-            if ATTR_LAST in self._attributes:
-                del self._attributes[ATTR_LAST]
-
+        self._departure_times()
         # Add contextual information
         self._attributes[ATTR_OFFSET] = self._offset
-
         next_service_info(self._attributes, self._state,
                           self.coordinator.data.get("next_service_date"), self._offset)
-
-        # Add extra metadata
-        key = "agency_id"
-        if self._agency and key not in self._attributes:
-            self.append_keys(self.dict_for_table(self._agency), "Agency")
-
-        key = "origin_station_stop_id"
-        # exclude check if route_type =2 (trains) as no ID is used
-        if self._route_type != "2":
-            if self._origin and key not in self._attributes:
-                self.append_keys(self.dict_for_table(self._origin), "Origin Station")
-                self._attributes[ATTR_LOCATION_ORIGIN] = LOCATION_TYPE_OPTIONS.get(
-                    self._origin.location_type, LOCATION_TYPE_DEFAULT
-                )
-                self._attributes[ATTR_WHEELCHAIR_ORIGIN] = WHEELCHAIR_BOARDING_OPTIONS.get(
-                    self._origin.wheelchair_boarding, WHEELCHAIR_BOARDING_DEFAULT
-                )
-        else:
-            self._attributes["origin_station_stop_name"] = self._departure.get("origin_stop_name", None)
-            self._attributes["origin_station_stop_id"] =  self._departure.get("origin_stop_id", None)
-            self._attributes["origin_station_stop_sequence"] =  self._departure.get("origin_stop_sequence", None)
-
-        key = "destination_station_stop_id"
-        # exclude check if route_type =2 (trains) as no ID is used
-        if self._route_type != "2":
-            if self._destination and key not in self._attributes:
-                self.append_keys(
-                    self.dict_for_table(self._destination), "Destination Station"
-                )
-                self._attributes[ATTR_LOCATION_DESTINATION] = LOCATION_TYPE_OPTIONS.get(
-                    self._destination.location_type, LOCATION_TYPE_DEFAULT
-                )
-                self._attributes[
-                    ATTR_WHEELCHAIR_DESTINATION
-                ] = WHEELCHAIR_BOARDING_OPTIONS.get(
-                    self._destination.wheelchair_boarding, WHEELCHAIR_BOARDING_DEFAULT
-                )
-        else:
-            self._attributes["destination_station_stop_name"] = self._departure.get("destination_stop_name", None)  
-            self._attributes["destination_station_stop_id"] = self._departure.get("destination_stop_id", None)          
-
-        # Manage Route metadata
-        key = "route_id"
-        if not self._route and key in self._attributes:
-            self.remove_keys("Route")
-        elif self._route and (
-            key not in self._attributes or self._attributes[key] != self._route.route_id
-        ):
-            self.append_keys(self.dict_for_table(self._route), "Route")
-            self._attributes[ATTR_ROUTE_TYPE] = ROUTE_TYPE_OPTIONS[
-                self._route.route_type
-            ]
-
-        # Manage Trip metadata
-        key = "trip_id"
-        if not self._trip and key in self._attributes:
-            self.remove_keys("Trip")
-        elif self._trip and (
-            key not in self._attributes or self._attributes[key] != self._trip.trip_id
-        ):
-            self.append_keys(self.dict_for_table(self._trip), "Trip")
-            self._attributes[ATTR_BICYCLE] = BICYCLE_ALLOWED_OPTIONS.get(
-                self._trip.bikes_allowed, BICYCLE_ALLOWED_DEFAULT
-            )
-            self._attributes[ATTR_WHEELCHAIR] = WHEELCHAIR_ACCESS_OPTIONS.get(
-                self._trip.wheelchair_accessible, WHEELCHAIR_ACCESS_DEFAULT
-            )
-
-        # Manage Stop Times metadata
-        prefix = "origin_stop"
-        if self._departure:
-            self.append_keys(self._departure["origin_stop_time"], prefix)
-            self._attributes[ATTR_DROP_OFF_ORIGIN] = DROP_OFF_TYPE_OPTIONS.get(
-                self._departure["origin_stop_time"]["Drop Off Type"],
-                DROP_OFF_TYPE_DEFAULT,
-            )
-            self._attributes[ATTR_PICKUP_ORIGIN] = PICKUP_TYPE_OPTIONS.get(
-                self._departure["origin_stop_time"]["Pickup Type"], PICKUP_TYPE_DEFAULT
-            )
-            self._attributes[ATTR_TIMEPOINT_ORIGIN] = TIMEPOINT_OPTIONS.get(
-                self._departure["origin_stop_time"]["Timepoint"], TIMEPOINT_DEFAULT
-            )
-            self._attributes[ATTR_TIMEZONE_ORIGIN] = self._departure.get("origin_stop_timezone", None)
-        else:
-            self.remove_keys(prefix)
-        
-        if "destination_stop_time" in self._departure:
-            _LOGGER.debug("Destination_stop_time %s", self._departure["destination_stop_time"])
-        else:
-            _LOGGER.debug("No destination_stop_time, possibly no service today")
-        
-        prefix = "destination_stop"
-        if self._departure:
-            self.append_keys(self._departure["destination_stop_time"], prefix)
-            self._attributes[ATTR_DROP_OFF_DESTINATION] = DROP_OFF_TYPE_OPTIONS.get(
-                self._departure["destination_stop_time"]["Drop Off Type"],
-                DROP_OFF_TYPE_DEFAULT,
-            )
-            self._attributes[ATTR_PICKUP_DESTINATION] = PICKUP_TYPE_OPTIONS.get(
-                self._departure["destination_stop_time"]["Pickup Type"],
-                PICKUP_TYPE_DEFAULT,
-            )
-            self._attributes[ATTR_TIMEPOINT_DESTINATION] = TIMEPOINT_OPTIONS.get(
-                self._departure["destination_stop_time"]["Timepoint"], TIMEPOINT_DEFAULT
-            )
-            self._attributes[ATTR_TIMEZONE_DESTINATION] = self._departure.get("destination_stop_timezone", None)
-        else:
-            self.remove_keys(prefix)
-
-        # Add next departures
-        prefix = "next_departures"
-        self._attributes["next_departures"] = []
-        if self._next_departures:
-            self._attributes["next_departures"] = self._departure[
-                "next_departures"][:10]
-        # Add next departures with their lines
-        prefix = "next_departures_lines"
-        self._attributes["next_departures_lines"] = []
-        if self._next_departures:
-            self._attributes["next_departures_lines"] = self._departure[
-                "next_departures_lines"][:10]                         
-            
-        # Add next departures with their headsign
-        prefix = "next_departures_headsign"
-        self._attributes["next_departures_headsign"] = []
-        if self._next_departures:
-            self._attributes["next_departures_headsign"] = self._departure[
-                "next_departures_headsign"][:10] 
-
-        # Add next departures trips
-        prefix = "next_departures_trips"
-        self._attributes["next_departures_trips"] = []
-        if self._next_departures:
-            self._attributes["next_departures_trips"] = self._departure[
-                "next_departures_trip_id"][:10] 
-
-        # Add next departures arrivals
-        prefix = "next_departures_destination_arrival_times"
-        self._attributes["next_departures_destination_arrival_times"] = []
-        if self._next_departures:
-            self._attributes["next_departures_destination_arrival_times"] = self._departure[
-                "next_departures_destination_arrival_times"][:10]
-
+        self._station_attributes()
+        self._route_and_trip_attributes()
+        self._stop_time_attributes()
+        self._next_departure_attributes()
         next_departure_lists(self._attributes, self._departure, self._next_departures)
 
-      
         # .get: an options change drops the stamp so the next update reads
         # the timetable again, and a refresh failing in between must not
         # take the sensor with it
@@ -682,34 +484,135 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
             "alert"].get("destination_stop_alert", "no info")
 
         alert_details(self._attributes, self.coordinator.data["alert"])
-        if self._departure_rt:
-            _LOGGER.debug("next dep realtime attr: %s", self._departure_rt)
-            # Add next departure realtime to the right level, only if populated
-            if "gtfs_rt_updated_at" in self._departure_rt:
-                self._attributes["gtfs_rt_updated_at"] = self._departure_rt[ATTR_RT_UPDATED_AT]
-                if self._departure_rt.get(ATTR_NEXT_RT, None):
-                    self._attributes["next_departure_realtime"] = self._departure_rt[ATTR_NEXT_RT][0]
-                    self._attributes["next_departures_realtime"] = self._departure_rt[ATTR_NEXT_RT]
-                else:
-                    self._attributes["next_departure_realtime"] = '-'
-                    self._attributes["next_departures_realtime"] = '-'
-                if self._departure_rt.get(ATTR_NEXT_RT_DELAYS, None):
-                    self._attributes["next_delay_realtime"] = self._departure_rt[ATTR_NEXT_RT_DELAYS][0]
-                    self._attributes["next_delays_realtime"] = self._departure_rt[ATTR_NEXT_RT_DELAYS]
-                else:
-                    self._attributes["next_delay_realtime"] = '-'
-                    self._attributes["next_delays_realtime"] = '-'
-                realtime_trips(self._attributes, self._departure_rt)
-            if ATTR_INFO_RT in self._attributes:
-                del self._attributes[ATTR_INFO_RT]    
-        else:
-            _LOGGER.debug("No next departure realtime attributes")         
-            self._attributes[ATTR_INFO_RT] = (
-                "No realtime information"
-            )
-               
+        self._realtime_attributes()
+
         self._attr_extra_state_attributes = self._attributes
         return self._attr_extra_state_attributes
+
+    def _departure_times(self):
+        """When the departure arrives, how long it rides, and whether it is
+        the day's first or last."""
+        if not self._departure:
+            return
+        self._attributes[ATTR_ARRIVAL] = dt_util.as_utc(
+            self._departure.get("arrival_time")
+        ).isoformat()
+        # theoretical journey time in minutes, arrival minus departure
+        self._attributes["duration"] = self._departure.get("duration")
+        self._attributes[ATTR_DAY] = self._departure["day"]
+        for key in (ATTR_FIRST, ATTR_LAST):
+            if self._departure[key] is not None:
+                self._attributes[key] = self._departure[key]
+
+    def _station_attributes(self):
+        """The agency and the two ends, as the feed describes them."""
+        if self._agency:
+            self.append_keys(self.dict_for_table(self._agency), "Agency")
+        if self._route_type == "2":
+            # a train names its ends by station, not by stop record: what
+            # the departure itself says of them
+            self._attributes["origin_station_stop_name"] = self._departure.get("origin_stop_name", None)
+            self._attributes["origin_station_stop_id"] = self._departure.get("origin_stop_id", None)
+            self._attributes["origin_station_stop_sequence"] = self._departure.get("origin_stop_sequence", None)
+            self._attributes["destination_station_stop_name"] = self._departure.get("destination_stop_name", None)
+            self._attributes["destination_station_stop_id"] = self._departure.get("destination_stop_id", None)
+            return
+        self._end_attributes(self._origin, "Origin Station",
+                             ATTR_LOCATION_ORIGIN, ATTR_WHEELCHAIR_ORIGIN)
+        self._end_attributes(self._destination, "Destination Station",
+                             ATTR_LOCATION_DESTINATION, ATTR_WHEELCHAIR_DESTINATION)
+
+    def _end_attributes(self, stop, prefix, location_key, wheelchair_key):
+        """One end's stop record, its kind of place and its access."""
+        if not stop:
+            return
+        self.append_keys(self.dict_for_table(stop), prefix)
+        self._attributes[location_key] = LOCATION_TYPE_OPTIONS.get(
+            stop.location_type, LOCATION_TYPE_DEFAULT
+        )
+        self._attributes[wheelchair_key] = WHEELCHAIR_BOARDING_OPTIONS.get(
+            stop.wheelchair_boarding, WHEELCHAIR_BOARDING_DEFAULT
+        )
+
+    def _route_and_trip_attributes(self):
+        """The line and the trip the departure rides."""
+        if self._route:
+            self.append_keys(self.dict_for_table(self._route), "Route")
+            self._attributes[ATTR_ROUTE_TYPE] = ROUTE_TYPE_OPTIONS[
+                self._route.route_type
+            ]
+        if self._trip:
+            self.append_keys(self.dict_for_table(self._trip), "Trip")
+            self._attributes[ATTR_BICYCLE] = BICYCLE_ALLOWED_OPTIONS.get(
+                self._trip.bikes_allowed, BICYCLE_ALLOWED_DEFAULT
+            )
+            self._attributes[ATTR_WHEELCHAIR] = WHEELCHAIR_ACCESS_OPTIONS.get(
+                self._trip.wheelchair_accessible, WHEELCHAIR_ACCESS_DEFAULT
+            )
+
+    def _stop_time_attributes(self):
+        """The trip's call at each end: how a rider gets on and off there,
+        whether the time is exact, and the zone it is written in."""
+        if not self._departure:
+            return
+        for end, drop_off, pickup, timepoint, zone in (
+                ("origin", ATTR_DROP_OFF_ORIGIN, ATTR_PICKUP_ORIGIN,
+                 ATTR_TIMEPOINT_ORIGIN, ATTR_TIMEZONE_ORIGIN),
+                ("destination", ATTR_DROP_OFF_DESTINATION, ATTR_PICKUP_DESTINATION,
+                 ATTR_TIMEPOINT_DESTINATION, ATTR_TIMEZONE_DESTINATION)):
+            stop_time = self._departure[f"{end}_stop_time"]
+            self.append_keys(stop_time, f"{end}_stop")
+            self._attributes[drop_off] = DROP_OFF_TYPE_OPTIONS.get(
+                stop_time["Drop Off Type"], DROP_OFF_TYPE_DEFAULT
+            )
+            self._attributes[pickup] = PICKUP_TYPE_OPTIONS.get(
+                stop_time["Pickup Type"], PICKUP_TYPE_DEFAULT
+            )
+            self._attributes[timepoint] = TIMEPOINT_OPTIONS.get(
+                stop_time["Timepoint"], TIMEPOINT_DEFAULT
+            )
+            self._attributes[zone] = self._departure.get(f"{end}_stop_timezone", None)
+
+    # the lists a departure carries, by the attribute that shows them, ten
+    # departures at most
+    _NEXT_DEPARTURE_LISTS = (
+        ("next_departures", "next_departures"),
+        ("next_departures_lines", "next_departures_lines"),
+        ("next_departures_headsign", "next_departures_headsign"),
+        ("next_departures_trips", "next_departures_trip_id"),
+        ("next_departures_destination_arrival_times", "next_departures_destination_arrival_times"),
+    )
+
+    def _next_departure_attributes(self):
+        for attribute, key in self._NEXT_DEPARTURE_LISTS:
+            self._attributes[attribute] = (
+                self._departure[key][:10] if self._next_departures else [])
+
+    def _realtime_attributes(self):
+        """What the realtime feed says of the next departures, or that it
+        said nothing."""
+        if not self._departure_rt:
+            _LOGGER.debug("No next departure realtime attributes")
+            self._attributes[ATTR_INFO_RT] = "No realtime information"
+            return
+        _LOGGER.debug("next dep realtime attr: %s", self._departure_rt)
+        # Add next departure realtime to the right level, only if populated
+        if "gtfs_rt_updated_at" not in self._departure_rt:
+            return
+        self._attributes["gtfs_rt_updated_at"] = self._departure_rt[ATTR_RT_UPDATED_AT]
+        if self._departure_rt.get(ATTR_NEXT_RT, None):
+            self._attributes["next_departure_realtime"] = self._departure_rt[ATTR_NEXT_RT][0]
+            self._attributes["next_departures_realtime"] = self._departure_rt[ATTR_NEXT_RT]
+        else:
+            self._attributes["next_departure_realtime"] = '-'
+            self._attributes["next_departures_realtime"] = '-'
+        if self._departure_rt.get(ATTR_NEXT_RT_DELAYS, None):
+            self._attributes["next_delay_realtime"] = self._departure_rt[ATTR_NEXT_RT_DELAYS][0]
+            self._attributes["next_delays_realtime"] = self._departure_rt[ATTR_NEXT_RT_DELAYS]
+        else:
+            self._attributes["next_delay_realtime"] = '-'
+            self._attributes["next_delays_realtime"] = '-'
+        realtime_trips(self._attributes, self._departure_rt)
 
     @staticmethod
     def dict_for_table(resource: Any) -> dict:
