@@ -967,7 +967,7 @@ tests/            synthetic tests, run under the Home Assistant stub kept
 tests_provider/   tests on real provider feeds; results.json records which
                   promises hold, xfail marks the known failures, strict
                   so a fixed case must drop its mark  CI: Provider Tests
-both suites       branch coverage, may not fall under a floor (82%)
+both suites       branch coverage, may not fall under a floor (84%)
                                                   CI: Coverage
 complexity        each function at 10 or under, or at its recorded
                   ceiling (.github/complexity.json), which only comes
