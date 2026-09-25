@@ -361,9 +361,11 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
 
         An early return used to keep the state and the attributes of the
         refresh before: a stop the new timetable renamed, or a datasource
-        gone, and the sensor announced its last bus for ever.
+        gone, and the sensor announced its last bus for ever. The agency it
+        named goes too: it spoke for a departure no longer shown.
         """
         self._attr_native_value = None
+        self._attr_attribution = None
         self._attributes = {}
         self._attr_extra_state_attributes = self._attributes
         self._say_once(message, *args)
@@ -376,12 +378,14 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
             # added before its first refresh (see async_setup_entry): no
             # departure known yet, the refresh fills the sensor in
             self._attr_native_value = None
+            self._attr_attribution = None
             self._attributes = {}
             self._attr_extra_state_attributes = self._attributes
             return self._attributes
         if self.coordinator.data["extracting"]:  
             self._say_once("Extracting datasource: %s ,for sensor: %s", self.coordinator.data["file"], self._name)
             self._attr_native_value = None
+            self._attr_attribution = None
             self._attributes = {"extracting": True}
             self._attr_extra_state_attributes = self._attributes
             return self._attributes

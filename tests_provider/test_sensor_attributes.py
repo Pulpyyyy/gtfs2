@@ -581,10 +581,6 @@ def test_an_update_renders_as_a_fresh_sensor_whatever_it_showed_before(updated):
     assert not moved, "\n".join(moved)
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "suspected bug: the paths that clear the sensor (_show_nothing, extracting) "
-    "reset the state and the attributes but not _attr_attribution, so a sensor "
-    "that showed a departure keeps naming its agency while it shows nothing"))
 def test_a_sensor_showing_nothing_names_no_agency(updated):
     kept = [f"{label}, after {first_label}: {got['attribution']!r}"
             for label, first_label, want, got in updated
