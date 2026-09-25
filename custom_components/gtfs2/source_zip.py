@@ -93,7 +93,7 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
         scratch.engine.dispose()
         del scratch
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Could not unpack %s into the import database: %s", file, ex)
+        _LOGGER.exception("Could not unpack %s into the import database: %s", file, ex)
         return False
     finally:
         if filtered and os.path.exists(filtered):
@@ -176,7 +176,7 @@ def _holds_a_feed(zip_path):
         with zipfile.ZipFile(zip_path) as zin:
             members = {name.rsplit("/", 1)[-1] for name in zin.namelist()}
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Could not read the source zip %s: %s", zip_path, ex)
+        _LOGGER.exception("Could not read the source zip %s: %s", zip_path, ex)
         return "no_zip_file"
     if "routes.txt" in members:
         return None
@@ -230,7 +230,7 @@ def ensure_source_zip(hass, path, data):
                 return "no_data_file"
             adopt_zip(r, staged, zip_path)
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("The given URL or GTFS data file/folder was not found: %s", ex)
+            _LOGGER.exception("The given URL or GTFS data file/folder was not found: %s", ex)
             return "no_data_file"
     # a host that refuses ranges answered the envelope whole: the networks
     # are offered from the file, and the pick taken out of it
@@ -371,7 +371,7 @@ def refresh_datasource(hass, path, data):
                 return False
             adopt_zip(r, staged, zip_path)
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Could not download %s: %s", data.get("url"), ex)
+            _LOGGER.exception("Could not download %s: %s", data.get("url"), ex)
             fresh = zip_path + ".new"
             if os.path.exists(fresh):
                 try:

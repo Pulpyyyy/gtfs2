@@ -202,7 +202,7 @@ def repair_trip_directions(schedule):
     try:
         return _repair(schedule)
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Direction repair failed, database left as imported: %s", ex)
+        _LOGGER.exception("Direction repair failed, database left as imported: %s", ex)
         return 0
 
 

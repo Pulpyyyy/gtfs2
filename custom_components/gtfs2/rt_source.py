@@ -336,7 +336,7 @@ async def async_bootstrap_datasource_entries(hass: HomeAssistant) -> None:
             await async_ensure_datasource_entry(hass, file)
         except Exception as ex:  # pylint: disable=broad-except
             # one source failing must not keep the others from their entry
-            _LOGGER.error("Could not create datasource entry for %s: %s", file, ex)
+            _LOGGER.exception("Could not create datasource entry for %s: %s", file, ex)
 
 
 async def async_mirror_rt_to_entries(hass: HomeAssistant, source_entry: ConfigEntry) -> None:

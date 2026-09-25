@@ -302,14 +302,14 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 self._get_rt_alerts = await self.hass.async_add_executor_job(get_rt_alerts, self)
                 self._data["alert"] = self._get_rt_alerts
             except Exception as ex:  # pylint: disable=broad-except
-                _LOGGER.error("Error getting gtfs realtime alerts, for origin: %s with error: %s", data["origin"], ex)
+                _LOGGER.exception("Error getting gtfs realtime alerts, for origin: %s with error: %s", data["origin"], ex)
             try:
                 self._get_next_service = await self.hass.async_add_executor_job(get_next_services, self)
                 self._data["next_departure_realtime_attr"] = self._get_next_service
                 self._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
                 await drop_struck_trips(self, data, run_static)
             except Exception as ex:  # pylint: disable=broad-except
-                _LOGGER.error("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
+                _LOGGER.exception("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
                 await self._read_records()
                 return self._data
             # the trip updates just read, kept for the leg file below:
@@ -506,7 +506,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
                     get_local_stops_next_departures, self
                 )
         except Exception as ex:
-            _LOGGER.error("Error getting local stops data: %s", ex)
+            _LOGGER.exception("Error getting local stops data: %s", ex)
             raise UpdateFailed(f"Error in getting local stops data: {ex}")
         #_LOGGER.debug("Data from coordinator: %s", self._data)              
         return self._data

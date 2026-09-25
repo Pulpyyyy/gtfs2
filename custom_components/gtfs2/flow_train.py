@@ -76,7 +76,7 @@ class TrainScreens:
             mixed = await self.hass.async_add_executor_job(
                 get_station_modes, self._pygtfs, route_id)
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Error reading the destinations from %s on route %s: %s",
+            _LOGGER.exception("Error reading the destinations from %s on route %s: %s",
                           origin, route_id, ex)
             return self.async_abort(reason="no_stops_read")
         if not reached:

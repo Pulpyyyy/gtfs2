@@ -105,7 +105,7 @@ async def export_route_shape(coordinator, data) -> None:
                 get_representative_trip, coordinator._data["schedule"], route_id, direction,
                 origin_id, destination_id)
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Error picking the trip to draw route %s: %s", route_id, ex)
+            _LOGGER.exception("Error picking the trip to draw route %s: %s", route_id, ex)
             return
         coordinator._representative_pick, coordinator._representative_trip = pick, trip_id
     if not trip_id:
@@ -139,7 +139,7 @@ async def _write_route(coordinator, source, route_id, direction, trip_id, export
         await coordinator.hass.async_add_executor_job(write_route_file, coordinator.hass, source, route_id, direction, trip_id)
         coordinator._route_export_trip = export_key
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Error writing route geojson: %s", ex)
+        _LOGGER.exception("Error writing route geojson: %s", ex)
 
 
 async def export_timetable(coordinator, data) -> None:
@@ -188,7 +188,7 @@ async def _write_timetable(coordinator, source, name, today, zip_path, export_ke
     try:
         await coordinator.hass.async_add_executor_job(write_timetable_file, coordinator.hass, source, today, zip_path)
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Error writing the timetable file: %s", ex)
+        _LOGGER.exception("Error writing the timetable file: %s", ex)
         return
     coordinator._timetable_export = export_key
     # the refresh under way when the task started may have been
@@ -213,4 +213,4 @@ async def export_leg(coordinator, data, feed_entities) -> None:
     try:
         await coordinator.hass.async_add_executor_job(write_leg_file, coordinator.hass, coordinator._data, feed_entities)
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Error writing leg geojson: %s", ex)
+        _LOGGER.exception("Error writing leg geojson: %s", ex)

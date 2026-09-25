@@ -157,7 +157,7 @@ def fetch_if_new(data, zip_path, adopt=True):
             timeout=30, stream=True)
         response.raise_for_status()
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Could not download %s: %s", data.get("url"), ex)
+        _LOGGER.exception("Could not download %s: %s", data.get("url"), ex)
         return None
     staged = stage_zip(response, zip_path, inner)
     if staged is None:

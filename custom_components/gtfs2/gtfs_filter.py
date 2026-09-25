@@ -228,7 +228,7 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
         # LookupError: a row shorter than its header, or a column the feed
         # names elsewhere; the feed is then kept whole rather than trimmed
         # on a guess
-        _LOGGER.error("Could not filter %s to %s routes: %s",
+        _LOGGER.exception("Could not filter %s to %s routes: %s",
                       src, len(route_ids), ex)
         if os.path.exists(dst):
             try:

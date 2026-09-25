@@ -896,7 +896,7 @@ def get_gtfs(hass, path, data, update=False):
                     remove_datasource(hass, path, filename, True, keep=(".zip.new",))
                 adopt_zip(r, staged, os.path.join(gtfs_dir, file))
             except Exception as ex:  # pylint: disable=broad-except
-                _LOGGER.error("The given URL or GTFS data file/folder was not found: %s", ex)
+                _LOGGER.exception("The given URL or GTFS data file/folder was not found: %s", ex)
                 return "no_data_file"
     
     (gtfs_root, _) = os.path.splitext(file)
@@ -968,7 +968,7 @@ def remove_from_zip(delmelist,gtfs_dir,file):
         os.remove(aside)
         return True
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Could not rewrite %s without %s: %s", filename, delmelist, ex)
+        _LOGGER.exception("Could not rewrite %s without %s: %s", filename, delmelist, ex)
         # the feed goes back under its own name, whole, as if nothing had
         # been attempted
         if not os.path.exists(kept) and os.path.exists(aside):

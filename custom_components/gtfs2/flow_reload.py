@@ -230,7 +230,7 @@ class ReloadScreens:
         except Exception as ex:  # pylint: disable=broad-except
             # an import that raised, rather than one that returned nothing:
             # read bare, it took the step down with an unknown error
-            _LOGGER.error("Import into %s failed: %s", filename, ex)
+            _LOGGER.exception("Import into %s failed: %s", filename, ex)
             added = None
         self._import_job = None
         self._import_task = None

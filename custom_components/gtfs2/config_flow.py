@@ -318,7 +318,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                     remove_datasource, self.hass, DEFAULT_PATH, user_input[CONF_FILE], True)
             _LOGGER.debug(f"Removed gtfs data source: {removed}")
         except Exception as ex:
-            _LOGGER.error("Error while deleting : %s", {ex})
+            _LOGGER.exception("Error while deleting : %s", {ex})
             return self.async_abort(reason="generic_failure")
         # the datasource entry follows its files out; the journey entries
         # stay, as they always have, and fail on the missing database
@@ -525,7 +525,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             except Exception as ex:  # pylint: disable=broad-except
                 # a bare except here reported every failure as "no stops",
                 # a locked database and a bad route id included
-                _LOGGER.error("Error reading the stops of route %s: %s",
+                _LOGGER.exception("Error reading the stops of route %s: %s",
                               self._user_inputs.get(CONF_ROUTE), ex)
                 return self.async_abort(reason="no_stops_read")
             if not stops:
@@ -564,7 +564,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                 _stop_id(origin),
             )
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Error reading the ways out of %s on route %s: %s",
+            _LOGGER.exception("Error reading the ways out of %s on route %s: %s",
                           _stop_id(origin), self._user_inputs.get(CONF_ROUTE), ex)
             return self.async_abort(reason="no_stops_read")
         if not ways:
@@ -736,7 +736,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                 get_next_departure, self.hass, self._data
             )
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error(
+            _LOGGER.exception(
                 "Config: error getting gtfs data from generic helper: %s",
                 {ex},
                 exc_info=1,

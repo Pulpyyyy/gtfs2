@@ -99,7 +99,7 @@ async def drop_struck_trips(coordinator, data, run_static):
                 get_rt_alerts, coordinator)
             coordinator._data["alert"] = coordinator._get_rt_alerts
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Error reading the alerts again for %s: %s", data["origin"], ex)
+            _LOGGER.exception("Error reading the alerts again for %s: %s", data["origin"], ex)
     # the trips struck since the last static refresh, whichever
     # reading turned them up
     coordinator._get_next_service[ATTR_RT_CANCELLED] = sorted(coordinator._struck_cancelled)

@@ -113,7 +113,7 @@ def create_real_from(scratch_file, real_file):
             dst.execute(stmt)
         dst.commit()
     except sqlite3.Error as ex:
-        _LOGGER.error("Could not create datasource %s: %s", real_file, ex)
+        _LOGGER.exception("Could not create datasource %s: %s", real_file, ex)
         dst.close()
         # a half-built file would be taken for a real datasource
         os.remove(real_file)
@@ -161,7 +161,7 @@ def swap_in(new_file, real_file, timeout=SWAP_TIMEOUT):
         try:
             conn.execute("begin exclusive")
         except sqlite3.Error as ex:
-            _LOGGER.error("Could not take %s to swap it, something is writing "
+            _LOGGER.exception("Could not take %s to swap it, something is writing "
                           "to it: %s", real_file, ex)
             return False
         try:
@@ -182,7 +182,7 @@ def swap_in(new_file, real_file, timeout=SWAP_TIMEOUT):
         _drop_side_files(real_file)
         return True
     except OSError as ex:
-        _LOGGER.error("Could not swap %s in: %s", new_file, ex)
+        _LOGGER.exception("Could not swap %s in: %s", new_file, ex)
         return False
     finally:
         if conn is not None:
@@ -285,7 +285,7 @@ def copy_route(real_file, scratch_file, route_id, shared=True):
 
         conn.commit()
     except sqlite3.Error as ex:
-        _LOGGER.error("Could not copy route %s: %s", route_id, ex)
+        _LOGGER.exception("Could not copy route %s: %s", route_id, ex)
         conn.rollback()
         return None
     finally:
@@ -465,7 +465,7 @@ def on_a_copy(gtfs_dir, filename, work, *args, done=bool):
         if not swap_in(copy, real):
             return None
     except (sqlite3.Error, OSError) as ex:
-        _LOGGER.error("Could not rewrite %s on a copy: %s", filename, ex)
+        _LOGGER.exception("Could not rewrite %s on a copy: %s", filename, ex)
         return None
     finally:
         for leftover in (copy, copy + "-journal"):
@@ -646,7 +646,7 @@ def prune_gtfs_datasource(gtfs_dir, filename, keep_routes, dry_run=False):
         conn.isolation_level = None
         cur.execute("vacuum")
     except sqlite3.Error as ex:
-        _LOGGER.error("Failed to prune datasource %s: %s", filename, ex)
+        _LOGGER.exception("Failed to prune datasource %s: %s", filename, ex)
         conn.rollback()
         return None
     finally:
@@ -817,7 +817,7 @@ def intern_gtfs_datasource(gtfs_dir, filename, dry_run=False):
         cur.execute("drop table if exists sqlite_stat1")
         cur.execute("vacuum")
     except sqlite3.Error as ex:
-        _LOGGER.error("Failed to intern datasource %s: %s", filename, ex)
+        _LOGGER.exception("Failed to intern datasource %s: %s", filename, ex)
         if conn.in_transaction:
             cur.execute("rollback")
         return None

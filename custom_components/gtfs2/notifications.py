@@ -47,7 +47,7 @@ def check_extraction_result(gtfs_dir, filename):
     try:
         conn = sqlite3.connect(sqlite_file, timeout=10)
     except sqlite3.Error as ex:
-        _LOGGER.error("Cannot open %s: %s", sqlite_file, ex)
+        _LOGGER.exception("Cannot open %s: %s", sqlite_file, ex)
         return False, "cannot_open"
     try:
         cur = conn.cursor()
@@ -67,7 +67,7 @@ def check_extraction_result(gtfs_dir, filename):
             _LOGGER.error("Empty tables in %s: %s", filename, empty)
             return False, "tables_empty"
     except sqlite3.Error as ex:
-        _LOGGER.error("Cannot read %s: %s", sqlite_file, ex)
+        _LOGGER.exception("Cannot read %s: %s", sqlite_file, ex)
         return False, "unreadable"
     finally:
         conn.close()

@@ -266,7 +266,7 @@ def extract_member(path, name, staged):
                     out.write(chunk)
         return True
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.error("Could not take %s out of %s: %s", name, path, ex)
+        _LOGGER.exception("Could not take %s out of %s: %s", name, path, ex)
         try:
             os.remove(staged)
         except OSError:
