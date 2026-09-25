@@ -271,7 +271,8 @@
       "zip_holds_zips": "The ZIP holds other ZIP files and none of them could be offered: unpack it and give the inner ZIP of the network you want",
       "name_taken": "A sensor already uses this name. Pick another one.",
       "not_created": "The sensor could not be created. Check the log, then try a different name.",
-      "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again."
+      "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again.",
+      "import_partial": "Some lines could not be brought back: {missing}. The log says why. This one was, so you can carry on; pick the others again later to try once more."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
@@ -595,6 +596,8 @@
     "import_done": "Brought back into {file}: {lines}.\n\nSettings > Devices & services > GTFS2 > Add entry, then **Add a journey between two stops** to carry on.",
     "import_failed_title": "GTFS: {file} was not changed",
     "import_failed": "The lines could not be brought back into {file}.\n\nNothing was changed. Settings > Devices & services > GTFS2 > Add entry to try again.",
+    "import_partial_title": "GTFS: {file} partly updated",
+    "import_partial": "Brought back into {file}: {lines}.\n\nNot brought back: **{missing}**. The import stopped at the first line that failed; the log says why. Settings > Devices & services > GTFS2 > Add entry, then **Add a journey between two stops** on one of these lines to try again.",
     "line_orphaned_title": "GTFS: {file} keeps a line nobody reads",
     "line_orphaned": "The last sensor reading line **{line}** was removed, but its timetable is still in {file}.\n\nThe service gtfs2.prune_datasource drops every line no sensor reads; call it with dry_run first to see what would go. Keeping the line only costs disk space, and adding a sensor on it uses it again.",
     "lines_missing_title": "GTFS: {file} was not updated",

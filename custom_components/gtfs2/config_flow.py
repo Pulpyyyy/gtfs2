@@ -113,7 +113,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         # the screen that picked the source, where an error about the source
         # sends the rider back to (see _back_to_source)
         self._source_step: str | None = None
-        # why the arrival screen sent the rider back to the departure one
+        # what the departure screen says when it comes up: why the arrival
+        # screen sent the rider back to it, or that an import left lines out
         self._stops_error: str | None = None
         self._extract_job = None
         self._extract_task = None
@@ -133,6 +134,9 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         self._import_job = None
         self._import_task = None
         self._import_routes: list = []
+        # the lines the import was asked for and did not bring in, as named
+        # to the rider
+        self._import_missing: str = ""
         # what the last created entry was called, shown on the closing screen
         self._created_name: str = ""
         # the mirror journey, worked out once the stops are known
@@ -529,6 +533,9 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             if not stops:
                 _LOGGER.debug("No stops for route: %s", self._user_inputs.get(CONF_ROUTE))
                 return self.async_abort(reason="no_stops")
+            if self._stops_error:
+                # the import that brought the line in left others out
+                errors["base"], self._stops_error = self._stops_error, None
             return self.async_show_form(
                 step_id="stops",
                 data_schema=vol.Schema(
@@ -538,7 +545,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                         ),
                     },
                 ),
-                description_placeholders=self._journey_placeholders(),
+                description_placeholders=self._journey_placeholders(
+                    missing=self._import_missing),
                 errors=errors,
             )
 
@@ -655,7 +663,9 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         if user_input is None:
             picked = None
             if self._stops_error:
-                # back from the arrival screen: keep the pick, say why
+                # back from the arrival screen: keep the pick, say why. Or
+                # the import that brought the line in left others out, and
+                # nothing was picked yet
                 errors["base"], self._stops_error = self._stops_error, None
                 picked = self._user_inputs.get(CONF_ORIGIN)
             return self.async_show_form(
@@ -666,7 +676,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                             options=await self._station_options(stations, modes),
                             custom_value=True)),
                 }),
-                description_placeholders=self._journey_placeholders(),
+                description_placeholders=self._journey_placeholders(
+                    missing=self._import_missing),
                 errors=errors,
             )
 

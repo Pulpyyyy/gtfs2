@@ -40,6 +40,8 @@ The promises:
                     on the next pass and imported alone (route_reload_only)
     import fails    a feed pygtfs cannot read: back on the lines with the
                     reason, no database left, a notification
+    import stops    a line fails part way: the lines before it are in, the
+                    departure screen and the notification name the others
     no destination  a stop no trip rides on from, and a line the feed names
     no stops        and never runs; the operator screen, from the zip and
                     from the database
@@ -936,6 +938,49 @@ def test_a_feed_that_cannot_be_imported_sends_the_rider_back_to_the_lines(world)
         await asyncio.gather(*hass.background_tasks)
         assert [n[:2] for n in hass.notifications] == [
             ("gtfs2_import_tao", STRINGS["common"]["import_failed_title"].format(file="tao"))]
+    walk(world, scenario)
+
+
+def test_an_import_that_stops_at_a_line_names_the_lines_left_out(world, monkeypatch):
+    async def scenario(hass):
+        drop_zip(hass, "tao-journeys", "tao")
+        where = await choose(hass, await start(hass), "source")
+        folder = await choose(hass, where, "source_zip")
+        lines = shown(await submit(hass, await submit(hass, folder, file="tao")), FORM, "route")
+        picked = offered(lines, "route")[1]
+        also = shown(await submit(hass, lines, route=picked), FORM, "route_reload")
+        others = offered(also, "also_reload")
+        # the second line asked along fails to copy: the import stops there,
+        # and the lines after it are not tried
+        copy = gtfs_db.copy_route
+        monkeypatch.setattr(gtfs_db, "copy_route", lambda real, scratch, route_id, shared=True:
+                            None if route_id == others[1] else copy(real, scratch, route_id, shared))
+        stops = shown(await submit(hass, also, also_reload=others), FORM, "stops")
+        assert "reload_done" in hass.config_entries.flow.walked
+        loaded = {r for (r,) in rows(hass, "tao", "select distinct route_id from trips")}
+        assert loaded == {picked.split("##")[1], others[0]}
+        # the line picked came in, so the flow carries on, and says which
+        # did not
+        missing = ", ".join(r.split(":")[-1] for r in others[1:])
+        assert stops["errors"] == {"base": "import_partial"}
+        assert stops["description_placeholders"]["missing"] == missing
+        # the notification names them beside the lines that came in
+        await asyncio.gather(*hass.background_tasks)
+        came_in = ", ".join(r.split(":")[-1] for r in (picked.split("##")[1], others[0]))
+        assert hass.notifications == [(
+            "gtfs2_import_tao",
+            STRINGS["common"]["import_partial_title"].format(file="tao"),
+            STRINGS["common"]["import_partial"].format(file="tao", lines=came_in, missing=missing))]
+        # said once: another journey on the same line starts from a
+        # departure screen with nothing to add
+        result = await submit(hass, stops, origin=offered(stops, "origin")[0])
+        if result["step_id"] == "towards":
+            result = await submit(hass, result, towards=offered(result, "towards")[0])
+        naming = await submit(hass, result, destination=offered(result, "destination")[0])
+        closing = shown(await submit(hass, naming, name="first", add_return=False),
+                        MENU, "finished")
+        again = shown(await choose(hass, closing, "same_line"), FORM, "stops")
+        assert not again["errors"]
     walk(world, scenario)
 
 

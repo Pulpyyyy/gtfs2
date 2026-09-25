@@ -24,6 +24,10 @@ async def async_notify_import(hass, filename, routes, added):
     The import runs in the executor and reaches its end whatever happens to the
     flow, but an abandoned flow means nobody is left to say so. Called from a
     background task, which outlives it.
+
+    The import stops at the first line that fails and does not try the
+    ones after it. The lines that did not come in are named beside those
+    that did: listed alone, the lines added read as all that was asked.
     """
     if not added:
         _LOGGER.error("Import into %s failed for %s", filename, routes)
@@ -31,7 +35,14 @@ async def async_notify_import(hass, filename, routes, added):
                             file=filename)
         return
     lines = ", ".join(r.split(":")[-1] for r in added)
+    missing = [r for r in routes if r not in added]
     _LOGGER.info("Import into %s added %s", filename, added)
+    if missing:
+        _LOGGER.warning("Import into %s did not bring in %s", filename, missing)
+        await _async_notify(hass, "import_partial", f"gtfs2_import_{filename}",
+                            file=filename, lines=lines,
+                            missing=", ".join(r.split(":")[-1] for r in missing))
+        return
     await _async_notify(hass, "import_done", f"gtfs2_import_{filename}",
                         file=filename, lines=lines)
 

@@ -746,7 +746,7 @@ What each failure leaves, and who is told.
 |---|---|---|---|
 | Download fails or is not a zip | Old zip and database untouched; `.zip.new` removed | Refresh failed notification | Next check |
 | Import of the scratch fails | Old database untouched | Refresh failed notification | Next check |
-| Adding lines stops at line *k* | Lines before *k* are in; *k* and after are not | The import-done notification lists the lines that made it; nothing names the others (defect 1) | User re-picks |
+| Adding lines stops at line *k* | Lines before *k* are in; *k* and after are not | The partial import notification names the lines that came in and the ones that did not; a flow still open says the same on its departure screen | User re-picks |
 | Refresh: a line fails to copy | Swap refused, old database stays | Refresh failed notification | Next check |
 | Refresh: a line a sensor reads has no trip in the new edition | Swap refused, old database stays, on the route by route and the whole-feed path alike | Lines missing notification, naming them | Next check; see below |
 | Refresh: every line is empty | Swap refused, the file is taken as broken | Lines missing, every line named | Next check |
@@ -1023,7 +1023,4 @@ Wrong behaviours a user can meet, confirmed in the code and not fixed yet.
 Unlike the gaps, they are not a matter of structure: each is to be fixed
 in a commit of its own, with the case that shows it.
 
-1. **A partial import reads as a success.** When `import_routes` stops at a
-   line, the flow goes on to "reload done" as soon as one line came in, and
-   the notification lists only the lines added. The lines that failed are
-   named in the log only.
+None is open.

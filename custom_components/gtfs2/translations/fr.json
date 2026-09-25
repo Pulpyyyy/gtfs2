@@ -271,7 +271,8 @@
       "zip_holds_zips": "Le ZIP contient d'autres fichiers ZIP et aucun n'a pu être proposé : décompressez-le et indiquez le ZIP interne du réseau voulu",
       "name_taken": "Un capteur porte déjà ce nom. Choisissez-en un autre.",
       "not_created": "Le capteur n'a pas pu être créé. Consultez le journal, puis essayez un autre nom.",
-      "reload_failed": "Cette ligne n'a pas pu être rétablie. La source n'a pas été modifiée ; choisissez une autre ligne, ou réessayez."
+      "reload_failed": "Cette ligne n'a pas pu être rétablie. La source n'a pas été modifiée ; choisissez une autre ligne, ou réessayez.",
+      "import_partial": "Certaines lignes n'ont pas pu être rétablies : {missing}. Le journal dit pourquoi. Celle-ci l'a été, vous pouvez continuer ; choisissez de nouveau les autres plus tard pour réessayer."
     },
     "abort": {
       "already_configured": "L'appareil est déjà configuré",
@@ -595,6 +596,8 @@
     "import_done": "Rétabli dans {file} : {lines}.\n\nParamètres > Appareils et services > GTFS2 > Ajouter une entrée, puis **Ajouter un trajet entre deux arrêts** pour continuer.",
     "import_failed_title": "GTFS : {file} n'a pas été modifiée",
     "import_failed": "Les lignes n'ont pas pu être rétablies dans {file}.\n\nRien n'a été modifié. Paramètres > Appareils et services > GTFS2 > Ajouter une entrée pour réessayer.",
+    "import_partial_title": "GTFS : {file} mise à jour en partie",
+    "import_partial": "Rétabli dans {file} : {lines}.\n\nNon rétabli : **{missing}**. L'import s'est arrêté à la première ligne en échec ; le journal dit pourquoi. Paramètres > Appareils et services > GTFS2 > Ajouter une entrée, puis **Ajouter un trajet entre deux arrêts** sur l'une de ces lignes pour réessayer.",
     "line_orphaned_title": "GTFS : {file} garde une ligne que personne ne lit",
     "line_orphaned": "Le dernier capteur lisant la ligne **{line}** a été supprimé, mais son horaire est toujours dans {file}.\n\nLe service gtfs2.prune_datasource supprime les lignes qu'aucun capteur ne lit ; appelez-le d'abord avec dry_run pour voir ce qui partirait. Garder la ligne ne coûte que de l'espace disque, et un nouveau capteur sur cette ligne la réutilisera.",
     "lines_missing_title": "GTFS : {file} n'a pas été mis à jour",

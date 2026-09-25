@@ -271,7 +271,8 @@
       "zip_holds_zips": "Die ZIP-Datei enthält weitere ZIP-Dateien und keine konnte angeboten werden: Entpacken Sie sie und geben Sie die innere ZIP-Datei des gewünschten Netzes an",
       "name_taken": "Ein Sensor trägt diesen Namen bereits. Wählen Sie einen anderen.",
       "not_created": "Der Sensor konnte nicht erstellt werden. Prüfen Sie das Protokoll und versuchen Sie einen anderen Namen.",
-      "reload_failed": "Diese Linie konnte nicht wiederhergestellt werden. Die Quelle blieb unverändert; wählen Sie eine andere Linie oder versuchen Sie es erneut."
+      "reload_failed": "Diese Linie konnte nicht wiederhergestellt werden. Die Quelle blieb unverändert; wählen Sie eine andere Linie oder versuchen Sie es erneut.",
+      "import_partial": "Einige Linien konnten nicht wiederhergestellt werden: {missing}. Das Protokoll nennt den Grund. Diese Linie wurde wiederhergestellt, Sie können fortfahren; wählen Sie die anderen später erneut, um es noch einmal zu versuchen."
     },
     "abort": {
       "already_configured": "Gerät ist bereits konfiguriert",
@@ -595,6 +596,8 @@
     "import_done": "In {file} wiederhergestellt: {lines}.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
     "import_failed_title": "GTFS: {file} wurde nicht geändert",
     "import_failed": "Die Linien konnten nicht in {file} wiederhergestellt werden.\n\nEs wurde nichts geändert. Einstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, um es erneut zu versuchen.",
+    "import_partial_title": "GTFS: {file} teilweise aktualisiert",
+    "import_partial": "In {file} wiederhergestellt: {lines}.\n\nNicht wiederhergestellt: **{missing}**. Der Import brach bei der ersten fehlgeschlagenen Linie ab; das Protokoll nennt den Grund. Einstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen** auf einer dieser Linien, um es erneut zu versuchen.",
     "line_orphaned_title": "GTFS: {file} enthält eine Linie, die niemand liest",
     "line_orphaned": "Der letzte Sensor der Linie **{line}** wurde entfernt, ihr Fahrplan liegt aber weiterhin in {file}.\n\nDer Dienst gtfs2.prune_datasource entfernt alle Linien, die kein Sensor liest; mit dry_run zeigt er zuerst, was wegfallen würde. Die Linie zu behalten kostet nur Speicherplatz, und ein neuer Sensor auf dieser Linie nutzt sie wieder.",
     "lines_missing_title": "GTFS: {file} wurde nicht aktualisiert",

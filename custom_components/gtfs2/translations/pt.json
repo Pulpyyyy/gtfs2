@@ -271,7 +271,8 @@
       "zip_holds_zips": "O ZIP contém outros ficheiros ZIP e nenhum pôde ser proposto: descompacte-o e indique o ZIP interno da rede pretendida",
       "name_taken": "Já existe um sensor com este nome. Escolha outro.",
       "not_created": "Não foi possível criar o sensor. Consulte o registo e tente outro nome.",
-      "reload_failed": "Não foi possível repor essa linha. A fonte não foi alterada; escolha outra linha ou tente novamente."
+      "reload_failed": "Não foi possível repor essa linha. A fonte não foi alterada; escolha outra linha ou tente novamente.",
+      "import_partial": "Não foi possível repor algumas linhas: {missing}. O registo indica o motivo. Esta foi reposta, pode continuar; volte a escolher as outras mais tarde para tentar novamente."
     },
     "abort": {
       "already_configured": "Dispositivo já configurado",
@@ -595,6 +596,8 @@
     "import_done": "Reposto em {file}: {lines}.\n\nDefinições > Dispositivos e serviços > GTFS2 > Adicionar entrada, depois **Adicionar um trajeto entre duas paragens** para continuar.",
     "import_failed_title": "GTFS: {file} não foi alterada",
     "import_failed": "Não foi possível repor as linhas em {file}.\n\nNada foi alterado. Definições > Dispositivos e serviços > GTFS2 > Adicionar entrada para tentar novamente.",
+    "import_partial_title": "GTFS: {file} parcialmente atualizada",
+    "import_partial": "Reposto em {file}: {lines}.\n\nNão reposto: **{missing}**. A importação parou na primeira linha que falhou; o registo indica o motivo. Definições > Dispositivos e serviços > GTFS2 > Adicionar entrada, depois **Adicionar um trajeto entre duas paragens** numa dessas linhas para tentar novamente.",
     "line_orphaned_title": "GTFS: {file} guarda uma linha que ninguém lê",
     "line_orphaned": "O último sensor a ler a linha **{line}** foi removido, mas o seu horário continua em {file}.\n\nO serviço gtfs2.prune_datasource remove as linhas que nenhum sensor lê; chame-o primeiro com dry_run para ver o que sairia. Manter a linha só custa espaço em disco, e um novo sensor nessa linha volta a usá-la.",
     "lines_missing_title": "GTFS: {file} não foi atualizado",

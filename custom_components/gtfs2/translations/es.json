@@ -271,7 +271,8 @@
       "zip_holds_zips": "El ZIP contiene otros archivos ZIP y no se pudo ofrecer ninguno: descomprímalo e indique el ZIP interno de la red que desea",
       "name_taken": "Ya hay un sensor con este nombre. Elija otro.",
       "not_created": "No se ha podido crear el sensor. Consulte el registro y pruebe con otro nombre.",
-      "reload_failed": "No se ha podido restaurar esa línea. La fuente no se ha modificado; elija otra línea o vuelva a intentarlo."
+      "reload_failed": "No se ha podido restaurar esa línea. La fuente no se ha modificado; elija otra línea o vuelva a intentarlo.",
+      "import_partial": "Algunas líneas no se han podido restaurar: {missing}. El registro indica el motivo. Esta sí se ha restaurado, puede continuar; vuelva a elegir las demás más tarde para intentarlo de nuevo."
     },
     "abort": {
       "already_configured": "El dispositivo ya está configurado",
@@ -595,6 +596,8 @@
     "import_done": "Restaurado en {file}: {lines}.\n\nAjustes > Dispositivos y servicios > GTFS2 > Añadir entrada, luego **Añadir un trayecto entre dos paradas** para continuar.",
     "import_failed_title": "GTFS: {file} no se ha modificado",
     "import_failed": "No se han podido restaurar las líneas en {file}.\n\nNo se ha modificado nada. Ajustes > Dispositivos y servicios > GTFS2 > Añadir entrada para volver a intentarlo.",
+    "import_partial_title": "GTFS: {file} actualizada parcialmente",
+    "import_partial": "Restaurado en {file}: {lines}.\n\nNo restaurado: **{missing}**. La importación se detuvo en la primera línea que falló; el registro indica el motivo. Ajustes > Dispositivos y servicios > GTFS2 > Añadir entrada, luego **Añadir un trayecto entre dos paradas** en una de esas líneas para volver a intentarlo.",
     "line_orphaned_title": "GTFS: {file} conserva una línea que nadie lee",
     "line_orphaned": "El último sensor que leía la línea **{line}** fue eliminado, pero su horario sigue en {file}.\n\nEl servicio gtfs2.prune_datasource elimina las líneas que ningún sensor lee; llámelo primero con dry_run para ver qué se iría. Conservar la línea solo cuesta espacio en disco, y un nuevo sensor en esa línea la reutilizará.",
     "lines_missing_title": "GTFS: {file} no se ha actualizado",

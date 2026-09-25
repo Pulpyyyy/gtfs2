@@ -236,6 +236,12 @@ class ReloadScreens:
         self._import_task = None
         if not added:
             return self.async_show_progress_done(next_step_id="reload_failed")
+        # the import stops at the first line that fails and leaves the ones
+        # after it untried. The line picked is asked first, so it came in and
+        # the flow carries on; the others that did not are named as the
+        # notification names them, for the departure screen to say
+        self._import_missing = ", ".join(
+            r.split(":")[-1] for r in self._import_routes if r not in added)
         return self.async_show_progress_done(next_step_id="reload_done")
 
     async def async_step_reload_failed(self, user_input: dict | None = None) -> FlowResult:
@@ -250,7 +256,8 @@ class ReloadScreens:
         return await self.async_step_route()
 
     async def async_step_reload_done(self, user_input: dict | None = None) -> FlowResult:
-        """Carry on picking the journey, with the lines now loaded."""
+        """Carry on picking the journey, with the lines now loaded, and
+        naming the ones that were asked for and did not come in."""
         # reopen directly, without get_gtfs's extracting gate: the import
         # just succeeded so the file exists, and a coordinator adding an
         # index at this very moment leaves a journal that the gate mistakes
@@ -266,6 +273,10 @@ class ReloadScreens:
         await self.hass.async_add_executor_job(
             check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH,
             self._user_inputs[CONF_FILE])
+        if self._import_missing:
+            # not every line asked for came in: the departure screen, the
+            # next the rider reads, says which did not
+            self._stops_error = "import_partial"
         return await self.async_step_direction()
 
     async def async_step_optimise(self, user_input: dict | None = None) -> FlowResult:
