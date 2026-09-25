@@ -158,3 +158,20 @@ def test_the_real_file_keeps_its_own_schema(tmp_path):
     names = [r[0] for r in conn.execute("select name from sqlite_master where type = 'index'")]
     conn.close()
     assert not [n for n in names if n.startswith("gtfs2_scratch")]
+
+
+def test_a_first_import_that_brings_nothing_leaves_no_database(tmp_path, monkeypatch):
+    # a file with the schema alone read as a datasource that follows no
+    # line, which the flows then sent down the legacy extract
+    monkeypatch.setattr(gtfs_db, "copy_route", lambda *args, **kwargs: None)
+    assert _import(tmp_path, ["A", "B"]) == {}
+    assert sorted(p.name for p in tmp_path.iterdir()) == []
+
+
+def test_a_later_import_that_brings_nothing_keeps_the_database(tmp_path, monkeypatch):
+    assert _import(tmp_path, ["A"]) == {"A": 4}
+    monkeypatch.setattr(gtfs_db, "copy_route", lambda *args, **kwargs: None)
+    assert _import(tmp_path, ["B"]) == {}
+    conn = sqlite3.connect(tmp_path / "src.sqlite")
+    assert conn.execute("select count(*) from stop_times").fetchone()[0] == 4
+    conn.close()

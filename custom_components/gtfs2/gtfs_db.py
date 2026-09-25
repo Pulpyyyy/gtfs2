@@ -360,9 +360,24 @@ def import_routes(gtfs_dir, filename, route_ids, build_scratch):
                 _LOGGER.error("Import of route %s failed, stopping there", route_id)
                 break
             added[route_id] = count
+        if fresh and not added:
+            # nothing came into the file this import created: left with its
+            # schema only, it read as a datasource that follows no line,
+            # which the flows then sent down the legacy extract
+            _discard_real(real)
         return added
     finally:
         discard_scratch(gtfs_dir, filename)
+
+
+def _discard_real(real):
+    """Delete a real database nothing was copied into, and its journal."""
+    for path in (real, real + "-journal"):
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError as ex:
+                _LOGGER.warning("Could not remove %s: %s", path, ex)
 
 
 def _index_scratch(scratch_file):
