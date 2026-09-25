@@ -359,6 +359,108 @@ class _Platform:
     UPDATE = "update"
 
 
+# --- the sensor platform -----------------------------------------------------
+# What sensor.py builds its entities on, so a test can build one and read
+# what the integration's own code wrote into it: the native value, the
+# attributes, the icon, the attribution. Home Assistant's side of it (the
+# state string it derives, the recorder, the entity registry, the listener
+# a coordinator entity registers) is not answered here, and writing the
+# state raises unless the test itself says what a write is.
+
+class _SensorDeviceClass:
+    """The device classes sensor.py names, with Home Assistant's values;
+    a class this does not carry raises AttributeError, as a typo would."""
+    DATE = "date"
+    TIMESTAMP = "timestamp"
+
+
+class _SensorEntity:
+    """The properties Home Assistant reads off a sensor entity, read the way
+    Entity and SensorEntity read them: from the _attr_ fields, None when
+    the entity never set one."""
+
+    _attr_native_value = None
+    _attr_attribution = None
+    _attr_unique_id = None
+    _attr_device_info = None
+    _attr_entity_category = None
+
+    @property
+    def native_value(self):
+        return self._attr_native_value
+
+    @property
+    def extra_state_attributes(self):
+        return getattr(self, "_attr_extra_state_attributes", None)
+
+    @property
+    def device_class(self):
+        return getattr(self, "_attr_device_class", None)
+
+    @property
+    def icon(self):
+        return getattr(self, "_attr_icon", None)
+
+    @property
+    def attribution(self):
+        return self._attr_attribution
+
+    @property
+    def unique_id(self):
+        return self._attr_unique_id
+
+    @property
+    def device_info(self):
+        return self._attr_device_info
+
+    @property
+    def entity_category(self):
+        return self._attr_entity_category
+
+
+class _CoordinatorEntity:
+    """What CoordinatorEntity hands its subclass: the coordinator, and an
+    update that ends in a state write. Registering the listener is Home
+    Assistant's, so adding the entity registers nothing; the write is
+    Home Assistant's too, and a test that drives an update sets
+    async_write_ha_state on the entity to hear it."""
+
+    async_write_ha_state = _Unreached("Entity.async_write_ha_state")
+
+    def __init__(self, coordinator, context=None) -> None:
+        self.coordinator = coordinator
+        self.coordinator_context = context
+
+    async def async_added_to_hass(self) -> None:
+        return None
+
+    def _handle_coordinator_update(self) -> None:
+        self.async_write_ha_state()
+
+
+def _slugify(text, *, separator: str = "_") -> str:
+    """homeassistant.util.slugify on the ASCII it is handed here (table
+    column names): lower case, every run of other characters one separator.
+    Home Assistant transliterates the rest with unidecode, which the
+    standard library has not; accents are only stripped here."""
+    import unicodedata
+    if text == "" or text is None:
+        return ""
+    ascii_text = unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode()
+    slug = re.sub(r"[^a-z0-9]+", separator, ascii_text.lower()).strip(separator)
+    return slug or "unknown"
+
+
+def _install_sensor_platform() -> None:
+    """Hang the sensor platform's symbols on the modules install() registered."""
+    sys.modules["homeassistant.components.sensor"].SensorEntity = _SensorEntity
+    sys.modules["homeassistant.components.sensor"].SensorDeviceClass = _SensorDeviceClass
+    sys.modules["homeassistant.helpers.update_coordinator"].CoordinatorEntity = _CoordinatorEntity
+    sys.modules["homeassistant.util"].slugify = _slugify
+
+# --- end of the sensor platform ----------------------------------------------
+
+
 def installed() -> bool:
     """Whether a Home Assistant, real or already stubbed, can be imported."""
     if "homeassistant" in sys.modules:
@@ -475,6 +577,7 @@ def install() -> None:
             ConfigEntries=object, SOURCE_IMPORT="import")
     _module("homeassistant.exceptions", HomeAssistantError=Exception,
             PlatformNotReady=type("PlatformNotReady", (Exception,), {}))
+    _install_sensor_platform()
     if _MissingStub not in sys.meta_path:
         sys.meta_path.append(_MissingStub)
 

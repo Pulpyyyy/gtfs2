@@ -1,0 +1,2644 @@
+{
+  "recorder": {
+    "GTFSDepartureSensor": {
+      "recorded": [
+        "agency_agency_email",
+        "agency_agency_fare_url",
+        "agency_agency_id",
+        "agency_agency_lang",
+        "agency_agency_name",
+        "agency_agency_phone",
+        "agency_agency_timezone",
+        "agency_agency_url",
+        "alert_cause",
+        "alert_effect",
+        "arrival",
+        "day",
+        "destination_station_location_type",
+        "destination_station_location_type_name",
+        "destination_station_parent_station",
+        "destination_station_platform_code",
+        "destination_station_stop_code",
+        "destination_station_stop_desc",
+        "destination_station_stop_id",
+        "destination_station_stop_lat",
+        "destination_station_stop_lon",
+        "destination_station_stop_name",
+        "destination_station_stop_timezone",
+        "destination_station_stop_url",
+        "destination_station_time_zone",
+        "destination_station_wheelchair_boarding",
+        "destination_station_wheelchair_boarding_available",
+        "destination_station_zone_id",
+        "destination_stop_alert",
+        "destination_stop_arrival_time",
+        "destination_stop_departure_time",
+        "destination_stop_drop_off_type",
+        "destination_stop_drop_off_type_state",
+        "destination_stop_pickup_type",
+        "destination_stop_pickup_type_state",
+        "destination_stop_sequence",
+        "destination_stop_stop_sequence",
+        "destination_stop_timepoint",
+        "destination_stop_timepoint_exact",
+        "duration",
+        "extracting",
+        "first",
+        "last",
+        "leg_geojson_file",
+        "next_delay_realtime",
+        "next_departure_realtime",
+        "next_service_date",
+        "next_service_in_days",
+        "offset",
+        "origin_station_location_type",
+        "origin_station_location_type_name",
+        "origin_station_parent_station",
+        "origin_station_platform_code",
+        "origin_station_stop_code",
+        "origin_station_stop_desc",
+        "origin_station_stop_id",
+        "origin_station_stop_lat",
+        "origin_station_stop_lon",
+        "origin_station_stop_name",
+        "origin_station_stop_sequence",
+        "origin_station_stop_timezone",
+        "origin_station_stop_url",
+        "origin_station_time_zone",
+        "origin_station_wheelchair_boarding",
+        "origin_station_wheelchair_boarding_available",
+        "origin_station_zone_id",
+        "origin_stop_alert",
+        "origin_stop_arrival_time",
+        "origin_stop_departure_time",
+        "origin_stop_drop_off_type",
+        "origin_stop_drop_off_type_state",
+        "origin_stop_pickup_type",
+        "origin_stop_pickup_type_state",
+        "origin_stop_sequence",
+        "origin_stop_stop_sequence",
+        "origin_stop_timepoint",
+        "origin_stop_timepoint_exact",
+        "route_agency_id",
+        "route_geojson_file",
+        "route_route_color",
+        "route_route_desc",
+        "route_route_id",
+        "route_route_long_name",
+        "route_route_short_name",
+        "route_route_text_color",
+        "route_route_type",
+        "route_route_url",
+        "route_type_name",
+        "timetable_file",
+        "trip_bikes_allowed",
+        "trip_bikes_allowed_state",
+        "trip_block_id",
+        "trip_direction_id",
+        "trip_route_id",
+        "trip_service_id",
+        "trip_shape_id",
+        "trip_trip_headsign",
+        "trip_trip_id",
+        "trip_trip_short_name",
+        "trip_wheelchair_access_available",
+        "trip_wheelchair_accessible",
+        "vehicle_positions_file"
+      ],
+      "unrecorded": [
+        "cancelled_trips_realtime",
+        "destination_stop_alerts",
+        "gtfs_rt_updated_at",
+        "gtfs_updated_at",
+        "info",
+        "info_realtime",
+        "next_delays_realtime",
+        "next_departures",
+        "next_departures_destination_arrival_times",
+        "next_departures_durations",
+        "next_departures_headsign",
+        "next_departures_lines",
+        "next_departures_origin_stop_id",
+        "next_departures_realtime",
+        "next_departures_realtime_trips",
+        "next_departures_route_types",
+        "next_departures_trips",
+        "origin_stop_alerts",
+        "skipped_trips_realtime"
+      ],
+      "unrecorded, never written here": [
+        "Cancelled Trips RT",
+        "Next Services RT",
+        "Next Services RT Delays",
+        "Next Services RT Trips",
+        "Skipped Trips RT"
+      ]
+    },
+    "GTFSLocalStopSensor": {
+      "recorded": [
+        "device_tracker_id",
+        "extracting",
+        "latitude",
+        "longitude",
+        "offset"
+      ],
+      "unrecorded": [
+        "gtfs_updated_at",
+        "next_departures_lines"
+      ],
+      "unrecorded, never written here": []
+    }
+  },
+  "variants": {
+    "departure / agency missing from the feed": {
+      "attributes": {
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "No scheduled departures",
+        "info_realtime": "No realtime information",
+        "next_departures": [],
+        "next_departures_destination_arrival_times": [],
+        "next_departures_durations": [],
+        "next_departures_headsign": [],
+        "next_departures_lines": [],
+        "next_departures_origin_stop_id": [],
+        "next_departures_route_types": [],
+        "next_departures_trips": [],
+        "next_service_in_days": -1,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "route_agency_id": "GONE",
+        "route_route_id": "R2",
+        "route_route_long_name": "C > D",
+        "route_route_short_name": "2",
+        "route_route_type": "0",
+        "route_type_name": "Tram"
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:tram",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / alerts at both ends": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "alert_cause": "STRIKE",
+        "alert_effect": "REDUCED_SERVICE",
+        "arrival": "2026-09-16T09:25:00+00:00",
+        "day": "today",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_time_zone": "Europe/Paris",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "Stop closed",
+        "destination_stop_alerts": [
+          {
+            "effect": "STOP_MOVED",
+            "stops": [
+              "Stop Two"
+            ],
+            "text": "Stop closed"
+          }
+        ],
+        "destination_stop_arrival_time": "10:30:00",
+        "destination_stop_departure_time": "10:30:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_stop_sequence": 7,
+        "destination_stop_timepoint": 1,
+        "destination_stop_timepoint_exact": true,
+        "duration": 25,
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info_realtime": "No realtime information",
+        "last": false,
+        "next_departures": [
+          "2026-09-16T09:00:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-09-16T09:25:00+00:00"
+        ],
+        "next_departures_durations": [
+          25
+        ],
+        "next_departures_headsign": [
+          "B"
+        ],
+        "next_departures_lines": [
+          "1"
+        ],
+        "next_departures_origin_stop_id": [
+          "S1b"
+        ],
+        "next_departures_route_types": [
+          3
+        ],
+        "next_departures_trips": [
+          "T1"
+        ],
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1b",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_time_zone": "Europe/Paris",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "Strike",
+        "origin_stop_alerts": [
+          {
+            "cause": "STRIKE",
+            "effect": "REDUCED_SERVICE",
+            "text": "Strike"
+          }
+        ],
+        "origin_stop_arrival_time": "10:30:00",
+        "origin_stop_departure_time": "10:30:00",
+        "origin_stop_drop_off_type": 0,
+        "origin_stop_drop_off_type_state": "Regular",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_stop_sequence": 1,
+        "origin_stop_timepoint": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus",
+        "trip_bikes_allowed": "1",
+        "trip_bikes_allowed_state": true,
+        "trip_direction_id": "0",
+        "trip_route_id": "R1",
+        "trip_trip_headsign": "B",
+        "trip_trip_id": "T1",
+        "trip_wheelchair_access_available": false,
+        "trip_wheelchair_accessible": "2"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": "datetime 2026-09-16T09:00:00+00:00",
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / boarding Gare to Ecole, Christmas Eve evening": {
+      "attributes": {
+        "agency_agency_email": "None",
+        "agency_agency_fare_url": "None",
+        "agency_agency_id": "AG",
+        "agency_agency_lang": "None",
+        "agency_agency_name": "Boarding Bus",
+        "agency_agency_phone": "None",
+        "agency_agency_timezone": "Europe/Paris",
+        "agency_agency_url": "https://example.invalid",
+        "arrival": "2026-12-26T07:10:00+00:00",
+        "day": "2026-12-26",
+        "destination_station_location_type": "0",
+        "destination_station_location_type_name": "Station",
+        "destination_station_parent_station": "None",
+        "destination_station_platform_code": "None",
+        "destination_station_stop_code": "None",
+        "destination_station_stop_desc": "None",
+        "destination_station_stop_id": "C",
+        "destination_station_stop_lat": "45.02",
+        "destination_station_stop_lon": "5.02",
+        "destination_station_stop_name": "Ecole",
+        "destination_station_stop_timezone": "None",
+        "destination_station_stop_url": "None",
+        "destination_station_time_zone": null,
+        "destination_station_wheelchair_boarding": "None",
+        "destination_station_wheelchair_boarding_available": "unknown",
+        "destination_station_zone_id": "None",
+        "destination_stop_alert": "no info",
+        "destination_stop_arrival_time": "2026-12-26T07:10:00+00:00",
+        "destination_stop_departure_time": "2026-12-26T07:10:00+00:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_sequence": 3,
+        "destination_stop_timepoint_exact": true,
+        "duration": 10,
+        "first": true,
+        "gtfs_updated_at": "2026-12-24T19:00:00+00:00",
+        "info": "No departures until 2026-12-26",
+        "info_realtime": "No realtime information",
+        "last": false,
+        "next_departures": [
+          "2026-12-26T07:00:00+00:00",
+          "2026-12-26T08:00:00+00:00",
+          "2026-12-26T09:00:00+00:00",
+          "2026-12-27T07:00:00+00:00",
+          "2026-12-27T08:00:00+00:00",
+          "2026-12-27T09:00:00+00:00",
+          "2026-12-28T07:00:00+00:00",
+          "2026-12-28T08:00:00+00:00",
+          "2026-12-28T09:00:00+00:00",
+          "2026-12-29T07:00:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-12-26T07:10:00+00:00",
+          "2026-12-26T08:10:00+00:00",
+          "2026-12-26T09:10:00+00:00",
+          "2026-12-27T07:10:00+00:00",
+          "2026-12-27T08:10:00+00:00",
+          "2026-12-27T09:10:00+00:00",
+          "2026-12-28T07:10:00+00:00",
+          "2026-12-28T08:10:00+00:00",
+          "2026-12-28T09:10:00+00:00",
+          "2026-12-29T07:10:00+00:00"
+        ],
+        "next_departures_durations": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ],
+        "next_departures_headsign": [
+          "2026-12-26T07:00:00+00:00 (Terminus)",
+          "2026-12-26T08:00:00+00:00 (Terminus)",
+          "2026-12-26T09:00:00+00:00 (Terminus)",
+          "2026-12-27T07:00:00+00:00 (Terminus)",
+          "2026-12-27T08:00:00+00:00 (Terminus)",
+          "2026-12-27T09:00:00+00:00 (Terminus)",
+          "2026-12-28T07:00:00+00:00 (Terminus)",
+          "2026-12-28T08:00:00+00:00 (Terminus)",
+          "2026-12-28T09:00:00+00:00 (Terminus)",
+          "2026-12-29T07:00:00+00:00 (Terminus)"
+        ],
+        "next_departures_lines": [
+          "2026-12-26T07:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-12-26T08:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-12-26T09:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-12-27T07:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-12-27T08:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-12-27T09:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-12-28T07:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-12-28T08:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-12-28T09:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-12-29T07:00:00+00:00 (B1/Gare - Terminus)"
+        ],
+        "next_departures_origin_stop_id": [
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A"
+        ],
+        "next_departures_route_types": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "next_departures_trips": [
+          "T1",
+          "T2",
+          "T3",
+          "T1",
+          "T2",
+          "T3",
+          "T1",
+          "T2",
+          "T3",
+          "T1"
+        ],
+        "next_service_date": "2026-12-26",
+        "next_service_in_days": 2,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_parent_station": "None",
+        "origin_station_platform_code": "None",
+        "origin_station_stop_code": "None",
+        "origin_station_stop_desc": "None",
+        "origin_station_stop_id": "A",
+        "origin_station_stop_lat": "45.0",
+        "origin_station_stop_lon": "5.0",
+        "origin_station_stop_name": "Gare",
+        "origin_station_stop_timezone": "None",
+        "origin_station_stop_url": "None",
+        "origin_station_time_zone": null,
+        "origin_station_wheelchair_boarding": "None",
+        "origin_station_wheelchair_boarding_available": "unknown",
+        "origin_station_zone_id": "None",
+        "origin_stop_alert": "no info",
+        "origin_stop_arrival_time": "2026-12-26T07:00:00+00:00",
+        "origin_stop_departure_time": "2026-12-26T07:00:00+00:00",
+        "origin_stop_drop_off_type": 1,
+        "origin_stop_drop_off_type_state": "Not Available",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_sequence": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_route_color": "None",
+        "route_route_desc": "None",
+        "route_route_id": "B1",
+        "route_route_long_name": "Gare - Terminus",
+        "route_route_short_name": "B1",
+        "route_route_text_color": "None",
+        "route_route_type": "3",
+        "route_route_url": "None",
+        "route_type_name": "Bus",
+        "trip_bikes_allowed": "None",
+        "trip_bikes_allowed_state": "unknown",
+        "trip_block_id": "None",
+        "trip_direction_id": "0",
+        "trip_route_id": "B1",
+        "trip_service_id": "S",
+        "trip_shape_id": "None",
+        "trip_trip_headsign": "Terminus",
+        "trip_trip_id": "T1",
+        "trip_trip_short_name": "None",
+        "trip_wheelchair_access_available": "unknown",
+        "trip_wheelchair_accessible": "None"
+      },
+      "attribution": "Boarding Bus",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - B1 Gare Ecole"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "B1 Gare Ecole",
+        "name": "GTFS - B1 Gare Ecole"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "B1 Gare Ecole",
+      "state": "datetime 2026-12-26T08:00:00+01:00",
+      "unique_id": "gtfs-B1 Gare Ecole"
+    },
+    "departure / boarding Gare to Ecole, first bus ahead": {
+      "attributes": {
+        "agency_agency_email": "None",
+        "agency_agency_fare_url": "None",
+        "agency_agency_id": "AG",
+        "agency_agency_lang": "None",
+        "agency_agency_name": "Boarding Bus",
+        "agency_agency_phone": "None",
+        "agency_agency_timezone": "Europe/Paris",
+        "agency_agency_url": "https://example.invalid",
+        "arrival": "2026-09-16T06:10:00+00:00",
+        "day": "2026-09-16",
+        "destination_station_location_type": "0",
+        "destination_station_location_type_name": "Station",
+        "destination_station_parent_station": "None",
+        "destination_station_platform_code": "None",
+        "destination_station_stop_code": "None",
+        "destination_station_stop_desc": "None",
+        "destination_station_stop_id": "C",
+        "destination_station_stop_lat": "45.02",
+        "destination_station_stop_lon": "5.02",
+        "destination_station_stop_name": "Ecole",
+        "destination_station_stop_timezone": "None",
+        "destination_station_stop_url": "None",
+        "destination_station_time_zone": null,
+        "destination_station_wheelchair_boarding": "None",
+        "destination_station_wheelchair_boarding_available": "unknown",
+        "destination_station_zone_id": "None",
+        "destination_stop_alert": "no info",
+        "destination_stop_arrival_time": "2026-09-16T06:10:00+00:00",
+        "destination_stop_departure_time": "2026-09-16T06:10:00+00:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_sequence": 3,
+        "destination_stop_timepoint_exact": true,
+        "duration": 10,
+        "first": true,
+        "gtfs_updated_at": "2026-09-16T05:30:00+00:00",
+        "info_realtime": "No realtime information",
+        "last": false,
+        "next_departures": [
+          "2026-09-16T06:00:00+00:00",
+          "2026-09-16T07:00:00+00:00",
+          "2026-09-16T08:00:00+00:00",
+          "2026-09-17T06:00:00+00:00",
+          "2026-09-17T07:00:00+00:00",
+          "2026-09-17T08:00:00+00:00",
+          "2026-09-18T06:00:00+00:00",
+          "2026-09-18T07:00:00+00:00",
+          "2026-09-18T08:00:00+00:00",
+          "2026-09-19T06:00:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-09-16T06:10:00+00:00",
+          "2026-09-16T07:10:00+00:00",
+          "2026-09-16T08:10:00+00:00",
+          "2026-09-17T06:10:00+00:00",
+          "2026-09-17T07:10:00+00:00",
+          "2026-09-17T08:10:00+00:00",
+          "2026-09-18T06:10:00+00:00",
+          "2026-09-18T07:10:00+00:00",
+          "2026-09-18T08:10:00+00:00",
+          "2026-09-19T06:10:00+00:00"
+        ],
+        "next_departures_durations": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ],
+        "next_departures_headsign": [
+          "2026-09-16T06:00:00+00:00 (Terminus)",
+          "2026-09-16T07:00:00+00:00 (Terminus)",
+          "2026-09-16T08:00:00+00:00 (Terminus)",
+          "2026-09-17T06:00:00+00:00 (Terminus)",
+          "2026-09-17T07:00:00+00:00 (Terminus)",
+          "2026-09-17T08:00:00+00:00 (Terminus)",
+          "2026-09-18T06:00:00+00:00 (Terminus)",
+          "2026-09-18T07:00:00+00:00 (Terminus)",
+          "2026-09-18T08:00:00+00:00 (Terminus)",
+          "2026-09-19T06:00:00+00:00 (Terminus)"
+        ],
+        "next_departures_lines": [
+          "2026-09-16T06:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-16T07:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-16T08:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-17T06:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-17T07:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-17T08:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-18T06:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-18T07:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-18T08:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-19T06:00:00+00:00 (B1/Gare - Terminus)"
+        ],
+        "next_departures_origin_stop_id": [
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A"
+        ],
+        "next_departures_route_types": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "next_departures_trips": [
+          "T1",
+          "T2",
+          "T3",
+          "T1",
+          "T2",
+          "T3",
+          "T1",
+          "T2",
+          "T3",
+          "T1"
+        ],
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_parent_station": "None",
+        "origin_station_platform_code": "None",
+        "origin_station_stop_code": "None",
+        "origin_station_stop_desc": "None",
+        "origin_station_stop_id": "A",
+        "origin_station_stop_lat": "45.0",
+        "origin_station_stop_lon": "5.0",
+        "origin_station_stop_name": "Gare",
+        "origin_station_stop_timezone": "None",
+        "origin_station_stop_url": "None",
+        "origin_station_time_zone": null,
+        "origin_station_wheelchair_boarding": "None",
+        "origin_station_wheelchair_boarding_available": "unknown",
+        "origin_station_zone_id": "None",
+        "origin_stop_alert": "no info",
+        "origin_stop_arrival_time": "2026-09-16T06:00:00+00:00",
+        "origin_stop_departure_time": "2026-09-16T06:00:00+00:00",
+        "origin_stop_drop_off_type": 1,
+        "origin_stop_drop_off_type_state": "Not Available",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_sequence": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_route_color": "None",
+        "route_route_desc": "None",
+        "route_route_id": "B1",
+        "route_route_long_name": "Gare - Terminus",
+        "route_route_short_name": "B1",
+        "route_route_text_color": "None",
+        "route_route_type": "3",
+        "route_route_url": "None",
+        "route_type_name": "Bus",
+        "trip_bikes_allowed": "None",
+        "trip_bikes_allowed_state": "unknown",
+        "trip_block_id": "None",
+        "trip_direction_id": "0",
+        "trip_route_id": "B1",
+        "trip_service_id": "S",
+        "trip_shape_id": "None",
+        "trip_trip_headsign": "Terminus",
+        "trip_trip_id": "T1",
+        "trip_trip_short_name": "None",
+        "trip_wheelchair_access_available": "unknown",
+        "trip_wheelchair_accessible": "None"
+      },
+      "attribution": "Boarding Bus",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - B1 Gare Ecole"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "B1 Gare Ecole",
+        "name": "GTFS - B1 Gare Ecole"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "B1 Gare Ecole",
+      "state": "datetime 2026-09-16T08:00:00+02:00",
+      "unique_id": "gtfs-B1 Gare Ecole"
+    },
+    "departure / boarding Gare to Ecole, last bus gone": {
+      "attributes": {
+        "agency_agency_email": "None",
+        "agency_agency_fare_url": "None",
+        "agency_agency_id": "AG",
+        "agency_agency_lang": "None",
+        "agency_agency_name": "Boarding Bus",
+        "agency_agency_phone": "None",
+        "agency_agency_timezone": "Europe/Paris",
+        "agency_agency_url": "https://example.invalid",
+        "arrival": "2026-09-17T06:10:00+00:00",
+        "day": "2026-09-17",
+        "destination_station_location_type": "0",
+        "destination_station_location_type_name": "Station",
+        "destination_station_parent_station": "None",
+        "destination_station_platform_code": "None",
+        "destination_station_stop_code": "None",
+        "destination_station_stop_desc": "None",
+        "destination_station_stop_id": "C",
+        "destination_station_stop_lat": "45.02",
+        "destination_station_stop_lon": "5.02",
+        "destination_station_stop_name": "Ecole",
+        "destination_station_stop_timezone": "None",
+        "destination_station_stop_url": "None",
+        "destination_station_time_zone": null,
+        "destination_station_wheelchair_boarding": "None",
+        "destination_station_wheelchair_boarding_available": "unknown",
+        "destination_station_zone_id": "None",
+        "destination_stop_alert": "no info",
+        "destination_stop_arrival_time": "2026-09-17T06:10:00+00:00",
+        "destination_stop_departure_time": "2026-09-17T06:10:00+00:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_sequence": 3,
+        "destination_stop_timepoint_exact": true,
+        "duration": 10,
+        "first": true,
+        "gtfs_updated_at": "2026-09-16T08:30:00+00:00",
+        "info": "Next departures tomorrow at 08:00",
+        "info_realtime": "No realtime information",
+        "last": false,
+        "next_departures": [
+          "2026-09-17T06:00:00+00:00",
+          "2026-09-17T07:00:00+00:00",
+          "2026-09-17T08:00:00+00:00",
+          "2026-09-18T06:00:00+00:00",
+          "2026-09-18T07:00:00+00:00",
+          "2026-09-18T08:00:00+00:00",
+          "2026-09-19T06:00:00+00:00",
+          "2026-09-19T07:00:00+00:00",
+          "2026-09-19T08:00:00+00:00",
+          "2026-09-20T06:00:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-09-17T06:10:00+00:00",
+          "2026-09-17T07:10:00+00:00",
+          "2026-09-17T08:10:00+00:00",
+          "2026-09-18T06:10:00+00:00",
+          "2026-09-18T07:10:00+00:00",
+          "2026-09-18T08:10:00+00:00",
+          "2026-09-19T06:10:00+00:00",
+          "2026-09-19T07:10:00+00:00",
+          "2026-09-19T08:10:00+00:00",
+          "2026-09-20T06:10:00+00:00"
+        ],
+        "next_departures_durations": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ],
+        "next_departures_headsign": [
+          "2026-09-17T06:00:00+00:00 (Terminus)",
+          "2026-09-17T07:00:00+00:00 (Terminus)",
+          "2026-09-17T08:00:00+00:00 (Terminus)",
+          "2026-09-18T06:00:00+00:00 (Terminus)",
+          "2026-09-18T07:00:00+00:00 (Terminus)",
+          "2026-09-18T08:00:00+00:00 (Terminus)",
+          "2026-09-19T06:00:00+00:00 (Terminus)",
+          "2026-09-19T07:00:00+00:00 (Terminus)",
+          "2026-09-19T08:00:00+00:00 (Terminus)",
+          "2026-09-20T06:00:00+00:00 (Terminus)"
+        ],
+        "next_departures_lines": [
+          "2026-09-17T06:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-17T07:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-17T08:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-18T06:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-18T07:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-18T08:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-19T06:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-19T07:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-19T08:00:00+00:00 (B1/Gare - Terminus)",
+          "2026-09-20T06:00:00+00:00 (B1/Gare - Terminus)"
+        ],
+        "next_departures_origin_stop_id": [
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A"
+        ],
+        "next_departures_route_types": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "next_departures_trips": [
+          "T1",
+          "T2",
+          "T3",
+          "T1",
+          "T2",
+          "T3",
+          "T1",
+          "T2",
+          "T3",
+          "T1"
+        ],
+        "next_service_date": "2026-09-17",
+        "next_service_in_days": 1,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_parent_station": "None",
+        "origin_station_platform_code": "None",
+        "origin_station_stop_code": "None",
+        "origin_station_stop_desc": "None",
+        "origin_station_stop_id": "A",
+        "origin_station_stop_lat": "45.0",
+        "origin_station_stop_lon": "5.0",
+        "origin_station_stop_name": "Gare",
+        "origin_station_stop_timezone": "None",
+        "origin_station_stop_url": "None",
+        "origin_station_time_zone": null,
+        "origin_station_wheelchair_boarding": "None",
+        "origin_station_wheelchair_boarding_available": "unknown",
+        "origin_station_zone_id": "None",
+        "origin_stop_alert": "no info",
+        "origin_stop_arrival_time": "2026-09-17T06:00:00+00:00",
+        "origin_stop_departure_time": "2026-09-17T06:00:00+00:00",
+        "origin_stop_drop_off_type": 1,
+        "origin_stop_drop_off_type_state": "Not Available",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_sequence": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_route_color": "None",
+        "route_route_desc": "None",
+        "route_route_id": "B1",
+        "route_route_long_name": "Gare - Terminus",
+        "route_route_short_name": "B1",
+        "route_route_text_color": "None",
+        "route_route_type": "3",
+        "route_route_url": "None",
+        "route_type_name": "Bus",
+        "trip_bikes_allowed": "None",
+        "trip_bikes_allowed_state": "unknown",
+        "trip_block_id": "None",
+        "trip_direction_id": "0",
+        "trip_route_id": "B1",
+        "trip_service_id": "S",
+        "trip_shape_id": "None",
+        "trip_trip_headsign": "Terminus",
+        "trip_trip_id": "T1",
+        "trip_trip_short_name": "None",
+        "trip_wheelchair_access_available": "unknown",
+        "trip_wheelchair_accessible": "None"
+      },
+      "attribution": "Boarding Bus",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - B1 Gare Ecole"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "B1 Gare Ecole",
+        "name": "GTFS - B1 Gare Ecole"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "B1 Gare Ecole",
+      "state": "datetime 2026-09-17T08:00:00+02:00",
+      "unique_id": "gtfs-B1 Gare Ecole"
+    },
+    "departure / boarding Mairie to Ecole, nobody gets on": {
+      "attributes": {
+        "agency_agency_email": "None",
+        "agency_agency_fare_url": "None",
+        "agency_agency_id": "AG",
+        "agency_agency_lang": "None",
+        "agency_agency_name": "Boarding Bus",
+        "agency_agency_phone": "None",
+        "agency_agency_timezone": "Europe/Paris",
+        "agency_agency_url": "https://example.invalid",
+        "destination_station_location_type": "0",
+        "destination_station_location_type_name": "Station",
+        "destination_station_parent_station": "None",
+        "destination_station_platform_code": "None",
+        "destination_station_stop_code": "None",
+        "destination_station_stop_desc": "None",
+        "destination_station_stop_id": "C",
+        "destination_station_stop_lat": "45.02",
+        "destination_station_stop_lon": "5.02",
+        "destination_station_stop_name": "Ecole",
+        "destination_station_stop_timezone": "None",
+        "destination_station_stop_url": "None",
+        "destination_station_wheelchair_boarding": "None",
+        "destination_station_wheelchair_boarding_available": "unknown",
+        "destination_station_zone_id": "None",
+        "destination_stop_alert": "no info",
+        "gtfs_updated_at": "2026-09-16T05:30:00+00:00",
+        "info": "No scheduled departures",
+        "info_realtime": "No realtime information",
+        "next_departures": [],
+        "next_departures_destination_arrival_times": [],
+        "next_departures_durations": [],
+        "next_departures_headsign": [],
+        "next_departures_lines": [],
+        "next_departures_origin_stop_id": [],
+        "next_departures_route_types": [],
+        "next_departures_trips": [],
+        "next_service_in_days": -1,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_parent_station": "None",
+        "origin_station_platform_code": "None",
+        "origin_station_stop_code": "None",
+        "origin_station_stop_desc": "None",
+        "origin_station_stop_id": "B",
+        "origin_station_stop_lat": "45.01",
+        "origin_station_stop_lon": "5.01",
+        "origin_station_stop_name": "Mairie",
+        "origin_station_stop_timezone": "None",
+        "origin_station_stop_url": "None",
+        "origin_station_wheelchair_boarding": "None",
+        "origin_station_wheelchair_boarding_available": "unknown",
+        "origin_station_zone_id": "None",
+        "origin_stop_alert": "no info",
+        "route_agency_id": "AG",
+        "route_route_color": "None",
+        "route_route_desc": "None",
+        "route_route_id": "B1",
+        "route_route_long_name": "Gare - Terminus",
+        "route_route_short_name": "B1",
+        "route_route_text_color": "None",
+        "route_route_type": "3",
+        "route_route_url": "None",
+        "route_type_name": "Bus"
+      },
+      "attribution": "Boarding Bus",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - B1 Mairie Ecole"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "B1 Mairie Ecole",
+        "name": "GTFS - B1 Mairie Ecole"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "B1 Mairie Ecole",
+      "state": null,
+      "unique_id": "gtfs-B1 Mairie Ecole"
+    },
+    "departure / destination stop gone from the timetable": {
+      "attributes": {},
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:train",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / extracting": {
+      "attributes": {
+        "extracting": true
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": null,
+      "entity_category": null,
+      "icon": "mdi:train",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / in four days": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "arrival": "2026-09-20T06:25:00+00:00",
+        "day": "today",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_time_zone": "Europe/Paris",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "destination_stop_arrival_time": "10:30:00",
+        "destination_stop_departure_time": "10:30:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_stop_sequence": 7,
+        "destination_stop_timepoint": 1,
+        "destination_stop_timepoint_exact": true,
+        "duration": 25,
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "No departures until 2026-09-20",
+        "info_realtime": "No realtime information",
+        "last": false,
+        "next_departures": [
+          "2026-09-20T06:00:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-09-20T06:25:00+00:00"
+        ],
+        "next_departures_durations": [
+          25
+        ],
+        "next_departures_headsign": [
+          "B"
+        ],
+        "next_departures_lines": [
+          "1"
+        ],
+        "next_departures_origin_stop_id": [
+          "S1b"
+        ],
+        "next_departures_route_types": [
+          3
+        ],
+        "next_departures_trips": [
+          "T1"
+        ],
+        "next_service_date": "2026-09-20",
+        "next_service_in_days": 4,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1b",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_time_zone": "Europe/Paris",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "origin_stop_arrival_time": "10:30:00",
+        "origin_stop_departure_time": "10:30:00",
+        "origin_stop_drop_off_type": 0,
+        "origin_stop_drop_off_type_state": "Regular",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_stop_sequence": 1,
+        "origin_stop_timepoint": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus",
+        "trip_bikes_allowed": "1",
+        "trip_bikes_allowed_state": true,
+        "trip_direction_id": "0",
+        "trip_route_id": "R1",
+        "trip_trip_headsign": "B",
+        "trip_trip_id": "T1",
+        "trip_wheelchair_access_available": false,
+        "trip_wheelchair_accessible": "2"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": "datetime 2026-09-20T06:00:00+00:00",
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / no service at all": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "No scheduled departures",
+        "info_realtime": "No realtime information",
+        "next_departures": [],
+        "next_departures_destination_arrival_times": [],
+        "next_departures_durations": [],
+        "next_departures_headsign": [],
+        "next_departures_lines": [],
+        "next_departures_origin_stop_id": [],
+        "next_departures_route_types": [],
+        "next_departures_trips": [],
+        "next_service_in_days": -1,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / offset of 90 minutes, first bus tomorrow": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "arrival": "2026-09-17T06:25:00+00:00",
+        "day": "today",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_time_zone": "Europe/Paris",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "destination_stop_arrival_time": "10:30:00",
+        "destination_stop_departure_time": "10:30:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_stop_sequence": 7,
+        "destination_stop_timepoint": 1,
+        "destination_stop_timepoint_exact": true,
+        "duration": 25,
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "Next departures tomorrow at 08:00",
+        "info_realtime": "No realtime information",
+        "last": false,
+        "next_departures": [
+          "2026-09-17T06:00:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-09-17T06:25:00+00:00"
+        ],
+        "next_departures_durations": [
+          25
+        ],
+        "next_departures_headsign": [
+          "B"
+        ],
+        "next_departures_lines": [
+          "1"
+        ],
+        "next_departures_origin_stop_id": [
+          "S1b"
+        ],
+        "next_departures_route_types": [
+          3
+        ],
+        "next_departures_trips": [
+          "T1"
+        ],
+        "next_service_date": "2026-09-17",
+        "next_service_in_days": 1,
+        "offset": 90,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1b",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_time_zone": "Europe/Paris",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "origin_stop_arrival_time": "10:30:00",
+        "origin_stop_departure_time": "10:30:00",
+        "origin_stop_drop_off_type": 0,
+        "origin_stop_drop_off_type_state": "Regular",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_stop_sequence": 1,
+        "origin_stop_timepoint": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus",
+        "trip_bikes_allowed": "1",
+        "trip_bikes_allowed_state": true,
+        "trip_direction_id": "0",
+        "trip_route_id": "R1",
+        "trip_trip_headsign": "B",
+        "trip_trip_id": "T1",
+        "trip_wheelchair_access_available": false,
+        "trip_wheelchair_accessible": "2"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": "datetime 2026-09-17T06:00:00+00:00",
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / origin stop gone from the timetable": {
+      "attributes": {},
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:train",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / realtime read, nothing listed": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "arrival": "2026-09-16T09:25:00+00:00",
+        "day": "today",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_time_zone": "Europe/Paris",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "destination_stop_arrival_time": "10:30:00",
+        "destination_stop_departure_time": "10:30:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_stop_sequence": 7,
+        "destination_stop_timepoint": 1,
+        "destination_stop_timepoint_exact": true,
+        "duration": 25,
+        "gtfs_rt_updated_at": "2026-09-16T07:59:00+00:00",
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "last": false,
+        "next_delay_realtime": "-",
+        "next_delays_realtime": "-",
+        "next_departure_realtime": "-",
+        "next_departures": [
+          "2026-09-16T09:00:00+00:00",
+          "2026-09-16T09:10:00+00:00",
+          "2026-09-16T09:20:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-09-16T09:25:00+00:00",
+          "2026-09-16T09:35:00+00:00",
+          "2026-09-16T09:45:00+00:00"
+        ],
+        "next_departures_durations": [
+          25,
+          25,
+          25
+        ],
+        "next_departures_headsign": [
+          "B",
+          "B",
+          "B"
+        ],
+        "next_departures_lines": [
+          "1",
+          "1",
+          "1"
+        ],
+        "next_departures_origin_stop_id": [
+          "S1b",
+          "S1",
+          "S1b"
+        ],
+        "next_departures_realtime": "-",
+        "next_departures_route_types": [
+          3,
+          3,
+          714
+        ],
+        "next_departures_trips": [
+          "T1",
+          "T2",
+          "T1"
+        ],
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1b",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_time_zone": "Europe/Paris",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "origin_stop_arrival_time": "10:30:00",
+        "origin_stop_departure_time": "10:30:00",
+        "origin_stop_drop_off_type": 0,
+        "origin_stop_drop_off_type_state": "Regular",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_stop_sequence": 1,
+        "origin_stop_timepoint": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus",
+        "trip_bikes_allowed": "1",
+        "trip_bikes_allowed_state": true,
+        "trip_direction_id": "0",
+        "trip_route_id": "R1",
+        "trip_trip_headsign": "B",
+        "trip_trip_id": "T1",
+        "trip_wheelchair_access_available": false,
+        "trip_wheelchair_accessible": "2"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": "datetime 2026-09-16T09:00:00+00:00",
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / realtime, no scheduled departure left": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "cancelled_trips_realtime": {
+          "T9": "20260916"
+        },
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "gtfs_rt_updated_at": "2026-09-16T07:59:00+00:00",
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "No departures until 2026-09-17",
+        "next_delay_realtime": 120,
+        "next_delays_realtime": [
+          120,
+          60
+        ],
+        "next_departure_realtime": "2026-09-16T08:02:00+00:00",
+        "next_departures": [],
+        "next_departures_destination_arrival_times": [],
+        "next_departures_durations": [],
+        "next_departures_headsign": [],
+        "next_departures_lines": [],
+        "next_departures_origin_stop_id": [],
+        "next_departures_realtime": [
+          "2026-09-16T08:02:00+00:00",
+          "2026-09-16T08:11:00+00:00"
+        ],
+        "next_departures_realtime_trips": [
+          "T1",
+          "T2"
+        ],
+        "next_departures_route_types": [],
+        "next_departures_trips": [],
+        "next_service_date": "2026-09-17",
+        "next_service_in_days": 1,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus",
+        "skipped_trips_realtime": {}
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / resting, next in 3 days": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "No departures until 2026-09-19",
+        "info_realtime": "No realtime information",
+        "next_departures": [],
+        "next_departures_destination_arrival_times": [],
+        "next_departures_durations": [],
+        "next_departures_headsign": [],
+        "next_departures_lines": [],
+        "next_departures_origin_stop_id": [],
+        "next_departures_route_types": [],
+        "next_departures_trips": [],
+        "next_service_date": "2026-09-19",
+        "next_service_in_days": 3,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / resting, next today but done": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "No more departures today",
+        "info_realtime": "No realtime information",
+        "next_departures": [],
+        "next_departures_destination_arrival_times": [],
+        "next_departures_durations": [],
+        "next_departures_headsign": [],
+        "next_departures_lines": [],
+        "next_departures_origin_stop_id": [],
+        "next_departures_route_types": [],
+        "next_departures_trips": [],
+        "next_service_date": "2026-09-16",
+        "next_service_in_days": 0,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / schedule is a sentinel": {
+      "attributes": {},
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": null,
+      "entity_category": null,
+      "icon": "mdi:train",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / today, realtime, alerts, files": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "alert_cause": "CONSTRUCTION",
+        "alert_effect": "DETOUR",
+        "arrival": "2026-09-16T09:25:00+00:00",
+        "cancelled_trips_realtime": {
+          "T9": "20260916"
+        },
+        "day": "today",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_time_zone": "Europe/Paris",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "destination_stop_arrival_time": "10:30:00",
+        "destination_stop_departure_time": "10:30:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_stop_sequence": 7,
+        "destination_stop_timepoint": 1,
+        "destination_stop_timepoint_exact": true,
+        "duration": 25,
+        "gtfs_rt_updated_at": "2026-09-16T07:59:00+00:00",
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "last": false,
+        "leg_geojson_file": "R1_0_leg_one_to_two.json",
+        "next_delay_realtime": 120,
+        "next_delays_realtime": [
+          120,
+          60
+        ],
+        "next_departure_realtime": "2026-09-16T08:02:00+00:00",
+        "next_departures": [
+          "2026-09-16T09:00:00+00:00",
+          "2026-09-16T09:10:00+00:00",
+          "2026-09-16T09:20:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-09-16T09:25:00+00:00",
+          "2026-09-16T09:35:00+00:00",
+          "2026-09-16T09:45:00+00:00"
+        ],
+        "next_departures_durations": [
+          25,
+          25,
+          25
+        ],
+        "next_departures_headsign": [
+          "B",
+          "B",
+          "B"
+        ],
+        "next_departures_lines": [
+          "1",
+          "1",
+          "1"
+        ],
+        "next_departures_origin_stop_id": [
+          "S1b",
+          "S1",
+          "S1b"
+        ],
+        "next_departures_realtime": [
+          "2026-09-16T08:02:00+00:00",
+          "2026-09-16T08:11:00+00:00"
+        ],
+        "next_departures_realtime_trips": [
+          "T1",
+          "T2"
+        ],
+        "next_departures_route_types": [
+          3,
+          3,
+          714
+        ],
+        "next_departures_trips": [
+          "T1",
+          "T2",
+          "T1"
+        ],
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1b",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_time_zone": "Europe/Paris",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "Works",
+        "origin_stop_alerts": [
+          {
+            "cause": "CONSTRUCTION",
+            "effect": "DETOUR",
+            "text": "Works"
+          }
+        ],
+        "origin_stop_arrival_time": "10:30:00",
+        "origin_stop_departure_time": "10:30:00",
+        "origin_stop_drop_off_type": 0,
+        "origin_stop_drop_off_type_state": "Regular",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_stop_sequence": 1,
+        "origin_stop_timepoint": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_geojson_file": "R1_0_route.json",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus",
+        "skipped_trips_realtime": {},
+        "timetable_file": "R1_0_timetable_one_to_two.json",
+        "trip_bikes_allowed": "1",
+        "trip_bikes_allowed_state": true,
+        "trip_direction_id": "0",
+        "trip_route_id": "R1",
+        "trip_trip_headsign": "B",
+        "trip_trip_id": "T1",
+        "trip_wheelchair_access_available": false,
+        "trip_wheelchair_accessible": "2",
+        "vehicle_positions_file": "R1_0.json"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": "datetime 2026-09-16T09:00:00+00:00",
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / tomorrow morning": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "arrival": "2026-09-17T06:25:00+00:00",
+        "day": "today",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_time_zone": "Europe/Paris",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "destination_stop_arrival_time": "10:30:00",
+        "destination_stop_departure_time": "10:30:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_stop_sequence": 7,
+        "destination_stop_timepoint": 1,
+        "destination_stop_timepoint_exact": true,
+        "duration": 25,
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "Next departures tomorrow at 08:00",
+        "info_realtime": "No realtime information",
+        "last": false,
+        "next_departures": [
+          "2026-09-17T06:00:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-09-17T06:25:00+00:00"
+        ],
+        "next_departures_durations": [
+          25
+        ],
+        "next_departures_headsign": [
+          "B"
+        ],
+        "next_departures_lines": [
+          "1"
+        ],
+        "next_departures_origin_stop_id": [
+          "S1b"
+        ],
+        "next_departures_route_types": [
+          3
+        ],
+        "next_departures_trips": [
+          "T1"
+        ],
+        "next_service_date": "2026-09-17",
+        "next_service_in_days": 1,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1b",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_time_zone": "Europe/Paris",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "origin_stop_arrival_time": "10:30:00",
+        "origin_stop_departure_time": "10:30:00",
+        "origin_stop_drop_off_type": 0,
+        "origin_stop_drop_off_type_state": "Regular",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_stop_sequence": 1,
+        "origin_stop_timepoint": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus",
+        "trip_bikes_allowed": "1",
+        "trip_bikes_allowed_state": true,
+        "trip_direction_id": "0",
+        "trip_route_id": "R1",
+        "trip_trip_headsign": "B",
+        "trip_trip_id": "T1",
+        "trip_wheelchair_access_available": false,
+        "trip_wheelchair_accessible": "2"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": "datetime 2026-09-17T06:00:00+00:00",
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / train, no departure left": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "destination_station_stop_id": null,
+        "destination_station_stop_name": null,
+        "destination_stop_alert": "no info",
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "No scheduled departures",
+        "info_realtime": "No realtime information",
+        "next_departures": [],
+        "next_departures_destination_arrival_times": [],
+        "next_departures_durations": [],
+        "next_departures_headsign": [],
+        "next_departures_lines": [],
+        "next_departures_origin_stop_id": [],
+        "next_departures_route_types": [],
+        "next_departures_trips": [],
+        "next_service_in_days": -1,
+        "offset": 0,
+        "origin_station_stop_id": null,
+        "origin_station_stop_name": null,
+        "origin_station_stop_sequence": null,
+        "origin_stop_alert": "no info",
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": null,
+      "unique_id": "gtfs-one to two"
+    },
+    "departure / train, no realtime": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "arrival": "2026-09-16T10:25:00+00:00",
+        "day": "today",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Gare B",
+        "destination_station_time_zone": "Europe/Paris",
+        "destination_stop_alert": "no info",
+        "destination_stop_arrival_time": "10:30:00",
+        "destination_stop_departure_time": "10:30:00",
+        "destination_stop_drop_off_type": 0,
+        "destination_stop_drop_off_type_state": "Regular",
+        "destination_stop_pickup_type": 0,
+        "destination_stop_pickup_type_state": "Regular",
+        "destination_stop_stop_sequence": 7,
+        "destination_stop_timepoint": 1,
+        "destination_stop_timepoint_exact": true,
+        "duration": 25,
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info_realtime": "No realtime information",
+        "last": false,
+        "next_departures": [
+          "2026-09-16T10:00:00+00:00",
+          "2026-09-16T10:10:00+00:00",
+          "2026-09-16T10:20:00+00:00"
+        ],
+        "next_departures_destination_arrival_times": [
+          "2026-09-16T10:25:00+00:00",
+          "2026-09-16T10:35:00+00:00",
+          "2026-09-16T10:45:00+00:00"
+        ],
+        "next_departures_durations": [
+          25,
+          25,
+          25
+        ],
+        "next_departures_headsign": [
+          "B",
+          "B",
+          "B"
+        ],
+        "next_departures_lines": [
+          "1",
+          "1",
+          "1"
+        ],
+        "next_departures_origin_stop_id": [
+          "S1b",
+          "S1",
+          "S1b"
+        ],
+        "next_departures_route_types": [
+          3,
+          3,
+          714
+        ],
+        "next_departures_trips": [
+          "T1",
+          "T2",
+          "T1"
+        ],
+        "offset": 0,
+        "origin_station_stop_id": "S1b",
+        "origin_station_stop_name": "Gare A",
+        "origin_station_stop_sequence": 3,
+        "origin_station_time_zone": "Europe/Paris",
+        "origin_stop_alert": "no info",
+        "origin_stop_arrival_time": "10:30:00",
+        "origin_stop_departure_time": "10:30:00",
+        "origin_stop_drop_off_type": 0,
+        "origin_stop_drop_off_type_state": "Regular",
+        "origin_stop_pickup_type": 0,
+        "origin_stop_pickup_type_state": "Regular",
+        "origin_stop_stop_sequence": 1,
+        "origin_stop_timepoint": 1,
+        "origin_stop_timepoint_exact": true,
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus",
+        "trip_bikes_allowed": "1",
+        "trip_bikes_allowed_state": true,
+        "trip_direction_id": "0",
+        "trip_route_id": "R1",
+        "trip_trip_headsign": "B",
+        "trip_trip_id": "T1",
+        "trip_wheelchair_access_available": false,
+        "trip_wheelchair_accessible": "2"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - one to two"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "one to two",
+        "name": "GTFS - one to two"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "one to two",
+      "state": "datetime 2026-09-16T10:00:00+00:00",
+      "unique_id": "gtfs-one to two"
+    },
+    "local stop / Gare, gone from the list": {
+      "attributes": {
+        "device_tracker_id": "person.rider",
+        "gtfs_updated_at": "2026-09-16T05:30:00+00:00",
+        "next_departures_lines": {},
+        "offset": 0
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - around me"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "around me",
+        "name": "GTFS - around me"
+      },
+      "device_class": null,
+      "entity_category": null,
+      "icon": null,
+      "name": "A_local_stop_person.rider",
+      "state": "Gare (07:30)",
+      "unique_id": "A_local_stop_person.rider"
+    },
+    "local stop / Gare, source extracting": {
+      "attributes": {
+        "extracting": true
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - around me"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "around me",
+        "name": "GTFS - around me"
+      },
+      "device_class": null,
+      "entity_category": null,
+      "icon": null,
+      "name": "A_local_stop_person.rider",
+      "state": null,
+      "unique_id": "A_local_stop_person.rider"
+    },
+    "local stop / Gare, the next hour": {
+      "attributes": {
+        "device_tracker_id": "person.rider",
+        "gtfs_updated_at": "2026-09-16T05:30:00+00:00",
+        "latitude": 45.0,
+        "longitude": 5.0,
+        "next_departures_lines": [
+          {
+            "date": "2026-09-16",
+            "delay_realtime": "-",
+            "delay_realtime_derived": "-",
+            "departure": "08:00",
+            "departure_datetime": "datetime 2026-09-16T06:00:00+00:00",
+            "departure_realtime": "-",
+            "departure_realtime_datetime": "-",
+            "direction_id": 0,
+            "headsign": "Terminus",
+            "icon": "mdi:bus",
+            "route": "B1",
+            "route_long": "Gare - Terminus",
+            "stop_id": "A",
+            "stop_name": "Gare",
+            "trip_id": "T1"
+          }
+        ],
+        "offset": 0
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - around me"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "around me",
+        "name": "GTFS - around me"
+      },
+      "device_class": null,
+      "entity_category": null,
+      "icon": null,
+      "name": "A_local_stop_person.rider",
+      "state": "Gare (07:30)",
+      "unique_id": "A_local_stop_person.rider"
+    },
+    "restore / before its first refresh": {
+      "attributes": {},
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - restored"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "restored",
+        "name": "GTFS - restored"
+      },
+      "device_class": null,
+      "entity_category": null,
+      "icon": "mdi:train",
+      "name": "restored",
+      "state": null,
+      "unique_id": "gtfs-restored"
+    },
+    "restore / not restored, departure gone": {
+      "attributes": {},
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - restored"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "restored",
+        "name": "GTFS - restored"
+      },
+      "device_class": null,
+      "entity_category": null,
+      "icon": "mdi:train",
+      "name": "restored",
+      "state": null,
+      "unique_id": "gtfs-restored"
+    },
+    "restore / not restored, first refresh already done": {
+      "attributes": {
+        "agency_agency_id": "AG",
+        "agency_agency_name": "Agency",
+        "agency_agency_timezone": "Europe/Paris",
+        "destination_station_location_type": "1",
+        "destination_station_location_type_name": "Stop",
+        "destination_station_stop_id": "S2",
+        "destination_station_stop_name": "Stop Two",
+        "destination_station_wheelchair_boarding": "2",
+        "destination_station_wheelchair_boarding_available": false,
+        "destination_stop_alert": "no info",
+        "gtfs_updated_at": "2026-09-16T07:50:00+00:00",
+        "info": "No scheduled departures",
+        "info_realtime": "No realtime information",
+        "next_departures": [],
+        "next_departures_destination_arrival_times": [],
+        "next_departures_durations": [],
+        "next_departures_headsign": [],
+        "next_departures_lines": [],
+        "next_departures_origin_stop_id": [],
+        "next_departures_route_types": [],
+        "next_departures_trips": [],
+        "next_service_in_days": -1,
+        "offset": 0,
+        "origin_station_location_type": "0",
+        "origin_station_location_type_name": "Station",
+        "origin_station_stop_id": "S1",
+        "origin_station_stop_name": "Stop One",
+        "origin_station_wheelchair_boarding": "1",
+        "origin_station_wheelchair_boarding_available": true,
+        "origin_stop_alert": "no info",
+        "route_agency_id": "AG",
+        "route_route_color": "FF0000",
+        "route_route_id": "R1",
+        "route_route_long_name": "A > B",
+        "route_route_short_name": "1",
+        "route_route_type": "3",
+        "route_type_name": "Bus"
+      },
+      "attribution": "Agency",
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - restored"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "restored",
+        "name": "GTFS - restored"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:bus",
+      "name": "restored",
+      "state": null,
+      "unique_id": "gtfs-restored"
+    },
+    "restore / not restored, state was unknown": {
+      "attributes": {},
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - restored"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "restored",
+        "name": "GTFS - restored"
+      },
+      "device_class": null,
+      "entity_category": null,
+      "icon": "mdi:train",
+      "name": "restored",
+      "state": null,
+      "unique_id": "gtfs-restored"
+    },
+    "restore / nothing kept": {
+      "attributes": {},
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - restored"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "restored",
+        "name": "GTFS - restored"
+      },
+      "device_class": null,
+      "entity_category": null,
+      "icon": "mdi:train",
+      "name": "restored",
+      "state": null,
+      "unique_id": "gtfs-restored"
+    },
+    "restore / restored, departure ahead": {
+      "attributes": {
+        "next_departures": [
+          "a"
+        ]
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS - restored"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "restored",
+        "name": "GTFS - restored"
+      },
+      "device_class": "timestamp",
+      "entity_category": null,
+      "icon": "mdi:train",
+      "name": "restored",
+      "state": "datetime 2026-09-16T08:30:00+00:00",
+      "unique_id": "gtfs-restored"
+    },
+    "source / realtime, active": {
+      "attributes": {
+        "checked_at": "2026-09-16T10:00:00+02:00",
+        "extended_until": null,
+        "rt_paused": null,
+        "window_end": "2026-09-17T00:40:00+02:00",
+        "window_start": "2026-09-16T05:30:00+02:00"
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS datasource - fixture"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "fixture",
+        "name": "GTFS - fixture"
+      },
+      "device_class": null,
+      "entity_category": "diagnostic",
+      "icon": "mdi:signal-variant",
+      "name": "Realtime",
+      "state": "active",
+      "unique_id": "gtfs2_datasource_rt_fixture"
+    },
+    "source / realtime, no feed": {
+      "attributes": {
+        "checked_at": null,
+        "extended_until": null,
+        "rt_paused": null,
+        "window_end": null,
+        "window_start": null
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS datasource - fixture"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "fixture",
+        "name": "GTFS - fixture"
+      },
+      "device_class": null,
+      "entity_category": "diagnostic",
+      "icon": "mdi:signal-variant",
+      "name": "Realtime",
+      "state": "off",
+      "unique_id": "gtfs2_datasource_rt_fixture"
+    },
+    "source / realtime, not gated yet": {
+      "attributes": {
+        "checked_at": null,
+        "extended_until": null,
+        "rt_paused": null,
+        "window_end": null,
+        "window_start": null
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS datasource - fixture"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "fixture",
+        "name": "GTFS - fixture"
+      },
+      "device_class": null,
+      "entity_category": "diagnostic",
+      "icon": "mdi:signal-variant",
+      "name": "Realtime",
+      "state": "unknown",
+      "unique_id": "gtfs2_datasource_rt_fixture"
+    },
+    "source / realtime, paused": {
+      "attributes": {
+        "checked_at": "2026-09-16T10:00:00+02:00",
+        "extended_until": "2026-09-16T01:10:00+02:00",
+        "rt_paused": "out_of_window",
+        "window_end": null,
+        "window_start": null
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS datasource - fixture"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "fixture",
+        "name": "GTFS - fixture"
+      },
+      "device_class": null,
+      "entity_category": "diagnostic",
+      "icon": "mdi:signal-variant",
+      "name": "Realtime",
+      "state": "paused",
+      "unique_id": "gtfs2_datasource_rt_fixture"
+    },
+    "source / realtime, switched off": {
+      "attributes": {
+        "checked_at": null,
+        "extended_until": null,
+        "rt_paused": null,
+        "window_end": null,
+        "window_start": null
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS datasource - fixture"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "fixture",
+        "name": "GTFS - fixture"
+      },
+      "device_class": null,
+      "entity_category": "diagnostic",
+      "icon": "mdi:signal-variant",
+      "name": "Realtime",
+      "state": "disabled",
+      "unique_id": "gtfs2_datasource_rt_fixture"
+    },
+    "source / timetable, Palm Bus zip": {
+      "attributes": {
+        "days_left": 93,
+        "feed_end_date": "2027-01-03",
+        "feed_publisher": "Palmbus",
+        "feed_start_date": "2026-08-17",
+        "feed_version": "25082026",
+        "first_service_day": "2026-09-01",
+        "timetable": "valid"
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS datasource - static"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "static",
+        "name": "GTFS - static"
+      },
+      "device_class": "date",
+      "entity_category": "diagnostic",
+      "icon": "mdi:calendar-clock",
+      "name": "Timetable",
+      "state": "date 2026-12-18",
+      "unique_id": "gtfs2_datasource_timetable_static"
+    },
+    "source / timetable, no zip": {
+      "attributes": {
+        "days_left": null,
+        "feed_end_date": null,
+        "feed_publisher": null,
+        "feed_start_date": null,
+        "feed_version": null,
+        "first_service_day": null,
+        "timetable": "unknown"
+      },
+      "attribution": null,
+      "device": {
+        "entry_type": "service",
+        "identifiers": [
+          [
+            "gtfs2",
+            "GTFS datasource - gone"
+          ]
+        ],
+        "manufacturer": "GTFS",
+        "model": "gone",
+        "name": "GTFS - gone"
+      },
+      "device_class": "date",
+      "entity_category": "diagnostic",
+      "icon": "mdi:calendar-clock",
+      "name": "Timetable",
+      "state": null,
+      "unique_id": "gtfs2_datasource_timetable_gone"
+    }
+  }
+}
