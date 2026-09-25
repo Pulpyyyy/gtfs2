@@ -21,6 +21,5 @@
   "route_names.py _read_stop_ends": 14,
   "route_names.py _read_trips": 12,
   "route_names.py line_mode": 13,
-  "rt_source.py async_mirror_rt_to_entries": 12,
-  "source_refresh.py async_check_source": 18
+  "rt_source.py async_mirror_rt_to_entries": 12
 }

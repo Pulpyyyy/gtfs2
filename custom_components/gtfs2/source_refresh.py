@@ -392,32 +392,31 @@ async def async_refresh_source(hass: HomeAssistant, entry: ConfigEntry,
     return await async_refresh_source_data(hass, entry.data.get(CONF_FILE), data)
 
 
-async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """One scheduled look at a source's host, then whatever the mode says."""
-    mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
-    if mode == STATIC_REFRESH_OFF:
-        return
-    if entry.data.get(CONF_EXTRACT_FROM, "url") != "url":
-        return
-    file = entry.data.get(CONF_FILE)
-    if source_lock(hass, file).locked():
-        # a rebuild is running right now; next tick will know more
-        return
-    if (mode == STATIC_REFRESH_AUTO
-            and await hass.async_add_executor_job(rebuild_pending, hass, file)):
-        # the kept zip is ahead of the database, so a rebuild was started
-        # and did not finish. Asking the host would only hear "unchanged"
-        # about the zip we already have: the retry reads that zip, and the
-        # check goes no further tonight.
-        _LOGGER.info("Source %s was fetched but not built, building it", file)
-        if await async_refresh_source(hass, entry, use_zip=True):
-            return
-        # that zip was refused (a line a sensor reads is missing from it,
-        # or it is broken): built again every night it would never get
-        # further, and only a newer edition can. The host is asked for one
-        _LOGGER.info("Source %s could not be built from its kept zip, asking its host", file)
-    data = refresh_data_for(hass, entry)
-    zip_path = _zip_path(hass, file)
+async def _async_build_kept_zip(hass: HomeAssistant, entry: ConfigEntry, file) -> bool:
+    """Build a source from its kept zip when the database lags behind it.
+
+    Returns True when that build went through, and the check has nothing
+    left to do tonight; False when there was nothing to build, or the
+    build was refused, and the host is to be asked.
+    """
+    if not await hass.async_add_executor_job(rebuild_pending, hass, file):
+        return False
+    # the kept zip is ahead of the database, so a rebuild was started
+    # and did not finish. Asking the host would only hear "unchanged"
+    # about the zip we already have: the retry reads that zip, and the
+    # check goes no further tonight.
+    _LOGGER.info("Source %s was fetched but not built, building it", file)
+    if await async_refresh_source(hass, entry, use_zip=True):
+        return True
+    # that zip was refused (a line a sensor reads is missing from it,
+    # or it is broken): built again every night it would never get
+    # further, and only a newer edition can. The host is asked for one
+    _LOGGER.info("Source %s could not be built from its kept zip, asking its host", file)
+    return False
+
+
+async def _async_look_due(hass: HomeAssistant, entry: ConfigEntry, file) -> bool:
+    """Whether tonight's tick is one the source's check frequency counts."""
     interval = check_interval(entry)
     if interval > 24:
         # slower than daily: the tick still fires every night, this gate
@@ -426,7 +425,13 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
         # extra conditional request, not a download
         last_dt = await hass.async_add_executor_job(last_look, hass, file)
         if last_dt and dt_util.utcnow() - last_dt < timedelta(hours=interval - 12):
-            return
+            return False
+    return True
+
+
+async def _async_probe(hass: HomeAssistant, file, data, zip_path) -> dict:
+    """Ask the source's host whether the feed changed, and keep the answer
+    in the source's probe state. Returns probe_source's answer."""
     probe = await hass.async_add_executor_job(probe_source, data, zip_path)
     if probe["result"] != PROBE_ERROR:
         # a look that got an answer, kept past a restart for the catch-up
@@ -441,6 +446,81 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
         "last_modified": probe.get("last_modified"),
         "etag": probe.get("etag"),
     })
+    return probe
+
+
+async def _async_take_download(hass: HomeAssistant, file, zip_path, probe,
+                               fetched) -> tuple[bool, bool]:
+    """What the download proved, over what the probe said.
+
+    fetched is fetch_if_new's answer: True for a new feed now in the zip,
+    the new feed's sha256 when it was only looked at, False for the bytes
+    the zip already holds, None for a download that failed. The source's
+    probe state follows it. Returns (changed, use_zip).
+    """
+    state = probe_state(hass, file)
+    if fetched is True:
+        state["result"] = PROBE_CHANGED
+        state["latest"] = version_label(
+            await hass.async_add_executor_job(source_meta, zip_path))
+        return True, True
+    if isinstance(fetched, str):
+        state["result"] = PROBE_CHANGED
+        if probe["result"] == PROBE_UNKNOWN:
+            # no validator to name it by: its hash does
+            state["latest"] = version_label({"sha256": fetched})
+        return True, False
+    if fetched is False:
+        state["result"] = PROBE_UNCHANGED
+        await hass.async_add_executor_job(_carry_validators, hass, file)
+        state["latest"] = version_label(
+            await hass.async_add_executor_job(source_meta, zip_path))
+        return False, False
+    # the download failed: the host's word stands
+    return probe["result"] == PROBE_CHANGED, False
+
+
+async def _async_offer_update(hass: HomeAssistant, file) -> None:
+    """Tell a source in notify mode has a new version: an event for the
+    automations and a notification, once per version."""
+    state = probe_state(hass, file)
+    latest = state.get("latest") or "new version"
+    if state.get("notified_for") == latest:
+        # the same version stays one notification, not one per check
+        return
+    state["notified_for"] = latest
+    _LOGGER.info("Source %s has a new version: %s", file, latest)
+    installed = version_label(
+        await hass.async_add_executor_job(installed_meta, hass, file))
+    hass.bus.async_fire(EVENT_SOURCE_UPDATE_AVAILABLE, {
+        "file": file,
+        "installed": installed,
+        "latest": latest,
+    })
+    await _async_notify(hass, "source_update_available",
+                        f"gtfs2_source_update_{file}",
+                        file=file, version=latest)
+
+
+async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """One scheduled look at a source's host, then whatever the mode says."""
+    mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
+    if mode == STATIC_REFRESH_OFF:
+        return
+    if entry.data.get(CONF_EXTRACT_FROM, "url") != "url":
+        return
+    file = entry.data.get(CONF_FILE)
+    if source_lock(hass, file).locked():
+        # a rebuild is running right now; next tick will know more
+        return
+    if (mode == STATIC_REFRESH_AUTO
+            and await _async_build_kept_zip(hass, entry, file)):
+        return
+    data = refresh_data_for(hass, entry)
+    zip_path = _zip_path(hass, file)
+    if not await _async_look_due(hass, entry, file):
+        return
+    probe = await _async_probe(hass, file, data, zip_path)
 
     changed = probe["result"] == PROBE_CHANGED
     use_zip = False
@@ -464,23 +544,8 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
         async with lock:
             fetched = await hass.async_add_executor_job(
                 fetch_if_new, data, zip_path, auto)
-        if fetched is True:
-            changed, use_zip = True, True
-            state["result"] = PROBE_CHANGED
-            state["latest"] = version_label(
-                await hass.async_add_executor_job(source_meta, zip_path))
-        elif isinstance(fetched, str):
-            changed = True
-            state["result"] = PROBE_CHANGED
-            if probe["result"] == PROBE_UNKNOWN:
-                # no validator to name it by: its hash does
-                state["latest"] = version_label({"sha256": fetched})
-        elif fetched is False:
-            changed = False
-            state["result"] = PROBE_UNCHANGED
-            await hass.async_add_executor_job(_carry_validators, hass, file)
-            state["latest"] = version_label(
-                await hass.async_add_executor_job(source_meta, zip_path))
+        changed, use_zip = await _async_take_download(
+            hass, file, zip_path, probe, fetched)
     async_dispatcher_send(hass, SIGNAL_SOURCE_REFRESH.format(file))
     if not changed:
         return
@@ -490,22 +555,7 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
         await async_refresh_source(hass, entry, use_zip=use_zip)
         return
 
-    latest = state.get("latest") or "new version"
-    if state.get("notified_for") == latest:
-        # the same version stays one notification, not one per check
-        return
-    state["notified_for"] = latest
-    _LOGGER.info("Source %s has a new version: %s", file, latest)
-    installed = version_label(
-        await hass.async_add_executor_job(installed_meta, hass, file))
-    hass.bus.async_fire(EVENT_SOURCE_UPDATE_AVAILABLE, {
-        "file": file,
-        "installed": installed,
-        "latest": latest,
-    })
-    await _async_notify(hass, "source_update_available",
-                        f"gtfs2_source_update_{file}",
-                        file=file, version=latest)
+    await _async_offer_update(hass, file)
 
 
 @callback
