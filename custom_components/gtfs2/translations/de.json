@@ -260,7 +260,7 @@
       "invalid_source_url": "Die Adresse muss mit http:// oder https:// beginnen",
       "route_not_listed": "Das ist keine Linie dieser Quelle: Wählen Sie eine aus der Liste, ein Teil ihres Namens findet sie.",
       "no_destination": "Von der gewählten Starthaltestelle ist in dieser Richtung keine Haltestelle erreichbar",
-      "unknown": "[%key:common::config_flow::error::unknown%]",
+      "unknown": "Unerwarteter Fehler",
       "stop_incorrect": "Keine Abfahrt zwischen diesen beiden Orten gefunden. Prüfen Sie die Schreibweise des Betreibers und ob sie auf derselben Linie liegen.",
       "generic_failure": "Gesamtfehler, Protokolle prüfen",
       "no_data_file": "Die Datei konnte nicht heruntergeladen werden. Prüfen Sie die Adresse und ob die Quelle von Home Assistant aus erreichbar ist. Manche Anbieter lehnen automatisierte Downloads ab.",
@@ -271,7 +271,8 @@
       "reload_failed": "Diese Linie konnte nicht wiederhergestellt werden. Die Quelle blieb unverändert; wählen Sie eine andere Linie oder versuchen Sie es erneut."
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "already_configured": "Gerät ist bereits konfiguriert",
+      "already_in_progress": "Konfigurationsablauf wird bereits ausgeführt",
       "files_deleted": "Datenquelle gelöscht, dies kann sich auf bestehende Routen auswirken",
       "generic_failure": "Gesamtfehler, Protokolle prüfen",
       "stop_incorrect": "Start- und/oder Endziel falsch, möglicherweise kein Transport ‚heute‘ oder nicht in die gleiche Richtung, Protokolle prüfen",

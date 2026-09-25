@@ -260,7 +260,7 @@
       "invalid_source_url": "The address must start with http:// or https://",
       "route_not_listed": "That is not one of the lines of this source: pick one in the list, typing part of its name finds it.",
       "no_destination": "No stop can be reached from the selected origin in this direction",
-      "unknown": "[%key:common::config_flow::error::unknown%]",
+      "unknown": "Unexpected error",
       "stop_incorrect": "No departure found between these two cities. Check the spelling against the operator's own, and that they are on the same line.",
       "generic_failure": "Overall failure, check logs",
       "no_data_file": "Could not download the file. Check the address, and that the source is reachable from Home Assistant. Some providers reject automated downloads.",
@@ -271,7 +271,8 @@
       "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again."
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "already_configured": "Device is already configured",
+      "already_in_progress": "Configuration flow is already in progress",
       "files_deleted": "Datasource deleted, this may affect existing routes",
       "generic_failure": "Overall failure, check logs",
       "stop_incorrect": "Start and/or End destination incorrect, \n possibly no transport 'today' or not in same direction, \n please check logs",

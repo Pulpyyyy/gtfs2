@@ -272,6 +272,7 @@
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "already_in_progress": "[%key:common::config_flow::abort::already_in_progress%]",
       "files_deleted": "Datasource deleted, this may affect existing routes",
       "generic_failure": "Overall failure, check logs",
       "stop_incorrect": "Start and/or End destination incorrect, \n possibly no transport 'today' or not in same direction, \n please check logs",

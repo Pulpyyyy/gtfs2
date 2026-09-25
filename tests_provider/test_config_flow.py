@@ -1203,9 +1203,6 @@ def test_the_flow_waits_for_an_unpacking_and_goes_on_with_what_was_typed(world, 
     walk(world, scenario)
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "already_in_progress, the abort Home Assistant raises for a second flow "
-    "on the same unique_id, has no words in strings.json"))
 def test_a_second_flow_for_the_same_tracker_is_told_why_it_stops(world, monkeypatch):
     real_sleep = asyncio.sleep
 

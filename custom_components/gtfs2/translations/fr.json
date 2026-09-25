@@ -260,7 +260,7 @@
       "invalid_source_url": "L'adresse doit commencer par http:// ou https://",
       "route_not_listed": "Ce n'est pas une des lignes de cette source : choisissez-en une dans la liste, taper une partie de son nom la retrouve.",
       "no_destination": "Aucun arrêt n'est atteignable depuis l'origine choisie dans cette direction",
-      "unknown": "[%key:common::config_flow::error::unknown%]",
+      "unknown": "Erreur inattendue",
       "stop_incorrect": "Aucun départ trouvé entre ces deux villes. Vérifiez l'orthographe telle que l'exploitant l'écrit, et qu'elles sont bien sur la même ligne.",
       "generic_failure": "Échec global, vérifiez les logs d'érreur",
       "no_data_file": "Impossible de télécharger le fichier. Vérifiez l'adresse, et que la source est joignable depuis Home Assistant. Certains fournisseurs refusent les téléchargements automatisés.",
@@ -271,7 +271,8 @@
       "reload_failed": "Cette ligne n'a pas pu être rétablie. La source n'a pas été modifiée ; choisissez une autre ligne, ou réessayez."
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "already_configured": "L'appareil est déjà configuré",
+      "already_in_progress": "La configuration est déjà en cours",
       "files_deleted": "Source de données supprimée, cela peut affecter les itinéraires existants",
       "generic_failure": "Échec global, vérifiez les logs d'erreur",
       "stop_incorrect": "Arrêt de départ et/ou de fin incorrecte, éventuellement pas de transport « aujourd'hui » ou pas dans la même direction, vérifiez logs d'érreur",

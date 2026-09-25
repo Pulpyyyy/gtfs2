@@ -260,7 +260,7 @@
       "invalid_source_url": "La dirección debe empezar por http:// o https://",
       "route_not_listed": "No es una de las líneas de esta fuente: elija una de la lista, escribir parte de su nombre la encuentra.",
       "no_destination": "Ninguna parada es alcanzable desde el origen seleccionado en esta dirección",
-      "unknown": "[%key:common::config_flow::error::unknown%]",
+      "unknown": "Error inesperado",
       "stop_incorrect": "No se ha encontrado ninguna salida entre estas dos ciudades. Compruebe la ortografía del operador y que estén en la misma línea.",
       "generic_failure": "Fallo general, compruebe los registros",
       "no_data_file": "No se ha podido descargar el archivo. Compruebe la dirección y que la fuente sea accesible desde Home Assistant. Algunos proveedores rechazan las descargas automatizadas.",
@@ -271,7 +271,8 @@
       "reload_failed": "No se ha podido restaurar esa línea. La fuente no se ha modificado; elija otra línea o vuelva a intentarlo."
     },
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "already_configured": "El dispositivo ya está configurado",
+      "already_in_progress": "El flujo de configuración ya está en curso",
       "files_deleted": "Fuente de datos eliminada, esto puede afectar a las rutas existentes",
       "generic_failure": "Fallo general, compruebe los registros",
       "stop_incorrect": "Destino inicial y/o final incorrecto, posiblemente no hay transporte 'hoy' o no en la misma dirección, compruebe los registros",
