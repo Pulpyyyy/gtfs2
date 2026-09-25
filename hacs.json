@@ -2,6 +2,6 @@
   "name": "GTFS2 for Home Assistant",
   "render_readme": true,
   "filename": "gtfs2.zip",
-  "homeassistant": "2024.11.0",
+  "homeassistant": "2024.12.0",
   "zip_release": true
 }

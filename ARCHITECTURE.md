@@ -58,8 +58,9 @@ Non-goals:
   has a fallback for a developer's Windows box, unguarded for the few
   microseconds of the rename (`swap_in`).
 
-Minimum Home Assistant: 2024.11 (`hacs.json`, 6977515). The options flow
-reads `self.config_entry` without storing it, which 2024.11 provides;
+Minimum Home Assistant: 2024.12 (`hacs.json`). The options flow reads
+`self.config_entry` without storing it, which `OptionsFlow` provides from
+2024.12 on (2024.11 has it on `OptionsFlowWithConfigEntry` only);
 `entry.runtime_data` needs 2024.5.
 
 ## How the fork is maintained
