@@ -221,13 +221,9 @@ def note_checked(zip_path):
 
 def file_digest(path):
     """The sha256 and the size of a file, read a chunk at a time."""
-    digest = hashlib.sha256()
-    size = 0
     with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(_CHUNK), b""):
-            digest.update(chunk)
-            size += len(chunk)
-    return digest.hexdigest(), size
+        digest = hashlib.file_digest(handle, "sha256")
+        return digest.hexdigest(), os.fstat(handle.fileno()).st_size
 
 
 def source_meta_path(zip_path):
