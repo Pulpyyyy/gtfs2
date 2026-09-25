@@ -12,7 +12,7 @@ from homeassistant.helpers import entity_registry as er
 
 from datetime import timedelta
 
-from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
+from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_FILE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
 import voluptuous as vol
 from .gtfs_helper import (update_gtfs_local_stops, get_route_departures, get_route_arrivals,
@@ -27,6 +27,7 @@ from .rt_source import (
     async_ensure_datasource_entry,
     async_mirror_rt_to_entries,
     datasource_entry,
+    datasource_unique_id,
 )
 from .source_refresh import (
     async_arm_source_check,
@@ -42,6 +43,14 @@ _LOGGER = logging.getLogger(__name__)
 
 # no api key in the logs, whichever module writes the line
 hide_keys_in_logs(__name__, __path__)
+
+def _unique_id_at_1_2(config_entry: ConfigEntry):
+    """The unique_id an entry has from minor version 2 on: a datasource
+    entry's takes its prefix, the others keep theirs."""
+    if config_entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
+        return datasource_unique_id(config_entry.data[CONF_FILE])
+    return config_entry.unique_id
+
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     """Migrate old entry.
@@ -98,6 +107,13 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
 
         hass.config_entries.async_update_entry(
             config_entry, data=new_data, options=new_options, version=10)
+
+    if config_entry.version == 10 and config_entry.minor_version < 2:
+        # a datasource entry's unique_id takes its own prefix: the bare file
+        # name could be the gtfs-<name> of a journey. A minor version, so an
+        # install going back to upstream still loads the entry
+        hass.config_entries.async_update_entry(
+            config_entry, unique_id=_unique_id_at_1_2(config_entry), minor_version=2)
 
     _LOGGER.warning("Migration to version %s successful", config_entry.version)
 

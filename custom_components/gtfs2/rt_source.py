@@ -4,8 +4,8 @@ A source used to exist only as files on disk plus N journey entries, each
 carrying its own copy of the realtime urls and api key. The datasource entry
 makes the source a real Home Assistant object: entry.data is the identity
 (kind, file, url, extract_from) plus the key the static feed is fetched
-with, entry.options are the realtime feeds, and the file name is the
-unique_id so a source can never have two.
+with, entry.options are the realtime feeds, and the file name makes the
+unique_id (datasource_unique_id) so a source can never have two.
 
 The model is all-source: a sensor follows its source, and realtime is on for
 every sensor of a source as soon as the source has any realtime feed url. The
@@ -76,6 +76,16 @@ def has_rt_feed(cfg) -> bool:
     keep to the static timetable.
     """
     return any(cfg.get(k) for k in RT_FEED_URL_KEYS)
+
+
+def datasource_unique_id(file) -> str:
+    """The unique_id of a source's datasource entry.
+
+    Its own prefix: the bare file name was the unique_id, and a source
+    named gtfs-home took the gtfs-home a journey named home is given, so
+    Home Assistant refused whichever came second.
+    """
+    return f"gtfs2-source-{file}"
 
 
 def datasource_entry(hass: HomeAssistant, file) -> ConfigEntry | None:
@@ -251,7 +261,7 @@ async def async_ensure_datasource_entry(
     """Create the datasource entry of a source, unless it already exists.
 
     Called by the bootstrap and by the flow steps that bring a new source in.
-    Idempotent by construction: the file name is the unique_id, so a second
+    Idempotent by construction: the file name makes the unique_id, so a second
     creation aborts inside the import flow instead of duplicating. The flow
     passes the static key it collected as api; the bootstrap takes it over
     from the journey entries. inner_zip is the network picked inside an

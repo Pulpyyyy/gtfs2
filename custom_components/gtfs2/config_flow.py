@@ -97,6 +97,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
     """Handle a config flow for GTFS."""
 
     VERSION = 10
+    # 2: a datasource entry's unique_id is gtfs2-source-<file>
+    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         """Init ConfigFlow."""

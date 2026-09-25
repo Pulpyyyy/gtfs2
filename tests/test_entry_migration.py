@@ -1,9 +1,10 @@
-"""An entry of every version async_migrate_entry has a rule for reaches 10.
+"""An entry of every version async_migrate_entry has a rule for reaches 10.2.
 
 Home Assistant calls async_migrate_entry for an entry older than the
-flow's VERSION, 10, and keeps what the function hands async_update_entry:
-the data, the options and the version, which it sets on the entry before
-the next rule reads it. The rules, as __init__ writes them:
+flow's VERSION, 10, or its MINOR_VERSION, 2, and keeps what the function
+hands async_update_entry: the data, the options, the unique_id and the
+versions, which it sets on the entry before the next rule reads it. The
+rules, as __init__ writes them:
 
     4        route_type becomes 99, no filter on the line list, and the
              agency every operator; the offset moves from the data to the
@@ -16,7 +17,10 @@ the next rule reads it. The rules, as __init__ writes them:
              their own names, which go from the options; the entry is then
              at 10. An entry brought to 9 by the rules above goes through
              this one too
-    10       left as it is
+    10.1     a datasource entry's unique_id becomes gtfs2-source-<file>,
+             every other entry keeps its own; the entry is then at 10.2.
+             Every entry brought to 10 above goes through this one too
+    10.2     left as it is
 
 What the entry holds besides is carried through untouched. A version
 below 4 has no rule, and is not checked here.
@@ -44,8 +48,13 @@ class _Entries:
     def __init__(self):
         self.updates = 0
 
-    def async_update_entry(self, entry, *, data=None, options=None, version=None):
+    def async_update_entry(self, entry, *, data=None, options=None, version=None,
+                           minor_version=None, unique_id=None):
         self.updates += 1
+        if unique_id is not None:
+            entry.unique_id = unique_id
+        if minor_version is not None:
+            entry.minor_version = minor_version
         if data is not None:
             entry.data = types.MappingProxyType(dict(data))
         if options is not None:
@@ -59,9 +68,11 @@ def _migrated(version, data, options):
     """(version, data, options) of an entry once migrated."""
     entry = types.SimpleNamespace(
         entry_id="e1", title="to work", version=version, minor_version=1,
+        unique_id="gtfs-to work",
         data=types.MappingProxyType(dict(data)), options=types.MappingProxyType(dict(options)))
     hass = types.SimpleNamespace(config_entries=_Entries())
     assert asyncio.run(integration.async_migrate_entry(hass, entry)) is True
+    assert (entry.minor_version, entry.unique_id) == (2, "gtfs-to work")
     return entry.version, dict(entry.data), dict(entry.options)
 
 
@@ -101,12 +112,31 @@ def test_versions_7_to_9_drop_an_empty_old_key_and_touch_nothing_else(version):
         10, JOURNEY, {"offset": 2})
 
 
-def test_version_10_is_left_as_it_is():
+def _at_10(minor_version, data, unique_id):
     entries = _Entries()
-    entry = types.SimpleNamespace(entry_id="e1", title="to work", version=10, minor_version=1,
-                                  data=types.MappingProxyType(dict(JOURNEY)),
+    entry = types.SimpleNamespace(entry_id="e1", title="x", version=10, minor_version=minor_version,
+                                  unique_id=unique_id, data=types.MappingProxyType(dict(data)),
                                   options=types.MappingProxyType({"api_key": "k"}))
     hass = types.SimpleNamespace(config_entries=entries)
     assert asyncio.run(integration.async_migrate_entry(hass, entry)) is True
-    assert (entry.version, dict(entry.data), dict(entry.options), entries.updates) == (
-        10, JOURNEY, {"api_key": "k"}, 0)
+    return (entry.version, entry.minor_version, entry.unique_id, dict(entry.data),
+            dict(entry.options), entries.updates)
+
+
+def test_version_10_2_is_left_as_it_is():
+    assert _at_10(2, JOURNEY, "gtfs-to work") == (
+        10, 2, "gtfs-to work", JOURNEY, {"api_key": "k"}, 0)
+
+
+SOURCE = {"kind": "datasource", "file": "gtfs-home", "url": "na", "extract_from": "zip"}
+
+
+def test_version_10_1_gives_a_datasource_entry_its_prefix():
+    # a source named gtfs-home held the unique_id a journey named home is given
+    assert _at_10(1, SOURCE, "gtfs-home") == (
+        10, 2, "gtfs2-source-gtfs-home", SOURCE, {"api_key": "k"}, 1)
+
+
+def test_version_10_1_keeps_any_other_entry_s_unique_id():
+    assert _at_10(1, JOURNEY, "gtfs-to work") == (
+        10, 2, "gtfs-to work", JOURNEY, {"api_key": "k"}, 1)

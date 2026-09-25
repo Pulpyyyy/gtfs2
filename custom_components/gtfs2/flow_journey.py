@@ -43,6 +43,7 @@ from .const import (
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
 from .geojson import name_in_use
+from .rt_source import datasource_unique_id
 from .gtfs_helper import get_direction_labels, get_pair_direction, has_trip_between
 
 _LOGGER = logging.getLogger(__name__)
@@ -282,7 +283,7 @@ class JourneyScreens:
         if import_data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
             # one datasource entry per source: the file name is the identity,
             # so a second creation aborts here instead of duplicating
-            await self.async_set_unique_id(import_data[CONF_FILE])
+            await self.async_set_unique_id(datasource_unique_id(import_data[CONF_FILE]))
             self._abort_if_unique_id_configured()
             options = import_data.pop("options", None) or {}
             return self.async_create_entry(

@@ -322,7 +322,7 @@ lot            a feat/ or fix/ branch cut on upstream main, one change each
 Three kinds of entry, told apart in `async_setup_entry`:
 
 ```
-datasource   data["kind"] == "datasource"   one per source, unique_id = file
+datasource   data["kind"] == "datasource"   one per source, unique_id = gtfs2-source-<file>
 local stops  data["device_tracker_id"] set  one per followed person
 journey      anything else                  one per sensor (bus or train)
 ```

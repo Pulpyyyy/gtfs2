@@ -69,9 +69,7 @@ The promises:
                     walk meets has its words in strings.json
 
 Every step of the flow is walked. A known defect is marked xfail, strict,
-so a fix has to lift the mark: a journey named like a source minus its
-"gtfs-" collides with it on unique_id; already_in_progress, which Home
-Assistant raises for a second flow on the same unique_id, has no words.
+so a fix has to lift the mark.
 
 What no walk reaches, and why:
 
@@ -871,7 +869,7 @@ def test_a_new_source_imports_only_the_lines_picked(world):
         source = hass.datasource("tao")
         assert dict(source.data) == {"kind": "datasource", "file": "tao", "url": "na",
                                      "extract_from": "zip", "api_key_location": "not_applicable"}
-        assert dict(source.options) == {} and source.unique_id == "tao"
+        assert dict(source.options) == {} and source.unique_id == "gtfs2-source-tao"
         # read from the zip: every line still has its timetable to import
         routes = offered(lines, "route")
         assert all(r.endswith("##pruned") for r in routes)
@@ -1027,22 +1025,22 @@ def test_a_name_in_use_is_refused_for_the_journey_and_for_its_return(world):
 
 
 def test_a_journey_the_second_flow_refuses_is_not_announced(world):
-    # the one refusal a walk reaches: the journey's unique_id, gtfs-<name>,
-    # is the one of a source named gtfs-<name> (a defect of its own, see
-    # the next test)
+    # the import step refuses a unique_id already taken, gtfs-<name>: here
+    # by an entry holding it under another name, which the screens' own
+    # name check does not see
     async def scenario(hass):
-        await install_source(hass, "tao-journeys", "gtfs-home")
-        again = shown(await bus_journey(hass, "gtfs-home", name="home"), FORM, "sensor")
+        await install_source(hass, "tao-journeys", "tao")
+        held = Entry(domain=DOMAIN, title="renamed", data={"file": "tao", "name": "renamed"},
+                     options={}, unique_id="gtfs-home", version=10, source="user")
+        hass.config_entries.entries.append(held)
+        again = shown(await bus_journey(hass, "tao", name="home"), FORM, "sensor")
         assert again["errors"] == {"base": "not_created"}
-        assert hass.journeys() == []
+        assert hass.journeys() == [held]
         refused = [r for r in hass.config_entries.flow.trail if r["type"] == ABORT]
         assert [r["reason"] for r in refused] == ["already_configured"]
     walk(world, scenario)
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "a journey's unique_id is gtfs-<name> and a source's is its file name: "
-    "a journey named like a source minus gtfs- collides with it"))
 def test_a_journey_name_is_free_whatever_the_sources_are_called(world):
     async def scenario(hass):
         await install_source(hass, "tao-journeys", "gtfs-home")
