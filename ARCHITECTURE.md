@@ -952,18 +952,22 @@ tests/            synthetic tests, run under the Home Assistant stub kept
 tests_provider/   tests on real provider feeds; results.json records which
                   promises hold, xfail marks the known failures, strict
                   so a fixed case must drop its mark  CI: Provider Tests
+both suites       branch coverage, may not fall under a floor (70%)
+                                                  CI: Coverage
 hassfest, HACS    manifest, strings, services     CI: Validate
 ```
 
 A refactor commit states which suites it ran and their counts. A change of
 behaviour comes with the case that shows it.
 
-What the suites do not reach. `sensor.py` and the config flow need Home
-Assistant's entity and flow classes to import, which the stub does not
-provide: neither has a test in the repository. Home Assistant's own
-behaviour is read from its source, never assumed; the retry of a local
-stops platform relies on Home Assistant 2026.2.3 refusing a first refresh
-outside setup (1fe6d7e).
+The Home Assistant stub in tests/ stands in for the entity and flow classes,
+so `sensor.py` and the config flow are tested too: the sensor attributes
+against an approval file (`tests_provider/expected/`), the config flow
+walked screen by screen on the provider feeds. Home Assistant's own
+behaviour is read from its source, never assumed. For instance a first
+refresh outside setup raises `ConfigEntryError` (read in 2026.2.3), so a
+local stops platform retried after `PlatformNotReady` (1fe6d7e) finds its
+coordinator already filled and refreshes it plainly (b960969).
 
 ## Known gaps
 
