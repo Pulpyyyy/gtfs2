@@ -102,6 +102,56 @@ def test_an_options_change_gives_each_coordinator_its_pace():
         assert "gtfs_updated_at" not in coordinator.data
 
 
+def test_an_options_change_before_any_answer_still_refreshes():
+    refreshed = []
+
+    async def refresh():
+        refreshed.append(True)
+
+    coordinator = object.__new__(coordinator_mod.GTFSUpdateCoordinator)
+    coordinator.data = None
+    coordinator.async_request_refresh = refresh
+    entry = types.SimpleNamespace(entry_id="e", data={}, options={}, runtime_data=coordinator)
+    assert asyncio.run(integration.update_listener(None, entry)) is True
+    assert refreshed == [True]
+
+
+def test_an_entry_on_no_line_takes_only_its_timetable(tmp_path):
+    gone = _entry("l1", name="Around me", device_tracker_id="person.me")
+    kept = _line_files("R1", "0")
+    folder = _files(tmp_path, kept + [integration.timetable_name("Around me")])
+    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [gone]), gone))
+    assert sorted(p.name for p in folder.iterdir()) == sorted(kept)
+
+
+def test_an_entry_with_no_direction_takes_either_one_and_the_old_names(tmp_path):
+    """The files written before the ids were sanitised carry the raw id;
+    an id that is not a plain file name never wrote in this directory."""
+    gone = _entry("e1", name="Bus", route="R 1: Line 1")
+    other = _entry("e2", name="Bus back", route="R 1: Line 1", direction="1")
+    folder = _files(tmp_path, _line_files("R 1", "0") + _line_files("R 1", "1")
+                    + _line_files("R 1", "None") + ["R 1_0.json", "R 1_0_route.json"])
+    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [gone, other]), gone))
+    # direction 1 stays for the entry that reads it
+    assert sorted(p.name for p in folder.iterdir()) == sorted(_line_files("R 1", "1"))
+    unsafe = _entry("e3", name="Odd", route="a/b")
+    (folder / "a").mkdir()
+    (folder / "a" / "b_0.json").write_text("{}")
+    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [unsafe]), unsafe))
+    assert (folder / "a" / "b_0.json").exists()
+
+
+def test_a_file_that_will_not_go_is_said_and_the_rest_goes(tmp_path, caplog):
+    gone = _entry("e1", name="Bus", route="R1", direction="0")
+    positions, route_file = _line_files("R1", "0")
+    folder = _files(tmp_path, [route_file])
+    # a directory under the file's name: os.remove refuses it
+    (folder / positions).mkdir()
+    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [gone]), gone))
+    assert [p.name for p in folder.iterdir()] == [positions]
+    assert "Could not remove" in caplog.text
+
+
 def test_the_realtime_switch_writes_the_entry_options():
     updates = []
     entry = types.SimpleNamespace(entry_id="d", data={"file": "tao", "kind": "datasource"},
