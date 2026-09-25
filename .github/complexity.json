@@ -27,6 +27,5 @@
   "rt_source.py async_mirror_rt_to_entries": 12,
   "sensor.py _update_attrs": 45,
   "source_refresh.py async_check_source": 18,
-  "source_zip.py build_scratch_database": 11,
   "source_zip.py refresh_datasource": 19
 }

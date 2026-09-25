@@ -1,0 +1,105 @@
+"""The kept zip stays as the host sent it, whichever way it is imported.
+
+The whole feed import and the legacy extract rewrote the kept zip without
+the tables an import leaves out (shapes, transfers, translations...): a
+source imported that way lost its shapes, and the zip no longer matched
+the hash and size its sidecar recorded. pygtfs now skips those tables on
+the way in. The legacy extract said "still unpacking" by the name the zip
+took while it was rewritten; a marker file says it now, until the
+database is whole.
+"""
+from __future__ import annotations
+
+import sqlite3
+import types
+import zipfile
+
+import pygtfs
+
+import ha_stub
+
+ha_stub.install()
+
+gtfs_helper = ha_stub.load("gtfs_helper")
+source_zip = ha_stub.load("source_zip")
+
+FEED = {
+    "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,Europe/Paris\n",
+    "routes.txt": "route_id,agency_id,route_short_name,route_type\nR1,A,1,3\n",
+    "trips.txt": "route_id,service_id,trip_id,shape_id\nR1,S,T1,SH1\n",
+    "stop_times.txt": ("trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+                       "T1,08:00:00,08:00:00,S1,1\nT1,08:10:00,08:10:00,S2,2\n"),
+    "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\nS1,Gare,47.9,1.9\nS2,Centre,47.91,1.91\n",
+    "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                     "start_date,end_date\nS,1,1,1,1,1,1,1,20260101,20261231\n"),
+    "shapes.txt": ("shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\n"
+                   "SH1,47.9,1.9,1\nSH1,47.91,1.91,2\n"),
+    # today's form, which pygtfs does not model (it expects trans_id, lang)
+    "translations.txt": ("table_name,field_name,language,translation,record_id\n"
+                         "stops,stop_name,en,Station,S1\n"),
+}
+
+
+def _zip(path):
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zout:
+        for name, body in FEED.items():
+            zout.writestr(name, body)
+    return path.read_bytes()
+
+
+def _count(db, table):
+    conn = sqlite3.connect(db)
+    try:
+        return conn.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
+    finally:
+        conn.close()
+
+
+def test_the_whole_feed_import_reads_the_zip_without_writing_it(tmp_path):
+    sent = _zip(tmp_path / "src.zip")
+    scratch = tmp_path / "src.import.sqlite"
+    assert source_zip.build_scratch_database(str(tmp_path), "src.zip", str(scratch))
+    assert (tmp_path / "src.zip").read_bytes() == sent
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["src.import.sqlite", "src.zip"]
+    assert (_count(scratch, "stop_times"), _count(scratch, "shapes"),
+            _count(scratch, "translations")) == (2, 0, 0)
+
+
+def _extract(tmp_path, monkeypatch, fork):
+    """Run the legacy extract on a fresh database, fork answering as given:
+    0 in the process that imports, a pid in the one that returns."""
+    sent = _zip(tmp_path / "src.zip")
+    hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: p))
+    gtfs = pygtfs.Schedule(str(tmp_path / "src.sqlite"))
+    seen = []
+    real_append = pygtfs.append_feed
+
+    def append_feed(schedule, path, **kwargs):
+        # what the source's sensors hear while the rows go in
+        seen.append(gtfs_helper.check_extracting(hass, str(tmp_path), "src"))
+        return real_append(schedule, path, **kwargs)
+
+    monkeypatch.setattr(gtfs_helper.os, "fork", lambda: fork, raising=False)
+    monkeypatch.setattr(gtfs_helper.pygtfs, "append_feed", append_feed)
+    gtfs_helper.extract_from_zip(hass, gtfs, str(tmp_path), "src.zip", gtfs_helper.IMPORT_IGNORED)
+    gtfs.engine.dispose()
+    return sent, hass, seen
+
+
+def test_the_legacy_extract_reads_the_zip_and_says_it_runs(tmp_path, monkeypatch):
+    sent, hass, seen = _extract(tmp_path, monkeypatch, fork=0)
+    assert seen == [True]
+    assert not gtfs_helper.check_extracting(hass, str(tmp_path), "src")
+    assert (tmp_path / "src.zip").read_bytes() == sent
+    assert not (tmp_path / "src.extracting").exists()
+    assert (_count(tmp_path / "src.sqlite", "stop_times"),
+            _count(tmp_path / "src.sqlite", "shapes")) == (2, 0)
+
+
+def test_the_caller_of_the_legacy_extract_sees_it_running(tmp_path, monkeypatch):
+    # the process that returns "extracting" leaves before the import has
+    # written anything: the marker is there already
+    sent, hass, seen = _extract(tmp_path, monkeypatch, fork=1234)
+    assert seen == []
+    assert gtfs_helper.check_extracting(hass, str(tmp_path), "src")
+    assert (tmp_path / "src.zip").read_bytes() == sent

@@ -29,7 +29,7 @@ from .zip_peek import (extract_member, inner_zips, inner_zips_in_file,
                        member_out_of, open_member)
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
-from .gtfs_helper import check_extracting, drop_import_indexes, get_gtfs, remove_from_zip
+from .gtfs_helper import IMPORT_IGNORED, check_extracting, drop_import_indexes, get_gtfs
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,9 +47,10 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
     measured on gtfs-nl.zip, 15.1 M stop_times filtered in 40 s down to a
     feed pygtfs imports in half a second, where the full import built a
     2.6 GB scratch file. When the filter cannot run, the whole feed is
-    imported as before: only slower, never wrong. The filtered path also
-    leaves the source zip untouched, where the historic path strips tables
-    out of it in place.
+    imported as before: only slower, never wrong. Neither path writes to
+    the source zip: the filter writes its cut beside it, and the whole
+    feed is read from it with the tables it leaves out skipped
+    (IMPORT_IGNORED).
 
     Returns True when the scratch file holds a feed.
     """
@@ -68,12 +69,11 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
         else:
             _LOGGER.warning(
                 "Could not filter %s, importing the whole feed instead", file)
+    ignored = ()
     if filtered is None:
-        drop = ['shapes.txt', 'transfers.txt', 'fare_attributes.txt',
-                'levels.txt', 'pathways.txt', 'translations.txt']
-        if clean_feed_info:
-            drop.append('feed_info.txt')
-        remove_from_zip(drop, gtfs_dir, file[:-4])
+        # the whole feed, read from the kept zip itself: pygtfs skips what
+        # the filter would have left out, and the zip stays as it came
+        ignored = IMPORT_IGNORED + (("feed_info.txt",) if clean_feed_info else ())
 
     # same connection arguments as the real database, so the scratch one
     # behaves identically under a timeout
@@ -81,7 +81,7 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
     try:
         scratch = pygtfs.Schedule(conn)
         drop_import_indexes(scratch)
-        pygtfs.append_feed(scratch, feed_file)
+        pygtfs.append_feed(scratch, feed_file, ignore_files=ignored)
         ok = bool(scratch.feeds)
         if ok:
             # routes are copied out of this file into the real database, so

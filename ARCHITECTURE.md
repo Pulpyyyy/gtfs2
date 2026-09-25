@@ -469,8 +469,9 @@ database file changed: its inode, mtime and size (`_database_edition`).
 Opening one is an engine plus a `create_all` over every table; every
 coordinator used to do it every minute.
 
-Step 1 relies on `check_extracting`: a `.sqlite-journal` or `_temp.zip`
-beside the database. The flag is cleared once the reuse branch is reached,
+Step 1 relies on `check_extracting`: a `.sqlite-journal`, or the
+`.extracting` marker a legacy extract keeps until its database is whole,
+beside the database (a `_temp.zip` left by an older version counts too). The flag is cleared once the reuse branch is reached,
 so a transient journal no longer blanks the sensors for a whole refresh
 interval (01587fd).
 
@@ -655,7 +656,7 @@ Four paths write a database. They differ because what they risk differs.
 | New edition (check in auto mode, update entity, button, `update_gtfs` service) | `refresh_datasource` | staging, built route by route | Yes | Every row may change; readers must see one edition or the other |
 | Same, on a whole-feed source | `_refresh_whole_feed` | staging, the filtered import itself | Yes | A train or local stops sensor matches across every line, and a line the new edition brings must come in too; taking the lines from the old database never brought new ones |
 | Optimise screen, `prune_datasource`, `intern_datasource` | `on_a_copy` | staging, a SQLite backup of the real one | Only if something changed | Destructive rewrites by the million plus VACUUM: on the live file they held the exclusive lock for minutes on a national feed |
-| Datasource that follows no line yet | legacy `get_gtfs` | the real file, in place, in a forked process | No | Upstream's path, kept for the first import of a whole feed; see "Known defects" 1 and 2 |
+| Datasource that follows no line yet | legacy `get_gtfs` | the real file, in place, in a forked process | No | Upstream's path, kept for the first import of a whole feed; see "Known defects" 1 |
 
 **Filtering before import, not pruning after.** pygtfs pays per row: once
 the whole feed is imported, the time and the disk are already spent. The
@@ -746,7 +747,7 @@ What each failure leaves, and who is told.
 |---|---|---|---|
 | Download fails or is not a zip | Old zip and database untouched; `.zip.new` removed | Refresh failed notification | Next check |
 | Import of the scratch fails | Old database untouched | Refresh failed notification | Next check |
-| Adding lines stops at line *k* | Lines before *k* are in; *k* and after are not | The import-done notification lists the lines that made it; nothing names the others (defect 3) | User re-picks |
+| Adding lines stops at line *k* | Lines before *k* are in; *k* and after are not | The import-done notification lists the lines that made it; nothing names the others (defect 2) | User re-picks |
 | Refresh: a line fails to copy | Swap refused, old database stays | Refresh failed notification | Next check |
 | Refresh: a line a sensor reads has no trip in the new edition | Swap refused, old database stays, on the route by route and the whole-feed path alike | Lines missing notification, naming them | Next check; see below |
 | Refresh: every line is empty | Swap refused, the file is taken as broken | Lines missing, every line named | Next check |
@@ -1016,11 +1017,7 @@ in a commit of its own, with the case that shows it.
    the grandchild imports after the caller has returned "extracting" and
    the lock is released. Only SQLite's own locking and `check_extracting`
    keep writers apart while it runs.
-2. **The legacy extract strips tables out of the kept zip in place**
-   (`remove_from_zip`: shapes, transfers, translations…). A source first
-   imported that way loses its shapes from the zip, against "the zip is the
-   source of truth".
-3. **A partial import reads as a success.** When `import_routes` stops at a
+2. **A partial import reads as a success.** When `import_routes` stops at a
    line, the flow goes on to "reload done" as soon as one line came in, and
    the notification lists only the lines added. The lines that failed are
    named in the log only.

@@ -7,11 +7,9 @@ import re
 import logging
 import statistics
 import os
-import shutil
 import pygtfs
 from sqlalchemy.sql import text
 import multiprocessing
-import zipfile
 
 
 import homeassistant.util.dt as dt_util
@@ -910,76 +908,54 @@ def get_gtfs(hass, path, data, update=False):
         gtfs.engine.dispose()
         return "no_zip_file" if data["extract_from"] == "zip" else "no_data_file"
 
-    if not gtfs.feeds: 
+    if not gtfs.feeds:
         # a feed_info.txt pygtfs cannot read stops the whole import
         if data.get("clean_feed_info", False) or feed_info_unreadable(os.path.join(gtfs_dir, file)):
             _fork_ctx = multiprocessing.get_context("fork")
-            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,['shapes.txt','transfers.txt','fare_attributes.txt','levels.txt','pathways.txt','translations.txt','feed_info.txt']))
-        else: 
+            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,IMPORT_IGNORED + ("feed_info.txt",)))
+        else:
             _fork_ctx = multiprocessing.get_context("fork")
-            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,['shapes.txt','transfers.txt','fare_attributes.txt','levels.txt','pathways.txt','translations.txt']))
+            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,IMPORT_IGNORED))
         extract.start()
         extract.join()
         _LOGGER.info("Exiting main after start subprocess for unpacking: %s", file)
         return "extracting"
     return gtfs
 
-def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file):
+
+# the tables an import leaves out: the integration never reads them from
+# the database (a line's shape is read from the zip), pygtfs pays for every
+# row, and it models the old form of translations.txt (trans_id, lang) that
+# today's feeds do not write. They stay in the zip, which is kept as the
+# host sent it: pygtfs skips them on the way in
+IMPORT_IGNORED = ("shapes.txt", "transfers.txt", "fare_attributes.txt",
+                  "levels.txt", "pathways.txt", "translations.txt")
+
+
+def extracting_marker(gtfs_dir, name):
+    """The file that says a legacy extract is still filling a database."""
+    return os.path.join(gtfs_dir, name + ".extracting")
+
+
+def extract_from_zip(hass, gtfs, gtfs_dir, file, ignored):
     _LOGGER.debug("Extracting gtfs file: %s", file)
-    # first remove shapes from zip to avoid possibly very large db 
-    remove_from_zip(remove_file,gtfs_dir, file[:-4])
+    # the marker stands until the database is whole: check_extracting keeps
+    # the source's sensors waiting meanwhile. The extract used to rename the
+    # zip aside to strip it, and that name was the signal
+    marker = extracting_marker(gtfs_dir, file[:-4])
+    open(marker, "w").close()
     if os.fork() != 0:
         return
-    drop_import_indexes(gtfs)
-    pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file))
-    check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
-    repair_trip_directions(gtfs)
-
-    
-
-
-def remove_from_zip(delmelist,gtfs_dir,file):
-    """Rewrite a kept zip without the members listed, or leave it as it was.
-
-    The zip is the only full record of the feed, so the rewrite happens
-    beside it and the original only steps aside once the new one is whole.
-    A feed that breaks halfway used to leave nothing under the zip's name:
-    check_extracting then saw the _temp.zip for ever and every sensor of
-    the source stayed "extracting" until someone renamed the file by hand.
-
-    Members are copied through rather than read whole: stop_times.txt of a
-    national feed is bigger than the memory of the machines this runs on.
-    """
-    _LOGGER.debug("Removing data: %s , from zipfile: %s", delmelist, file)
-    tempfile = file + "_temp.zip"
-    tempfile_out = file + "_temp_out.zip"
-    filename = file + ".zip"
-    kept = os.path.join(gtfs_dir, filename)
-    aside = os.path.join(gtfs_dir, tempfile)
-    written = os.path.join(gtfs_dir, tempfile_out)
-    os.rename (kept, aside)
     try:
-        with zipfile.ZipFile(aside, 'r') as zin, \
-             zipfile.ZipFile(written, 'w') as zout:
-            for item in zin.infolist():
-                if (item.filename not in delmelist):
-                    with zin.open(item) as source, zout.open(item, 'w') as target:
-                        shutil.copyfileobj(source, target)
-        os.rename(written, kept)
-        os.remove(aside)
-        return True
-    except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.exception("Could not rewrite %s without %s: %s", filename, delmelist, ex)
-        # the feed goes back under its own name, whole, as if nothing had
-        # been attempted
-        if not os.path.exists(kept) and os.path.exists(aside):
-            os.rename(aside, kept)
-        if os.path.exists(written):
-            try:
-                os.remove(written)
-            except OSError:
-                pass
-        return False
+        drop_import_indexes(gtfs)
+        pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file), ignore_files=ignored)
+        check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
+        repair_trip_directions(gtfs)
+    finally:
+        try:
+            os.remove(marker)
+        except OSError:
+            pass
 
 
 def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
@@ -2130,7 +2106,7 @@ def remove_datasource(hass, path, filename, include_sqlite, keep=()):
     # edition, and what a download, a refresh or an import stopped half way
     # leaves. Left behind, the record made a new source of the same name
     # look already built from an edition it never had
-    leftovers = [".zip.new", ".refresh.sqlite", ".refresh.sqlite-journal",
+    leftovers = [".zip.new", ".extracting", ".refresh.sqlite", ".refresh.sqlite-journal",
                  ".import.sqlite", ".import.sqlite-journal", ".import.sqlite.zip"]
     if include_sqlite:
         leftovers += [".sqlite.meta.json", ".sqlite-wal", ".sqlite-shm"]
@@ -2147,7 +2123,8 @@ def check_extracting(hass, gtfs_dir,file):
     filename = file
     journal = os.path.join(gtfs_dir, filename + ".sqlite-journal")
     tempzip = os.path.join(gtfs_dir, filename + "_temp.zip")
-    if os.path.exists(journal)  or os.path.exists(tempzip):
+    if (os.path.exists(journal) or os.path.exists(tempzip)
+            or os.path.exists(extracting_marker(gtfs_dir, filename))):
         _LOGGER.debug("Extracting: yes")
         return True
     return False    
