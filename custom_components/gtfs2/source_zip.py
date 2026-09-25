@@ -30,7 +30,7 @@ from .zip_peek import (extract_member, inner_zips, inner_zips_in_file,
                        open_member)
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
-from .gtfs_helper import IMPORT_IGNORED, check_extracting, drop_import_indexes
+from .gtfs_helper import IMPORT_IGNORED, drop_import_indexes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -201,14 +201,13 @@ def ensure_source_zip(hass, path, data):
     and one that ends on a progress notification.
 
     Returns None when the zip is ready, else the code the flow already
-    words: "extracting", "no_zip_file", "no_data_file", "zip_holds_zips".
+    words: "no_zip_file", "no_data_file", "zip_holds_zips". A source being
+    created has no database for anything to be writing to.
     """
     gtfs_dir = hass.config.path(path)
     os.makedirs(gtfs_dir, exist_ok=True)
     filename = data["file"]
     zip_path = os.path.join(gtfs_dir, filename + ".zip")
-    if check_extracting(hass, path, filename):
-        return "extracting"
     if data["extract_from"] == "zip":
         if not os.path.exists(zip_path):
             return "no_zip_file"

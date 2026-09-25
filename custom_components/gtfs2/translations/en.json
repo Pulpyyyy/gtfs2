@@ -248,7 +248,7 @@
         }
       },
       "extracting": {
-        "title": "Unpacking {file}"
+        "title": "Waiting for {file}"
       },
       "importing": {
         "title": "Bringing lines back from {file}"
@@ -291,11 +291,10 @@
       "reload_failed": "The line could not be brought back. The network file may be missing or unreadable; the datasource itself was left untouched.",
       "optimised": "Disk space freed. The source now takes {size}.",
       "finished": "Setup complete. You can add more journeys at any time from the integration page.",
-      "unpacking": "{file} is being unpacked in the background. This takes several minutes, so there is nothing to wait for here.\n\nA notification will tell you when the source is ready, and where to carry on. Do not restart Home Assistant before then, it would stop the job.",
       "no_destination": "No stop can be reached from the selected origin in this direction"
     },
     "progress": {
-      "extracting": "**You can close this window.**\n\nA notification will tell you when {file} is ready: the unpacking carries on in the background.\n\nStaying here lets you chain straight on to picking a line. **{size}** so far; on a large network this takes several minutes.\n\nDo not restart Home Assistant before then, it would stop the job.",
+      "extracting": "{file} is being written: a line import or an optimisation of this source is under way. The flow carries on as soon as it ends; **{size}** so far.",
       "importing": "**You can close this window.**\n\nA notification will tell you when it is done: the {routes} line(s) from {file} carry on being brought back in the background.\n\nStaying here lets you chain straight on to picking the stops. **{size}** unpacked so far; your other sensors keep working.\n\nDo not restart Home Assistant before then, it would stop the job."
     }
   },
@@ -592,10 +591,6 @@
   "common": {
     "mode_train": "train",
     "mode_coach": "coach",
-    "extract_ready_title": "GTFS: {file} is ready",
-    "extract_ready": "The source holds **{routes}** lines and **{stops}** stops.\n\nSettings > Devices & services > GTFS2 > Add entry, then **Add a journey between two stops** to carry on.",
-    "extract_failed_title": "GTFS: {file} could not be unpacked",
-    "extract_failed": "The datasource is not usable: {detail}.\n\nNothing was added. Settings > Devices & services > GTFS2 > Add entry, then **Add a data source** to try again.",
     "import_done_title": "GTFS: {file} updated",
     "import_done": "Brought back into {file}: {lines}.\n\nSettings > Devices & services > GTFS2 > Add entry, then **Add a journey between two stops** to carry on.",
     "import_failed_title": "GTFS: {file} was not changed",
@@ -606,12 +601,6 @@
     "lines_missing": "The new version of {file} no longer carries any trip for **{lines}**. The current timetable stays in place and the sensors keep running on it.\n\nIf the operator renumbered the line, recreate its sensor on the new line; if the line is gone, remove its sensor. The next update then goes through. If every line is listed, the file itself is probably broken.",
     "refresh_failed_title": "GTFS: {file} was not updated",
     "refresh_failed": "The update of {file} did not go through. The current timetable stays in place and the sensors keep running on it.\n\nThe log says why. The next check tries again.",
-    "reason_no_database": "no database was produced",
-    "reason_cannot_open": "the database cannot be opened",
-    "reason_tables_missing": "unpacking stopped before it wrote every table",
-    "reason_unfinished": "unpacking did not finish",
-    "reason_tables_empty": "some tables came out empty",
-    "reason_unreadable": "the database is unreadable",
     "source_update_available_title": "GTFS: {file} has a new version",
     "source_update_available": "The source published a new timetable feed ({version}).\n\nInstall it from the **Static feed** update entity of {file}, or let your automation do it. The current data keeps serving until the install swaps it in, in one go.",
     "line_mode_tram": "tram",

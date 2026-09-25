@@ -248,7 +248,7 @@
         }
       },
       "extracting": {
-        "title": "Décompression de {file}"
+        "title": "En attente de {file}"
       },
       "importing": {
         "title": "Rétablissement de lignes depuis {file}"
@@ -291,11 +291,10 @@
       "reload_failed": "La ligne n'a pas pu être rétablie. Le fichier réseau est peut-être absent ou illisible ; la source de données, elle, n'a pas été modifiée.",
       "optimised": "Espace disque libéré. La source occupe maintenant {size}.",
       "finished": "Configuration terminée. Vous pouvez ajouter d'autres trajets à tout moment depuis la page de l'intégration.",
-      "unpacking": "{file} est en cours de décompression en arrière-plan. Cela prend plusieurs minutes, il n'y a donc rien à attendre ici.\n\nUne notification vous préviendra quand la source sera prête, et où reprendre. Ne redémarrez pas Home Assistant d'ici là, cela interromprait l'opération.",
       "no_destination": "Aucun arrêt n'est atteignable depuis l'origine choisie dans cette direction"
     },
     "progress": {
-      "extracting": "**Vous pouvez fermer cette fenêtre.**\n\nUne notification vous préviendra quand {file} sera prête : la décompression se poursuit en arrière-plan.\n\nRester ici permet d'enchaîner directement sur le choix d'une ligne. **{size}** pour l'instant ; sur un grand réseau cela prend plusieurs minutes.\n\nNe redémarrez pas Home Assistant d'ici là, cela interromprait l'opération.",
+      "extracting": "{file} est en cours d'écriture : un import de lignes ou une optimisation de cette source est en cours. Le flux reprend dès que c'est terminé ; **{size}** pour l'instant.",
       "importing": "**Vous pouvez fermer cette fenêtre.**\n\nUne notification vous préviendra quand ce sera terminé : le rétablissement des {routes} ligne(s) depuis {file} se poursuit en arrière-plan.\n\nRester ici permet d'enchaîner directement sur le choix des arrêts. **{size}** décompressés pour l'instant ; vos autres capteurs continuent de fonctionner.\n\nNe redémarrez pas Home Assistant d'ici là, cela interromprait l'opération."
     }
   },
@@ -592,10 +591,6 @@
   "common": {
     "mode_train": "train",
     "mode_coach": "car",
-    "extract_ready_title": "GTFS : {file} est prête",
-    "extract_ready": "La source contient **{routes}** lignes et **{stops}** arrêts.\n\nParamètres > Appareils et services > GTFS2 > Ajouter une entrée, puis **Ajouter un trajet entre deux arrêts** pour continuer.",
-    "extract_failed_title": "GTFS : {file} n'a pas pu être décompressée",
-    "extract_failed": "La source n'est pas utilisable : {detail}.\n\nRien n'a été ajouté. Paramètres > Appareils et services > GTFS2 > Ajouter une entrée, puis **Ajouter une source de données** pour réessayer.",
     "import_done_title": "GTFS : {file} mise à jour",
     "import_done": "Rétabli dans {file} : {lines}.\n\nParamètres > Appareils et services > GTFS2 > Ajouter une entrée, puis **Ajouter un trajet entre deux arrêts** pour continuer.",
     "import_failed_title": "GTFS : {file} n'a pas été modifiée",
@@ -606,12 +601,6 @@
     "lines_missing": "La nouvelle version de {file} ne contient plus aucun trajet pour **{lines}**. L'horaire actuel reste en place et les capteurs continuent de l'utiliser.\n\nSi l'opérateur a renuméroté la ligne, recréez son capteur sur la nouvelle ligne ; si la ligne n'existe plus, supprimez son capteur. La mise à jour suivante passera alors. Si toutes les lignes sont citées, c'est sans doute le fichier lui-même qui est défectueux.",
     "refresh_failed_title": "GTFS : {file} n'a pas été mis à jour",
     "refresh_failed": "La mise à jour de {file} n'a pas abouti. L'horaire actuel reste en place et les capteurs continuent de l'utiliser.\n\nLe journal en donne la raison. La prochaine vérification réessaiera.",
-    "reason_no_database": "aucune base n'a été produite",
-    "reason_cannot_open": "la base ne peut pas être ouverte",
-    "reason_tables_missing": "la décompression s'est arrêtée avant d'écrire toutes les tables",
-    "reason_unfinished": "la décompression n'est pas allée à son terme",
-    "reason_tables_empty": "certaines tables sont vides",
-    "reason_unreadable": "la base est illisible",
     "source_update_available_title": "GTFS : {file} a une nouvelle version",
     "source_update_available": "La source a publié un nouveau fichier horaire ({version}).\n\nInstallez-le depuis l'entité de mise à jour **Static feed** de {file}, ou laissez faire votre automatisation. Les données actuelles continuent de servir jusqu'à la bascule, qui se fait d'un coup.",
     "line_mode_tram": "tram",

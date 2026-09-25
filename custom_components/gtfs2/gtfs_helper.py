@@ -2026,9 +2026,10 @@ def check_extracting(hass, gtfs_dir,file):
     gtfs_dir = hass.config.path(gtfs_dir)
     filename = file
     journal = os.path.join(gtfs_dir, filename + ".sqlite-journal")
-    # the name the zip took while an older version rewrote it in place
-    tempzip = os.path.join(gtfs_dir, filename + "_temp.zip")
-    if os.path.exists(journal) or os.path.exists(tempzip):
+    # (a _temp.zip, the name the zip took while an older version rewrote
+    # it in place, is left over from then and no sign of a write any more:
+    # nothing produces it, and it held the source "extracting" for ever)
+    if os.path.exists(journal):
         _LOGGER.debug("Extracting: yes")
         return True
     return False    

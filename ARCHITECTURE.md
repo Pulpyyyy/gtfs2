@@ -1000,13 +1000,13 @@ the rule it breaks can be checked by a test.
    the queries into the data layer, which rewrites upstream's functions in
    place, against the refactor rule above: closing it means the fork taking
    the file over, a decision the rule has so far left open.
-2. **Lower layers import upper ones:** `rt_source.py`, `source_zip.py` and
-   `notifications.py` import `gtfs_helper`; `gtfs_helper` imports
-   `route_names`; `geojson.py` imports `gtfs_rt_helper`; `source_zip.py`
+2. **Lower layers import upper ones:** `rt_source.py` and `source_zip.py`
+   import `gtfs_helper`; `gtfs_helper` imports `route_names` and
+   `feed_window`; `geojson.py` imports `gtfs_rt_helper`; `source_zip.py`
    imports `gtfs_db`, `gtfs_filter` and `direction_repair`; `config_flow.py`
    imports `close_schedule` from `coordinator.py`.
-3. **Import cycles:** `alerts` ↔ `gtfs_rt_helper`; `gtfs_helper`,
-   `freshness` and `rt_source`.
+3. **Import cycles:** `alerts` ↔ `gtfs_rt_helper`; `gtfs_helper` →
+   `gtfs_rt_helper` → `rt_source` → `gtfs_helper`.
 4. **`sensor.py` still builds much of the attributes itself**
    (`_update_attrs`).
 5. **The dependency rule holds only with exceptions.** The import-linter

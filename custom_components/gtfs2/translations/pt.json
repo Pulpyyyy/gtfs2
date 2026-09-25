@@ -248,7 +248,7 @@
         }
       },
       "extracting": {
-        "title": "A descompactar {file}"
+        "title": "À espera de {file}"
       },
       "importing": {
         "title": "A repor linhas a partir de {file}"
@@ -291,11 +291,10 @@
       "reload_failed": "Não foi possível repor a linha. O ficheiro de rede pode estar em falta ou ilegível; a fonte de dados não foi alterada.",
       "optimised": "Espaço libertado. A fonte ocupa agora {size}.",
       "finished": "Configuração concluída. Pode adicionar mais trajetos a qualquer momento na página da integração.",
-      "unpacking": "{file} está a ser descompactada em segundo plano. Isto demora vários minutos, por isso não há nada a aguardar aqui.\n\nUma notificação avisa-o quando a fonte estiver pronta e onde continuar. Não reinicie o Home Assistant até lá, isso interromperia a operação.",
       "no_destination": "Nenhuma paragem é alcançável a partir da origem selecionada nesta direção"
     },
     "progress": {
-      "extracting": "**Pode fechar esta janela.**\n\nUma notificação avisa-o quando {file} estiver pronta: a descompactação continua em segundo plano.\n\nFicar aqui permite passar logo à escolha de uma linha. **{size}** até agora; numa rede grande isto demora vários minutos.\n\nNão reinicie o Home Assistant até lá, isso interromperia a operação.",
+      "extracting": "{file} está a ser escrita: está em curso uma importação de linhas ou uma otimização desta fonte. O fluxo continua assim que terminar; **{size}** até agora.",
       "importing": "**Pode fechar esta janela.**\n\nUma notificação avisa-o quando terminar: a reposição de {routes} linha(s) a partir de {file} continua em segundo plano.\n\nFicar aqui permite passar logo à escolha das paragens. **{size}** descompactados até agora; os seus outros sensores continuam a funcionar.\n\nNão reinicie o Home Assistant até lá, isso interromperia a operação."
     }
   },
@@ -592,10 +591,6 @@
   "common": {
     "mode_train": "comboio",
     "mode_coach": "autocarro",
-    "extract_ready_title": "GTFS: {file} está pronta",
-    "extract_ready": "A fonte contém **{routes}** linhas e **{stops}** paragens.\n\nDefinições > Dispositivos e serviços > GTFS2 > Adicionar entrada, depois **Adicionar um trajeto entre duas paragens** para continuar.",
-    "extract_failed_title": "GTFS: não foi possível descompactar {file}",
-    "extract_failed": "A fonte não é utilizável: {detail}.\n\nNada foi adicionado. Definições > Dispositivos e serviços > GTFS2 > Adicionar entrada, depois **Adicionar uma fonte de dados** para tentar novamente.",
     "import_done_title": "GTFS: {file} atualizada",
     "import_done": "Reposto em {file}: {lines}.\n\nDefinições > Dispositivos e serviços > GTFS2 > Adicionar entrada, depois **Adicionar um trajeto entre duas paragens** para continuar.",
     "import_failed_title": "GTFS: {file} não foi alterada",
@@ -606,12 +601,6 @@
     "lines_missing": "A nova versão de {file} já não contém nenhuma viagem para **{lines}**. O horário atual mantém-se e os sensores continuam a usá-lo.\n\nSe o operador renumerou a linha, volte a criar o sensor na nova linha; se a linha já não existe, remova o sensor. A próxima atualização passará então. Se todas as linhas estiverem listadas, o próprio ficheiro está provavelmente danificado.",
     "refresh_failed_title": "GTFS: {file} não foi atualizado",
     "refresh_failed": "A atualização de {file} não foi concluída. O horário atual mantém-se e os sensores continuam a usá-lo.\n\nO registo indica o motivo. A próxima verificação tentará de novo.",
-    "reason_no_database": "não foi produzida nenhuma base de dados",
-    "reason_cannot_open": "a base de dados não pode ser aberta",
-    "reason_tables_missing": "a descompactação parou antes de escrever todas as tabelas",
-    "reason_unfinished": "a descompactação não chegou ao fim",
-    "reason_tables_empty": "algumas tabelas ficaram vazias",
-    "reason_unreadable": "a base de dados está ilegível",
     "source_update_available_title": "GTFS: {file} tem uma nova versão",
     "source_update_available": "A fonte publicou um novo feed de horários ({version}).\n\nInstale-o a partir da entidade de atualização **Feed estático** de {file}, ou deixe a sua automação fazê-lo. Os dados atuais continuam a servir até que a instalação os substitua, de uma só vez.",
     "line_mode_tram": "elétrico",

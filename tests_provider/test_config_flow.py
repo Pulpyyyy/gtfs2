@@ -1146,20 +1146,18 @@ def test_a_zip_of_networks_asks_which_one_the_source_follows(world):
     walk(world, scenario)
 
 
-def test_a_source_still_unpacking_ends_the_flow_and_is_watched(world):
+def test_a_zip_an_older_version_left_aside_does_not_stop_a_new_source(world):
+    # the legacy extract renamed the zip to <source>_temp.zip while it
+    # rewrote it, and the flow read that name as an unpacking under way: it
+    # ended on "unpacking" and watched it. Nothing produces the name any
+    # more; left over, it held the source's creation up for ever
     async def scenario(hass):
         world.host.serve(URL, zip_bytes("tao-journeys"))
-        # what an unpacking of this source leaves while it runs
         (gtfs_dir(hass) / "tao_temp.zip").write_bytes(b"")
         form = await source_url_screen(hass)
-        ended = shown(await submit(hass, form, url=URL, file="tao"), ABORT)
-        assert ended["reason"] == "unpacking"
-        assert ended["description_placeholders"]["file"] == "tao"
-        assert world.host.requests == []
-        assert [t.get_name() for t in hass.background_tasks] == [
-            "gtfs2 datasource entry tao", "gtfs2 watch extraction tao"]
-        await hass.background_tasks[0]
-        assert hass.datasource("tao").data["url"] == URL
+        shown(await submit(hass, form, url=URL, file="tao"), FORM, "source_rt")
+        assert {request.url for request in world.host.requests} == {URL}
+        assert not [t for t in hass.background_tasks if "watch" in t.get_name()]
     walk(world, scenario)
 
 

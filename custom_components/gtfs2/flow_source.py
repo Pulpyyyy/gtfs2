@@ -51,7 +51,6 @@ from .freshness import source_meta
 from .gtfs_db import real_path
 from .gtfs_helper import check_extracting, get_zipfiles
 from .key_mask import KEY_MASK, note_key
-from .notifications import async_watch_extraction, check_extraction_result
 from .rt_source import async_ensure_datasource_entry, datasource_entry
 from .source_zip import ensure_source_zip
 
@@ -279,12 +278,6 @@ class SourceScreens:
                 self._inner_zips = user_input.pop("inner_zips", [])
                 self._user_inputs.update(user_input)
                 return await self.async_step_inner_zip()
-            # "extracting" is not a user error: the datasource is being unpacked,
-            # there is nothing to correct, so it keeps its own abort message.
-            if check_data == "extracting":
-                self._user_inputs.update(user_input)
-                self._ensure_datasource_entry()
-                return await self.async_step_unpacking()
             errors["base"] = check_data
             return _show(errors, user_input)
         self._user_inputs.update(user_input)
@@ -323,38 +316,9 @@ class SourceScreens:
         check_data = await self.hass.async_add_executor_job(
             ensure_source_zip, self.hass, DEFAULT_PATH, self._user_inputs)
         if check_data:
-            if check_data == "extracting":
-                self._ensure_datasource_entry()
-                return await self.async_step_unpacking()
             return await self._back_to_source(check_data)
         _LOGGER.debug("UserInputs inner zip: %s", self._user_inputs)
         return await self.async_step_source_rt()
-
-    async def async_step_unpacking(self, user_input: dict | None = None) -> FlowResult:
-        """A brand new source is unpacking: end here, and notify when it is done.
-
-        Building a datasource from scratch takes minutes, sometimes more than
-        ten on a large network. Holding the flow open for that is a poor trade:
-        nothing further can be chosen until it finishes, and a window left open
-        that long is closed anyway. So the flow ends now and the notification
-        carries the news.
-
-        This is what separates it from async_step_extracting, which is worth
-        waiting on: there, the unpacking is usually already done and the flow
-        continues immediately.
-        """
-        file = self._user_inputs.get(CONF_FILE, "")
-        self.hass.async_create_background_task(
-            async_watch_extraction(self.hass, file),
-            name=f"gtfs2 watch extraction {file}",
-        )
-        return self.async_abort(
-            reason="unpacking",
-            description_placeholders={
-                **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                "file": file,
-            },
-        )
 
     async def async_step_source_key(self, user_input: dict | None = None) -> FlowResult:
         """Ask for the api key, only when the source needs one."""
@@ -382,9 +346,6 @@ class SourceScreens:
                 # on the url screen, the key kept for the member's download
                 self._inner_zips = self._user_inputs.pop("inner_zips", [])
                 return await self.async_step_inner_zip()
-            if check_data == "extracting":
-                self._ensure_datasource_entry()
-                return await self.async_step_extracting()
             # a wrong url and a wrong key fail the same way, and only the
             # url screen can put both right: the error is shown there, with
             # what was typed, and the key waits behind its toggle
@@ -491,10 +452,6 @@ class SourceScreens:
                 self._inner_zips = user_input.pop("inner_zips", [])
                 self._user_inputs.update(user_input)
                 return await self.async_step_inner_zip()
-            if check_data == "extracting":
-                self._user_inputs.update(user_input)
-                self._ensure_datasource_entry()
-                return await self.async_step_extracting()
             errors["base"] = check_data
             return await _show(errors)
         self._user_inputs.update(user_input)
@@ -532,24 +489,16 @@ class SourceScreens:
             os.path.exists, real_path(gtfs_dir, self._user_inputs[CONF_FILE]))
 
     async def async_step_extracting(self, user_input: dict | None = None) -> FlowResult:
-        """Wait for the background unpacking to finish, showing progress.
+        """Wait, showing progress, while something writes to the datasource.
 
-        get_gtfs forks the extraction and returns immediately, so there is no
-        task to await. check_extracting watches the files the unpacking leaves
-        behind, which is the only signal available from here.
+        get_gtfs answers "extracting" while a write holds the file's journal:
+        a line import from another window, an optimisation, an index being
+        built. The write is not this flow's, so there is no task to await:
+        the journal is the only signal available from here.
         """
         gtfs_dir = self.hass.config.path(DEFAULT_PATH)
         file = self._user_inputs.get(CONF_FILE, "")
         if self._extract_job is None:
-            # Watched separately, on the integration side: closing this window
-            # abandons the flow while the unpacking carries on, and the user
-            # would otherwise never learn that it finished, or that it failed.
-            # async_create_background_task outlives the flow; the notification
-            # is raised there.
-            self.hass.async_create_background_task(
-                async_watch_extraction(self.hass, file),
-                name=f"gtfs2 watch extraction {file}",
-            )
             self._extract_job = self.hass.async_create_task(
                 self._wait_for_extraction())
 
@@ -593,22 +542,9 @@ class SourceScreens:
             next_step_id=self._extract_next_step or "agency")
 
     async def _wait_for_extraction(self):
-        """Poll until the datasource stops looking like it is being unpacked."""
+        """Poll until nothing writes to the datasource any more."""
         gtfs_dir = self.hass.config.path(DEFAULT_PATH)
         file = self._user_inputs.get(CONF_FILE, "")
-        # Every source now comes through here, including one whose datasource
-        # is already built: waiting five seconds to discover there is nothing
-        # to wait for would be five seconds of nothing. A finished feed is
-        # recognised at once.
-        ok, _ = await self.hass.async_add_executor_job(
-            check_extraction_result, gtfs_dir, file)
-        if ok and not await self.hass.async_add_executor_job(
-            check_extracting, self.hass, gtfs_dir, file
-        ):
-            return
-        # the fork needs a moment before it creates the journal file, so do not
-        # treat a not-yet-started extraction as a finished one
-        await asyncio.sleep(5)
         while await self.hass.async_add_executor_job(
             check_extracting, self.hass, gtfs_dir, file
         ):

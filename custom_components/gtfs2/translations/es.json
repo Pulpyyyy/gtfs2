@@ -248,7 +248,7 @@
         }
       },
       "extracting": {
-        "title": "Descomprimiendo {file}"
+        "title": "Esperando a {file}"
       },
       "importing": {
         "title": "Restaurando líneas desde {file}"
@@ -291,11 +291,10 @@
       "reload_failed": "No se ha podido restaurar la línea. Puede que el archivo de red falte o no se pueda leer; la fuente de datos no se ha modificado.",
       "optimised": "Espacio liberado. La fuente ocupa ahora {size}.",
       "finished": "Configuración completada. Puede añadir más trayectos cuando quiera desde la página de la integración.",
-      "unpacking": "{file} se está descomprimiendo en segundo plano. Esto tarda varios minutos, así que aquí no hay nada que esperar.\n\nUna notificación le avisará cuando la fuente esté lista y dónde continuar. No reinicie Home Assistant hasta entonces, interrumpiría la operación.",
       "no_destination": "Ninguna parada es alcanzable desde el origen seleccionado en esta dirección"
     },
     "progress": {
-      "extracting": "**Puede cerrar esta ventana.**\n\nUna notificación le avisará cuando {file} esté lista: la descompresión continúa en segundo plano.\n\nQuedarse aquí permite pasar directamente a elegir una línea. **{size}** hasta ahora; en una red grande esto tarda varios minutos.\n\nNo reinicie Home Assistant hasta entonces, interrumpiría la operación.",
+      "extracting": "{file} se está escribiendo: hay en curso una importación de líneas o una optimización de esta fuente. El flujo continúa en cuanto termine; **{size}** por ahora.",
       "importing": "**Puede cerrar esta ventana.**\n\nUna notificación le avisará cuando termine: la restauración de {routes} línea(s) desde {file} continúa en segundo plano.\n\nQuedarse aquí permite pasar directamente a elegir las paradas. **{size}** descomprimidos hasta ahora; sus demás sensores siguen funcionando.\n\nNo reinicie Home Assistant hasta entonces, interrumpiría la operación."
     }
   },
@@ -592,10 +591,6 @@
   "common": {
     "mode_train": "tren",
     "mode_coach": "autobús",
-    "extract_ready_title": "GTFS: {file} está lista",
-    "extract_ready": "La fuente contiene **{routes}** líneas y **{stops}** paradas.\n\nAjustes > Dispositivos y servicios > GTFS2 > Añadir entrada, luego **Añadir un trayecto entre dos paradas** para continuar.",
-    "extract_failed_title": "GTFS: no se ha podido descomprimir {file}",
-    "extract_failed": "La fuente no es utilizable: {detail}.\n\nNo se ha añadido nada. Ajustes > Dispositivos y servicios > GTFS2 > Añadir entrada, luego **Añadir una fuente de datos** para volver a intentarlo.",
     "import_done_title": "GTFS: {file} actualizada",
     "import_done": "Restaurado en {file}: {lines}.\n\nAjustes > Dispositivos y servicios > GTFS2 > Añadir entrada, luego **Añadir un trayecto entre dos paradas** para continuar.",
     "import_failed_title": "GTFS: {file} no se ha modificado",
@@ -606,12 +601,6 @@
     "lines_missing": "La nueva versión de {file} ya no contiene ningún viaje para **{lines}**. El horario actual se mantiene y los sensores siguen usándolo.\n\nSi el operador ha renumerado la línea, vuelva a crear su sensor en la nueva línea; si la línea ya no existe, elimine su sensor. La siguiente actualización pasará entonces. Si aparecen todas las líneas, probablemente el propio archivo está dañado.",
     "refresh_failed_title": "GTFS: {file} no se ha actualizado",
     "refresh_failed": "La actualización de {file} no se ha completado. El horario actual se mantiene y los sensores siguen usándolo.\n\nEl registro indica el motivo. La próxima comprobación lo volverá a intentar.",
-    "reason_no_database": "no se ha generado ninguna base de datos",
-    "reason_cannot_open": "la base de datos no se puede abrir",
-    "reason_tables_missing": "la descompresión se detuvo antes de escribir todas las tablas",
-    "reason_unfinished": "la descompresión no llegó a terminar",
-    "reason_tables_empty": "algunas tablas han quedado vacías",
-    "reason_unreadable": "la base de datos es ilegible",
     "source_update_available_title": "GTFS: {file} tiene una nueva versión",
     "source_update_available": "La fuente publicó un nuevo feed de horarios ({version}).\n\nInstálelo desde la entidad de actualización **Feed estático** de {file}, o deje que lo haga su automatización. Los datos actuales siguen sirviendo hasta que la instalación los sustituya, de una sola vez.",
     "line_mode_tram": "tranvía",

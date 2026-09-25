@@ -248,7 +248,7 @@
         }
       },
       "extracting": {
-        "title": "{file} wird entpackt"
+        "title": "Warten auf {file}"
       },
       "importing": {
         "title": "Linien aus {file} werden wiederhergestellt"
@@ -291,11 +291,10 @@
       "reload_failed": "Die Linie konnte nicht wiederhergestellt werden. Die Netzdatei fehlt möglicherweise oder ist unlesbar; die Datenquelle selbst blieb unverändert.",
       "optimised": "Speicherplatz freigegeben. Die Quelle belegt jetzt {size}.",
       "finished": "Einrichtung abgeschlossen. Weitere Fahrten können Sie jederzeit auf der Integrationsseite hinzufügen.",
-      "unpacking": "{file} wird im Hintergrund entpackt. Das dauert mehrere Minuten, hier gibt es also nichts abzuwarten.\n\nEine Benachrichtigung meldet sich, sobald die Quelle bereit ist, und sagt, wo es weitergeht. Starten Sie Home Assistant bis dahin nicht neu, das würde den Vorgang abbrechen.",
       "no_destination": "Von der gewählten Starthaltestelle ist in dieser Richtung keine Haltestelle erreichbar"
     },
     "progress": {
-      "extracting": "**Sie können dieses Fenster schließen.**\n\nEine Benachrichtigung meldet sich, sobald {file} bereit ist: Das Entpacken läuft im Hintergrund weiter.\n\nWer hier bleibt, kann direkt eine Linie auswählen. Bisher **{size}**; in einem großen Netz dauert das mehrere Minuten.\n\nStarten Sie Home Assistant bis dahin nicht neu, das würde den Vorgang abbrechen.",
+      "extracting": "{file} wird gerade geschrieben: ein Linienimport oder eine Optimierung dieser Quelle läuft. Der Ablauf geht weiter, sobald das beendet ist; bisher **{size}**.",
       "importing": "**Sie können dieses Fenster schließen.**\n\nEine Benachrichtigung meldet sich, sobald es fertig ist: Die {routes} Linie(n) aus {file} werden im Hintergrund weiter wiederhergestellt.\n\nWer hier bleibt, kann direkt die Haltestellen auswählen. Bisher **{size}** entpackt; Ihre anderen Sensoren laufen weiter.\n\nStarten Sie Home Assistant bis dahin nicht neu, das würde den Vorgang abbrechen."
     }
   },
@@ -592,10 +591,6 @@
   "common": {
     "mode_train": "Zug",
     "mode_coach": "Bus",
-    "extract_ready_title": "GTFS: {file} ist bereit",
-    "extract_ready": "Die Quelle enthält **{routes}** Linien und **{stops}** Haltestellen.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
-    "extract_failed_title": "GTFS: {file} konnte nicht entpackt werden",
-    "extract_failed": "Die Datenquelle ist nicht nutzbar: {detail}.\n\nEs wurde nichts hinzugefügt. Einstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Datenquelle hinzufügen**, um es erneut zu versuchen.",
     "import_done_title": "GTFS: {file} aktualisiert",
     "import_done": "In {file} wiederhergestellt: {lines}.\n\nEinstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen**, um fortzufahren.",
     "import_failed_title": "GTFS: {file} wurde nicht geändert",
@@ -606,12 +601,6 @@
     "lines_missing": "Die neue Version von {file} enthält keine Fahrt mehr für **{lines}**. Der aktuelle Fahrplan bleibt bestehen, und die Sensoren arbeiten weiter damit.\n\nHat der Betreiber die Linie umnummeriert, legen Sie ihren Sensor auf der neuen Linie neu an; gibt es die Linie nicht mehr, entfernen Sie ihren Sensor. Die nächste Aktualisierung geht dann durch. Werden alle Linien genannt, ist wahrscheinlich die Datei selbst fehlerhaft.",
     "refresh_failed_title": "GTFS: {file} wurde nicht aktualisiert",
     "refresh_failed": "Die Aktualisierung von {file} ist nicht durchgegangen. Der aktuelle Fahrplan bleibt bestehen, und die Sensoren arbeiten weiter damit.\n\nDas Protokoll nennt den Grund. Die nächste Prüfung versucht es erneut.",
-    "reason_no_database": "es wurde keine Datenbank erzeugt",
-    "reason_cannot_open": "die Datenbank lässt sich nicht öffnen",
-    "reason_tables_missing": "das Entpacken brach ab, bevor alle Tabellen geschrieben waren",
-    "reason_unfinished": "das Entpacken wurde nicht abgeschlossen",
-    "reason_tables_empty": "einige Tabellen sind leer geblieben",
-    "reason_unreadable": "die Datenbank ist unlesbar",
     "source_update_available_title": "GTFS: {file} hat eine neue Version",
     "source_update_available": "Die Quelle hat einen neuen Fahrplan-Feed veröffentlicht ({version}).\n\nInstallieren Sie ihn über die Update-Entität **Statischer Feed** von {file}, oder lassen Sie es Ihre Automatisierung tun. Die aktuellen Daten liefern weiter, bis die Installation sie in einem Zug ersetzt.",
     "line_mode_tram": "Straßenbahn",
