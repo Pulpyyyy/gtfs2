@@ -164,7 +164,7 @@ def test_the_next_ride_holds_on_the_day_the_clocks_change(record_property, fixtu
             if expected is None:
                 ok = shown is None and first is None
             else:
-                ok = all(got is not None and abs((got - expected[0]).total_seconds()) < 60
+                ok = all(got is not None and abs(got.timestamp() - expected[0].timestamp()) < 60
                          for got in (shown, first))
             forward = all(a < b for a, b in zip(listed, listed[1:]))
             asked = {"origin": origin, "destination": destination, "route": route_id,

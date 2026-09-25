@@ -256,7 +256,9 @@ class Fixture:
         day = now.astimezone(zone).date() - datetime.timedelta(days=1)
         while rides and self._last_day and day <= self._last_day:
             midnight = datetime.datetime.combine(day, datetime.time()).replace(tzinfo=zone)
-            if best is not None and midnight > best[0]:
+            # compared as instants: two datetimes of one zone compare by
+            # their wall clocks, which an hour lived twice makes lie
+            if best is not None and midnight.timestamp() > best[0].timestamp():
                 break
             iso = day.isoformat()
             if iso not in self._running:
@@ -266,7 +268,8 @@ class Fixture:
                     continue
                 at = (datetime.datetime.combine(day, datetime.time())
                       + datetime.timedelta(seconds=seconds)).replace(tzinfo=zone)
-                if at > now and (best is None or at < best[0]):
+                if at.timestamp() > now.timestamp() and (
+                        best is None or at.timestamp() < best[0].timestamp()):
                     best = (at, trip_id)
             day += datetime.timedelta(days=1)
         return best
@@ -1353,7 +1356,7 @@ def check_next_ride(check, fx, clock, hass, data, day, result, route_id, kept,
         if expected is None:
             ok = shown is None and first is None
         else:
-            ok = all(got is not None and abs((got - expected[0]).total_seconds()) < 60
+            ok = all(got is not None and abs(got.timestamp() - expected[0].timestamp()) < 60
                      for got in (shown, first))
         check.note(ok, (
             f"at {at:%H:%M} on {day}, {origin} -> {destination} on {route_id}: "
