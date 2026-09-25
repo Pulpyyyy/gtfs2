@@ -6,8 +6,10 @@ on:
 
 # Each function's McCabe complexity (ruff C901) under a ceiling: 10 for a
 # new function, the recorded value (.github/complexity.json) for those
-# already past it. Lower a ceiling when a function gets simpler, never
-# raise one to make a push pass. ruff is pinned so the measure holds still.
+# already past it, lowered in the same commit as the function gets simpler,
+# never raised to make a push pass. And no pyflakes finding (ruff F): an
+# unused import or variable, a name that does not exist. ruff is pinned so
+# the measure holds still.
 jobs:
   complexity:
     runs-on: ubuntu-latest
@@ -23,3 +25,6 @@ jobs:
 
       - name: Hold the ceilings
         run: python .github/complexity.py
+
+      - name: No pyflakes finding
+        run: ruff check --select F custom_components/gtfs2

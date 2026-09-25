@@ -3,8 +3,10 @@
 ruff measures the McCabe complexity of each function (C901, ruff.toml).
 A new function may not pass 10; a function already past it when the gate
 came in may not grow past the value .github/complexity.json records for
-it. A function that got simpler is reported: lower its ceiling in the same
-commit, never raise one to make a push pass.
+it. The ceilings follow the code down: a function that got simpler fails
+the gate until its ceiling comes down in the same commit, one at 10 or
+under until its ceiling goes, so a simplified function cannot grow back
+unseen. Never raise a ceiling to make a push pass.
 
     python .github/complexity.py
 """
@@ -35,8 +37,10 @@ for key, value in sorted(measured.items()):
         failed = True
         print(f"::error::{key}: complexity {value}, over its ceiling of {ceiling}")
     elif value < ceiling:
-        print(f"::notice::{key}: complexity {value}, lower its ceiling of {ceiling}")
+        failed = True
+        print(f"::error::{key}: complexity {value}, lower its ceiling of {ceiling} to it")
 for key in sorted(set(ceilings) - set(measured)):
-    print(f"::notice::{key}: at {LIMIT} or under now, drop its ceiling")
+    failed = True
+    print(f"::error::{key}: at {LIMIT} or under now, drop its ceiling")
 print(f"{len(measured)} functions over {LIMIT}, {len(ceilings)} ceilings")
 sys.exit(failed)
