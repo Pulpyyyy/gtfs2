@@ -44,13 +44,6 @@ def test_remove_takes_every_file_of_the_source(tmp_path):
     assert sorted(p.name for p in gtfs_dir.iterdir()) == ["src2.sqlite", "src2.zip"]
 
 
-def test_remove_spares_what_it_is_told_to_keep(tmp_path):
-    gtfs_dir = _lay_out(tmp_path)
-    gtfs_helper.remove_datasource(_hass(tmp_path), "gtfs2", "src", True, keep=(".zip.new",))
-    left = {p.name for p in gtfs_dir.iterdir()} - {"src2.sqlite", "src2.zip"}
-    assert left == {"src.zip.new"}
-
-
 def test_remove_without_database_keeps_it(tmp_path):
     gtfs_dir = _lay_out(tmp_path)
     gtfs_helper.remove_datasource(_hass(tmp_path), "gtfs2", "src", False)

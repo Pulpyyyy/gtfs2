@@ -1987,9 +1987,8 @@ async def get_zipfiles(hass, path) -> list[str]:
     return zipfiles
 
 
-def remove_datasource(hass, path, filename, include_sqlite, keep=()):
-    """Remove the files of a datasource. keep names the suffixes to spare:
-    a refresh clearing the old edition keeps the download that replaces it."""
+def remove_datasource(hass, path, filename, include_sqlite):
+    """Remove the files of a datasource."""
     gtfs_dir = hass.config.path(path)
     _LOGGER.info(f"Removing datasource: {os.path.join(gtfs_dir, filename)}.*")
     if include_sqlite and os.path.exists(os.path.join(gtfs_dir, filename + ".sqlite")):
@@ -2015,8 +2014,6 @@ def remove_datasource(hass, path, filename, include_sqlite, keep=()):
     if include_sqlite:
         leftovers += [".sqlite.meta.json", ".sqlite-wal", ".sqlite-shm"]
     for suffix in leftovers:
-        if suffix in keep:
-            continue
         if os.path.exists(os.path.join(gtfs_dir, filename + suffix)):
             os.remove(os.path.join(gtfs_dir, filename + suffix))
     return "removed"

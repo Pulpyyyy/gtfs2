@@ -17,7 +17,6 @@
   "gtfs_helper.py _interpret_local_stop_rows": 16,
   "gtfs_helper.py get_pair_direction": 12,
   "gtfs_helper.py get_route_list": 11,
-  "gtfs_helper.py remove_datasource": 11,
   "gtfs_rt_helper.py _fetch_gtfs_feed_entities": 12,
   "gtfs_rt_helper.py get_rt_vehicle_positions": 11,
   "route_names.py _read_stop_ends": 14,
