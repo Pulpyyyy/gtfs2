@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import types
 import zipfile
+
+import requests
 
 import ha_stub
 
@@ -97,3 +100,32 @@ def test_same_bytes_keep_the_validators_the_host_now_sends(tmp_path, monkeypatch
     meta = json.loads((tmp_path / "src.zip.meta.json").read_text())
     assert meta["last_modified"] == "Sun, 21 Sep 2026 03:00:00 GMT"
     assert meta["sha256"] == freshness.file_digest(zip_path)[0]
+
+
+def _errors(caplog):
+    return [r for r in caplog.records if r.levelno == logging.ERROR]
+
+
+def test_a_host_down_is_one_line_an_error_of_ours_keeps_its_stack(tmp_path, monkeypatch, caplog):
+    # a check runs again and again while a host is down: one line each
+    # time, where the stack deep in requests added thirty that said nothing
+    zip_path = kept_zip(tmp_path, "1")
+
+    def down(*_args, **_kwargs):
+        raise requests.ConnectionError("no route to host")
+    monkeypatch.setattr(freshness, "fetch", down)
+    with caplog.at_level(logging.ERROR):
+        freshness.fetch_if_new(DATA, zip_path)
+    [record] = _errors(caplog)
+    assert record.exc_info is None and "no route to host" in record.getMessage()
+
+    caplog.clear()
+
+    def broken(*_args, **_kwargs):
+        raise KeyError("a bug of ours")
+    monkeypatch.setattr(freshness, "fetch", broken)
+    with caplog.at_level(logging.ERROR):
+        freshness.fetch_if_new(DATA, zip_path)
+    [record] = _errors(caplog)
+    assert record.exc_info is not None
+    assert (tmp_path / "src.zip").read_bytes() == feed_bytes("1")

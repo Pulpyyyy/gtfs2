@@ -1031,7 +1031,11 @@ def get_gtfs_rt(hass, path, data):
             open(os.path.join(gtfs_dir, file), "w").write(json.dumps(r))
             return "ok"
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.exception("Ìssues with downloading GTFS RT SIRI data to: %s with error: %s", os.path.join(gtfs_dir, file), ex)
+            # a host that does not answer, at every refresh it fails: one
+            # line says it, the stack deep in requests adds nothing; an
+            # error of our own keeps its stack
+            log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
+            log("Ìssues with downloading GTFS RT SIRI data to: %s with error: %s", os.path.join(gtfs_dir, file), ex)
             return "no_rt_data_file" 
         return "ok"                                
     try:
@@ -1044,7 +1048,10 @@ def get_gtfs_rt(hass, path, data):
             return "no_rt_data_file"
         open(os.path.join(gtfs_dir, file), "wb").write(r.content)
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.exception("Ìssues with downloading GTFS RT data to: %s", os.path.join(gtfs_dir, file))
+        # read at every refresh of the stops around a person: a host down
+        # says so in one line each time, without the stack of requests
+        log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
+        log("Ìssues with downloading GTFS RT data to: %s: %s", os.path.join(gtfs_dir, file), ex)
         return "no_rt_data_file"
 
     
@@ -1245,13 +1252,15 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
             feed_entities = feed['Siri']['ServiceDelivery']['StopMonitoringDelivery'][0]['MonitoredStopVisit']
             feed = feed['Siri']
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.exception("Ìssues getting GTFS RT SIRI data: %s", ex)
+            # an answer of another shape, at every refresh it keeps it: the
+            # missing key says it all, the stack is this line
+            _LOGGER.error("Ìssues getting GTFS RT SIRI data: %s", ex)
             return 'issues with getting siri data'        
     else:  
         try:
             feed_entities = feed['ServiceDelivery']['StopMonitoringDelivery'][0]['MonitoredStopVisit']
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.exception("Ìssues getting GTFS RT SIRI data: %s", ex)
+            _LOGGER.error("Ìssues getting GTFS RT SIRI data: %s", ex)
             return 'issues with getting siri data'
         
     _LOGGER.debug("Feed entities: %s", feed_entities)

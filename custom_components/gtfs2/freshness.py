@@ -22,6 +22,7 @@ import time
 import zipfile
 
 import homeassistant.util.dt as dt_util
+import requests
 
 from .const import (
     CONF_API_KEY,
@@ -157,7 +158,11 @@ def fetch_if_new(data, zip_path, adopt=True):
             timeout=30, stream=True)
         response.raise_for_status()
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.exception("Could not download %s: %s", data.get("url"), ex)
+        # a host that does not answer, at every check it fails: one line
+        # says it, the stack deep in requests adds nothing; an error of our
+        # own keeps its stack
+        log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
+        log("Could not download %s: %s", data.get("url"), ex)
         return None
     staged = stage_zip(response, zip_path, inner)
     if staged is None:

@@ -17,6 +17,7 @@ import os
 import zipfile
 
 import pygtfs
+import requests
 
 from .const import (CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME,
                     CONF_INNER_ZIP)
@@ -231,7 +232,10 @@ def ensure_source_zip(hass, path, data):
                 return "no_data_file"
             adopt_zip(r, staged, zip_path)
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.exception("The given URL or GTFS data file/folder was not found: %s", ex)
+            # a host that does not answer says so in one line; the stack is
+            # kept for anything else, an error of our own
+            log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
+            log("The given URL or GTFS data file/folder was not found: %s", ex)
             return "no_data_file"
     # a host that refuses ranges answered the envelope whole: the networks
     # are offered from the file, and the pick taken out of it
@@ -372,7 +376,10 @@ def refresh_datasource(hass, path, data):
                 return False
             adopt_zip(r, staged, zip_path)
         except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.exception("Could not download %s: %s", data.get("url"), ex)
+            # a host that does not answer says so in one line; the stack is
+            # kept for anything else, an error of our own
+            log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
+            log("Could not download %s: %s", data.get("url"), ex)
             fresh = zip_path + ".new"
             if os.path.exists(fresh):
                 try:

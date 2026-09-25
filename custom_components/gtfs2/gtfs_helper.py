@@ -8,6 +8,7 @@ import logging
 import statistics
 import os
 import pygtfs
+import requests
 from sqlalchemy.sql import text
 import multiprocessing
 
@@ -894,7 +895,11 @@ def get_gtfs(hass, path, data, update=False):
                     remove_datasource(hass, path, filename, True, keep=(".zip.new",))
                 adopt_zip(r, staged, os.path.join(gtfs_dir, file))
             except Exception as ex:  # pylint: disable=broad-except
-                _LOGGER.exception("The given URL or GTFS data file/folder was not found: %s", ex)
+                # asked at every refresh while the source has no data: a host
+                # down says so in one line, without the stack of requests; an
+                # error of our own keeps its stack
+                log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
+                log("The given URL or GTFS data file/folder was not found: %s", ex)
                 return "no_data_file"
     
     (gtfs_root, _) = os.path.splitext(file)
