@@ -430,6 +430,222 @@ def _leg_timezone(schedule, route_id, departure, hass):
     return dt_util.get_time_zone(name) or datetime.timezone.utc
 
 
+def _listed_trips(departure):
+    """The trips a leg file times, the ridden one first, and when each
+    leaves the origin, as the sensor says it."""
+    trip_id = str(departure.get("trip_id") or "") or None
+    trip_ids = []
+    for t in [trip_id] + list(departure.get("next_departures_trip_id") or []):
+        if t and str(t) not in trip_ids:
+            trip_ids.append(str(t))
+    leaves = {}
+    for t, when in zip(departure.get("next_departures_trip_id") or [], departure.get("next_departures") or []):
+        leaves.setdefault(str(t), when)
+    if trip_id and departure.get("departure_time"):
+        first = departure["departure_time"]
+        leaves.setdefault(trip_id, first.isoformat() if hasattr(first, "isoformat") else str(first))
+    return trip_id, trip_ids[:LEG_TRIPS_MAX], leaves
+
+
+def _read_trip_calls(schedule, trip_ids, origin_id):
+    """The calls of each trip, in their order, and the station the origin
+    belongs to."""
+    stops_by_trip = {}
+    if not trip_ids:
+        return stops_by_trip, None
+    params = {f"t{i}": t for i, t in enumerate(trip_ids)}
+    sql = f"""
+    SELECT st.trip_id, st.stop_id, s.stop_name, s.stop_lat, s.stop_lon,
+           st.stop_sequence, st.arrival_time, st.departure_time, s.parent_station,
+           st.pickup_type, st.drop_off_type
+    FROM stop_times st
+    JOIN stops s ON s.stop_id = st.stop_id
+    WHERE st.trip_id IN ({", ".join(":" + k for k in params)})
+    ORDER BY st.trip_id, st.stop_sequence
+    """  # noqa: S608
+    with schedule.engine.connect() as conn:
+        for row in conn.execute(text(sql), params).fetchall():
+            stops_by_trip.setdefault(str(row[0]), []).append(row)
+        parent = conn.execute(text("SELECT parent_station FROM stops WHERE stop_id = :s"),
+                              {"s": origin_id}).fetchone()
+    return stops_by_trip, (parent[0] if parent and parent[0] else None)
+
+
+def _origin_call(rows, origin_id, origin_parent):
+    """The trip's call at the origin: the entry's record, else a platform
+    of the same station (the trip may serve a sibling record), else None."""
+    origin_row = next((r for r in rows if str(r[1]) == origin_id), None)
+    if origin_row is None and origin_parent:
+        origin_row = next((r for r in rows if r[8] == origin_parent), None)
+    return origin_row
+
+
+def _service_midnight(when, rows, origin_row, zone):
+    """The service day's midnight of a trip, in the line's zone: the
+    origin's departure, as listed, minus the origin's stored clock. Without
+    a call at the origin, the trip's first stop stands in."""
+    if not when:
+        return None
+    if origin_row is None:
+        origin_row = rows[0]
+    seconds = gtfs_seconds(origin_row[7])
+    if seconds is None:
+        return None
+    try:
+        local = datetime.datetime.fromisoformat(str(when)).astimezone(zone)
+    except ValueError:
+        return None
+    return (local - datetime.timedelta(seconds=seconds)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _leg_time(midnight, stored):
+    seconds = gtfs_seconds(stored)
+    if midnight is None or seconds is None:
+        return None
+    return (midnight + datetime.timedelta(seconds=seconds)).astimezone(datetime.timezone.utc).isoformat()
+
+
+def _boarding_first(rows, origin_row):
+    """The trip's calls, the ride's own first.
+
+    A stop is a key here, so a trip calling twice at one stop can only
+    keep one of its two calls, and a loop line calls at its terminus
+    twice. The one that counts is the one the rider makes, so the
+    calls from the origin onwards come first and the ones before it
+    follow: reading them in order then keeps the right one, where the
+    plain feed order kept whichever came last, the return pass.
+    """
+    if origin_row is None:
+        return rows
+    return sorted(rows, key=lambda r: (r[5] < origin_row[5], r[5]))
+
+
+def _leg_call(midnight, r):
+    return {
+        "sequence": r[5],
+        "scheduled_arrival": _leg_time(midnight, r[6]),
+        "scheduled": _leg_time(midnight, r[7]),
+        # as the feed flags the call: 0 regular, 1 none, 2 phone
+        # ahead, 3 tell the driver; a card chaining legs picks its
+        # ends among the calls the rider can make (see _boards)
+        "pickup_type": _call_type(r[9]),
+        "drop_off_type": _call_type(r[10]),
+    }
+
+
+def _leg_features(rows, midnight, trip_id, route_id, direction):
+    """The ridden trip's calls as map points."""
+    features = []
+    for r in rows:
+        # each point carries its own call, not the one the stop
+        # keeps: on a loop the two differ
+        call = _leg_call(midnight, r)
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [r[4], r[3]]},
+            "properties": {
+                "id": f"{route_id}_{direction}_{r[5]}",
+                # a stop the feed left unnamed falls back on its id,
+                # here as in the route file
+                "title": f"{r[2] or r[1]}_stop",
+                "trip_id": trip_id,
+                "stop_id": r[1],
+                "stop_name": r[2] or r[1],
+                "stop_sequence": r[5],
+                "scheduled_arrival": call["scheduled_arrival"],
+                "scheduled": call["scheduled"],
+                "pickup_type": call["pickup_type"],
+                "drop_off_type": call["drop_off_type"],
+            },
+        })
+    return features
+
+
+def _leg_runs(t, trips, trip_updates):
+    """(key, run, trip update) of each run the feed reports for trip t: the
+    trip itself for one, a copy keyed trip_id@start_time for each of
+    several (a frequency-based trip)."""
+    if len(trip_updates) == 1:
+        return [(t, trips[t], trip_updates[0])]
+    keyed = []
+    for i, trip_update in enumerate(trip_updates):
+        start = (trip_update.get("trip") or {}).get("start_time") or str(i)
+        run = {"stops": {sid: dict(v) for sid, v in trips[t]["stops"].items()}}
+        trips[f"{t}@{start}"] = run
+        keyed.append((f"{t}@{start}", run, trip_update))
+    return keyed
+
+
+def _time_call(run, update, by_sequence, called_twice):
+    """Lay one stop update on its call of the run; True when the call now
+    carries realtime (a time, a delay, a skip)."""
+    stop_id = str(update.get("stop_id") or "") or by_sequence.get(update.get("stop_sequence"))
+    stop = run["stops"].get(stop_id) if stop_id else None
+    if stop is None:
+        return False
+    told = update.get("stop_sequence")
+    if (stop_id in called_twice and told is not None
+            and stop.get("sequence") not in (None, told)):
+        # the trip calls there twice and the feed says which
+        # call it times: this one is the pass the ride skips.
+        # Only then, since a feed may number its calls its own
+        # way (the SNCF does) and the id is enough elsewhere
+        return False
+    called = stop_relationship(update)
+    if called == SKIPPED_STOP:
+        stop["skipped"] = True
+        return True
+    if called == NO_DATA_STOP:
+        stop["no_data"] = True
+        return False
+    arrival = update.get("arrival") or {}
+    departure_update = update.get("departure") or {}
+    when = departure_update.get("time") or arrival.get("time") or 0
+    delay = departure_update.get("delay") if (departure_update.get("time") or departure_update.get("delay")) else arrival.get("delay")
+    if when:
+        stop["expected"] = datetime.datetime.fromtimestamp(int(when), datetime.timezone.utc).isoformat()
+    if when and not delay and stop.get("scheduled"):
+        # a feed that gives times without delays (TAO, Palm Bus):
+        # the delay is the gap to the schedule
+        delay = int((datetime.datetime.fromisoformat(stop["expected"])
+                     - datetime.datetime.fromisoformat(stop["scheduled"])).total_seconds())
+    if delay or when:
+        stop["delay"] = int(delay or 0)
+        return True
+    return False
+
+
+def _time_leg_trips(trips, called_twice, feed_entities):
+    """The realtime of every listed trip, at every stop the feed covers;
+    True when the feed said anything of them."""
+    updates = {}
+    for entity in feed_entities or []:
+        trip_update = entity.get("trip_update") if isinstance(entity, dict) else None
+        if not trip_update:
+            continue
+        t = str((trip_update.get("trip") or {}).get("trip_id") or "")
+        if t in trips:
+            updates.setdefault(t, []).append(trip_update)
+    realtime = False
+    for t, trip_updates in updates.items():
+        by_sequence = {v["sequence"]: sid for sid, v in trips[t]["stops"].items()}
+        for _key, run, trip_update in _leg_runs(t, trips, trip_updates):
+            start = (trip_update.get("trip") or {}).get("start_time")
+            if start:
+                run["start_time"] = start
+            # what the feed struck out: the whole run, or single calls. The
+            # keys are only written when set, so a run the feed leaves
+            # alone reads as before.
+            if trip_relationship({"trip_update": trip_update}) in CANCELLED_TRIP:
+                run["cancelled"] = True
+                realtime = True
+                continue
+            for update in trip_update.get("stop_time_update") or []:
+                if _time_call(run, update, by_sequence, called_twice.get(t, ())):
+                    realtime = True
+    return realtime
+
+
 def write_leg_file(hass, data, feed_entities=None):
     """Write www/gtfs2/<entry>_leg.json: the trip the next departure rides,
     stop by stop, and for every listed departure when its trip calls at
@@ -456,87 +672,12 @@ def write_leg_file(hass, data, feed_entities=None):
     schedule = data["schedule"]
     name = data.get("name") or ""
     departure = data.get("next_departure") or {}
-    trip_id = str(departure.get("trip_id") or "") or None
-    trip_ids = []
-    for t in [trip_id] + list(departure.get("next_departures_trip_id") or []):
-        if t and str(t) not in trip_ids:
-            trip_ids.append(str(t))
-    trip_ids = trip_ids[:LEG_TRIPS_MAX]
-    # when each listed trip leaves the origin, as the sensor says it
-    leaves = {}
-    for t, when in zip(departure.get("next_departures_trip_id") or [], departure.get("next_departures") or []):
-        leaves.setdefault(str(t), when)
-    if trip_id and departure.get("departure_time"):
-        first = departure["departure_time"]
-        leaves.setdefault(trip_id, first.isoformat() if hasattr(first, "isoformat") else str(first))
+    trip_id, trip_ids, leaves = _listed_trips(departure)
     route_id = str(departure.get("route_id") or (data.get("route") or "").split(": ")[0])
     direction = str(departure.get("trip_direction_id", data.get("direction")))
     origin_id = str(departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0])
-    stops_by_trip = {}
-    origin_parent = None
-    if trip_ids:
-        params = {f"t{i}": t for i, t in enumerate(trip_ids)}
-        sql = f"""
-        SELECT st.trip_id, st.stop_id, s.stop_name, s.stop_lat, s.stop_lon,
-               st.stop_sequence, st.arrival_time, st.departure_time, s.parent_station,
-               st.pickup_type, st.drop_off_type
-        FROM stop_times st
-        JOIN stops s ON s.stop_id = st.stop_id
-        WHERE st.trip_id IN ({", ".join(":" + k for k in params)})
-        ORDER BY st.trip_id, st.stop_sequence
-        """  # noqa: S608
-        with schedule.engine.connect() as conn:
-            for row in conn.execute(text(sql), params).fetchall():
-                stops_by_trip.setdefault(str(row[0]), []).append(row)
-            parent = conn.execute(text("SELECT parent_station FROM stops WHERE stop_id = :s"),
-                                  {"s": origin_id}).fetchone()
-            origin_parent = parent[0] if parent and parent[0] else None
+    stops_by_trip, origin_parent = _read_trip_calls(schedule, trip_ids, origin_id)
     zone = _leg_timezone(schedule, route_id, departure, hass)
-
-    def midnight_of(t, rows):
-        """The service day's midnight of that trip, in the line's zone: the
-        origin's departure, as listed, minus the origin's stored clock. The
-        origin is the entry's record, else a platform of the same station
-        (the trip may serve a sibling record), else the trip's first stop."""
-        when = leaves.get(t)
-        if not when:
-            return None
-        origin_row = next((r for r in rows if str(r[1]) == origin_id), None)
-        if origin_row is None and origin_parent:
-            origin_row = next((r for r in rows if r[8] == origin_parent), None)
-        if origin_row is None:
-            origin_row = rows[0]
-        seconds = gtfs_seconds(origin_row[7])
-        if seconds is None:
-            return None
-        try:
-            local = datetime.datetime.fromisoformat(str(when)).astimezone(zone)
-        except ValueError:
-            return None
-        return (local - datetime.timedelta(seconds=seconds)).replace(hour=0, minute=0, second=0, microsecond=0)
-
-    def at(midnight, stored):
-        seconds = gtfs_seconds(stored)
-        if midnight is None or seconds is None:
-            return None
-        return (midnight + datetime.timedelta(seconds=seconds)).astimezone(datetime.timezone.utc).isoformat()
-
-    def boarding_first(rows):
-        """The trip's calls, the ride's own first.
-
-        A stop is a key here, so a trip calling twice at one stop can only
-        keep one of its two calls, and a loop line calls at its terminus
-        twice. The one that counts is the one the rider makes, so the
-        calls from the origin onwards come first and the ones before it
-        follow: reading them in order then keeps the right one, where the
-        plain feed order kept whichever came last, the return pass.
-        """
-        origin_row = next((r for r in rows if str(r[1]) == origin_id), None)
-        if origin_row is None and origin_parent:
-            origin_row = next((r for r in rows if r[8] == origin_parent), None)
-        if origin_row is None:
-            return rows
-        return sorted(rows, key=lambda r: (r[5] < origin_row[5], r[5]))
 
     trips = {}
     features = []
@@ -547,119 +688,20 @@ def write_leg_file(hass, data, feed_entities=None):
         rows = stops_by_trip.get(t)
         if not rows:
             continue
-        midnight = midnight_of(t, rows)
-
-        def call_at(r):
-            return {
-                "sequence": r[5],
-                "scheduled_arrival": at(midnight, r[6]),
-                "scheduled": at(midnight, r[7]),
-                # as the feed flags the call: 0 regular, 1 none, 2 phone
-                # ahead, 3 tell the driver; a card chaining legs picks its
-                # ends among the calls the rider can make (see _boards)
-                "pickup_type": _call_type(r[9]),
-                "drop_off_type": _call_type(r[10]),
-            }
-
+        origin_row = _origin_call(rows, origin_id, origin_parent)
+        midnight = _service_midnight(leaves.get(t), rows, origin_row, zone)
         stops = {}
         seen = set()
-        for r in boarding_first(rows):
+        for r in _boarding_first(rows, origin_row):
             stop_id = str(r[1])
             if stop_id in seen:
                 called_twice.setdefault(t, set()).add(stop_id)
             seen.add(stop_id)
-            stops.setdefault(stop_id, call_at(r))
+            stops.setdefault(stop_id, _leg_call(midnight, r))
         trips[t] = {"stops": stops}
         if t == trip_id:
-            for r in rows:
-                # each point carries its own call, not the one the stop
-                # keeps: on a loop the two differ
-                call = call_at(r)
-                features.append({
-                    "type": "Feature",
-                    "geometry": {"type": "Point", "coordinates": [r[4], r[3]]},
-                    "properties": {
-                        "id": f"{route_id}_{direction}_{r[5]}",
-                        # a stop the feed left unnamed falls back on its id,
-                        # here as in the route file
-                        "title": f"{r[2] or r[1]}_stop",
-                        "trip_id": trip_id,
-                        "stop_id": r[1],
-                        "stop_name": r[2] or r[1],
-                        "stop_sequence": r[5],
-                        "scheduled_arrival": call["scheduled_arrival"],
-                        "scheduled": call["scheduled"],
-                        "pickup_type": call["pickup_type"],
-                        "drop_off_type": call["drop_off_type"],
-                    },
-                })
-    # the realtime of every listed trip, at every stop the feed covers
-    updates = {}
-    for entity in feed_entities or []:
-        trip_update = entity.get("trip_update") if isinstance(entity, dict) else None
-        if not trip_update:
-            continue
-        t = str((trip_update.get("trip") or {}).get("trip_id") or "")
-        if t in trips:
-            updates.setdefault(t, []).append(trip_update)
-    realtime = False
-    for t, trip_updates in updates.items():
-        by_sequence = {v["sequence"]: sid for sid, v in trips[t]["stops"].items()}
-        if len(trip_updates) == 1:
-            keyed = [(t, trips[t], trip_updates[0])]
-        else:
-            keyed = []
-            for i, trip_update in enumerate(trip_updates):
-                start = (trip_update.get("trip") or {}).get("start_time") or str(i)
-                run = {"stops": {sid: dict(v) for sid, v in trips[t]["stops"].items()}}
-                trips[f"{t}@{start}"] = run
-                keyed.append((f"{t}@{start}", run, trip_update))
-        for key, run, trip_update in keyed:
-            start = (trip_update.get("trip") or {}).get("start_time")
-            if start:
-                run["start_time"] = start
-            # what the feed struck out: the whole run, or single calls. The
-            # keys are only written when set, so a run the feed leaves
-            # alone reads as before.
-            if trip_relationship({"trip_update": trip_update}) in CANCELLED_TRIP:
-                run["cancelled"] = True
-                realtime = True
-                continue
-            for update in trip_update.get("stop_time_update") or []:
-                stop_id = str(update.get("stop_id") or "") or by_sequence.get(update.get("stop_sequence"))
-                stop = run["stops"].get(stop_id) if stop_id else None
-                if stop is None:
-                    continue
-                told = update.get("stop_sequence")
-                if (stop_id in called_twice.get(t, ()) and told is not None
-                        and stop.get("sequence") not in (None, told)):
-                    # the trip calls there twice and the feed says which
-                    # call it times: this one is the pass the ride skips.
-                    # Only then, since a feed may number its calls its own
-                    # way (the SNCF does) and the id is enough elsewhere
-                    continue
-                called = stop_relationship(update)
-                if called == SKIPPED_STOP:
-                    stop["skipped"] = True
-                    realtime = True
-                    continue
-                if called == NO_DATA_STOP:
-                    stop["no_data"] = True
-                    continue
-                arrival = update.get("arrival") or {}
-                departure_update = update.get("departure") or {}
-                when = departure_update.get("time") or arrival.get("time") or 0
-                delay = departure_update.get("delay") if (departure_update.get("time") or departure_update.get("delay")) else arrival.get("delay")
-                if when:
-                    stop["expected"] = datetime.datetime.fromtimestamp(int(when), datetime.timezone.utc).isoformat()
-                if when and not delay and stop.get("scheduled"):
-                    # a feed that gives times without delays (TAO, Palm Bus):
-                    # the delay is the gap to the schedule
-                    delay = int((datetime.datetime.fromisoformat(stop["expected"])
-                                 - datetime.datetime.fromisoformat(stop["scheduled"])).total_seconds())
-                if delay or when:
-                    stop["delay"] = int(delay or 0)
-                    realtime = True
+            features = _leg_features(rows, midnight, trip_id, route_id, direction)
+    realtime = _time_leg_trips(trips, called_twice, feed_entities)
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     os.makedirs(geojson_dir, exist_ok=True)
     file = os.path.join(geojson_dir, leg_geojson_name(route_id, direction, name))
