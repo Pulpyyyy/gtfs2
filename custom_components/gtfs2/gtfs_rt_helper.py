@@ -14,7 +14,6 @@ import threading
 import time
 import binascii
 
-from .requests_testadapter import Resp
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -209,23 +208,25 @@ def _fetch_gtfs_feed_entities(url: str, headers, label: str):
     feed = gtfs_realtime_pb2.FeedMessage()  # type: ignore
 
     try:
-        if url.startswith('file'):
-            requests_session = requests.session()
-            requests_session.mount('file://', LocalFileAdapter())
-            response = requests_session.get(url)
+        if url.startswith("file://"):
+            # the feed the stops around a person downloaded to disk this
+            # cycle: read as a file, it needs no http round of its own
+            with open(url[len("file://"):], "rb") as local:
+                content = local.read()
         else:
             response = fetch("get", url, headers=_with_user_agent(headers), timeout=20)
-    except requests.RequestException as ex:
+            content = response.content
+    except (requests.RequestException, OSError) as ex:
         # a host that is down, a name that no longer resolves, a certificate
-        # that expired: the caller reads None as "no realtime this cycle",
-        # which is what it already did for a bad response
+        # that expired, a local copy gone: the caller reads None as "no
+        # realtime this cycle", which is what it already did for a bad response
         _say_failure(url, "Could not reach %s for %s: %s", url, label, type(ex).__name__)
         return None
 
     # Success is the status code plus a body that parses below. Grepping the
     # decoded body for error phrases rejected valid feeds whose own free text
     # carried them, e.g. an alert quoting "Not Found".
-    if response.status_code == 200:
+    if url.startswith("file://") or response.status_code == 200:
         _LOGGER.debug("Successfully updated %s", label)
     else:
         # the first line of the body says what went wrong; a maintenance page
@@ -240,10 +241,10 @@ def _fetch_gtfs_feed_entities(url: str, headers, label: str):
     # json or protobuf: a json body opens with a brace or a bracket. Asking
     # response.text of a protobuf first ran the charset detection over
     # megabytes of binary, then parsed the result twice, for nothing
-    head = response.content.lstrip()[:1]
+    head = content.lstrip()[:1]
     if head in (b"{", b"["):
         try:
-            feed = json.loads(response.content)
+            feed = json.loads(content)
         except ValueError:
             _say_failure(url, "Trying to update %s, and got a 200 whose body is broken json", label)
             return None
@@ -271,11 +272,11 @@ def _fetch_gtfs_feed_entities(url: str, headers, label: str):
         # protobuf either: degrade to no data instead of an uncaught traceback
         try:
             if label == "vehicle_positions":
-                feed = convert_gtfs_realtime_positions_to_json(response.content)
+                feed = convert_gtfs_realtime_positions_to_json(content)
             elif label == "trip_data":
-                feed = convert_gtfs_realtime_to_json(response.content)
+                feed = convert_gtfs_realtime_to_json(content)
             else: # not yet converted to json
-                feed.ParseFromString(response.content)
+                feed.ParseFromString(content)
                 _say_recovered(url, label)
                 return feed.entity
         except DecodeError:
@@ -1075,21 +1076,6 @@ def get_gtfs_rt(hass, path, data):
             _LOGGER.info("Issues with converting GTFS RT data to JSON, output to string") 
     return "ok"   
         
-class LocalFileAdapter(requests.adapters.HTTPAdapter):
-    """Used to allow requests.get for local file"""
-    def build_response_from_file(self, request):
-        file_path = request.url[7:]
-        with open(file_path, 'rb') as file:
-            buff = bytearray(os.path.getsize(file_path))
-            file.readinto(buff)
-            resp = Resp(buff)
-            r = self.build_response(request, resp)
-            return r
-
-    def send(self, request, stream=False, timeout=None,
-             verify=True, cert=None, proxies=None):
-        return self.build_response_from_file(request)   
-
 # the names of the GTFS-RT enums, spelled out so a reader (and a card
 # reading the leg file) never sees a bare number; the SIRI path writes
 # none of them, so every reader takes SCHEDULED for a missing key

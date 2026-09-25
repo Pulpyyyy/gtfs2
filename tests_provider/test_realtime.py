@@ -295,3 +295,18 @@ def test_a_cancelled_trip_is_not_a_local_departure(record_property, sncf, entiti
     check.note(cancelled not in listed[True], "with realtime the cancelled 08:08 is not listed",
                listed=listed[True])
     _done(record_property, check, fixture="sncf", promise="local_stop")
+
+
+def test_a_feed_left_on_disk_is_read_as_its_download(record_property, tmp_path):
+    # the stops around a person download the feed to a file each cycle and
+    # read it back: the same entities as the bytes the host sent, and no
+    # feed at all, not an error, when the file is gone
+    check = Check()
+    copy = tmp_path / "around_me_localstop.rt"
+    copy.write_bytes((FIXTURE / "trip_updates.pb").read_bytes())
+    read = gtfs_rt_helper._fetch_gtfs_feed_entities(f"file://{copy}", {}, "trip_data")
+    sent = gtfs_rt_helper.convert_gtfs_realtime_to_json((FIXTURE / "trip_updates.pb").read_bytes())
+    check.same(read, sent["entity"], "the file reads as the download")
+    check.same(gtfs_rt_helper._fetch_gtfs_feed_entities(
+        f"file://{tmp_path / 'gone.rt'}", {}, "trip_data"), None, "a file gone is no feed")
+    _done(record_property, check, fixture="sncf", promise="local_file")

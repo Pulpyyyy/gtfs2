@@ -183,7 +183,6 @@ modules that every layer uses:
   gtfs_helper.py     reads the database for every layer (queries, get_gtfs)
   gtfs_rt_helper.py  reads the realtime feeds
   shared             const.py, key_mask.py, notifications.py
-  vendored           requests_testadapter.py
 ```
 
 **Dependency rule (target).** A module imports from its own layer, from a
