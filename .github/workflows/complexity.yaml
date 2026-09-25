@@ -1,0 +1,25 @@
+name: Complexity
+
+on:
+  push:
+  pull_request:
+
+# Each function's McCabe complexity (ruff C901) under a ceiling: 10 for a
+# new function, the recorded value (.github/complexity.json) for those
+# already past it. Lower a ceiling when a function gets simpler, never
+# raise one to make a push pass. ruff is pinned so the measure holds still.
+jobs:
+  complexity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install ruff
+        run: pip install ruff==0.16.9
+
+      - name: Hold the ceilings
+        run: python .github/complexity.py

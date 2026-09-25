@@ -1,0 +1,10 @@
+# Read by the complexity gate (.github/complexity.py, CI: Complexity).
+# zip_file.py is a copy of the standard library's zipfile, not ours to
+# split.
+extend-exclude = ["custom_components/gtfs2/zip_file.py"]
+
+[lint]
+select = ["C901"]
+
+[lint.mccabe]
+max-complexity = 10
