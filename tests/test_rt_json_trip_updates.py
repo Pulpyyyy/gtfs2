@@ -113,3 +113,27 @@ def test_no_trip_update_feed_reads_nothing(monkeypatch):
     me._feed_entities = "stale"
     assert gtfs_rt_helper.get_rt_route_trip_statuses(me) == {}
     assert read == [me] and me._feed_entities is None
+
+
+def _trip_feed(relationship):
+    """A protobuf feed of one trip update whose trip carries that
+    schedule_relationship number, written raw: bindings that do not know
+    the value could not set it."""
+    from google.transit import gtfs_realtime_pb2
+    trip = gtfs_realtime_pb2.TripDescriptor(trip_id="T1").SerializeToString()
+    trip += bytes([4 << 3, relationship])  # field 4, varint
+    update = bytes([1 << 3 | 2, len(trip)]) + trip  # TripUpdate.trip
+    feed = gtfs_realtime_pb2.FeedMessage()
+    feed.header.gtfs_realtime_version = "2.0"
+    entity = feed.entity.add(id="e1")
+    entity.trip_update.ParseFromString(update)
+    return feed.SerializeToString()
+
+
+def test_the_converter_reads_the_trip_relationships_of_today_s_spec():
+    # DELETED (7) and NEW (8) came into gtfs-realtime.proto after the
+    # bindings 1.0.0 were generated: read through those, a deleted trip
+    # came out SCHEDULED and stood on the board as a departure
+    for number, name in ((3, "CANCELED"), (7, "DELETED"), (8, "NEW")):
+        entity = gtfs_rt_helper.convert_gtfs_realtime_to_json(_trip_feed(number))["entity"][0]
+        assert entity["trip_update"]["trip"]["schedule_relationship"] == name

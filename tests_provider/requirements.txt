@@ -3,6 +3,6 @@ freezegun
 requests
 voluptuous
 pygtfs==0.1.11
-gtfs-realtime-bindings==1.0.0
+gtfs-realtime-bindings==2.2.0
 protobuf
 tzdata; sys_platform == 'win32'

@@ -6,5 +6,5 @@ voluptuous
 # build real SQLite databases, which the stub's pygtfs and sqlalchemy
 # stand-ins cannot
 pygtfs==0.1.11
-gtfs-realtime-bindings==1.0.0
+gtfs-realtime-bindings==2.2.0
 protobuf
