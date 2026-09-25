@@ -7,7 +7,7 @@ not the network's; what holds is that feed_info is read where the feed
 ships one (not on the made-up boarding line), and that the calendars
 always give a last day. The values are the fixtures' own, recorded.
 
-    pytest tests_provider/test_feed_window.py
+    pytest tests_provider/test_fixture_windows.py
 """
 from __future__ import annotations
 
