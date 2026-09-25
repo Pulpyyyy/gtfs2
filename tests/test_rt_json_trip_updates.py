@@ -137,3 +137,16 @@ def test_the_converter_reads_the_trip_relationships_of_today_s_spec():
     for number, name in ((3, "CANCELED"), (7, "DELETED"), (8, "NEW")):
         entity = gtfs_rt_helper.convert_gtfs_realtime_to_json(_trip_feed(number))["entity"][0]
         assert entity["trip_update"]["trip"]["schedule_relationship"] == name
+
+
+def test_a_json_direction_written_as_a_number_reaches_the_sensor():
+    # the sensor reads its departures under its direction as text
+    me = _context()
+    me._rt_group = "route"
+    feed = [{"id": "e1", "trip_update": {
+        "trip": {"trip_id": "T9", "route_id": "R1", "direction_id": 0},
+        "stop_time_update": [{"stop_id": "S1", "departure": {"time": IN_TEN}}]}}]
+    with freeze_time(NOW):
+        found = gtfs_rt_helper.get_rt_route_trip_statuses(me, feed)
+    assert list(found["R1"]) == ["0"]
+    assert found["R1"]["0"]["S1"]["trips"] == ["T9"]

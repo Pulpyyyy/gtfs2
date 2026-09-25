@@ -499,7 +499,10 @@ def _trip_group_route_direction(self, trip):
     route_id = _feed_route_id(self, trip)
 
     if trip.get("direction_id") not in ("", None):
-        direction_id = trip["direction_id"]
+        # text, as the protobuf converter writes it and the sensor asks for
+        # it: a json feed writes the number, and the departures it gave were
+        # filed under 0 where the sensor looked for "0"
+        direction_id = str(trip["direction_id"])
     else:
         direction_id = "nn"
 
