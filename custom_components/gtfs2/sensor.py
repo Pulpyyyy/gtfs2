@@ -716,7 +716,10 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         """Return a dictionary for the SQLAlchemy resource given."""
         _dict = {}
         for column in resource.__table__.columns:
-            _dict[column.name] = str(getattr(resource, column.name))
+            value = getattr(resource, column.name)
+            # a column the feed left empty stays None, which append_keys
+            # leaves out: made text, it came out as an attribute "None"
+            _dict[column.name] = None if value is None else str(value)
         return _dict
 
     def append_keys(self, resource: dict, prefix: str | None = None) -> None:
