@@ -11,7 +11,7 @@ import shutil
 import pygtfs
 from sqlalchemy.sql import text
 import multiprocessing
-from . import zip_file as zipfile
+import zipfile
 
 
 import homeassistant.util.dt as dt_util

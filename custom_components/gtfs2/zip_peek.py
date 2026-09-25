@@ -28,9 +28,9 @@ from __future__ import annotations
 import logging
 import os
 import struct
+import zipfile
 import zlib
 
-from . import zip_file as zipfile
 from .key_mask import fetch, hide_keys
 
 _LOGGER = logging.getLogger(__name__)

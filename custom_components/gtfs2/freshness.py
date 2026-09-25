@@ -19,10 +19,10 @@ import json
 import logging
 import os
 import time
+import zipfile
 
 import homeassistant.util.dt as dt_util
 
-from . import zip_file as zipfile
 from .const import (
     CONF_API_KEY,
     CONF_INNER_ZIP,

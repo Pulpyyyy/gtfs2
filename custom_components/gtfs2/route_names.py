@@ -13,12 +13,12 @@ from __future__ import annotations
 import logging
 import os
 import re
+import zipfile
 from collections import Counter, defaultdict
 from datetime import date
 
 from sqlalchemy.sql import text
 
-from . import zip_file as zipfile
 from .gtfs_filter import read_zip_agencies, read_zip_routes, table_reader
 
 _LOGGER = logging.getLogger(__name__)

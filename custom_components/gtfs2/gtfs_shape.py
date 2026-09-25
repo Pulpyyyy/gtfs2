@@ -19,9 +19,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
-
-# the same zip implementation the rest of the integration reads feeds with
-from . import zip_file as zipfile
+import zipfile
 
 _LOGGER = logging.getLogger(__name__)
 

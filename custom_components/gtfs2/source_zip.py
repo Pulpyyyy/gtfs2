@@ -14,10 +14,10 @@ from __future__ import annotations
 import gc
 import logging
 import os
+import zipfile
 
 import pygtfs
 
-from . import zip_file as zipfile
 from .const import (CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME,
                     CONF_INNER_ZIP)
 from .direction_repair import repair_trip_directions
