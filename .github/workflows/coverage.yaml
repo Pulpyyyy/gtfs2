@@ -1,0 +1,45 @@
+name: Coverage
+
+on:
+  push:
+  pull_request:
+
+# Both suites under coverage, branches counted, and a floor the total may
+# not fall under: a change that drops tests or adds code no test reaches
+# turns this red. Raise the floor when the total climbs, never lower it to
+# make a push pass. The two trees run as two sessions (each holds a
+# test_feed_window.py) and their data is added up.
+env:
+  COVERAGE_FLOOR: 70
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r tests/requirements.txt -r tests_provider/requirements.txt coverage
+
+      - name: Run both suites under coverage
+        run: |
+          coverage run --branch --source=custom_components/gtfs2 -m pytest tests/ -q
+          coverage run -a --branch --source=custom_components/gtfs2 -m pytest tests_provider/ -q
+
+      - name: Report, and hold the floor
+        run: |
+          coverage report --sort=cover
+          coverage html
+          coverage report --fail-under="$COVERAGE_FLOOR" > /dev/null
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: htmlcov/
+          if-no-files-found: ignore
