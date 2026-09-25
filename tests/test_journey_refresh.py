@@ -294,6 +294,20 @@ def test_the_refresh_interval_decides(tmp_path, minutes, interval, again):
     assert result["gtfs_updated_at"] == (later(minutes) if again else NOW).replace(tzinfo=UTC).isoformat()
 
 
+def test_a_reading_made_on_a_whole_second(tmp_path):
+    # isoformat leaves the microseconds out when there are none, and the
+    # next refresh could not read the time back: the update failed
+    refresh = Refresh(tmp_path)
+    at = NOW.replace(microsecond=0)
+    first = refresh.run(at)
+    assert first["gtfs_updated_at"] == "2026-09-25T10:00:00+00:00"
+    second = refresh.run(at + datetime.timedelta(minutes=1))
+    assert refresh.count("get_next_departure") == 1
+    assert second["gtfs_updated_at"] == first["gtfs_updated_at"]
+    refresh.run(at + datetime.timedelta(minutes=16))
+    assert refresh.count("get_next_departure") == 2
+
+
 def test_a_departure_gone_is_read_again_before_the_interval(tmp_path):
     refresh = Refresh(tmp_path)
     refresh.answers["get_next_departure"] = departure(minutes=3)

@@ -184,8 +184,12 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
 
         # determine static + rt or only static (refresh schedule depending)
         #1. sensor exists with data but refresh interval not yet reached, use existing data
+        # read back with fromisoformat, the reverse of the isoformat it was
+        # written with: a strptime on '.%f' failed the whole update on a
+        # reading made on a whole second, which isoformat writes without
+        # its microseconds
         if "gtfs_updated_at" in previous_data and (
-            datetime.datetime.strptime(previous_data["gtfs_updated_at"], '%Y-%m-%dT%H:%M:%S.%f%z')
+            datetime.datetime.fromisoformat(previous_data["gtfs_updated_at"])
             + timedelta(minutes=options.get("refresh_interval", DEFAULT_REFRESH_INTERVAL))
         ) > dt_util.utcnow() + timedelta(seconds=1):
             run_static = False
