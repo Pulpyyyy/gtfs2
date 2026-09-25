@@ -1,0 +1,25 @@
+name: Imports
+
+on:
+  push:
+  pull_request:
+
+# The dependency rule of ARCHITECTURE.md as an import-linter contract
+# (.importlinter): no module imports from a higher layer, but for the
+# known gaps it lists. An exception no import needs any more fails too, so
+# the list only shrinks.
+jobs:
+  imports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install import-linter
+        run: pip install import-linter==2.15
+
+      - name: Hold the layers
+        run: PYTHONPATH=. lint-imports
