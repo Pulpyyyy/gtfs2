@@ -148,7 +148,69 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         # the same schedule as long as the database is the same one
         self._pygtfs = await schedule_for(self, data)
 
-        self._data = {
+        self._data = self._entry_data(data, options)
+
+        # two file checks, off the event loop like every other file read here
+        if await self.hass.async_add_executor_job(
+                check_extracting, self.hass,
+                self.hass.config.path(self._data['gtfs_dir']), self._data['file']):
+            _LOGGER.debug("Cannot update this sensor as still unpacking: %s", self._data["file"])
+            self._data.update(previous_data)
+            self._data["extracting"] = True
+            return self._data
+
+        run_static = self._static_refresh_due(previous_data, options, data["name"])
+
+        # the trip updates of this refresh, when realtime reads them below
+        rt_feed = None
+        if not run_static:
+            # do nothing awaiting refresh interval and use existing data
+            self._data = previous_data
+            # reaching this point means check_extracting said no, so clear the flag
+            # rather than carrying over the one previous_data was left with
+            self._data["extracting"] = False
+        else:
+            await self._read_timetable(data)
+
+        # collect and return rt attributes
+        # STILL REQUIRES A SOLUTION IF CONNECTION TIMING OUT
+        # the feeds come from the source's datasource entry when it exists,
+        # from this entry's own options otherwise: one configuration per
+        # source, every sensor of the source follows it
+        rt_cfg, rt_active = rt_feed_config(self.hass, self.config_entry)
+        rt_paused = None
+        if rt_active:
+            rt_paused = await self._realtime_paused(data, rt_cfg)
+        if rt_active and not rt_paused:
+            if not await self._read_realtime(data, rt_cfg, run_static):
+                # the trip updates could not be read: the departures stand
+                # as the timetable gave them
+                await self._read_records()
+                return self._data
+            # the trip updates just read, kept for the leg file below:
+            # they carry the realtime of every stop, the sensor reads one
+            rt_feed = getattr(self, "_feed_entities", None)
+        else:
+            # paused by the window, switched off, or never configured: the
+            # delays and alerts read before are the ones of another moment,
+            # and carried over from the previous cycle they were served as
+            # if they still stood. The timetable alone speaks from here
+            self._data["next_departure_realtime_attr"] = {}
+            self._data["alert"] = {}
+            if rt_paused is None:
+                _LOGGER.debug("GTFS RT: realtime not active for this entry, neither on its source nor in its options")
+
+        # the leg file follows every clock that can move: the list of
+        # departures on a static refresh, their realtime on a realtime one
+        if run_static or rt_feed is not None:
+            await export_leg(self, data, rt_feed)
+
+        await self._read_records()
+        return self._data
+
+    def _entry_data(self, data, options) -> dict:
+        """What a refresh starts from: the entry's own fields, no departure yet."""
+        return {
             "schedule": self._pygtfs,
             "origin": data["origin"],
             "destination": data["destination"],
@@ -170,18 +232,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             "next_departure": {},
             "next_departure_realtime_attr": {},
             "alert": {}
-        }           
-        
-        # two file checks, off the event loop like every other file read here
-        if await self.hass.async_add_executor_job(
-                check_extracting, self.hass,
-                self.hass.config.path(self._data['gtfs_dir']), self._data['file']):
-            _LOGGER.debug("Cannot update this sensor as still unpacking: %s", self._data["file"])
-            self._data.update(previous_data)
-            self._data["extracting"] = True
-            return self._data
-        
+        }
 
+    def _static_refresh_due(self, previous_data, options, name) -> bool:
+        """Whether the departures are read again from the timetable this minute."""
         # determine static + rt or only static (refresh schedule depending)
         #1. sensor exists with data but refresh interval not yet reached, use existing data
         # read back with fromisoformat, the reverse of the isoformat it was
@@ -192,159 +246,133 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             datetime.datetime.fromisoformat(previous_data["gtfs_updated_at"])
             + timedelta(minutes=options.get("refresh_interval", DEFAULT_REFRESH_INTERVAL))
         ) > dt_util.utcnow() + timedelta(seconds=1):
-            run_static = False
-            _LOGGER.debug("No run static refresh: sensor exists but not yet refresh for name: %s", data["name"])
+            _LOGGER.debug("No run static refresh: sensor exists but not yet refresh for name: %s", name)
             if shown_departure_left(previous_data, dt_util.utcnow()):
-                run_static = True
-                _LOGGER.debug("Run static refresh: the departure shown for %s has left", data["name"])
-        else:
-            run_static = True
-            _LOGGER.debug("Run static refresh: sensor without gtfs data OR refresh for name: %s", data["name"])
-        
-        # the trip updates of this refresh, when realtime reads them below
-        rt_feed = None
-        if not run_static:
-            # do nothing awaiting refresh interval and use existing data
-            self._data = previous_data
-            # reaching this point means check_extracting said no, so clear the flag
-            # rather than carrying over the one previous_data was left with
-            self._data["extracting"] = False
-        else:
-            await self.hass.async_add_executor_job(
-                    check_datasource_index, self.hass, self._pygtfs, self.hass.config.path(DEFAULT_PATH), data["file"]
-                )
+                _LOGGER.debug("Run static refresh: the departure shown for %s has left", name)
+                return True
+            return False
+        _LOGGER.debug("Run static refresh: sensor without gtfs data OR refresh for name: %s", name)
+        return True
 
-            try:
-                self._data["next_departure"] = await self.hass.async_add_executor_job(
-                    get_next_departure, self.hass, self._data
-                )
-                self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat()
-            except Exception as ex:  # pylint: disable=broad-except
-                raise UpdateFailed(f"Error in getting gtfs data: {ex}") from ex
-            _LOGGER.debug("GTFS coordinator data from helper: %s", self._data["next_departure"])
+    async def _read_timetable(self, data) -> None:
+        """Read the departures from the timetable, and write the files drawn from it."""
+        await self.hass.async_add_executor_job(
+                check_datasource_index, self.hass, self._pygtfs, self.hass.config.path(DEFAULT_PATH), data["file"]
+            )
 
-            # The route shape comes from the schedule alone: export it here,
-            # outside the realtime block, so a map card can draw the journey
-            # of an entry that has no vehicle feed at all.
-            await export_route_shape(self, data)
-            await export_timetable(self, data)
+        try:
+            self._data["next_departure"] = await self.hass.async_add_executor_job(
+                get_next_departure, self.hass, self._data
+            )
+            self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat()
+        except Exception as ex:  # pylint: disable=broad-except
+            raise UpdateFailed(f"Error in getting gtfs data: {ex}") from ex
+        _LOGGER.debug("GTFS coordinator data from helper: %s", self._data["next_departure"])
 
-            if not self._data["next_departure"]:
-                # Nothing left to show. Look ahead for the next day this journey
-                # runs at all, in a key of its own: next_departure has to stay
-                # empty, the sensor reads its fields as a real departure.
-                #
-                # The search starts today, not tomorrow. A line can run today
-                # with every departure already behind us, and that is not the
-                # same thing as a line resting for days: the sensor tells the
-                # two apart by whether the date it gets back is today's.
-                self._data["next_service_date"] = await next_service_date_for(
-                    self.hass, self._pygtfs, data, self._data.get("offset", 0))
-        
-        # collect and return rt attributes
-        # STILL REQUIRES A SOLUTION IF CONNECTION TIMING OUT
-        # the feeds come from the source's datasource entry when it exists,
-        # from this entry's own options otherwise: one configuration per
-        # source, every sensor of the source follows it
-        rt_cfg, rt_active = rt_feed_config(self.hass, self.config_entry)
-        rt_paused = None
-        if rt_active:
-            # the polling window is derived from the timetable: outside it
-            # the feeds are left alone and the static screen carries on
-            rt_paused = await self.hass.async_add_executor_job(
-                rt_window_gate, self.hass, self._data["file"], self._pygtfs,
-                with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg))
-            if rt_paused:
-                _LOGGER.debug("GTFS RT: %s is outside its service window (%s), feeds not read",
-                              self._data["file"], rt_paused)
-                rt_active = False
-                if rt_cfg.get(CONF_VEHICLE_POSITION_URL):
-                    # nothing will refresh the positions until the window
-                    # opens again, so the map is told rather than left on
-                    # the last vehicles seen
-                    departure = self._data.get("next_departure") or {}
-                    await self.hass.async_add_executor_job(
-                        clear_vehicle_file, self.hass,
-                        str(departure.get("route_id")
-                            or (data.get("route") or "").split(": ")[0]),
-                        str(departure.get("trip_direction_id", data.get("direction"))))
-        if rt_active:
-            # No next_departure does NOT mean no bus: the last scheduled
-            # departure of the day can still be on its way, late, and the
-            # realtime feed is the only one who knows. Skipping the whole
-            # block here (the first fix for the origin_stop_sequence
-            # KeyError) made that bus vanish from the board while the map
-            # still showed it rolling. The block now runs with fallbacks
-            # taken from the config entry instead; every read below is a
-            # .get, which is what the KeyError actually required.
-            if not self._data.get("next_departure"):
-                _LOGGER.debug("GTFS RT: no scheduled departure left, realtime runs on config-entry fallbacks")
-            self._get_next_service = {}
-            """Initialize the info object."""
-            self._route_delimiter = None
-            self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
-            self._vehicle_position_url = with_query_key(rt_cfg.get(CONF_VEHICLE_POSITION_URL), rt_cfg)
-            self._vehicle_max_age = rt_cfg.get(CONF_VEHICLE_MAX_AGE, DEFAULT_VEHICLE_MAX_AGE)
-            self._alerts_url = with_query_key(rt_cfg.get(CONF_ALERTS_URL), rt_cfg)
-            self._headers = rt_headers(rt_cfg)
-            self._icon = ICONS.get(int(self._data["route_type"]), ICON)
-            self.info = {}
-            self._route_id = self._data["next_departure"].get("route_id", None)
-            if self._route_id == None:
-                _LOGGER.debug("GTFS RT: no route_id in sensor data, using route_id from config_entry")
-                self._route_id = data["route"].split(": ")[0]
-            self._stop_id = self._data["next_departure"].get("origin_stop_id", data["origin"]).split(": ")[0]
-            self._stop_sequence = self._data["next_departure"].get("origin_stop_sequence", None)
-            self._destination_id = data["destination"].split(": ")[0]
-            self._trip_id = self._data.get('next_departure', {}).get('trip_id', None) or "no_trip_information"
-            self._trip_short_name = self._data.get('next_departure', {}).get('trip_short_name', None)
-            self._direction = str(self._data.get('next_departure', {}).get('trip_direction_id', data["direction"]))
-            self._trip_list = self._data["next_departure"].get("next_departures_trip_id", [])[:10]
-            self._relative = False
-            # the alerts first and on their own: they are a feed of their
-            # own, often a different host, and read together with the trip
-            # updates one bad answer there took the departure times down
-            # with it, leaving the sensor on last cycle's
-            try:
-                self._get_rt_alerts = await self.hass.async_add_executor_job(get_rt_alerts, self)
-                self._data["alert"] = self._get_rt_alerts
-            except Exception as ex:  # pylint: disable=broad-except
-                _LOGGER.exception("Error getting gtfs realtime alerts, for origin: %s with error: %s", data["origin"], ex)
-            try:
-                self._get_next_service = await self.hass.async_add_executor_job(get_next_services, self)
-                self._data["next_departure_realtime_attr"] = self._get_next_service
-                self._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
-                await drop_struck_trips(self, data, run_static)
-            except Exception as ex:  # pylint: disable=broad-except
-                _LOGGER.exception("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
-                await self._read_records()
-                return self._data
-            # the trip updates just read, kept for the leg file below:
-            # they carry the realtime of every stop, the sensor reads one
-            rt_feed = getattr(self, "_feed_entities", None)
-            if self._vehicle_position_url:
-                # let map cards locate the geojson written by get_rt_vehicle_positions
-                self._data["vehicle_positions_file"] = vehicle_positions_name(self._route_id, self._direction)
-            if self._vehicle_position_url and not self._stale_markers_cleaned:
-                self._cleanup_stale_vehicle_markers()
-                self._stale_markers_cleaned = True
-        else:
-            # paused by the window, switched off, or never configured: the
-            # delays and alerts read before are the ones of another moment,
-            # and carried over from the previous cycle they were served as
-            # if they still stood. The timetable alone speaks from here
-            self._data["next_departure_realtime_attr"] = {}
-            self._data["alert"] = {}
-            if rt_paused is None:
-                _LOGGER.debug("GTFS RT: realtime not active for this entry, neither on its source nor in its options")
+        # The route shape comes from the schedule alone: export it here,
+        # outside the realtime block, so a map card can draw the journey
+        # of an entry that has no vehicle feed at all.
+        await export_route_shape(self, data)
+        await export_timetable(self, data)
 
-        # the leg file follows every clock that can move: the list of
-        # departures on a static refresh, their realtime on a realtime one
-        if run_static or rt_feed is not None:
-            await export_leg(self, data, rt_feed)
+        if not self._data["next_departure"]:
+            # Nothing left to show. Look ahead for the next day this journey
+            # runs at all, in a key of its own: next_departure has to stay
+            # empty, the sensor reads its fields as a real departure.
+            #
+            # The search starts today, not tomorrow. A line can run today
+            # with every departure already behind us, and that is not the
+            # same thing as a line resting for days: the sensor tells the
+            # two apart by whether the date it gets back is today's.
+            self._data["next_service_date"] = await next_service_date_for(
+                self.hass, self._pygtfs, data, self._data.get("offset", 0))
 
-        await self._read_records()
-        return self._data
+    async def _realtime_paused(self, data, rt_cfg):
+        """Why the realtime feeds are not read now, None when they are."""
+        # the polling window is derived from the timetable: outside it
+        # the feeds are left alone and the static screen carries on
+        rt_paused = await self.hass.async_add_executor_job(
+            rt_window_gate, self.hass, self._data["file"], self._pygtfs,
+            with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg))
+        if rt_paused:
+            _LOGGER.debug("GTFS RT: %s is outside its service window (%s), feeds not read",
+                          self._data["file"], rt_paused)
+            if rt_cfg.get(CONF_VEHICLE_POSITION_URL):
+                # nothing will refresh the positions until the window
+                # opens again, so the map is told rather than left on
+                # the last vehicles seen
+                departure = self._data.get("next_departure") or {}
+                await self.hass.async_add_executor_job(
+                    clear_vehicle_file, self.hass,
+                    str(departure.get("route_id")
+                        or (data.get("route") or "").split(": ")[0]),
+                    str(departure.get("trip_direction_id", data.get("direction"))))
+        return rt_paused
+
+    def _realtime_targets(self, data, rt_cfg) -> None:
+        """Set what the realtime readers read off the coordinator: the feeds,
+        and the route, stop and trip of the departure shown."""
+        # No next_departure does NOT mean no bus: the last scheduled
+        # departure of the day can still be on its way, late, and the
+        # realtime feed is the only one who knows. Skipping the whole
+        # block here (the first fix for the origin_stop_sequence
+        # KeyError) made that bus vanish from the board while the map
+        # still showed it rolling. The block now runs with fallbacks
+        # taken from the config entry instead; every read below is a
+        # .get, which is what the KeyError actually required.
+        if not self._data.get("next_departure"):
+            _LOGGER.debug("GTFS RT: no scheduled departure left, realtime runs on config-entry fallbacks")
+        self._get_next_service = {}
+        """Initialize the info object."""
+        self._route_delimiter = None
+        self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
+        self._vehicle_position_url = with_query_key(rt_cfg.get(CONF_VEHICLE_POSITION_URL), rt_cfg)
+        self._vehicle_max_age = rt_cfg.get(CONF_VEHICLE_MAX_AGE, DEFAULT_VEHICLE_MAX_AGE)
+        self._alerts_url = with_query_key(rt_cfg.get(CONF_ALERTS_URL), rt_cfg)
+        self._headers = rt_headers(rt_cfg)
+        self._icon = ICONS.get(int(self._data["route_type"]), ICON)
+        self.info = {}
+        self._route_id = self._data["next_departure"].get("route_id", None)
+        if self._route_id == None:
+            _LOGGER.debug("GTFS RT: no route_id in sensor data, using route_id from config_entry")
+            self._route_id = data["route"].split(": ")[0]
+        self._stop_id = self._data["next_departure"].get("origin_stop_id", data["origin"]).split(": ")[0]
+        self._stop_sequence = self._data["next_departure"].get("origin_stop_sequence", None)
+        self._destination_id = data["destination"].split(": ")[0]
+        self._trip_id = self._data.get('next_departure', {}).get('trip_id', None) or "no_trip_information"
+        self._trip_short_name = self._data.get('next_departure', {}).get('trip_short_name', None)
+        self._direction = str(self._data.get('next_departure', {}).get('trip_direction_id', data["direction"]))
+        self._trip_list = self._data["next_departure"].get("next_departures_trip_id", [])[:10]
+        self._relative = False
+
+    async def _read_realtime(self, data, rt_cfg, run_static) -> bool:
+        """Read the alerts, then the trip updates; False when the trip
+        updates could not be read, the timetable standing alone."""
+        self._realtime_targets(data, rt_cfg)
+        # the alerts first and on their own: they are a feed of their
+        # own, often a different host, and read together with the trip
+        # updates one bad answer there took the departure times down
+        # with it, leaving the sensor on last cycle's
+        try:
+            self._get_rt_alerts = await self.hass.async_add_executor_job(get_rt_alerts, self)
+            self._data["alert"] = self._get_rt_alerts
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.exception("Error getting gtfs realtime alerts, for origin: %s with error: %s", data["origin"], ex)
+        try:
+            self._get_next_service = await self.hass.async_add_executor_job(get_next_services, self)
+            self._data["next_departure_realtime_attr"] = self._get_next_service
+            self._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
+            await drop_struck_trips(self, data, run_static)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.exception("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
+            return False
+        if self._vehicle_position_url:
+            # let map cards locate the geojson written by get_rt_vehicle_positions
+            self._data["vehicle_positions_file"] = vehicle_positions_name(self._route_id, self._direction)
+        if self._vehicle_position_url and not self._stale_markers_cleaned:
+            self._cleanup_stale_vehicle_markers()
+            self._stale_markers_cleaned = True
+        return True
 
     async def _read_records(self) -> None:
         """Read, off the loop, the rows the sensor describes the departure with.
