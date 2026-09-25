@@ -206,7 +206,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             # rather than carrying over the one previous_data was left with
             self._data["extracting"] = False
         else:
-            check_index = await self.hass.async_add_executor_job(
+            await self.hass.async_add_executor_job(
                     check_datasource_index, self.hass, self._pygtfs, self.hass.config.path(DEFAULT_PATH), data["file"]
                 )
 
@@ -452,7 +452,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             self._data["extracting"] = True
             return self._data
 
-        check_index = await self.hass.async_add_executor_job(
+        await self.hass.async_add_executor_job(
                 check_datasource_index, self.hass, self._pygtfs, self.hass.config.path(DEFAULT_PATH), data["file"]
             )
             

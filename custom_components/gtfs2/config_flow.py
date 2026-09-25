@@ -159,8 +159,6 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
 
     async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
         """Handle the source."""
-        errors: dict[str, str] = {}
-
         # with no datasource yet, only the first entry can lead anywhere,
         # so say it rather than describing the general case
         datasources = await get_datasources(self.hass, DEFAULT_PATH)
@@ -692,7 +690,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         _LOGGER.debug("Checkdata pygtfs: %s with data: %s", self._pygtfs, data)
         if self._pygtfs in ['no_data_file', 'no_zip_file', 'extracting'] :
             return self._pygtfs
-        check_index = await self.hass.async_add_executor_job(
+        await self.hass.async_add_executor_job(
                     check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH, data["file"]
                 )   
         return None
@@ -729,7 +727,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             "line": data.get("line", "")
         }
         # check and/or add indexes
-        check_index = await self.hass.async_add_executor_job(
+        await self.hass.async_add_executor_job(
                     check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH, data["file"]
                 )
              

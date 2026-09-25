@@ -71,7 +71,7 @@ def due_in_minutes(timestamp):
     if timestamp.tzinfo is None:
         timestamp = dt_util.utc_from_timestamp(timestamp.timestamp())
     diff = timestamp - dt_util.utcnow()
-    _LOGGER.debug(f"GTFS RT due in minutes, timestamp: %s, now_utc: %s", timestamp, dt_util.utcnow())
+    _LOGGER.debug("GTFS RT due in minutes, timestamp: %s, now_utc: %s", timestamp, dt_util.utcnow())
     return int(diff.total_seconds() / 60)
 
 # One GTFS-RT feed covers a whole network, so every sensor reading the same
@@ -678,7 +678,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
     self._rt_skipped = {}
 
     if self._vehicle_position_url:
-        vehicle_positions = get_rt_vehicle_positions(self)
+        get_rt_vehicle_positions(self)
 
     # a source can publish alerts or vehicle positions without trip updates
     # (the TTC subway is alerts-only): no times to match then, the vehicles
@@ -1036,7 +1036,6 @@ def get_gtfs_rt(hass, path, data):
     
     if data.get('entity_for_siri',None):
         _LOGGER.debug("Getting siri RT departures with data: %s", data)
-        entity_registry = er.async_get(hass)
         entity = er.async_get(hass).async_get(data["entity_for_siri"])
         _LOGGER.debug("entity: %s", entity)
         _LOGGER.debug("entity cfg id: %s", entity.config_entry_id)
@@ -1078,7 +1077,6 @@ def get_gtfs_rt(hass, path, data):
     
     if data.get("debug_output", False):
         try:
-            data_out = ""
             feed_entities = get_gtfs_feed_entities(
                 url=data.get("url", None),
                 headers=_headers,
@@ -1092,7 +1090,7 @@ def get_gtfs_rt(hass, path, data):
             except Exception as ex:
                 _LOGGER.debug("Not writing to file as json because of error: %s", ex)
                 open(os.path.join(gtfs_dir, file_all), "w").write(str(feed_entities))              
-        except Exception as ex:  # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             _LOGGER.info("Issues with converting GTFS RT data to JSON, output to string") 
     return "ok"   
         
@@ -1271,7 +1269,6 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
         
     _LOGGER.debug("Feed entities: %s", feed_entities)
 
-    tt = datetime.fromisoformat(feed['ServiceDelivery']['ResponseTimestamp'])
     json_data = {
         "header": {
             "gtfs_realtime_version": feed['ServiceDelivery']['StopMonitoringDelivery'][0].get('version','not_provided'),

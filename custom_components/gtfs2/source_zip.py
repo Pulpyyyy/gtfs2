@@ -27,7 +27,7 @@ from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in, s
 from .key_mask import fetch
 from .rt_source import with_query_key
 from .zip_peek import (extract_member, inner_zips, inner_zips_in_file,
-                       member_out_of, open_member)
+                       open_member)
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
 from .gtfs_helper import IMPORT_IGNORED, check_extracting, drop_import_indexes, get_gtfs

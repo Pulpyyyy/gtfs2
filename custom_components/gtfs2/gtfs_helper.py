@@ -2022,7 +2022,7 @@ def has_trip_between(schedule, route_id, origin_id, destination_id, direction=No
 
 def get_agency_list(schedule, data):
     _LOGGER.debug("Getting agencies with data: %s", data)
-    sql_agencies = f"""
+    sql_agencies = """
     SELECT a.agency_id, a.agency_name 
     from agency a
     order by a.agency_name
@@ -2123,7 +2123,7 @@ def remove_datasource(hass, path, filename, include_sqlite, keep=()):
     return "removed"
     
 def check_extracting(hass, gtfs_dir,file):
-    _LOGGER.debug(f"Checking if extracting: %s", file)
+    _LOGGER.debug("Checking if extracting: %s", file)
     gtfs_dir = hass.config.path(gtfs_dir)
     filename = file
     journal = os.path.join(gtfs_dir, filename + ".sqlite-journal")
@@ -2256,7 +2256,7 @@ def get_local_stop_list(hass, schedule, data):
         # nowhere to look around: no stop is near
         return 0
     radius= data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
-    sql_query = f"""
+    sql_query = """
         SELECT stop.stop_id, stop.stop_name
         FROM stops stop
         where abs(stop.stop_lat - :latitude) < :radius and abs(stop.stop_lon - :longitude) < :radius
