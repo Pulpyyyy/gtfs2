@@ -266,6 +266,7 @@
       "stop_incorrect": "Keine Abfahrt zwischen diesen beiden Orten gefunden. Prüfen Sie die Schreibweise des Betreibers und ob sie auf derselben Linie liegen.",
       "generic_failure": "Gesamtfehler, Protokolle prüfen",
       "no_data_file": "Die Datei konnte nicht heruntergeladen werden. Prüfen Sie die Adresse und ob die Quelle von Home Assistant aus erreichbar ist. Manche Anbieter lehnen automatisierte Downloads ab.",
+      "not_built": "Diese Quelle hat noch keinen Fahrplan. Aktualisieren Sie sie über ihren Eintrag auf der Integrationsseite, um ihn zu erstellen.",
       "no_zip_file": "Problem bei der Datenerfassung: ZIP-Datei nicht im richtigen Ordner",
       "zip_holds_zips": "Die ZIP-Datei enthält weitere ZIP-Dateien und keine konnte angeboten werden: Entpacken Sie sie und geben Sie die innere ZIP-Datei des gewünschten Netzes an",
       "name_taken": "Ein Sensor trägt diesen Namen bereits. Wählen Sie einen anderen.",

@@ -8,21 +8,17 @@ import logging
 import statistics
 import os
 import pygtfs
-import requests
 from sqlalchemy.sql import text
-import multiprocessing
 
 
 import homeassistant.util.dt as dt_util
 from homeassistant.helpers import entity_registry as er
 
-from .direction_repair import repair_trip_directions
 from .const import (
     CONF_API_KEY,
 CONF_API_KEY_LOCATION,
     CONF_API_KEY_NAME,
     CONF_ACCEPT_HEADER_PB,
-    CONF_INNER_ZIP,
     DEFAULT_LOCAL_STOP_TIMERANGE,
     DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY,
     DEFAULT_LOCAL_STOP_RADIUS,
@@ -39,11 +35,7 @@ from .gtfs_rt_helper import safe_file_part  # noqa: F401  a provider test reads 
 from .route_names import (get_routes_in_zip, _adds_to, _leave_out_expired, _look_alikes,
                           _natural, _route_label, _set_apart, _set_apart_by_ends,
                           _set_apart_by_span, look_alike_ends, route_ends, route_spans)
-from .freshness import stage_zip, adopt_zip
-from .gtfs_filter import feed_info_unreadable, zip_only_future_dates
 from .feed_window import last_service_day
-from .key_mask import fetch
-from .rt_source import with_query_key
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -825,107 +817,39 @@ def get_next_departure(hass, _data):
     )
 
 
-def get_gtfs(hass, path, data, update=False):
-    _LOGGER.debug("Getting gtfs with data: %s", data)
-    _headers = None
+def get_gtfs(hass, path, data):
+    """Open a datasource's database, or say why there is none to open.
+
+    Answers the schedule, or one of the strings the callers know:
+    "extracting" while something writes to the file (an import, an index
+    build, an intern); for a source with no database, or one without a feed
+    in it, "not_built" when its zip is there to build it from and
+    "no_zip_file" when it is not.
+
+    Nothing is downloaded or built here. A database is built by the flow's
+    import or by a refresh of the source (refresh_datasource), both under
+    the source's lock, into a file of their own swapped in once whole. This
+    used to download a missing feed and import the whole network into the
+    real file, in place, in a forked process that outlived the lock, from
+    whichever sensor, service or screen found the database missing.
+    """
     gtfs_dir = hass.config.path(path)
-    os.makedirs(gtfs_dir, exist_ok=True)
     filename = data["file"]
-    url = data["url"]
-    url = with_query_key(url, data)
-    if data.get(CONF_API_KEY_LOCATION, None) == "header":
-      if data.get(CONF_API_KEY, None):
-        _headers = {data.get(CONF_API_KEY_NAME, "api_key"): data[CONF_API_KEY]}
-    file = data["file"] + ".zip"
-    sqlite = data["file"] + ".sqlite"
-    check_source_dates = data.get("check_source_dates", False)
-    journal = os.path.join(gtfs_dir, filename + ".sqlite-journal")
-    if check_extracting(hass, gtfs_dir,filename) and not update :
+    if check_extracting(hass, gtfs_dir, filename):
         _LOGGER.debug("Cannot use this datasource as still unpacking: %s", filename)
         return "extracting"
-    if update and data["extract_from"] == "url":
-        _pending_remove = os.path.exists(os.path.join(gtfs_dir, file))
-    else:
-        _pending_remove = False
-    # a feed whose every service lies ahead is refused BEFORE anything is
-    # removed: the check used to run once the database was gone, so its
-    # "keeping the current data" had nothing left to keep
-    if (check_source_dates and update and data["extract_from"] == "zip"
-            and os.path.exists(os.path.join(gtfs_dir, file))
-            and zip_only_future_dates(os.path.join(gtfs_dir, file))):
-        _LOGGER.info("New file contains only dates in the future, keeping the current data")
-        return
-    if update and data["extract_from"] == "zip" and os.path.exists(os.path.join(gtfs_dir, file)) and os.path.exists(os.path.join(gtfs_dir, sqlite)):
-        os.remove(os.path.join(gtfs_dir, sqlite))
-        if os.path.exists(journal):
-                os.remove(journal)        
-    # a built database answers on its own: the zip only matters to rebuild
-    # it. Missing, it was fetched again on every call, and a host down
-    # turned a working datasource into "no_data_file"
-    served = not update and os.path.exists(os.path.join(gtfs_dir, sqlite))
-    if data["extract_from"] == "zip" and not served:
-        if not os.path.exists(os.path.join(gtfs_dir, file)):
-            _LOGGER.error("The given GTFS zipfile was not found")
-            return "no_zip_file"
-    if data["extract_from"] == "url" and not served:
-        if update or not os.path.exists(os.path.join(gtfs_dir, file)):
-            try:
-                # some providers answer 403 to the default requests user agent;
-                # _headers is None unless an api key is used in a header
-                _get_headers = dict(_headers or {})
-                _get_headers.setdefault("User-Agent", "home-assistant-gtfs2")
-                r = fetch("get", url, headers=_get_headers, allow_redirects=True, timeout=15, stream=True)
-                r.raise_for_status()
-                # verify before removing anything: a download that turns out
-                # not to be a zip must leave the datasource as it was
-                # a source built from one network of an envelope takes that
-                # member out of it, never the envelope itself
-                staged = stage_zip(r, os.path.join(gtfs_dir, file), data.get(CONF_INNER_ZIP))
-                if staged is None:
-                    return "no_data_file"
-                if check_source_dates and update and zip_only_future_dates(staged):
-                    # read on the download itself, before the current data
-                    # is removed or the zip replaced
-                    _LOGGER.info("New file contains only dates in the future, keeping the current data")
-                    os.remove(staged)
-                    return
-                if _pending_remove:
-                    # the staged download is the new edition: it goes in
-                    # below, not out with the old one
-                    remove_datasource(hass, path, filename, True, keep=(".zip.new",))
-                adopt_zip(r, staged, os.path.join(gtfs_dir, file))
-            except Exception as ex:  # pylint: disable=broad-except
-                # asked at every refresh while the source has no data: a host
-                # down says so in one line, without the stack of requests; an
-                # error of our own keeps its stack
-                log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
-                log("The given URL or GTFS data file/folder was not found: %s", ex)
-                return "no_data_file"
-    
-    (gtfs_root, _) = os.path.splitext(file)
-    sqlite_file = f"{gtfs_root}.sqlite?check_same_thread=False&timeout=60"
-    joined_path = os.path.join(gtfs_dir, sqlite_file)  
-
-    gtfs = pygtfs.Schedule(joined_path)
-    if served and not gtfs.feeds and not os.path.exists(os.path.join(gtfs_dir, file)):
-        # a database file with nothing in it, and no zip to fill it from
-        _LOGGER.error("Datasource %s is empty and its zip is gone", filename)
+    sqlite = os.path.join(gtfs_dir, filename + ".sqlite")
+    # not opened when missing: opening creates an empty file, taken for a
+    # datasource next time
+    if os.path.exists(sqlite):
+        gtfs = pygtfs.Schedule(f"{sqlite}?check_same_thread=False&timeout=60")
+        if gtfs.feeds:
+            return gtfs
         gtfs.engine.dispose()
-        return "no_zip_file" if data["extract_from"] == "zip" else "no_data_file"
-
-    if not gtfs.feeds:
-        # a feed_info.txt pygtfs cannot read stops the whole import
-        if data.get("clean_feed_info", False) or feed_info_unreadable(os.path.join(gtfs_dir, file)):
-            _fork_ctx = multiprocessing.get_context("fork")
-            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,IMPORT_IGNORED + ("feed_info.txt",)))
-        else:
-            _fork_ctx = multiprocessing.get_context("fork")
-            extract = _fork_ctx.Process(target=extract_from_zip, args = (hass, gtfs,gtfs_dir,file,IMPORT_IGNORED))
-        extract.start()
-        extract.join()
-        _LOGGER.info("Exiting main after start subprocess for unpacking: %s", file)
-        return "extracting"
-    return gtfs
+    _LOGGER.debug("Datasource %s has no timetable: a refresh of the source builds it", filename)
+    if not os.path.exists(os.path.join(gtfs_dir, filename + ".zip")):
+        return "no_zip_file"
+    return "not_built"
 
 
 # the tables an import leaves out: the integration never reads them from
@@ -935,32 +859,6 @@ def get_gtfs(hass, path, data, update=False):
 # host sent it: pygtfs skips them on the way in
 IMPORT_IGNORED = ("shapes.txt", "transfers.txt", "fare_attributes.txt",
                   "levels.txt", "pathways.txt", "translations.txt")
-
-
-def extracting_marker(gtfs_dir, name):
-    """The file that says a legacy extract is still filling a database."""
-    return os.path.join(gtfs_dir, name + ".extracting")
-
-
-def extract_from_zip(hass, gtfs, gtfs_dir, file, ignored):
-    _LOGGER.debug("Extracting gtfs file: %s", file)
-    # the marker stands until the database is whole: check_extracting keeps
-    # the source's sensors waiting meanwhile. The extract used to rename the
-    # zip aside to strip it, and that name was the signal
-    marker = extracting_marker(gtfs_dir, file[:-4])
-    open(marker, "w").close()
-    if os.fork() != 0:
-        return
-    try:
-        drop_import_indexes(gtfs)
-        pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file), ignore_files=ignored)
-        check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
-        repair_trip_directions(gtfs)
-    finally:
-        try:
-            os.remove(marker)
-        except OSError:
-            pass
 
 
 def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
@@ -2111,6 +2009,7 @@ def remove_datasource(hass, path, filename, include_sqlite, keep=()):
     # edition, and what a download, a refresh or an import stopped half way
     # leaves. Left behind, the record made a new source of the same name
     # look already built from an edition it never had
+    # (.extracting: the marker of a legacy extract an older version left)
     leftovers = [".zip.new", ".extracting", ".refresh.sqlite", ".refresh.sqlite-journal",
                  ".import.sqlite", ".import.sqlite-journal", ".import.sqlite.zip"]
     if include_sqlite:
@@ -2127,9 +2026,9 @@ def check_extracting(hass, gtfs_dir,file):
     gtfs_dir = hass.config.path(gtfs_dir)
     filename = file
     journal = os.path.join(gtfs_dir, filename + ".sqlite-journal")
+    # the name the zip took while an older version rewrote it in place
     tempzip = os.path.join(gtfs_dir, filename + "_temp.zip")
-    if (os.path.exists(journal) or os.path.exists(tempzip)
-            or os.path.exists(extracting_marker(gtfs_dir, filename))):
+    if os.path.exists(journal) or os.path.exists(tempzip):
         _LOGGER.debug("Extracting: yes")
         return True
     return False    
@@ -2737,7 +2636,7 @@ async def _route_times(hass, data, at):
     _LOGGER.debug("Cutoff today: %s, cutoff tomorrow: %s", cutoff_today, cutoff_tomorrow)
 
     _pygtfs = await hass.async_add_executor_job(
-        get_gtfs, hass, DEFAULT_PATH, cf_data, False
+        get_gtfs, hass, DEFAULT_PATH, cf_data
     )
     if _pygtfs is None or isinstance(_pygtfs, str):
         # a sentinel: no zip, no database, or a feed all in the future
@@ -2866,7 +2765,7 @@ async def get_trip_stops(hass, data):
         origin_station_names.append(state.attributes.get("origin_station_stop_name", ""))
 
     schedule = await hass.async_add_executor_job(
-        get_gtfs, hass, DEFAULT_PATH, cf_data, False
+        get_gtfs, hass, DEFAULT_PATH, cf_data
     )
     if schedule is None or isinstance(schedule, str):
         _LOGGER.warning("Datasource %s has no usable schedule (%s), no trip stops",

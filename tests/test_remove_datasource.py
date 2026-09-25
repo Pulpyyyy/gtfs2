@@ -10,8 +10,6 @@ from __future__ import annotations
 import types
 from pathlib import Path
 
-import requests
-
 import ha_stub
 
 gtfs_helper = ha_stub.load("gtfs_helper")
@@ -51,49 +49,6 @@ def test_remove_spares_what_it_is_told_to_keep(tmp_path):
     gtfs_helper.remove_datasource(_hass(tmp_path), "gtfs2", "src", True, keep=(".zip.new",))
     left = {p.name for p in gtfs_dir.iterdir()} - {"src2.sqlite", "src2.zip"}
     assert left == {"src.zip.new"}
-
-
-class _Download:
-    """A host answering the feed, as get_gtfs reads a response."""
-    status_code = 200
-    headers = {}
-    url = "https://h/src.zip"
-
-    def __init__(self, body):
-        self.body = body
-
-    def raise_for_status(self):
-        pass
-
-    def iter_content(self, chunk_size):
-        yield self.body
-
-    def close(self):
-        pass
-
-
-def test_an_update_keeps_the_edition_it_downloaded(tmp_path, monkeypatch):
-    # the refresh fallback: the old zip and database go, the download
-    # staged beside them comes in. Removing "every file" once took the
-    # staged download too, and the source was left with nothing at all
-    feed = FEED.read_bytes()
-    gtfs_dir = tmp_path / "gtfs2"
-    gtfs_dir.mkdir()
-    (gtfs_dir / "src.zip").write_bytes(feed)
-    (gtfs_dir / "src.sqlite").write_bytes(b"old")
-    # the download goes through fetch, or requests.get before fetch existed
-    monkeypatch.setattr(gtfs_helper, "fetch", lambda *a, **k: _Download(feed), raising=False)
-    monkeypatch.setattr(requests, "get", lambda *a, **k: _Download(feed))
-    # the unpacking that follows runs in a forked process, which is not
-    # what is under test (and Windows has no fork)
-    idle = types.SimpleNamespace(start=lambda: None, join=lambda: None)
-    monkeypatch.setattr(gtfs_helper.multiprocessing, "get_context",
-                        lambda _kind: types.SimpleNamespace(Process=lambda **_kw: idle))
-    got = gtfs_helper.get_gtfs(_hass(tmp_path), "gtfs2", {
-        "file": "src", "url": "https://h/src.zip", "extract_from": "url"}, True)
-    assert got == "extracting"
-    assert (gtfs_dir / "src.zip").read_bytes() == feed
-    assert not (gtfs_dir / "src.zip.new").exists()
 
 
 def test_remove_without_database_keeps_it(tmp_path):

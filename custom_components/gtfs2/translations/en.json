@@ -266,6 +266,7 @@
       "stop_incorrect": "No departure found between these two cities. Check the spelling against the operator's own, and that they are on the same line.",
       "generic_failure": "Overall failure, check logs",
       "no_data_file": "Could not download the file. Check the address, and that the source is reachable from Home Assistant. Some providers reject automated downloads.",
+      "not_built": "This source has no timetable yet. Refresh it from its entry in the integration page to build it.",
       "no_zip_file": "Data collection issue: ZIP file not in the correct folder",
       "zip_holds_zips": "The ZIP holds other ZIP files and none of them could be offered: unpack it and give the inner ZIP of the network you want",
       "name_taken": "A sensor already uses this name. Pick another one.",

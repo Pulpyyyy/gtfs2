@@ -75,8 +75,8 @@ async def schedule_for(coordinator, data):
     the feeds, and every coordinator did it every minute, closing the one
     before. The database only changes when a refresh swaps a new one in or
     a writer adds to it, which its size and last write tell: until then the
-    schedule opened is the one used. get_gtfs still decides whenever there
-    is no schedule, or the file is not there, which is where it downloads.
+    schedule opened is the one used. get_gtfs decides whenever there is no
+    schedule, or the file is not there: it answers why, and builds nothing.
     """
     hass = coordinator.hass
     edition = await hass.async_add_executor_job(_database_edition, hass, data["file"])
@@ -85,9 +85,9 @@ async def schedule_for(coordinator, data):
             and hasattr(current, "session")):
         return current
     await hass.async_add_executor_job(close_schedule, current)
-    # get_gtfs opens the sqlite file and, when it is missing, downloads
-    # and unpacks the feed: blocking work that has no place on the loop
-    schedule = await hass.async_add_executor_job(get_gtfs, hass, DEFAULT_PATH, data, False)
+    # get_gtfs opens the sqlite file: blocking work that has no place on
+    # the loop
+    schedule = await hass.async_add_executor_job(get_gtfs, hass, DEFAULT_PATH, data)
     coordinator._pygtfs_edition = edition if hasattr(schedule, "session") else None
     return schedule
 

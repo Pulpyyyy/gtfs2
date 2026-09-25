@@ -349,7 +349,6 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                 self.hass,
                 DEFAULT_PATH,
                 self._user_inputs,
-                False,
             )
             check_data = await self._check_data(self._user_inputs)
             if check_data :
@@ -432,7 +431,6 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                 self.hass,
                 DEFAULT_PATH,
                 self._user_inputs,
-                False,
             )
             # a datasource imported before the indexes existed never crosses the
             # import path again, so make sure of them here: costs a handful of
@@ -685,10 +683,10 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             except Exception:
                 pass
         self._pygtfs = await self.hass.async_add_executor_job(
-            get_gtfs, self.hass, DEFAULT_PATH, data, False
+            get_gtfs, self.hass, DEFAULT_PATH, data
         )
         _LOGGER.debug("Checkdata pygtfs: %s with data: %s", self._pygtfs, data)
-        if self._pygtfs in ['no_data_file', 'no_zip_file', 'extracting'] :
+        if self._pygtfs in ['no_data_file', 'no_zip_file', 'not_built', 'extracting'] :
             return self._pygtfs
         await self.hass.async_add_executor_job(
                     check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH, data["file"]
@@ -697,14 +695,14 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         
     async def _check_config(self, data):
         schedule = await self.hass.async_add_executor_job(
-            get_gtfs, self.hass, DEFAULT_PATH, data, False
+            get_gtfs, self.hass, DEFAULT_PATH, data
         )
         if schedule is None or isinstance(schedule, str):
             # a sentinel of get_gtfs, not a schedule. It used to replace the
             # flow's own, and the screen shown again with the error then read
             # its stations from a string: the next submit ended the flow on
             # no_stops_read. The flow keeps the schedule it has
-            if schedule in ("no_data_file", "no_zip_file", "extracting"):
+            if schedule in ("no_data_file", "no_zip_file", "not_built", "extracting"):
                 return schedule
             return "generic_failure"
         if self._pygtfs and hasattr(self._pygtfs, 'session'):
@@ -871,8 +869,14 @@ async def _check_stop_list(self, data):
         except Exception:
             pass    
     self._pygtfs = await self.hass.async_add_executor_job(
-        get_gtfs, self.hass, DEFAULT_PATH, data, False
+        get_gtfs, self.hass, DEFAULT_PATH, data
     )
+    if isinstance(self._pygtfs, str):
+        # no database to count in, or one being written: the options are
+        # kept as they are, the count is what the sensor meets next time.
+        # Handed to the query, the answer string raised
+        _LOGGER.debug("Checkstops skipped, datasource answers %s", self._pygtfs)
+        return None
     count_stops = await self.hass.async_add_executor_job(
                 get_local_stop_list, self.hass, self._pygtfs, data
             )  

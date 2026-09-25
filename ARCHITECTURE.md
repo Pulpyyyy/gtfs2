@@ -154,7 +154,8 @@ the block stood. That is how `alerts.py`, `departure_attributes.py`,
 
 **What is not moved.** Upstream code that the fork does not modify stays
 where upstream put it, which keeps an upstream change to it easy to review
-and take over: `get_gtfs` and the legacy extract stay in `gtfs_helper.py`;
+and take over: `get_gtfs` stays in `gtfs_helper.py`, down to opening a
+built database since the legacy extract went;
 the per-import flags (`check_source_dates`, `clean_feed_info`) stay on the
 journey entries
 (`_JOURNEY_REFRESH_KEYS`, "kept there for upstream compatibility").
@@ -428,7 +429,7 @@ the ends stops above 150 MB (eb98488).
 **Direction repair** (`direction_repair.py`). Every query filters on
 `direction_id`, and some feeds label it wrong: GVB trams 1, 7 and 17 carry
 30 to 40 % of their trips under the other direction. After each import
-(`source_zip.py`, and the legacy extract), each trip is tested against the
+(`source_zip.py`), each trip is tested against the
 stop order of its direction and of the opposite one, compared by station,
 and relabelled when it rides the opposite one (b4c89e0, 434826c). A loop
 and a line whose `direction_id` carries no sense at all (GVB tram 14) are
@@ -468,9 +469,9 @@ database file changed: its inode, mtime and size (`_database_edition`).
 Opening one is an engine plus a `create_all` over every table; every
 coordinator used to do it every minute.
 
-Step 1 relies on `check_extracting`: a `.sqlite-journal`, or the
-`.extracting` marker a legacy extract keeps until its database is whole,
-beside the database (a `_temp.zip` left by an older version counts too). The flag is cleared once the reuse branch is reached,
+Step 1 relies on `check_extracting`: a `.sqlite-journal` beside the
+database, something writing to it (a `_temp.zip` left by an older version
+counts too). The flag is cleared once the reuse branch is reached,
 so a transient journal no longer blanks the sensors for a whole refresh
 interval (01587fd).
 
@@ -655,7 +656,6 @@ Four paths write a database. They differ because what they risk differs.
 | New edition (check in auto mode, update entity, button, `update_gtfs` service) | `refresh_datasource` | staging, built route by route | Yes | Every row may change; readers must see one edition or the other |
 | Same, on a whole-feed source, or one that follows no line yet (never built, or left empty by a first import) | `_refresh_whole_feed` | staging, the filtered import itself | Yes | A train or local stops sensor matches across every line, and a line the new edition brings must come in too; taking the lines from the old database never brought new ones. A source with no line has nothing to take them from |
 | Optimise screen, `prune_datasource`, `intern_datasource` | `on_a_copy` | staging, a SQLite backup of the real one | Only if something changed | Destructive rewrites by the million plus VACUUM: on the live file they held the exclusive lock for minutes on a national feed |
-| A sensor, a service or a screen opening a datasource that has no database | legacy `get_gtfs` | the real file, in place, in a forked process | No | Upstream's path; see "Known defects" 1 |
 
 **Filtering before import, not pruning after.** pygtfs pays per row: once
 the whole feed is imported, the time and the disk are already spent. The
@@ -695,7 +695,7 @@ Indexing the scratch file by route took the copy of 41 Orleans routes from
 
 ```
 real database unreadable?             stop, keep the data (see below)
-real database follows no route?       legacy get_gtfs, whole feed
+real database follows no route?       the whole edition, below
     ↓
 new zip downloaded to <file>.zip.new, streamed, capped in size and time,
     adopted only once proven a zip
@@ -713,9 +713,9 @@ swap_in()               one rename over the real database
 ```
 
 `routes_in` answers `None` for a file it could not read and an empty set for
-a file with no trip. The two must stay apart: read as "follows nothing", an
-unreadable database would go down the legacy path, which deletes the
-database and the zip and rebuilds the whole network in place.
+a file with no trip, or no file. The two must stay apart: read as "follows
+nothing", an unreadable database would be rebuilt whole over the data it
+still holds.
 
 #### Shrinking a datasource (`on_a_copy`)
 
@@ -746,7 +746,7 @@ What each failure leaves, and who is told.
 |---|---|---|---|
 | Download fails or is not a zip | Old zip and database untouched; `.zip.new` removed | Refresh failed notification | Next check |
 | Import of the scratch fails | Old database untouched | Refresh failed notification | Next check |
-| Adding lines stops at line *k* | Lines before *k* are in; *k* and after are not | The import-done notification lists the lines that made it; nothing names the others (defect 2) | User re-picks |
+| Adding lines stops at line *k* | Lines before *k* are in; *k* and after are not | The import-done notification lists the lines that made it; nothing names the others (defect 1) | User re-picks |
 | Refresh: a line fails to copy | Swap refused, old database stays | Refresh failed notification | Next check |
 | Refresh: a line a sensor reads has no trip in the new edition | Swap refused, old database stays, on the route by route and the whole-feed path alike | Lines missing notification, naming them | Next check; see below |
 | Refresh: every line is empty | Swap refused, the file is taken as broken | Lines missing, every line named | Next check |
@@ -879,7 +879,7 @@ A rename is invisible to SQLite: a writer still in a transaction on the old
 file would go on writing, and its journal, replayed against the new file,
 would take it back to the old contents. So the rename happens while
 holding SQLite's own exclusive lock, which every connection respects
-whatever process it runs in, the forked legacy extract included. Side files
+whatever process it runs in. Side files
 named after the real file are removed right after, so the next reader does
 not replay the old file's journal into the new one.
 
@@ -1023,11 +1023,7 @@ Wrong behaviours a user can meet, confirmed in the code and not fixed yet.
 Unlike the gaps, they are not a matter of structure: each is to be fixed
 in a commit of its own, with the case that shows it.
 
-1. **The legacy extract outlives the source lock.** `get_gtfs` forks twice;
-   the grandchild imports after the caller has returned "extracting" and
-   the lock is released. Only SQLite's own locking and `check_extracting`
-   keep writers apart while it runs.
-2. **A partial import reads as a success.** When `import_routes` stops at a
+1. **A partial import reads as a success.** When `import_routes` stops at a
    line, the flow goes on to "reload done" as soon as one line came in, and
    the notification lists only the lines added. The lines that failed are
    named in the log only.

@@ -99,3 +99,42 @@ def test_a_database_a_first_import_left_empty_is_built_whole(tmp_path, monkeypat
     conn.close()
     assert _refresh(gtfs_dir, monkeypatch) == {"B1": None}
     assert _trips(gtfs_dir / "src.sqlite") > 0 and "marker" not in _tables(gtfs_dir / "src.sqlite")
+
+
+class _Download:
+    """A host answering the feed, as a refresh reads a response."""
+    status_code = 200
+    headers = {}
+    url = "https://h/src.zip"
+
+    def __init__(self, body):
+        self.body = body
+
+    def raise_for_status(self):
+        pass
+
+    def iter_content(self, chunk_size):
+        yield self.body
+
+    def close(self):
+        pass
+
+
+def test_a_url_source_with_no_database_comes_in_with_its_download(tmp_path, monkeypatch):
+    # the legacy fallback removed the old zip and database before the
+    # download came in, and once took the staged download with them: the
+    # source was left with nothing at all. The refresh keeps what there is
+    # until the new edition, downloaded beside it, is whole
+    import types
+    gtfs_dir = tmp_path / "gtfs2"
+    gtfs_dir.mkdir()
+    (gtfs_dir / "src.zip").write_bytes(b"an older edition")
+    feed = FEED.read_bytes()
+    monkeypatch.setattr(source_zip, "_open_source", lambda data, url, headers: _Download(feed))
+    hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(gtfs_dir)))
+    got = source_zip.refresh_datasource(hass, "gtfs2", {"file": "src", "url": "https://h/src.zip",
+                                                         "extract_from": "url"})
+    assert got == {"B1": None}
+    assert (gtfs_dir / "src.zip").read_bytes() == feed
+    assert not (gtfs_dir / "src.zip.new").exists()
+    assert _trips(gtfs_dir / "src.sqlite") > 0

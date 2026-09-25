@@ -19,12 +19,8 @@ layers =
 ignore_imports =
     # gaps 1 and 2: gtfs_helper and gtfs_rt_helper, imported by every
     # layer, import layered modules in turn
-    custom_components.gtfs2.gtfs_helper -> custom_components.gtfs2.direction_repair
     custom_components.gtfs2.gtfs_helper -> custom_components.gtfs2.feed_window
-    custom_components.gtfs2.gtfs_helper -> custom_components.gtfs2.freshness
-    custom_components.gtfs2.gtfs_helper -> custom_components.gtfs2.gtfs_filter
     custom_components.gtfs2.gtfs_helper -> custom_components.gtfs2.route_names
-    custom_components.gtfs2.gtfs_helper -> custom_components.gtfs2.rt_source
     custom_components.gtfs2.gtfs_rt_helper -> custom_components.gtfs2.alerts
     custom_components.gtfs2.gtfs_rt_helper -> custom_components.gtfs2.route_names
     custom_components.gtfs2.gtfs_rt_helper -> custom_components.gtfs2.rt_source

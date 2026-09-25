@@ -266,6 +266,7 @@
       "stop_incorrect": "Nenhuma partida encontrada entre estas duas cidades. Verifique a grafia do operador e se estão na mesma linha.",
       "generic_failure": "Falha geral, verifique os logs",
       "no_data_file": "Não foi possível descarregar o ficheiro. Verifique o endereço e se a fonte está acessível a partir do Home Assistant. Alguns fornecedores recusam descargas automatizadas.",
+      "not_built": "Esta fonte ainda não tem horários. Atualize-a a partir da sua entrada na página da integração para os criar.",
       "no_zip_file": "Problema de recolha de dados: Ficheiro ZIP não está na pasta correta",
       "zip_holds_zips": "O ZIP contém outros ficheiros ZIP e nenhum pôde ser proposto: descompacte-o e indique o ZIP interno da rede pretendida",
       "name_taken": "Já existe um sensor com este nome. Escolha outro.",

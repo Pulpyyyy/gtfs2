@@ -266,6 +266,7 @@
       "stop_incorrect": "Aucun départ trouvé entre ces deux villes. Vérifiez l'orthographe telle que l'exploitant l'écrit, et qu'elles sont bien sur la même ligne.",
       "generic_failure": "Échec global, vérifiez les logs d'érreur",
       "no_data_file": "Impossible de télécharger le fichier. Vérifiez l'adresse, et que la source est joignable depuis Home Assistant. Certains fournisseurs refusent les téléchargements automatisés.",
+      "not_built": "Cette source n'a pas encore d'horaires. Rafraîchissez-la depuis son entrée dans la page de l'intégration pour les construire.",
       "no_zip_file": "Problème de collecte de données : fichier ZIP ne se trouve pas dans le bon dossier",
       "zip_holds_zips": "Le ZIP contient d'autres fichiers ZIP et aucun n'a pu être proposé : décompressez-le et indiquez le ZIP interne du réseau voulu",
       "name_taken": "Un capteur porte déjà ce nom. Choisissez-en un autre.",
