@@ -338,6 +338,13 @@ class _EntityShell:
     so a test builds one and calls its own methods. What Home Assistant
     derives from them, state and attributes, is HA's to answer."""
 
+    async def async_added_to_hass(self) -> None:
+        """Entity's hook, empty in Home Assistant: a subclass extends it."""
+
+    def async_on_remove(self, func) -> None:
+        """As Entity keeps them: the functions to call on removal."""
+        self.__dict__.setdefault("_on_remove", []).append(func)
+
 
 class _UpdateEntityFeature(int):
     """The flag values of homeassistant.components.update."""
