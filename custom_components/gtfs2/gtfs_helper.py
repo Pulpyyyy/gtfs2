@@ -930,6 +930,7 @@ def extract_from_zip(hass, gtfs, gtfs_dir, file, remove_file):
     remove_from_zip(remove_file,gtfs_dir, file[:-4])
     if os.fork() != 0:
         return
+    drop_import_indexes(gtfs)
     pygtfs.append_feed(gtfs, os.path.join(gtfs_dir, file))
     check_datasource_index(hass, gtfs, gtfs_dir, file[:-4])
     repair_trip_directions(gtfs)
@@ -2166,6 +2167,25 @@ DATASOURCE_INDEXES = (
 # the database file each datasource was last checked as, (inode, mtime,
 # size): the same file needs no second look, a rebuilt one gets one
 _INDEX_CHECKED = {}
+
+
+def drop_import_indexes(schedule):
+    """Take the stop_times indexes off a database pygtfs is about to fill.
+
+    From 0.1.10 on pygtfs declares trip_id and stop_id indexes on
+    stop_times and creates them with the table, so SQLite would update both
+    at every row an import inserts, millions on a large feed. Without them
+    the rows go in bare and the indexes are built afterwards, in one pass
+    each, as upstream chose ("apply indexes at end of extracting"): by
+    check_datasource_index on a datasource, by the import's own
+    _index_scratch on a scratch database. Only for a database still empty.
+    """
+    with schedule.engine.begin() as conn:
+        names = [name for (name,) in conn.execute(text(
+            "SELECT name FROM sqlite_master WHERE type = 'index' "
+            "AND tbl_name = 'stop_times' AND sql IS NOT NULL")).fetchall()]
+        for name in names:
+            conn.execute(text(f'DROP INDEX "{name}"'))
 
 
 def check_datasource_index(hass, schedule, gtfs_dir, file):

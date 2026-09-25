@@ -9,12 +9,24 @@ from __future__ import annotations
 
 import sqlite3
 import types
+import zipfile
 
 from sqlalchemy import create_engine, event
 
 import ha_stub
 
 gtfs_helper = ha_stub.load("gtfs_helper")
+
+FEED = {
+    "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,Europe/Paris\n",
+    "routes.txt": "route_id,agency_id,route_short_name,route_type\nR1,A,1,3\n",
+    "trips.txt": "route_id,service_id,trip_id\nR1,S,T1\n",
+    "stop_times.txt": ("trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+                       "T1,08:00:00,08:00:00,S1,1\nT1,08:10:00,08:10:00,S2,2\n"),
+    "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\nS1,Gare,47.9,1.9\nS2,Centre,47.91,1.91\n",
+    "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                     "start_date,end_date\nS,1,1,1,1,1,1,1,20260101,20261231\n"),
+}
 
 
 def _datasource(tmp_path, interned=False):
@@ -77,4 +89,46 @@ def test_the_same_file_is_not_read_again(tmp_path):
     gtfs_helper.check_datasource_index(hass, schedule, "gtfs2", "src")
     gtfs_helper.check_datasource_index(hass, schedule, "gtfs2", "src")
     assert opened == []
+    schedule.engine.dispose()
+
+
+def _stop_times_indexes(db):
+    """The indexes on stop_times besides its primary key."""
+    conn = sqlite3.connect(db)
+    try:
+        return {name for (name,) in conn.execute(
+            "select name from sqlite_master where type = 'index' "
+            "and tbl_name = 'stop_times' and sql is not null")}
+    finally:
+        conn.close()
+
+
+def test_an_import_fills_stop_times_before_indexing_it(tmp_path):
+    # pygtfs 0.1.10 on creates two stop_times indexes with the table, which
+    # SQLite would then update at every row imported: the import takes them
+    # off the empty table, and the datasource check builds its own once
+    import pygtfs
+    source_zip = ha_stub.load("source_zip")
+    feed = tmp_path / "feed.zip"
+    with zipfile.ZipFile(feed, "w") as zout:
+        for name, body in FEED.items():
+            zout.writestr(name, body)
+    fresh = pygtfs.Schedule(str(tmp_path / "fresh.sqlite"))
+    gtfs_helper.drop_import_indexes(fresh)
+    fresh.engine.dispose()
+    assert _stop_times_indexes(tmp_path / "fresh.sqlite") == set()
+
+    scratch = tmp_path / "gtfs2" / "src.sqlite"
+    scratch.parent.mkdir()
+    assert source_zip.build_scratch_database(str(tmp_path), "feed.zip", str(scratch),
+                                             only_routes=["R1"])
+    assert _stop_times_indexes(scratch) == set()
+    hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
+    schedule = types.SimpleNamespace(engine=create_engine(f"sqlite:///{scratch}"))
+    gtfs_helper._INDEX_CHECKED.clear()
+    gtfs_helper.check_datasource_index(hass, schedule, "gtfs2", "src")
+    assert _stop_times_indexes(scratch) == {"gtfs2_stop_times_trip_id", "gtfs2_stop_times_stop_id"}
+    conn = sqlite3.connect(scratch)
+    assert conn.execute("select count(*) from stop_times").fetchone() == (2,)
+    conn.close()
     schedule.engine.dispose()

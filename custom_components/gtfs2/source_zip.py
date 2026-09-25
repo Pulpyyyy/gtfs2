@@ -29,7 +29,7 @@ from .zip_peek import (extract_member, inner_zips, inner_zips_in_file,
                        member_out_of, open_member)
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
-from .gtfs_helper import check_extracting, get_gtfs, remove_from_zip
+from .gtfs_helper import check_extracting, drop_import_indexes, get_gtfs, remove_from_zip
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,6 +80,7 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
     conn = f"{scratch_file}?check_same_thread=False&timeout=60"
     try:
         scratch = pygtfs.Schedule(conn)
+        drop_import_indexes(scratch)
         pygtfs.append_feed(scratch, feed_file)
         ok = bool(scratch.feeds)
         if ok:
