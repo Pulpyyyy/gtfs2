@@ -63,6 +63,9 @@ Minimum Home Assistant: 2024.12 (`hacs.json`). The options flow reads
 2024.12 on (2024.11 has it on `OptionsFlowWithConfigEntry` only);
 `entry.runtime_data` needs 2024.5.
 
+Python: 3.12 to 3.14, what Home Assistant runs on from 2024.12 (3.12) to
+today (3.14). The test workflows run both ends.
+
 ## How the fork is maintained
 
 ### Branches

@@ -7,12 +7,18 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # both ends of the Python the supported Home Assistant versions run
+    # on: 3.12 for 2024.12, 3.14 for today's
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: pip install -r tests/requirements.txt
@@ -26,6 +32,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tests-results
+          name: tests-results-${{ matrix.python-version }}
           path: test-results/
           if-no-files-found: ignore
