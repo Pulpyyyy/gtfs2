@@ -961,7 +961,7 @@ tests/            synthetic tests, run under the Home Assistant stub kept
 tests_provider/   tests on real provider feeds; results.json records which
                   promises hold, xfail marks the known failures, strict
                   so a fixed case must drop its mark  CI: Provider Tests
-both suites       branch coverage, may not fall under a floor (70%)
+both suites       branch coverage, may not fall under a floor (78%)
                                                   CI: Coverage
 hassfest, HACS    manifest, strings, services     CI: Validate
 ```
