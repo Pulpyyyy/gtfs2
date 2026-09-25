@@ -969,6 +969,11 @@ tests_provider/   tests on real provider feeds; results.json records which
                   so a fixed case must drop its mark  CI: Provider Tests
 both suites       branch coverage, may not fall under a floor (78%)
                                                   CI: Coverage
+complexity        each function at 10 or under, or at its recorded
+                  ceiling (.github/complexity.json), which only comes
+                  down; no pyflakes finding       CI: Complexity
+layers            the import-linter contract (.importlinter)
+                                                  CI: Imports
 hassfest, HACS    manifest, strings, services     CI: Validate
 ```
 
