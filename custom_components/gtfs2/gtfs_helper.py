@@ -1126,8 +1126,10 @@ def _places_of(trips, info):
                 seeds.append(stop_id)
     place = {}
     for stop_id in calls:
+        # near is in seed order, and min keeps the first of equals: on a
+        # tie the seed the line met first
         near = [s for s in seeds if _same_place(info[s], info[stop_id])]
-        place[stop_id] = min(near, key=lambda s: (_box_distance(info[s], info[stop_id]), seeds.index(s)))
+        place[stop_id] = min(near, key=lambda s: _box_distance(info[s], info[stop_id]))
     return place
 
 
@@ -1150,6 +1152,32 @@ def _segments_of(places):
     return pieces
 
 
+def _lay_piece(order, piece):
+    """Slot the places of a piece into the chain, each after the place
+    preceding it, the piece read forward or backward as the places it
+    shares with the chain agree. False, the chain left alone, when a chain
+    already started shares fewer than two places with it."""
+    position = {p: i for i, p in enumerate(order)}
+    shared = [position[p] for p in piece if p in position]
+    if not order:
+        forward = True
+    elif len(shared) < 2:
+        return False
+    else:
+        up = sum(1 for a, b in zip(shared, shared[1:]) if b > a)
+        down = sum(1 for a, b in zip(shared, shared[1:]) if b < a)
+        forward = up >= down
+    prev = -1
+    for p in (piece if forward else reversed(piece)):
+        if p in position:
+            prev = position[p]
+            continue
+        prev += 1
+        order.insert(prev, p)
+        position = {q: i for i, q in enumerate(order)}
+    return True
+
+
 def _chain_of(trips, place):
     """One order of places for the whole line, both ways round.
 
@@ -1169,27 +1197,7 @@ def _chain_of(trips, place):
     pending = sorted(pieces, key=lambda p: (-len(p), -pieces[p], p))
     order = []
     while pending:
-        waiting = []
-        for piece in pending:
-            position = {p: i for i, p in enumerate(order)}
-            shared = [position[p] for p in piece if p in position]
-            if not order:
-                forward = True
-            elif len(shared) < 2:
-                waiting.append(piece)
-                continue
-            else:
-                up = sum(1 for a, b in zip(shared, shared[1:]) if b > a)
-                down = sum(1 for a, b in zip(shared, shared[1:]) if b < a)
-                forward = up >= down
-            prev = -1
-            for p in (piece if forward else reversed(piece)):
-                if p in position:
-                    prev = order.index(p)
-                    continue
-                prev += 1
-                order.insert(prev, p)
-                position = {q: i for i, q in enumerate(order)}
+        waiting = [piece for piece in pending if not _lay_piece(order, piece)]
         if len(waiting) == len(pending):
             # nothing left shares two places with the chain: keep them in
             # riding order at the end rather than lose them
