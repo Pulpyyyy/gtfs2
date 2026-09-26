@@ -1735,18 +1735,24 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     # the terminus (TEC B0026 listed Noduwez after Jodoigne; the 48-feed
     # sweep). Without such a cycle every place is a group of its own
     group = _groups_of(before)
-    order, placed, last = [], set(), None
+    order, placed, rank = [], set(), {}
     while len(order) < len(reach):
         blocked = {group[p] for p in reach if p not in placed
                    for q in before[p] if q not in placed and group[q] != group[p]}
         ready = [p for p in reach if p not in placed and group[p] not in blocked]
         # nothing free: a loop's rotations order each other round
         pool = ready or [p for p in reach if p not in placed]
-        going_on = [p for p in pool if last in before[p]]
-        p = min(going_on or pool, key=lambda q: (-weight[q], reach[q], position.get(q, 0)))
+        # what hangs off the latest place listed comes first: the branch in
+        # progress, then what branches off it further back, before another
+        # side of the line starts. Taking the busiest free place instead
+        # left a side's last pole, the other quay of a terminus, after the
+        # whole other way (TAO 40 listed Chèques Postaux quai C after the
+        # Gare d'Orléans end; the 48-feed sweep)
+        p = min(pool, key=lambda q: (-max((rank[x] for x in before[q] if x in rank), default=-1),
+                                     -weight[q], reach[q], position.get(q, 0)))
+        rank[p] = len(order)
         order.append(p)
         placed.add(p)
-        last = p
     kept = [by_place[p] for p in order if p in by_place and p in alightable]
     stops = _entries_of(kept, _labels_of(line, station_names))
     _LOGGER.debug(f"Destinations from {origin_stop_id}: {stops}")
