@@ -45,7 +45,6 @@ import test_journeys as tj
 UTC = datetime.timezone.utc
 CLOCKS = (datetime.time(0, 5), datetime.time(1, 30), datetime.time(2, 30),
           datetime.time(3, 30), datetime.time(12, 0))
-WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
 
 def _rows(archive, name):
@@ -68,17 +67,6 @@ def _changes(zone, first, last):
     return found
 
 
-def _runs(calendar, dates, service, day):
-    """Whether the zip's calendar runs the service on that day."""
-    ymd = day.strftime("%Y%m%d")
-    kind = dates.get((service, ymd))
-    if kind:
-        return kind == "1"
-    row = calendar.get(service)
-    return bool(row and row["start_date"] <= ymd <= row["end_date"]
-                and row[WEEKDAYS[day.weekday()]] == "1")
-
-
 def _cases():
     """(fixture, route_id, day) for every line of a fixture its calendar
     runs on a day the agency's clocks change. Read off the zip: the db is
@@ -94,15 +82,15 @@ def _cases():
             zone_name = next((row["agency_timezone"] for row in _rows(archive, "agency.txt")
                               if row.get("agency_timezone")), "UTC")
             calendar = {row["service_id"]: row for row in _rows(archive, "calendar.txt")}
-            dates = {(row["service_id"], row["date"]): row["exception_type"]
-                     for row in _rows(archive, "calendar_dates.txt")}
+            exceptions = _rows(archive, "calendar_dates.txt")
+            runs = tj.service_days_of(calendar.values(), exceptions)
             trains = {row["route_id"] for row in _rows(archive, "routes.txt")
                       if row.get("route_type") == "2"}
             services = {}
             for trip in _rows(archive, "trips.txt"):
                 services.setdefault(trip["route_id"], set()).add(trip["service_id"])
         spans = [(row["start_date"], row["end_date"]) for row in calendar.values()]
-        spans += [(ymd, ymd) for _service, ymd in dates]
+        spans += [(row["date"], row["date"]) for row in exceptions if row.get("date")]
         if not spans:
             continue
         first = datetime.datetime.strptime(min(s for s, _e in spans), "%Y%m%d").date()
@@ -115,7 +103,7 @@ def _cases():
                 if route_id in trains:
                     continue
                 for day in changes:
-                    if any(_runs(calendar, dates, s, day) for s in services.get(route_id, ())):
+                    if any(day in runs.get(s, ()) for s in services.get(route_id, ())):
                         cases.append(pytest.param(
                             path.name, route_id, day.isoformat(),
                             id=f"{path.name}-{label}-{day.isoformat()}"))

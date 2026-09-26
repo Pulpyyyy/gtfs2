@@ -58,6 +58,7 @@ ha_stub.install()
 import homeassistant.util.dt as dt_util  # noqa: E402
 
 import fixture_db  # noqa: E402
+import test_journeys as tj  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
 refresh_steps = ha_stub.load("refresh_steps")
@@ -108,18 +109,11 @@ class Feed:
             calls.sort(key=lambda c: int(c["stop_sequence"]))
 
     def runs(self, service_id, day):
-        """Whether the service runs on that day: an exception says so
-        first, else the calendar's weekday within its validity."""
-        stamp = day.strftime("%Y%m%d")
-        for row in self.dates:
-            if row["service_id"] == service_id and row["date"] == stamp:
-                return row["exception_type"] == "1"
-        cal = self.calendar.get(service_id)
-        if cal is None or not cal["start_date"] <= stamp <= cal["end_date"]:
-            return False
-        weekday = ("monday", "tuesday", "wednesday", "thursday", "friday",
-                   "saturday", "sunday")[day.weekday()]
-        return cal[weekday] == "1"
+        """Whether the service runs on that day, by the tests' one reading of
+        the GTFS calendar (test_journeys.service_days_of)."""
+        if not hasattr(self, "_runs"):
+            self._runs = tj.service_days_of(self.calendar.values(), self.dates)
+        return day in self._runs.get(service_id, ())
 
     def place(self, stop_id):
         """The records a rider waits at, as the component groups them

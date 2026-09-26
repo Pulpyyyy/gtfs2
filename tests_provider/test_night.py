@@ -155,30 +155,6 @@ def _fold_to_calendar(schedule):
                 day += datetime.timedelta(days=1)
 
 
-def _service_days(conn):
-    """Every day each service runs, read from both calendar tables."""
-    runs, removed = {}, set()
-    for service_id, day, kind in conn.execute(text(
-            "SELECT service_id, date, exception_type FROM calendar_dates")):
-        day = datetime.date.fromisoformat(str(day)[:10])
-        if kind == 1:
-            runs.setdefault(service_id, set()).add(day)
-        elif kind == 2:
-            removed.add((service_id, day))
-    for row in conn.execute(text(
-            "SELECT service_id, monday, tuesday, wednesday, thursday, friday, "
-            "saturday, sunday, start_date, end_date FROM calendar")):
-        if not row[8] or not row[9]:
-            continue
-        day = datetime.date.fromisoformat(str(row[8])[:10])
-        end = datetime.date.fromisoformat(str(row[9])[:10])
-        while day <= end:
-            if row[1 + day.weekday()] and (row[0], day) not in removed:
-                runs.setdefault(row[0], set()).add(day)
-            day += datetime.timedelta(days=1)
-    return runs
-
-
 def _laid(day, stored, zone):
     """A stop time on its service day, as an instant."""
     return (datetime.datetime.combine(day, datetime.time(0), zone)
@@ -449,7 +425,7 @@ def test_night(record_property, fixture, promise, shape):
         names = dict(conn.execute(text("SELECT stop_id, stop_name FROM stops")).fetchall())
         places = {row[0]: (row[1], row[2]) for row in conn.execute(text(
             "SELECT stop_id, stop_lat, stop_lon FROM stops"))}
-        days = _service_days(conn)
+        days = tj.service_days(schedule)
         calls = _night_calls(conn, promise)
         if not calls:
             pytest.skip("no call past 24:00 this promise covers")

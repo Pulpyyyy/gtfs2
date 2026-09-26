@@ -197,18 +197,19 @@ class Fixture:
 
     def trip_calls(self):
         """{trip_id: (route_id, direction_id, service_id, [(stop_id, way on,
-        way off)] in riding order)}, read once."""
+        way off, departure_time)] in riding order)}, read once."""
         if not hasattr(self, "_trip_calls"):
             found = {}
             with self.schedule.engine.connect() as conn:
                 for trip_id, route, way, service in conn.execute(text(
                         "SELECT trip_id, route_id, direction_id, service_id FROM trips")):
                     found[trip_id] = (route, way, service, [])
-                for trip_id, _seq, stop_id, pickup, drop_off in conn.execute(text(
-                        "SELECT trip_id, stop_sequence, stop_id, pickup_type, drop_off_type "
-                        "FROM stop_times ORDER BY trip_id, stop_sequence")):
+                for trip_id, _seq, stop_id, pickup, drop_off, departure in conn.execute(text(
+                        "SELECT trip_id, stop_sequence, stop_id, pickup_type, drop_off_type, "
+                        "departure_time FROM stop_times ORDER BY trip_id, stop_sequence")):
                     if trip_id in found:
-                        found[trip_id][3].append((stop_id, _flag(pickup) != 1, _flag(drop_off) != 1))
+                        found[trip_id][3].append(
+                            (stop_id, _flag(pickup) != 1, _flag(drop_off) != 1, departure))
             self._trip_calls = found
         return self._trip_calls
 
@@ -349,12 +350,8 @@ def _repair_directions(schedule):
     return ha_stub.load("direction_repair").repair_trip_directions(schedule)
 
 
-# a pickup_type / drop_off_type as the feed meant it, and the rule the
-# queries hold to for the expected side (a call with a way on at the
-# origin, a call with a way off at the destination): the component's own
+# a pickup_type / drop_off_type as the feed meant it: the component's own
 _flag = gtfs_helper._call_type
-_WAY_ON = gtfs_helper._boards("o")
-_WAY_OFF = gtfs_helper._alights("x")
 
 
 def line_places(fx, route_id):
@@ -418,32 +415,69 @@ def patterns_of(schedule, route_id, direction):
     return grouped
 
 
+WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
+def _set(flag):
+    """A calendar weekday flag, as the db (a number, a boolean) or the zip
+    (text) holds it."""
+    return str(flag).strip().lower() in ("1", "true")
+
+
+def _day(value):
+    """A calendar date as the db (2026-09-26...) or the zip (20260926) holds it."""
+    text_value = str(value).strip()[:10]
+    if "-" not in text_value:
+        text_value = f"{text_value[:4]}-{text_value[4:6]}-{text_value[6:8]}"
+    return datetime.date.fromisoformat(text_value)
+
+
+def service_days_of(calendar, exceptions):
+    """{service_id: the days it runs}, the GTFS rule read once for every
+    test: an exception on a day decides it (1 runs, 2 does not), otherwise
+    the calendar window's weekday does. calendar holds rows with service_id,
+    the seven weekdays, start_date and end_date; exceptions rows with
+    service_id, date and exception_type; as the db or the zip holds them."""
+    decided = {(row["service_id"], _day(row["date"])): str(row["exception_type"]).strip() == "1"
+               for row in exceptions if row.get("date")}
+    runs = {}
+    for row in calendar:
+        if not row.get("start_date") or not row.get("end_date"):
+            continue
+        day, end = _day(row["start_date"]), _day(row["end_date"])
+        while day <= end:
+            if (row["service_id"], day) not in decided and _set(row[WEEKDAYS[day.weekday()]]):
+                runs.setdefault(row["service_id"], set()).add(day)
+            day += datetime.timedelta(days=1)
+    for (service_id, day), running in decided.items():
+        if running:
+            runs.setdefault(service_id, set()).add(day)
+    return runs
+
+
+def service_days(schedule):
+    """service_days_of over a schedule's calendar tables, read once per
+    schedule."""
+    if not hasattr(schedule, "_test_service_days"):
+        with schedule.engine.connect() as conn:
+            calendar = [dict(row._mapping) for row in conn.execute(text(
+                "SELECT service_id, " + ", ".join(WEEKDAYS) + ", start_date, end_date FROM calendar"))]
+            exceptions = [dict(row._mapping) for row in conn.execute(text(
+                "SELECT service_id, date, exception_type FROM calendar_dates"))]
+        schedule._test_service_days = service_days_of(calendar, exceptions)
+    return schedule._test_service_days
+
+
 def service_date(schedule, trip_ids):
-    """The first day one of these trips runs, as an ISO date, or None: the
-    earliest calendar_dates addition, or the first weekday of a calendar
-    window its removals leave, over the trips' services."""
+    """The first day one of these trips runs, as an ISO date, or None."""
     with schedule.engine.connect() as conn:
         services = {row[0] for row in conn.execute(text(
             "SELECT DISTINCT service_id FROM trips WHERE trip_id IN :trips"
         ).bindparams(bindparam("trips", expanding=True)),
             {"trips": list(trip_ids)})}
-        exceptions = conn.execute(text(
-            "SELECT service_id, date, exception_type FROM calendar_dates")).fetchall()
-        days = {str(d)[:10] for s, d, k in exceptions if k == 1 and s in services}
-        removed = {(s, str(d)[:10]) for s, d, k in exceptions if k == 2}
-        for row in conn.execute(text(
-                "SELECT service_id, monday, tuesday, wednesday, thursday, "
-                "friday, saturday, sunday, start_date, end_date FROM calendar")):
-            if row[0] not in services or not row[8] or not row[9]:
-                continue
-            day = datetime.date.fromisoformat(str(row[8])[:10])
-            end = datetime.date.fromisoformat(str(row[9])[:10])
-            while day <= end:
-                if row[1 + day.weekday()] and (row[0], day.isoformat()) not in removed:
-                    days.add(day.isoformat())
-                    break
-                day += datetime.timedelta(days=1)
-    return min(days) if days else None
+    days = [min(found) for service, found in service_days(schedule).items()
+            if service in services and found]
+    return min(days).isoformat() if days else None
 
 
 def pair_service_days(fx, origin, destination, route_type,
@@ -481,7 +515,7 @@ def pair_service_days(fx, origin, destination, route_type,
                 direction is not None and way is not None and str(way) != str(direction))):
             continue
         boarded = False
-        for stop, way_on, way_off in calls:
+        for stop, way_on, way_off, _departure in calls:
             if boarded and way_off and at(stop, destination):
                 services.add(service)
                 break
@@ -489,49 +523,14 @@ def pair_service_days(fx, origin, destination, route_type,
                 boarded = True
     if not services:
         return []
-    schedule = fx.schedule
-    days = set()
-    with schedule.engine.connect() as conn:
-        exceptions = conn.execute(text(
-            "SELECT service_id, date, exception_type FROM calendar_dates")).fetchall()
-        for service_id, day, kind in exceptions:
-            if service_id in services and kind == 1:
-                days.add(str(day)[:10])
-        removed = {(s, str(d)[:10]) for s, d, k in exceptions if k == 2}
-        for row in conn.execute(text(
-                "SELECT service_id, monday, tuesday, wednesday, thursday, "
-                "friday, saturday, sunday, start_date, end_date FROM calendar")):
-            if row[0] not in services or not row[8] or not row[9]:
-                continue
-            day = datetime.date.fromisoformat(str(row[8])[:10])
-            end = datetime.date.fromisoformat(str(row[9])[:10])
-            while day <= end:
-                if row[1 + day.weekday()] and (row[0], day.isoformat()) not in removed:
-                    days.add(day.isoformat())
-                day += datetime.timedelta(days=1)
-    return sorted(days)
+    runs = service_days(fx.schedule)
+    return sorted(day.isoformat() for service in services for day in runs.get(service, ()))
 
 
 def services_on(schedule, day_iso):
-    """The service_ids the feed runs on that day: calendar windows by
-    weekday minus their removals, plus calendar_dates additions."""
+    """The service_ids the feed runs on that day."""
     day = datetime.date.fromisoformat(day_iso)
-    running = set()
-    with schedule.engine.connect() as conn:
-        exceptions = conn.execute(text(
-            "SELECT service_id, date, exception_type FROM calendar_dates")).fetchall()
-        removed = {s for s, d, k in exceptions if k == 2 and str(d)[:10] == day_iso}
-        running |= {s for s, d, k in exceptions if k == 1 and str(d)[:10] == day_iso}
-        for row in conn.execute(text(
-                "SELECT service_id, monday, tuesday, wednesday, thursday, "
-                "friday, saturday, sunday, start_date, end_date FROM calendar")):
-            if not row[8] or not row[9]:
-                continue
-            start = datetime.date.fromisoformat(str(row[8])[:10])
-            end = datetime.date.fromisoformat(str(row[9])[:10])
-            if start <= day <= end and row[1 + day.weekday()]:
-                running.add(row[0])
-    return running - removed
+    return {service for service, days in service_days(schedule).items() if day in days}
 
 
 # seconds since the service day's midnight of a stop time as the db stores
@@ -539,34 +538,30 @@ def services_on(schedule, day_iso):
 gtfs_seconds = gtfs_helper.gtfs_seconds
 
 
-def late_departures(schedule, route_id, direction, origins, destinations,
+def late_departures(fx, route_id, direction, origins, destinations,
                     day_iso, since="23:50:00"):
     """Departure times at the origin, on that day's service, of the trips
     of this route and direction that ride one of the origin's records before
     one of the destination's and leave at or after `since`. Hours past 24
-    are that day's trips running into the next one."""
-    running = services_on(schedule, day_iso)
-    where = ("t.route_id = :route AND o.stop_id IN :origins "
-             "AND x.stop_id IN :destinations AND o.stop_sequence < x.stop_sequence "
-             f"AND {_WAY_ON} AND {_WAY_OFF}")
-    params = {"route": route_id, "origins": list(origins),
-              "destinations": list(destinations)}
-    if direction is not None:
-        where += " AND t.direction_id = :direction"
-        params["direction"] = direction
-    with schedule.engine.connect() as conn:
-        rows = conn.execute(text(
-            "SELECT t.service_id, o.departure_time FROM trips t "
-            "INNER JOIN stop_times o ON o.trip_id = t.trip_id "
-            "INNER JOIN stop_times x ON x.trip_id = t.trip_id "
-            f"WHERE {where}"  # noqa: S608
-        ).bindparams(bindparam("origins", expanding=True),
-                     bindparam("destinations", expanding=True)),
-            params).fetchall()
-    # an untimed call (off the timepoints) leaves at no time anyone lists
-    return sorted((str(dep) for service, dep in rows
-                   if service in running and dep is not None
-                   and gtfs_seconds(dep) >= gtfs_seconds(since)),
+    are that day's trips running into the next one. Read call by call, the
+    ride leaving from the last call a rider boards at before the first one
+    they can leave at, as Fixture.next_ride reads it; a trip without a
+    direction_id rides either way."""
+    running = services_on(fx.schedule, day_iso)
+    found = []
+    for route, way, service, calls in fx.trip_calls().values():
+        if route != route_id or service not in running or (
+                direction is not None and way is not None and str(way) != str(direction)):
+            continue
+        leave = None
+        for stop, way_on, way_off, departure in calls:
+            if leave is not None and way_off and stop in destinations:
+                found.append(leave)
+                break
+            # an untimed call (off the timepoints) leaves at no time anyone lists
+            if way_on and stop in origins and departure is not None:
+                leave = departure
+    return sorted((str(dep) for dep in found if gtfs_seconds(dep) >= gtfs_seconds(since)),
                   key=gtfs_seconds)
 
 
@@ -707,23 +702,6 @@ def branches_interleaved(offered, rides):
                 if sum(1 for a, b in zip(labels, labels[1:]) if a != b) > 1:
                     return sorted(own, key=position.get)
     return []
-
-
-def rode_past_an_end(schedule, result, origins, destinations):
-    """The stops the answer's trip calls at between its two ends that are one
-    of those ends again, where a rider could board (the origin) or leave
-    (the destination): a shorter ride was on the same trip. A call nobody
-    may use there cuts nothing (Kennington's second call, no way on or
-    off, as the departure query reads it since the 48-feed sweep)."""
-    with schedule.engine.connect() as conn:
-        rows = conn.execute(text(
-            "SELECT stop_id, pickup_type, drop_off_type FROM stop_times WHERE trip_id = :t "
-            "AND stop_sequence > :o AND stop_sequence < :d"),
-            {"t": result.get("trip_id"), "o": result["origin_stop_sequence"],
-             "d": result["destination_stop_time"]["Sequence"]}).fetchall()
-    return [stop for stop, pickup, drop_off in rows
-            if (stop in origins and _flag(pickup) != 1)
-            or (stop in destinations and _flag(drop_off) != 1)]
 
 
 SPREAD = 6
@@ -1208,16 +1186,9 @@ def check_route(check, fx, route_id, direction, kind):
                                        f"asked no direction on {route_id}: "
                                        f"trip {got['trip']} rides d{rode}",
                                        asked=asked, got=got)
-                    if ok:
-                        # and it is the shortest ride on its trip: a trip
-                        # passing an end twice does not board the rider on
-                        # the pole across the road for the long way round
-                        past = rode_past_an_end(schedule, result, origins, reached)
-                        check.note(not past,
-                                   f"asked {origin} -> {destination} on {route_id}: "
-                                   f"trip {got['trip']} calls at an end again on the way"
-                                   + (f" ({listed(past)})" if past else ""),
-                                   asked=asked, got=got)
+                    # the shortest ride on a trip passing an end twice is the
+                    # query's rule, set in tests/test_shortest_ride.py; the
+                    # ride it answers is held to the feed's next ride below
                     # and the first departure listed is the next one the feed
                     # has, before dawn and at midday: a later ride of the day
                     # would pass every check above
@@ -1390,7 +1361,7 @@ def check_midnight(check, fx, clock, hass, route_id, route_type, direction,
         return
     day = next((d for d in days if shifted(d, 1) in days), days[0])
     tomorrow_runs = shifted(day, 1) in days
-    late = late_departures(schedule, route_id, query_direction, origins,
+    late = late_departures(fx, route_id, query_direction, origins,
                            destinations, day)
     past_midnight = [t for t in late if gtfs_seconds(t) >= 24 * 3600]
     now = fx.instant_on(day, datetime.time(23, 50))
