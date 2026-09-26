@@ -1614,12 +1614,15 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     weights_sql = rides_sql + """
     select min(trip_id), count(*) from ride group by stops
     """
-    # the records some trip through the origin sets riders down at, after it
-    alighting_sql = rides_sql + f"""
-    select distinct st.stop_id
-    from ride
-    inner join through o on o.trip_id = ride.trip_id
-    inner join stop_times st on st.trip_id = ride.trip_id
+    # the records some trip through the origin sets riders down at, after it,
+    # each with the sampled trip of its ride: a way asked keeps its own
+    alighting_sql = rides_sql + f""", sampled as (
+        select trip_id, min(trip_id) over (partition by stops) as sample_id from ride
+    )
+    select distinct sampled.sample_id, st.stop_id
+    from sampled
+    inner join through o on o.trip_id = sampled.trip_id
+    inner join stop_times st on st.trip_id = sampled.trip_id
         and st.stop_sequence > o.origin_sequence
     where {_alights("st")}
     """
@@ -1628,10 +1631,9 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
         line, station_names, place, _line_trips = _line_of(conn, route_id, direction)
         rows = conn.execute(text(sql), {**scope, "origin": origin_stop_id}).fetchall()
         trip_count = dict(conn.execute(text(weights_sql), {**scope, "origin": origin_stop_id}).fetchall())
-        alighting = {row[0] for row in conn.execute(text(alighting_sql), {**scope, "origin": origin_stop_id})}
+        alighting = conn.execute(text(alighting_sql), {**scope, "origin": origin_stop_id}).fetchall()
         boarding = (_origin_boarding(conn, route_id, origin_stop_id, direction)
                     if towards is not None else None)
-    alightable = {place[s] for s in alighting if s in place}
     position = {x[0]: i for i, x in enumerate(line)}
     by_place = {x[0]: x for x in line}
     trips, _info = _trips_of(rows)
@@ -1644,6 +1646,13 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
         way = _ways_of(_line_trips, place, origin_place, boarding).get(towards, [])
         chosen = {tuple(ride) for ride, _trip_id in way}
         calls = [(ride, trip_id) for ride, trip_id in calls if tuple(ride) in chosen]
+    # a place is offered where the rides kept set riders down: with a way
+    # asked, the other way's set-downs are not the rider's (Zou's school
+    # runs towards Gare Routière call at two stops with no way off, which
+    # the other way's buses set down at: they were offered that way too)
+    riders = {trip_id for _ride, trip_id in calls}
+    alightable = {place[s] for sample, s in alighting
+                  if s in place and (towards is None or sample in riders)}
     # Riding order first: a place comes after every place some trip calls at
     # just before it on its way from the origin, so two branches that meet
     # again (GVB 1 reaches Leidseplein by Overtoom or by Jan Pieter
