@@ -248,10 +248,10 @@
         }
       },
       "extracting": {
-        "title": "Waiting for {file}"
+        "title": "Waiting for the timetable"
       },
       "importing": {
-        "title": "Bringing lines back from {file}"
+        "title": "Bringing lines back"
       }
     },
     "error": {

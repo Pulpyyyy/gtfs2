@@ -42,3 +42,19 @@ def test_a_translation_holds_words_not_references(language):
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_a_translation_carries_every_key(language):
     assert _keys(_read(f"translations/{language}.json")) == _keys(_read("strings.json"))
+
+
+@pytest.mark.parametrize("name", ["strings.json", *(f"translations/{language}.json" for language in LANGUAGES)])
+def test_a_progress_title_asks_for_no_placeholder(name):
+    """The frontend fills a progress screen's description with the flow's
+    placeholders, but reads its title without them: a {file} there showed
+    as MISSING_VALUE on the install (2026-09-26)."""
+    words = _read(name)
+    found = []
+    for flow in ("config", "options"):
+        steps = words.get(flow, {}).get("step", {})
+        for step_id in words.get(flow, {}).get("progress", {}):
+            title = steps.get(step_id, {}).get("title", "")
+            if "{" in title:
+                found.append(f"{flow}.step.{step_id}.title: {title}")
+    assert found == []

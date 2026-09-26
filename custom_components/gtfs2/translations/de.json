@@ -248,10 +248,10 @@
         }
       },
       "extracting": {
-        "title": "Warten auf {file}"
+        "title": "Warten auf den Fahrplan"
       },
       "importing": {
-        "title": "Linien aus {file} werden wiederhergestellt"
+        "title": "Linien werden wiederhergestellt"
       }
     },
     "error": {

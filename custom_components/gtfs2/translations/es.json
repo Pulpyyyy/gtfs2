@@ -248,10 +248,10 @@
         }
       },
       "extracting": {
-        "title": "Esperando a {file}"
+        "title": "Esperando los horarios"
       },
       "importing": {
-        "title": "Restaurando líneas desde {file}"
+        "title": "Restaurando líneas"
       }
     },
     "error": {
