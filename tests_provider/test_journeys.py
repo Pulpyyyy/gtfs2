@@ -1748,6 +1748,23 @@ def check_train_stations(check, fx, route_id, direction):
     prefix = gtfs_helper.COACH_STOP_PREFIX
     coach_line = any(stop.startswith(prefix) for p in grouped for stop in p)
     coaches_read = 0
+    # every pattern with the same two ends on the same day asks the same
+    # questions at the same frozen instant, and each single pairing comes
+    # back in every ticking it stands for (Metro-North asks each one about
+    # five times): an answer is read once for the case, every check still
+    # notes its own
+    answers = {}
+
+    def ask(key, call):
+        if key not in answers:
+            answers[key] = call()
+        return answers[key]
+
+    def departures(origins, destinations, day):
+        return ask(("departures", tuple(origins), tuple(destinations), day),
+                   lambda: get_next_departure(
+                       hass, _train_data(fx, short_name, origins, destinations)))
+
     with freeze_time(fx.instant_on("1970-01-01")) as clock:
         for pattern, trip_ids in sorted(grouped.items()):
             day = service_date(schedule, trip_ids)
@@ -1771,9 +1788,8 @@ def check_train_stations(check, fx, route_id, direction):
                          for other in lasts if other not in (name_o, name_d)]
             for origins, destinations, singles in tickings:
                 where = f"{' + '.join(origins)} -> {' + '.join(destinations)} on {day}"
-                alone = [get_next_departure(hass, _train_data(fx, short_name, o, d))
-                         for o, d in singles]
-                both = get_next_departure(hass, _train_data(fx, short_name, origins, destinations))
+                alone = [departures(o, d, day) for o, d in singles]
+                both = departures(origins, destinations, day)
                 trips = (both or {}).get("next_departures_trip_id", [])
                 # the list runs on over the days and stops at ten, so two
                 # stations ticked answer the ten earliest departures the
@@ -1789,27 +1805,36 @@ def check_train_stations(check, fx, route_id, direction):
                            f"give {len(expected)} {expected[:3]}")
 
                 kinds = (both or {}).get("next_departures_route_types", [])
-                wanted = [gtfs_helper.departure_route_type(line_type,
-                                                           first_call_at(schedule, t, origins))
+                wanted = [gtfs_helper.departure_route_type(
+                              line_type,
+                              ask(("first call", t, tuple(origins)),
+                                  lambda t=t: first_call_at(schedule, t, origins)))
                           for t in trips]
                 check.note(kinds == wanted,
                            f"{where}: route types {kinds}, expected {wanted}")
                 coaches_read += wanted.count(gtfs_helper.RAIL_REPLACEMENT_BUS)
 
-                dates = [get_next_service_date(schedule, o[0], d[0], day, "2",
-                                               line=short_name) for o, d in singles]
-                date = get_next_service_date(schedule, origins[0], destinations[0], day, "2",
-                                             line=short_name, origin_names=origins,
-                                             dest_names=destinations)
+                dates = [ask(("date", o[0], d[0], day),
+                             lambda o=o, d=d: get_next_service_date(
+                                 schedule, o[0], d[0], day, "2", line=short_name))
+                         for o, d in singles]
+                date = ask(("date", tuple(origins), tuple(destinations), day),
+                           lambda: get_next_service_date(
+                               schedule, origins[0], destinations[0], day, "2",
+                               line=short_name, origin_names=origins,
+                               dest_names=destinations))
                 earliest = min((d for d in dates if d), default=None)
                 check.note(date == earliest,
                            f"{where}: next service {date}, the stations alone "
                            f"give {dates}")
 
-                single = [stations.has_train_trip_between(schedule, o, d, short_name)
+                single = [ask(("trip", tuple(o), tuple(d)),
+                              lambda o=o, d=d: stations.has_train_trip_between(
+                                  schedule, o, d, short_name))
                           for o, d in singles]
-                multi = stations.has_train_trip_between(schedule, origins, destinations,
-                                                           short_name)
+                multi = ask(("trip", tuple(origins), tuple(destinations)),
+                            lambda: stations.has_train_trip_between(
+                                schedule, origins, destinations, short_name))
                 check.note(multi == any(single),
                            f"{where}: trip test {multi}, the stations alone give {single}")
     if coach_line:
