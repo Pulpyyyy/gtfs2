@@ -847,6 +847,57 @@ def _left_standing(vehicle, max_age, now):
     return bool(max_age and stamp and now - stamp > max_age * 60)
 
 
+def _vehicle_way(vehicle, route_id, trip_id, direction, board, static_direction):
+    """(the direction the vehicle is seen on, whether it goes on this map).
+
+    The database's direction for its trip first, see get_rt_vehicle_positions,
+    the feed's otherwise. On the map: the trip of the next departure, or a
+    vehicle of the line going this way; one whose feed names no direction
+    is placed by its trip, one of the board's, rather than on whichever map
+    0 happens to be.
+    """
+    trip = str(vehicle["trip"]["trip_id"])
+    seen = static_direction.get(trip, vehicle["trip"].get("direction_id"))
+    on_this_way = trip in board if seen is None else str(direction) == str(seen)
+    wanted = trip == str(trip_id) or (_same_route(route_id, vehicle["trip"]["route_id"])
+                                      and on_this_way)
+    return seen, wanted
+
+
+def _vehicle_feature(vehicle, route_id, seen, direction):
+    """A vehicle's point on the map, and what its title is made of later:
+    (feature, (feature, trip_id, vehicle id, crc, direction)).
+
+    The marker id is built from the vehicle's id or label when it has one,
+    the trip's crc otherwise, which keeps geo_json_events from creating an
+    entity per trip. The direction is the one of the map it lands on when
+    the feed names none, so the id keeps the digit the registry cleanup
+    reads.
+    """
+    trip_id = vehicle["trip"]["trip_id"]
+    crc = str(binascii.crc32(trip_id.encode("utf8")))[-3:]
+    ids = vehicle.get("vehicle", {})
+    veh = str(ids.get("id", "") or ids.get("label", "")).strip()
+    way = str(seen if seen is not None else direction)
+    coordinates = [vehicle["position"]["longitude"], vehicle["position"]["latitude"]]
+    feature = {
+        "geometry": {"coordinates": coordinates, "type": "Point"},
+        "properties": {
+            "id": f"{route_id}_{way}_{veh or crc}",
+            # written once every vehicle is known, see get_rt_vehicle_positions
+            "title": "",
+            "trip_id": trip_id,
+            "route_id": str(route_id),
+            "direction_id": seen if seen is not None else way,
+            "vehicle_id": vehicle["vehicle"]["id"],
+            "vehicle_label": vehicle["vehicle"]["label"],
+            trip_id: coordinates,
+        },
+        "type": "Feature",
+    }
+    return feature, (feature, str(trip_id), veh, crc, way)
+
+
 def get_rt_vehicle_positions(self):
     feed_entities = get_gtfs_feed_entities(
         url=self._vehicle_position_url,
@@ -856,7 +907,6 @@ def get_rt_vehicle_positions(self):
     )
     geojson_body = []
     titles = []
-    geojson_element = {"geometry": {"coordinates":[],"type": "Point"}, "properties": {"id": "", "title": "", "trip_id": "", "route_id": "", "direction_id": "", "vehicle_id": "", "vehicle_label": ""}, "type": "Feature"}
     if feed_entities is None:
         # a failed fetch returns None: iterating it raises, and the caller's
         # broad except then abandons the whole realtime block, so a hiccup on
@@ -877,83 +927,45 @@ def get_rt_vehicle_positions(self):
     board = {str(t) for t in (getattr(self, "_trip_list", None) or ())}
     max_age = getattr(self, "_vehicle_max_age", DEFAULT_VEHICLE_MAX_AGE)
     now = time.time()
+    schedule = (getattr(self, "_data", None) or {}).get("schedule")
     static_direction = _trip_directions(
-        (getattr(self, "_data", None) or {}).get("schedule"),
+        schedule,
         [e["vehicle"]["trip"]["trip_id"] for e in feed_entities
          if e["vehicle"]["trip"]["trip_id"]
          and (str(e["vehicle"]["trip"]["trip_id"]) in board
               or _same_route(self._route_id, e["vehicle"]["trip"]["route_id"]))])
     for entity in feed_entities:
         vehicle = entity["vehicle"]
-
         if not vehicle["trip"]["trip_id"] or _left_standing(vehicle, max_age, now):
             # Vehicle is not in service; nor is one whose position is older
             # than the source's limit: some feeds keep publishing the
             # vehicles gone back to the depot under their last trip, stacked
             # at the terminus among the ones still running
             continue
-        if vehicle["trip"]["trip_id"] == self._trip_id: 
-            _LOGGER.debug('Adding position for TripId: %s, RouteId: %s, DirectionId: %s, Lat: %s, Lon: %s, crc_trip_id: %s', vehicle["trip"]["trip_id"],vehicle["trip"]["route_id"],vehicle["trip"]["direction_id"],vehicle["position"]["latitude"],vehicle["position"]["longitude"], binascii.crc32((vehicle["trip"]["trip_id"]).encode('utf8')))  
-            
-        # add data if trip found or if route in the selected direction; a
-        # vehicle whose feed names no direction is placed by its trip, one of
-        # the board's, rather than on whichever map 0 happens to be
-        seen_direction = static_direction.get(str(vehicle["trip"]["trip_id"]),
-                                              vehicle["trip"].get("direction_id"))
-        if seen_direction is None:
-            on_this_way = str(vehicle["trip"]["trip_id"]) in {
-                str(t) for t in (getattr(self, "_trip_list", None) or ())}
-        else:
-            on_this_way = str(self._direction) == str(seen_direction)
-        if (
-            str(vehicle["trip"]["trip_id"]) == str(self._trip_id)
-            or
-            ( _same_route(self._route_id, vehicle["trip"]["route_id"]) and on_this_way )
-            ):
-            _LOGGER.debug("Found vehicle on route with attributes: %s", vehicle)
-            _LOGGER.debug("crc : %s", binascii.crc32((vehicle["trip"]["trip_id"]).encode('utf8')))
-            geojson_element = {"geometry": {"coordinates":[],"type": "Point"}, "properties": {"id": "", "title": "", "trip_id": "", "route_id": "", "direction_id": "", "vehicle_id": "", "vehicle_label": ""}, "type": "Feature"}
-            geojson_element["geometry"]["coordinates"] = []
-            geojson_element["geometry"]["coordinates"].append(vehicle["position"]["longitude"])
-            geojson_element["geometry"]["coordinates"].append(vehicle["position"]["latitude"])
-            # Altered to use vehicle_id (if existing) to create the unique indicator instead of trip_id
-            # to reduce number of entities created by geojson. 
-            _crc = str(binascii.crc32((vehicle["trip"]["trip_id"]).encode('utf8')))[-3:]
-            _veh = str(vehicle.get("vehicle", {}).get("id", "") or vehicle.get("vehicle", {}).get("label", "")).strip()
-            # the direction of the map it lands on when the feed names none,
-            # so its marker id keeps the digit the registry cleanup reads
-            _dir = str(seen_direction if seen_direction is not None else self._direction)
-            geojson_element["properties"]["id"] = str(self._route_id) + "_" + _dir + "_" + (_veh or _crc)
-            # the title is written once every vehicle is known, see below
-            titles.append((geojson_element, str(vehicle["trip"]["trip_id"]), _veh, _crc, _dir))
-            geojson_element["properties"]["trip_id"] = vehicle["trip"]["trip_id"]
-            geojson_element["properties"]["route_id"] = str(self._route_id)
-            geojson_element["properties"]["direction_id"] = seen_direction if seen_direction is not None else _dir
-            geojson_element["properties"]["vehicle_id"] = vehicle["vehicle"]["id"]
-            geojson_element["properties"]["vehicle_label"] = vehicle["vehicle"]["label"]
-            geojson_element["properties"][vehicle["trip"]["trip_id"]] = geojson_element["geometry"]["coordinates"]
-            geojson_body.append(geojson_element)
+        seen, wanted = _vehicle_way(vehicle, self._route_id, self._trip_id,
+                                    self._direction, board, static_direction)
+        if not wanted:
+            continue
+        _LOGGER.debug("Found vehicle on route with attributes: %s", vehicle)
+        feature, title = _vehicle_feature(vehicle, self._route_id, seen, self._direction)
+        geojson_body.append(feature)
+        titles.append(title)
 
     # each vehicle titled after where its own trip goes, read for all of
     # them at once: the entry's destination was used, which is where the
     # rider gets off, not where the vehicle goes, and two entries on the
     # same line wrote the same file with titles of their own in turn
-    try:
-        _line = str(self._data.get("next_departure", {}).get("route_short_name") or "").strip()
-    except Exception:  # pylint: disable=broad-except
-        _line = ""
-    going = _trip_destinations((getattr(self, "_data", None) or {}).get("schedule"),
-                               [trip for _e, trip, _v, _c, _d in titles])
+    line = str((self._data.get("next_departure") or {}).get("route_short_name") or "").strip()
+    going = _trip_destinations(schedule, [trip for _e, trip, _v, _c, _d in titles])
     icon = self._icon.split(':')[1]
     for element, trip, veh, crc, direction in titles:
         where = going.get(trip)
-        if _line and where:
-            element["properties"]["title"] = _line + " → " + where + " " + (veh or crc) + "_" + icon
+        if line and where:
+            element["properties"]["title"] = line + " → " + where + " " + (veh or crc) + "_" + icon
         else:
             element["properties"]["title"] = str(self._route_id) + "(" + direction + ")" + crc + "_" + icon
 
     self.geojson = {"features": geojson_body, "type": "FeatureCollection"}
-        
     _LOGGER.debug("Vehicle geojson: %s", json.dumps(self.geojson))
     # named the same way as the route file next to it, see safe_file_part
     self._route_dir = safe_file_part(self._route_id) + "_" + safe_file_part(self._direction)
