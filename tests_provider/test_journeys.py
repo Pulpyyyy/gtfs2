@@ -1913,10 +1913,15 @@ def check_train_destinations(check, fx, route_id, direction):
     held to it; with no code, the route alone."""
     schedule = fx.schedule
     short_name = fx.route_short_names[route_id]
+    # the code the flow stores: None for a line the feed names by its long
+    # name alone, which then holds to its own route. Taken as it was, None
+    # made every nameless rail route of the feed one line (Metro-North,
+    # Amtrak: the stations of the others counted as missing)
+    code = short_name if short_name is not None and str(short_name).strip() else None
     prefix = gtfs_helper.COACH_STOP_PREFIX
     line_routes = [r for r, name in fx.route_short_names.items()
-                   if name == short_name
-                   and int(fx.route_types[r]) in gtfs_helper.RAIL_ROUTE_TYPES]
+                   if name == code
+                   and int(fx.route_types[r]) in gtfs_helper.RAIL_ROUTE_TYPES] if code else [route_id]
 
     def ridden(routes):
         reached = {}
@@ -1938,7 +1943,7 @@ def check_train_destinations(check, fx, route_id, direction):
     origins = sorted({fx.stop_names[s]
                       for p in patterns_of(schedule, route_id, direction) for s in p})
     for origin in origins:
-        for line, ridden_from in ((short_name, by_line), (None, by_route)):
+        for line, ridden_from in ((code, by_line), (None, by_route)):
             offered = stations.get_train_destination_list(
                 schedule, route_id, origin, line)
             expected = ridden_from.get(origin, {})
