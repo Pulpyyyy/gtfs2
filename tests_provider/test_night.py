@@ -259,12 +259,16 @@ _WHOLE_STOP = ("(SELECT sibling.stop_id FROM stops chosen, stops sibling "
 
 def _first_ride(conn, days, call, zone, now):
     """The first departure after now of a trip riding the call's stop before
-    the next one, matched as the sensor matches them: on the entry's line and
-    direction (a trip without a direction_id still counts), each end on its
-    whole stop, the record and the platforms grouped with it."""
-    direction = str(call.direction_id)
-    on_direction = ("AND (t.direction_id = :direction OR t.direction_id IS NULL) "
-                    if direction in ("0", "1") else "")
+    the next one, matched as the sensor matches them: on the entry's line,
+    either way round (the pair and the order of the calls decide it; the
+    sensor reads a direction at a loop's terminus only), each end on its
+    whole stop, the record and the platforms grouped with it, and the
+    shortest ride of a trip calling at either end more than once: no other
+    call a rider could use at either end in between. Held to direction_id
+    and to any call of the place, it read another ride of the same trip,
+    boarding at the place's first record a minute earlier (GtfsDe, IDFM),
+    and missed the other way's trips (gtfs-nl): the 48-feed sweep,
+    2026-09-26."""
     best = None
     for service_id, stored in conn.execute(text(
             "SELECT t.service_id, o.departure_time FROM trips t "
@@ -274,9 +278,11 @@ def _first_ride(conn, days, call, zone, now):
             f"AND x.stop_id IN {_WHOLE_STOP.format('d')} "
             "AND o.stop_sequence < x.stop_sequence AND t.route_id = :route "
             f"AND {_WAY_ON.format('o')} AND {_WAY_OFF.format('x')} "
-            + on_direction),  # noqa: S608
-            {"o": call.stop_id, "d": call.next_stop, "route": call.route_id,
-             "direction": int(direction) if direction in ("0", "1") else None}):
+            "AND NOT EXISTS (SELECT 1 FROM stop_times b WHERE b.trip_id = t.trip_id "
+            "AND b.stop_sequence > o.stop_sequence AND b.stop_sequence < x.stop_sequence "
+            f"AND ((b.stop_id IN {_WHOLE_STOP.format('o')} AND {_WAY_ON.format('b')}) "
+            f"OR (b.stop_id IN {_WHOLE_STOP.format('d')} AND {_WAY_OFF.format('b')})))"),  # noqa: S608
+            {"o": call.stop_id, "d": call.next_stop, "route": call.route_id}):
         if stored is None:
             continue
         for day in _near(days.get(service_id, ()), now):
