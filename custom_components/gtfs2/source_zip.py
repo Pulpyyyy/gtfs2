@@ -261,6 +261,25 @@ def open_datasource(gtfs_dir, filename):
     return pygtfs.Schedule(f"{sqlite_file}?check_same_thread=False&timeout=60")
 
 
+def _stale_staging_gone(new_real, filename):
+    """Clear the new database an earlier refresh left, before building one.
+
+    Left by a crash or a restart mid-refresh. One that cannot go, held
+    open on Windows or read-only, stops this refresh with the current data
+    in place: raised, the error left the refresh without its notification.
+    """
+    if not os.path.exists(new_real):
+        return True
+    try:
+        os.remove(new_real)
+    except OSError as ex:
+        _LOGGER.error("Refresh of %s aborted, %s left by an earlier refresh "
+                      "cannot be removed, the current data stays: %s",
+                      filename, new_real, ex)
+        return False
+    return True
+
+
 def _remove_staging(new_real):
     """Remove the new database a refresh built, and its journal, if still there.
 
@@ -295,9 +314,9 @@ def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
     real = real_path(gtfs_dir, filename)
     staging = filename + ".refresh"
     new_real = real_path(gtfs_dir, staging)
+    if not _stale_staging_gone(new_real, filename):
+        return False
     try:
-        if os.path.exists(new_real):
-            os.remove(new_real)
         if not build_scratch_database(gtfs_dir, zip_name, new_real,
                                       data.get("clean_feed_info", False),
                                       only_routes=routes):
@@ -382,9 +401,9 @@ def _refresh_route_by_route(gtfs_dir, filename, zip_name, routes, data):
             gtfs_dir, zip_name, scratch_file,
             data.get("clean_feed_info", False), only_routes=routes)
 
+    if not _stale_staging_gone(new_real, filename):
+        return False
     try:
-        if os.path.exists(new_real):
-            os.remove(new_real)
         added = import_routes(gtfs_dir, staging, routes, _build)
         if added is None or len(added) < len(routes):
             _LOGGER.error("Refresh of %s aborted, the current data stays: %s",

@@ -17,6 +17,7 @@ import types
 import zipfile
 from pathlib import Path
 
+import pytest
 import requests
 
 import ha_stub
@@ -198,6 +199,28 @@ def test_a_staging_file_left_by_an_earlier_run_is_replaced(tmp_path):
     (gtfs_dir / "src.refresh.sqlite").write_bytes(b"half of an interrupted refresh")
     assert list(_refresh(gtfs_dir)) == ["B1"]
     assert _no_leftovers(gtfs_dir)
+
+
+@pytest.mark.parametrize("whole", [False, True])
+def test_a_staging_file_that_will_not_go_stops_the_refresh(tmp_path, monkeypatch, caplog, whole):
+    # held open on Windows: raised, the error left the refresh without its
+    # notification. Refused instead, the current data in place
+    gtfs_dir = _built(tmp_path)
+    before = (gtfs_dir / "src.sqlite").read_bytes()
+    staging = gtfs_dir / "src.refresh.sqlite"
+    staging.write_bytes(b"half of an interrupted refresh")
+    real_remove = source_zip.os.remove
+
+    def remove(path):
+        if str(path) == str(staging):
+            raise PermissionError(32, "The process cannot access the file")
+        real_remove(path)
+
+    monkeypatch.setattr(source_zip.os, "remove", remove)
+    with caplog.at_level(logging.ERROR):
+        assert _refresh(gtfs_dir, whole_feed=whole) is False
+    assert (gtfs_dir / "src.sqlite").read_bytes() == before
+    assert any("left by an earlier refresh" in r.getMessage() for r in caplog.records)
 
 
 # --- what stops a refresh before any import ------------------------------------
