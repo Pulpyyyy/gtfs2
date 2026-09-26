@@ -30,8 +30,8 @@ for fetch. The promises:
                  entry with nothing to change is not written
 
 Already promised elsewhere, not repeated here: same bytes are not kept and
-new bytes are (test_fetch_if_new.py), and removing a datasource takes the
-sidecar with the zip (test_remove_datasource.py).
+new bytes are (test_source_fetch_if_new.py), and removing a datasource takes the
+sidecar with the zip (test_source_remove_files.py).
 """
 from __future__ import annotations
 

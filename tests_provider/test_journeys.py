@@ -1222,7 +1222,7 @@ def check_route(check, fx, route_id, direction, kind):
                                        f"trip {got['trip']} rides d{rode}",
                                        asked=asked, got=got)
                     # the shortest ride on a trip passing an end twice is the
-                    # query's rule, set in tests/test_shortest_ride.py; the
+                    # query's rule, set in tests/test_departure_shortest_ride.py; the
                     # ride it answers is held to the feed's next ride below
                     # and the first departure listed is the next one the feed
                     # has, before dawn and at midday: a later ride of the day
@@ -1878,7 +1878,7 @@ def check_train_stations(check, fx, route_id, direction):
 
     # the picker's labels name stations the route calls at, each with the
     # modes calling there; which stop is a coach and when a line counts as
-    # mixed are the component's rules, set in tests/test_station_modes.py
+    # mixed are the component's rules, set in tests/test_list_station_modes.py
     called = {fx.stop_names[stop] for d in directions_of(schedule, route_id)
               for pattern in patterns_of(schedule, route_id, d) for stop in pattern}
     modes = stations.get_station_modes(schedule, route_id)
