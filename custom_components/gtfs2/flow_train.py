@@ -31,7 +31,7 @@ from .const import (
 )
 from .geojson import name_in_use
 from .notifications import _async_text
-from .stations import get_station_modes, get_train_destination_list, has_train_trip_between
+from .stations import get_line_code, get_station_modes, get_train_destination_list, has_train_trip_between
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,9 +70,10 @@ class TrainScreens:
         origin = self._user_inputs.get(CONF_ORIGIN, "")
         route_id = self._user_inputs.get(CONF_ROUTE)
         try:
+            # the line's own code, not the label shown for it: see get_line_code
+            line = await self.hass.async_add_executor_job(get_line_code, self._pygtfs, route_id)
             reached = await self.hass.async_add_executor_job(
-                get_train_destination_list, self._pygtfs, route_id, origin,
-                self._route_label or None)
+                get_train_destination_list, self._pygtfs, route_id, origin, line)
             mixed = await self.hass.async_add_executor_job(
                 get_station_modes, self._pygtfs, route_id)
         except Exception as ex:  # pylint: disable=broad-except
@@ -104,7 +105,7 @@ class TrainScreens:
             **self._user_inputs,
             CONF_DESTINATION: destination,
             # the picked line's code: the departures hold to that line
-            "line": self._route_label,
+            "line": line,
         }
         check_config = await self._check_config(data)
         if check_config == "extracting":
@@ -147,7 +148,7 @@ class TrainScreens:
             self._return_name = " ".join(filter(None, (source, line, back)))
             exists = await self.hass.async_add_executor_job(
                 has_train_trip_between, self._pygtfs, destination, origin,
-                self._route_label or None,
+                self._user_inputs.get("line"),
             )
             self._return_trip = {
                 CONF_ORIGIN: destination,

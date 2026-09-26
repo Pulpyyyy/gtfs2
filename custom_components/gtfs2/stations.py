@@ -125,6 +125,22 @@ def get_station_modes(schedule, route_id):
     return modes if mixed else {}
 
 
+def get_line_code(schedule, route_id):
+    """The code a train entry holds its departures to: the route_short_name
+    of the route picked, None when the feed gives it none.
+
+    Not the label the route screen shows: that one falls back to the long
+    name when the short one is empty (Metro-North "New Haven", Amtrak
+    "Wolverine"), which no route_short_name equals, and every station of
+    those lines then led nowhere.
+    """
+    with schedule.engine.connect() as conn:
+        row = conn.execute(text("SELECT route_short_name FROM routes WHERE route_id = :route_id"),
+                           {"route_id": str(route_id or "")}).fetchone()
+    code = row[0] if row else None
+    return code if code is not None and str(code).strip() else None
+
+
 def get_train_destination_list(schedule, route_id, origin_name, line=None):
     """{station name: {"train", "coach"}} for the stations a trip of the line
     really reaches from the departure station, and by which of the two.

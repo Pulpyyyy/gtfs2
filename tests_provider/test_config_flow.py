@@ -809,6 +809,54 @@ def test_a_train_journey_and_its_return_hold_the_stations_and_the_line(world):
     walk(world, scenario)
 
 
+def _without_short_names(name, text):
+    """routes.txt with every route_short_name left empty, the way Metro-North
+    and Amtrak publish their lines: a long name only."""
+    if name.rsplit("/", 1)[-1] != "routes.txt":
+        return None
+    header, *lines = text.splitlines()
+    at = header.split(",").index("route_short_name")
+    blanked = [",".join("" if i == at else cell for i, cell in enumerate(line.split(",")))
+               for line in lines]
+    return "\n".join([header, *blanked]) + "\n"
+
+
+def test_a_train_line_with_no_short_name_leads_somewhere(world, tmp_path):
+    # the line code was the label the route screen shows, which falls back
+    # to the long name: no route_short_name equals "Dole - St Claude", and
+    # every station of such a line led nowhere (sweep 2026-09-26, Metro-North
+    # and Amtrak: no train journey could be created at all)
+    feed = tmp_path / "nameless"
+    feed.mkdir()
+    rewritten_zip("sncf-journeys", feed / "static.zip", _without_short_names)
+
+    async def scenario(hass):
+        shutil.copyfile(feed / "static.zip", gtfs_dir(hass) / "rail.zip")
+        built = sqlite3.connect(fixture_db.build(str(feed)).engine.url.database)
+        copy = sqlite3.connect(gtfs_dir(hass) / "rail.sqlite")
+        try:
+            built.backup(copy)
+        finally:
+            copy.close()
+            built.close()
+        await rt_source.async_ensure_datasource_entry(
+            hass, "rail", url="na", extract_from="zip", api={})
+        lines = shown(await to_lines(hass, "rail"), FORM, "route")
+        (route,) = [r for r in offered(lines, "route") if r.split("##")[2].startswith("Dole - St Claude")]
+        label = route.split("##")[2]
+        stations = shown(await submit(hass, lines, route=route), FORM, "stops_train")
+        origin = offered(stations, "origin")[0]
+        arrivals = shown(await submit(hass, stations, origin=origin), FORM, "destination_train")
+        destination = offered(arrivals, "destination")[0]
+        naming = shown(await submit(hass, arrivals, destination=destination), FORM, "sensor_train")
+        # the label still names the sensor; the entry holds no line code
+        assert default(naming, "name") == f"rail {label.split(' : ')[0]} {origin} → {destination}"
+        await submit(hass, naming, name=default(naming, "name"), add_return=False)
+        (journey,) = hass.journeys()
+        assert journey.data["line"] is None
+    walk(world, scenario)
+
+
 def test_a_station_no_train_leaves_sends_the_rider_back_to_the_departures(world):
     async def scenario(hass):
         await install_source(hass, "sncf-journeys", "sncf")
