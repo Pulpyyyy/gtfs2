@@ -20,6 +20,12 @@ results.txt files of tests/ under test-results/tests/:
 test-results/ is ignored by git, so a run leaves the tree clean. The two
 files kept next to this one are a past run, as examples of the output;
 a run does not rewrite them.
+
+While a session runs, progress.txt beside them says how many tests are
+done out of how many, the time spent and a guess at the time left, for a
+long run followed from another window (Get-Content -Wait, tail -f). Under
+pytest-xdist the workers hand their reports to the main process, which
+alone counts and writes; a worker writes nothing.
 """
 from __future__ import annotations
 
@@ -34,13 +40,53 @@ ha_stub.install()
 
 
 import json  # noqa: E402
+import time  # noqa: E402
+
+import pytest  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 RESULTS_DIR = HERE.parent / "test-results" / "tests_provider"
 _reports = []
+_progress = {"total": 0, "done": 0, "start": time.monotonic()}
+_worker_process = False
+
+
+def _worker(config):
+    return hasattr(config, "workerinput")
+
+
+def pytest_configure(config):
+    global _worker_process
+    _worker_process = _worker(config)
+
+
+def pytest_collection_finish(session):
+    if not _worker(session.config):
+        _progress["total"] = len(session.items)
+
+
+@pytest.hookimpl(optionalhook=True)
+def pytest_xdist_node_collection_finished(node, ids):  # noqa: ARG001
+    # every worker collects the whole session; the main process collects
+    # nothing and learns the count from them
+    _progress["total"] = len(ids)
+
+
+def _count(report):
+    if report.when == "call" or (report.when == "setup" and not report.passed):
+        _progress["done"] += 1
+        done, total = _progress["done"], _progress["total"]
+        spent = time.monotonic() - _progress["start"]
+        left = spent / done * (total - done) if total > done else 0
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        (RESULTS_DIR / "progress.txt").write_text(
+            f"{done}/{total} tests, {spent / 60:.1f} min spent, "
+            f"about {left / 60:.1f} min left\n", encoding="utf-8")
 
 
 def pytest_runtest_logreport(report):
+    if not _worker_process:
+        _count(report)
     # every test of this tree, a new file included without naming it here;
     # a tests/ test run in the same session stays out
     if not report.nodeid.replace("\\", "/").startswith("tests_provider/"):
@@ -85,7 +131,7 @@ def _cases():
 
 
 def pytest_sessionfinish(session, exitstatus):  # noqa: ARG001
-    if not _reports:
+    if not _reports or _worker(session.config):
         return
     cases = _cases()
     lines = [f"provider case results -- {len(cases)} case(s)", ""]
