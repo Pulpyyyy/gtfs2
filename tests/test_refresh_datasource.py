@@ -123,6 +123,48 @@ def test_a_line_nobody_reads_just_goes(tmp_path):
     assert _routes(gtfs_dir / "src.sqlite") == ["B1"]
 
 
+def test_a_deleted_database_gets_back_the_lines_its_sensors_read(tmp_path):
+    # a source cut down to B1, its database deleted by hand: the lines it
+    # followed went with it, the sensors still name theirs. Built whole,
+    # a few lines of TAO or IDFM came back as the whole network
+    gtfs_dir = _built(tmp_path)
+    _edition(gtfs_dir / "src.zip", **TWO_LINES)
+    (gtfs_dir / "src.sqlite").unlink()
+    got = _refresh(gtfs_dir, read_routes=["B1"])
+    assert list(got) == ["B1"] and got["B1"] > 0
+    assert _routes(gtfs_dir / "src.sqlite") == ["B1"]
+    assert _no_leftovers(gtfs_dir)
+
+
+def test_a_deleted_database_read_whole_comes_back_whole(tmp_path):
+    # a train or local stops sensor beside the line sensor reads every line
+    gtfs_dir = _built(tmp_path)
+    _edition(gtfs_dir / "src.zip", **TWO_LINES)
+    (gtfs_dir / "src.sqlite").unlink()
+    assert _refresh(gtfs_dir, read_routes=["B1"], whole_feed=True) == {"B1": None, "B2": None}
+    assert _routes(gtfs_dir / "src.sqlite") == ["B1", "B2"]
+
+
+def test_a_deleted_database_with_no_sensor_comes_back_whole(tmp_path):
+    # nothing names a line: nothing says what the source followed
+    gtfs_dir = _built(tmp_path)
+    _edition(gtfs_dir / "src.zip", **TWO_LINES)
+    (gtfs_dir / "src.sqlite").unlink()
+    assert _refresh(gtfs_dir, read_routes=[]) == {"B1": None, "B2": None}
+
+
+def test_a_deleted_database_whose_line_the_edition_lost_stays_unbuilt(tmp_path):
+    # the one line the sensors read is not in the new edition: nothing to
+    # build that any sensor could show, and the loss is named
+    gtfs_dir = _built(tmp_path)
+    (gtfs_dir / "src.sqlite").unlink()
+    data = {"file": "src", "extract_from": "zip", "read_routes": ["B2"]}
+    assert source_zip.refresh_datasource(_hass(gtfs_dir), "gtfs2", data) is False
+    assert data["lines_missing"] == ["B2"]
+    assert not (gtfs_dir / "src.sqlite").exists()
+    assert _no_leftovers(gtfs_dir)
+
+
 def test_every_line_gone_says_the_file_is_broken(tmp_path):
     # the edition renumbered its only line: nothing any sensor reads, but
     # a swap would leave the source with nothing at all

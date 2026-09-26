@@ -426,8 +426,10 @@ def refresh_datasource(hass, path, data):
     The coordinators reopen the file on their next cycle, so they only ever
     see the old complete data or the new complete data.
 
-    A source that follows no line yet, with no database or one a first
-    import left empty, is built whole, the way the sources a train or local
+    A source whose database is gone or empty while its sensors name their
+    lines gets those lines back, route by route. One that follows no line
+    at all, a new source or one a first import left empty with no sensor
+    yet, is built whole, the way the sources a train or local
     stops sensor reads are refreshed: every line of the feed, into a new
     file swapped in. It used to go down the legacy extract, which deleted
     the database and the zip and rebuilt the network in place, in a forked
@@ -450,6 +452,13 @@ def refresh_datasource(hass, path, data):
         _LOGGER.error("Cannot read the routes of %s, keeping its data", filename)
         return False
     routes = sorted(loaded)
+    if not routes and not data.get("whole_feed") and data.get("read_routes"):
+        # the database is gone or came out empty, and the lines it followed
+        # went with it: the sensors still name theirs. Built whole, a source
+        # cut down to a few lines of TAO or IDFM came back as the network
+        routes = sorted(data["read_routes"])
+        _LOGGER.info("Datasource %s holds no line, building the %s its sensors read",
+                     filename, len(routes))
     whole = data.get("whole_feed") or not routes
     if not routes:
         _LOGGER.info("Datasource %s follows no route yet, building it whole",

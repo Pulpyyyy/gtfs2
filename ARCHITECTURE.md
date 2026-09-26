@@ -654,7 +654,7 @@ Four paths write a database. They differ because what they risk differs.
 |---|---|---|---|---|
 | User picks lines on the route screen | `import_routes` | scratch → real, per line | No | Append-only: existing rows are never touched, so there is nothing a reader could see half-changed. Keys are minted in the real database during the copy, so there is never a second set to remap |
 | New edition (check in auto mode, update entity, button, `update_gtfs` service) | `refresh_datasource` | staging, built route by route | Yes | Every row may change; readers must see one edition or the other |
-| Same, on a whole-feed source, or one that follows no line yet (never built, or left empty by a first import) | `_refresh_whole_feed` | staging, the filtered import itself | Yes | A train or local stops sensor matches across every line, and a line the new edition brings must come in too; taking the lines from the old database never brought new ones. A source with no line has nothing to take them from |
+| Same, on a whole-feed source, or one that follows no line and whose sensors name none (never built, or left empty by a first import) | `_refresh_whole_feed` | staging, the filtered import itself | Yes | A train or local stops sensor matches across every line, and a line the new edition brings must come in too; taking the lines from the old database never brought new ones. A source with no line has nothing to take them from. A database deleted or left empty under line sensors takes their lines back route by route instead |
 | Optimise screen, `prune_datasource`, `intern_datasource` | `on_a_copy` | staging, a SQLite backup of the real one | Only if something changed | Destructive rewrites by the million plus VACUUM: on the live file they held the exclusive lock for minutes on a national feed |
 
 **Filtering before import, not pruning after.** pygtfs pays per row: once
@@ -695,7 +695,9 @@ Indexing the scratch file by route took the copy of 41 Orleans routes from
 
 ```
 real database unreadable?             stop, keep the data (see below)
-real database follows no route?       the whole edition, below
+real database follows no route?       the lines its sensors read (read_routes),
+                                      or the whole edition, below, when they
+                                      name none or one reads the whole feed
     ↓
 new zip downloaded to <file>.zip.new, streamed, capped in size and time,
     adopted only once proven a zip
