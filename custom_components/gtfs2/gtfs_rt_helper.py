@@ -200,23 +200,18 @@ def _say_recovered(url, label):
         _LOGGER.info("The %s feed at %s answers again", label, url)
 
 
-def _fetch_gtfs_feed_entities(url: str, headers, label: str):
-    # Imported here and not at module level: the class lives in protobuf,
-    # which arrives with gtfs-realtime-bindings, and the synthetic suite
-    # stubs those bindings out while replacing this whole function.
-    from google.protobuf.message import DecodeError
-    _LOGGER.debug(f"GTFS RT get_feed_entities for url: {url} , headers: {headers}, label: {label}")
-    feed = gtfs_realtime_pb2.FeedMessage()  # type: ignore
-
+def _feed_body(url, headers, label):
+    """The bytes of a realtime feed, from its host or from the file a
+    file:// url names; None, the failure said, when there are none."""
     try:
         if url.startswith("file://"):
             # the feed the stops around a person downloaded to disk this
             # cycle: read as a file, it needs no http round of its own
             with open(url[len("file://"):], "rb") as local:
                 content = local.read()
-        else:
-            response = fetch("get", url, headers=_with_user_agent(headers), timeout=20)
-            content = response.content
+            _LOGGER.debug("Successfully updated %s", label)
+            return content
+        response = fetch("get", url, headers=_with_user_agent(headers), timeout=20)
     except (requests.RequestException, OSError) as ex:
         # a host that is down, a name that no longer resolves, a certificate
         # that expired, a local copy gone: the caller reads None as "no
@@ -227,65 +222,83 @@ def _fetch_gtfs_feed_entities(url: str, headers, label: str):
     # Success is the status code plus a body that parses below. Grepping the
     # decoded body for error phrases rejected valid feeds whose own free text
     # carried them, e.g. an alert quoting "Not Found".
-    if url.startswith("file://") or response.status_code == 200:
+    if response.status_code == 200:
         _LOGGER.debug("Successfully updated %s", label)
-    else:
-        # the first line of the body says what went wrong; a maintenance page
-        # in full says it again in a hundred lines of html
-        _say_failure(url, "Trying to update %s, and got RT response(code): %s with text: %s",
-                     label, response.status_code, response.text[:200])
+        return response.content
+    # the first line of the body says what went wrong; a maintenance page
+    # in full says it again in a hundred lines of html
+    _say_failure(url, "Trying to update %s, and got RT response(code): %s with text: %s",
+                 label, response.status_code, response.text[:200])
+    return None
+
+
+def _json_feed_entities(url, label, content):
+    """The entities of a json feed; None, the failure said, when it is not one."""
+    try:
+        feed = json.loads(content)
+    except ValueError:
+        _say_failure(url, "Trying to update %s, and got a 200 whose body is broken json", label)
         return None
+    if label == "alerts" and isinstance(feed, dict):
+        # the alert reader walks protobuf messages, HasField and all:
+        # handed dicts it raised, and the realtime of the cycle went
+        # with it. A json feed is read into the message it stands for
+        try:
+            from google.protobuf import json_format
+            message = gtfs_realtime_pb2.FeedMessage()
+            json_format.ParseDict(feed, message, ignore_unknown_fields=True)
+            # an answer again, as on every other path: the outage kept
+            # otherwise, and its next one was only said at debug level
+            _say_recovered(url, label)
+            return message.entity
+        except Exception as ex:  # pylint: disable=broad-except
+            _say_failure(url, "Trying to update %s, and got json that is not a GTFS-RT feed: %s",
+                         label, type(ex).__name__)
+            return None
+    _say_recovered(url, label)
+    return feed.get('entity') if isinstance(feed, dict) else None
 
-    if label == "alerts":
-        _LOGGER.debug("Feed : %s", feed)
 
+def _protobuf_feed_entities(url, label, content):
+    """The entities of a protobuf feed, the trip updates and the vehicles
+    as dicts, the alerts as messages; None, the failure said, when it is
+    not one."""
+    # Imported here and not at module level: the class lives in protobuf,
+    # which arrives with gtfs-realtime-bindings, and the synthetic suite
+    # stubs those bindings out while replacing _fetch_gtfs_feed_entities.
+    from google.protobuf.message import DecodeError
+    _LOGGER.debug("GTFS RT data is not providing format json")
+    # a maintenance or error page served with a 200 lands here and is not
+    # protobuf either: degrade to no data instead of an uncaught traceback
+    try:
+        if label == "vehicle_positions":
+            feed = convert_gtfs_realtime_positions_to_json(content)
+        elif label == "trip_data":
+            feed = convert_gtfs_realtime_to_json(content)
+        else: # not yet converted to json
+            message = gtfs_realtime_pb2.FeedMessage()  # type: ignore
+            message.ParseFromString(content)
+            _say_recovered(url, label)
+            return message.entity
+    except DecodeError:
+        _say_failure(url, "Trying to update %s, and got a 200 whose body is neither json nor GTFS-RT protobuf", label)
+        return None
+    _say_recovered(url, label)
+    return feed.get('entity')
+
+
+def _fetch_gtfs_feed_entities(url: str, headers, label: str):
+    _LOGGER.debug(f"GTFS RT get_feed_entities for url: {url} , headers: {headers}, label: {label}")
+    content = _feed_body(url, headers, label)
+    if content is None:
+        return None
     # json or protobuf: a json body opens with a brace or a bracket. Asking
     # response.text of a protobuf first ran the charset detection over
     # megabytes of binary, then parsed the result twice, for nothing
-    head = content.lstrip()[:1]
-    if head in (b"{", b"["):
-        try:
-            feed = json.loads(content)
-        except ValueError:
-            _say_failure(url, "Trying to update %s, and got a 200 whose body is broken json", label)
-            return None
-        if label == "alerts" and isinstance(feed, dict):
-            # the alert reader walks protobuf messages, HasField and all:
-            # handed dicts it raised, and the realtime of the cycle went
-            # with it. A json feed is read into the message it stands for
-            try:
-                from google.protobuf import json_format
-                message = gtfs_realtime_pb2.FeedMessage()
-                json_format.ParseDict(feed, message, ignore_unknown_fields=True)
-                # an answer again, as on every other path: the outage kept
-                # otherwise, and its next one was only said at debug level
-                _say_recovered(url, label)
-                return message.entity
-            except Exception as ex:  # pylint: disable=broad-except
-                _say_failure(url, "Trying to update %s, and got json that is not a GTFS-RT feed: %s",
-                             label, type(ex).__name__)
-                return None
-        _say_recovered(url, label)
-        return feed.get('entity') if isinstance(feed, dict) else None
-    else:
-        _LOGGER.debug("GTFS RT data is not providing format json")
-        # a maintenance or error page served with a 200 lands here and is not
-        # protobuf either: degrade to no data instead of an uncaught traceback
-        try:
-            if label == "vehicle_positions":
-                feed = convert_gtfs_realtime_positions_to_json(content)
-            elif label == "trip_data":
-                feed = convert_gtfs_realtime_to_json(content)
-            else: # not yet converted to json
-                feed.ParseFromString(content)
-                _say_recovered(url, label)
-                return feed.entity
-        except DecodeError:
-            _say_failure(url, "Trying to update %s, and got a 200 whose body is neither json nor GTFS-RT protobuf", label)
-            return None
+    if content.lstrip()[:1] in (b"{", b"["):
+        return _json_feed_entities(url, label, content)
+    return _protobuf_feed_entities(url, label, content)
 
-    _say_recovered(url, label)
-    return feed.get('entity')
 
 def get_next_services(self):
     self._stop = self._stop_id
