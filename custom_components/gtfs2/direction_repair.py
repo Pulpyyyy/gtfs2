@@ -30,6 +30,7 @@ other holds no majority to recover a sense from, and is logged.
 
 import logging
 from collections import defaultdict
+from itertools import groupby
 
 from sqlalchemy.sql import text
 
@@ -234,7 +235,9 @@ def _stations(schedule):
     return station_of, station_name
 
 
-def _repair(schedule):
+def _trips_by_route(schedule):
+    """{trip_id: (route_id, direction)} of the trips that carry a direction,
+    the routes whose trips carry two, and {route_id: its short name}."""
     trip_meta = {}
     dirs_per_route = defaultdict(set)
     with schedule.engine.connect() as conn:
@@ -250,79 +253,84 @@ def _repair(schedule):
                 text("SELECT route_id, route_short_name FROM routes")
             ).fetchall()
         )
-
     eligible = {r for r, ds in dirs_per_route.items() if len(ds) == 2}
+    return trip_meta, eligible, route_labels
+
+
+def _station_pattern(calls, station_of):
+    """The stations a trip calls at, in riding order, out of its
+    (trip_id, stop_id, stop_sequence) rows: two platforms of one station
+    in a row are one stop of the chain."""
+    pattern = []
+    for _, stop_id in sorted((stop_sequence, stop_id) for _, stop_id, stop_sequence in calls):
+        station = station_of.get(stop_id, stop_id)
+        if not pattern or pattern[-1] != station:
+            pattern.append(station)
+    return tuple(pattern)
+
+
+def _trip_patterns(schedule, trip_meta, station_of):
+    """{route_id: {direction: {station pattern: [trip_id, ...]}}} of the
+    trips of trip_meta, read in one streaming pass: ordering by trip_id
+    alone rides the gtfs2_stop_times_trip_id index, the few stops of each
+    trip are sorted here."""
+    patterns = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(
+            "SELECT trip_id, stop_id, stop_sequence FROM stop_times"
+            " ORDER BY trip_id"
+        ))
+        for trip_id, calls in groupby(rows, key=lambda row: row[0]):
+            if trip_id not in trip_meta:
+                continue
+            route_id, direction = trip_meta[trip_id]
+            patterns[route_id][direction][_station_pattern(calls, station_of)].append(trip_id)
+    return patterns
+
+
+def _route_flips(label, by_dir, station_name):
+    """{trip_id: new direction} for one route's patterns, said in the log,
+    and why nothing moved when its directions follow one stop order."""
+    total = sum(len(t) for d in by_dir.values() for t in d.values())
+    route_flips = plan_until_stable(by_dir)
+    if route_flips:
+        _LOGGER.info(
+            "Direction repair: route %s: %s of %s trips ride the opposite"
+            " direction's stop order, rewriting their direction_id",
+            label,
+            len(route_flips),
+            total,
+        )
+        return route_flips
+    report = same_order_report(by_dir, station_name)
+    if report and report[0] == "no_sense":
+        _, against, total, first, last = report
+        # a route published one way under both labels has nothing
+        # to repair either, but nothing is hidden from a sensor
+        log = _LOGGER.warning if against else _LOGGER.info
+        log(
+            "Direction repair: route %s: both directions follow the"
+            " same stop order (%s to %s) and %s of %s trips ride the"
+            " other way; direction_id carries no sense on this route,"
+            " left as published",
+            label, first, last, against, total,
+        )
+    return route_flips
+
+
+def _repair(schedule):
+    trip_meta, eligible, route_labels = _trips_by_route(schedule)
     if not eligible:
         _LOGGER.debug("Direction repair: no route with two directions, nothing to do")
         return 0
 
     station_of, station_name = _stations(schedule)
-
-    # one streaming pass; ordering by trip_id alone rides the
-    # gtfs2_stop_times_trip_id index, the few stops of each trip are sorted here
-    patterns = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    current_trip = None
-    current_stops = []
-
-    def _close_trip():
-        if current_trip is None:
-            return
-        route_id, direction = trip_meta[current_trip]
-        current_stops.sort()
-        pattern = []
-        for _, stop_id in current_stops:
-            station = station_of.get(stop_id, stop_id)
-            # two platforms of one station in a row are one stop of the chain
-            if not pattern or pattern[-1] != station:
-                pattern.append(station)
-        patterns[route_id][direction][tuple(pattern)].append(current_trip)
-
-    with schedule.engine.connect() as conn:
-        for trip_id, stop_id, stop_sequence in conn.execute(
-            text(
-                "SELECT trip_id, stop_id, stop_sequence FROM stop_times"
-                " ORDER BY trip_id"
-            )
-        ):
-            if trip_id != current_trip:
-                _close_trip()
-                current_trip = trip_id if trip_id in trip_meta else None
-                current_stops = []
-            if current_trip is not None:
-                current_stops.append((stop_sequence, stop_id))
-        _close_trip()
-
+    patterns = _trip_patterns(schedule, trip_meta, station_of)
     flips = {}
     for route_id in eligible:
-        if route_id not in patterns:
-            continue
-        label = route_labels.get(route_id) or route_id
-        by_dir = patterns[route_id]
-        total = sum(len(t) for d in by_dir.values() for t in d.values())
-        route_flips = plan_until_stable(by_dir)
-        if route_flips:
-            _LOGGER.info(
-                "Direction repair: route %s: %s of %s trips ride the opposite"
-                " direction's stop order, rewriting their direction_id",
-                label,
-                len(route_flips),
-                total,
-            )
-        else:
-            report = same_order_report(by_dir, station_name)
-            if report and report[0] == "no_sense":
-                _, against, total, first, last = report
-                # a route published one way under both labels has nothing
-                # to repair either, but nothing is hidden from a sensor
-                log = _LOGGER.warning if against else _LOGGER.info
-                log(
-                    "Direction repair: route %s: both directions follow the"
-                    " same stop order (%s to %s) and %s of %s trips ride the"
-                    " other way; direction_id carries no sense on this route,"
-                    " left as published",
-                    label, first, last, against, total,
-                )
-        flips.update(route_flips)
+        if route_id in patterns:
+            flips.update(_route_flips(route_labels.get(route_id) or route_id,
+                                      patterns[route_id], station_name))
 
     if not flips:
         _LOGGER.debug("Direction repair: all trips match their direction")
