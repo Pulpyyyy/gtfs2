@@ -199,9 +199,14 @@ class Fixture:
         """The departure answered leaves from a call with a way on and
         reaches one with a way off, on its own trip."""
         trip = result.get("trip_id")
-        on = self.call_ways.get((trip, int(result.get("origin_stop_sequence") or -1)), (False, False))[0]
-        off = self.call_ways.get((trip, int((result.get("destination_stop_time") or {}).get("Sequence") or -1)),
-                                 (False, False))[1]
+        # a sequence may be 0 (Zou numbers its calls from it): read as
+        # missing, the call was never found and a valid ride failed
+        leaves = result.get("origin_stop_sequence")
+        reaches = (result.get("destination_stop_time") or {}).get("Sequence")
+        if leaves is None or reaches is None:
+            return False
+        on = self.call_ways.get((trip, int(leaves)), (False, False))[0]
+        off = self.call_ways.get((trip, int(reaches)), (False, False))[1]
         return on and off
 
     def times(self, trip_ids, stop_id):
