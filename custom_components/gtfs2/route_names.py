@@ -673,35 +673,31 @@ LINE_MODES = ("tram", "metro", "train", "bus", "coach", "ferry", "cable_tram",
               "aerial_lift", "funicular", "trolleybus", "monorail")
 
 
+# each mode: its basic route_types, and the extended ones that also mean it,
+# asked in this order
+_MODE_TYPES = (
+    ("tram", (0,), range(900, 1000)),
+    ("metro", (1,), range(400, 500)),
+    ("train", (2,), range(100, 200)),
+    ("bus", (3,), range(700, 800)),
+    ("coach", (), range(200, 300)),
+    ("ferry", (4, 1200), range(1000, 1100)),
+    ("cable_tram", (5,), ()),
+    ("aerial_lift", (6,), range(1300, 1400)),
+    ("funicular", (7, 1400), ()),
+    ("trolleybus", (11, 800), ()),
+    ("monorail", (12,), ()),
+)
+
+
 def line_mode(route_type):
     """The mode of a GTFS route_type, basic or extended, or None."""
     try:
         n = int(str(route_type))
     except ValueError:
         return None
-    if n == 0 or 900 <= n < 1000:
-        return "tram"
-    if n == 1 or 400 <= n < 500:
-        return "metro"
-    if n == 2 or 100 <= n < 200:
-        return "train"
-    if n == 3 or 700 <= n < 800:
-        return "bus"
-    if 200 <= n < 300:
-        return "coach"
-    if n == 4 or 1000 <= n < 1100 or n == 1200:
-        return "ferry"
-    if n == 5:
-        return "cable_tram"
-    if n == 6 or 1300 <= n < 1400:
-        return "aerial_lift"
-    if n in (7, 1400):
-        return "funicular"
-    if n in (11, 800):
-        return "trolleybus"
-    if n == 12:
-        return "monorail"
-    return None
+    return next((mode for mode, basic, extended in _MODE_TYPES
+                 if n in basic or n in extended), None)
 
 
 def with_modes(options, words):

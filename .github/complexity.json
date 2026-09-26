@@ -12,6 +12,5 @@
   "gtfs_rt_helper.py _fetch_gtfs_feed_entities": 12,
   "route_names.py _read_stop_ends": 14,
   "route_names.py _read_trips": 12,
-  "route_names.py line_mode": 13,
   "rt_source.py async_mirror_rt_to_entries": 12
 }
