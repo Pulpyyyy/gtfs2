@@ -493,6 +493,11 @@ def test_night(record_property, fixture, promise, shape):
                     day + datetime.timedelta(days=1), datetime.time(0, 0, 30), zone)
                 clocks = (("at 23:50", datetime.datetime.combine(day, datetime.time(23, 50), zone)),
                           ("before the call", max(call_at - datetime.timedelta(minutes=10), morning)))
+                if morning >= call_at:
+                    # a call at 24:00:00 (Kraków's trams): 00:00:30 is after
+                    # it, and the next ride found days later; 23:50 is the
+                    # clock before it
+                    clocks = clocks[:1]
                 for label, now in clocks:
                     with freeze_time(now.astimezone(UTC)):
                         if promise == "route":
