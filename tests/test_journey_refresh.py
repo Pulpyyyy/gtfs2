@@ -582,6 +582,11 @@ def test_failing_trip_updates_leave_the_timetable(tmp_path):
     # the alerts, read first, stand
     assert result["alert"] == ALERTS
     assert result["records"] == {"trip": "T1"}
+    # the leg file follows the timetable read this minute, with no realtime
+    assert refresh.calls["export_leg"] == [(refresh.coordinator, refresh.entry.data, None)]
+    # a minute later nothing new was read: the file is left as it is
+    refresh.run(later(1))
+    assert refresh.count("export_leg") == 1
 
 
 @pytest.mark.parametrize("vehicles", [None, "http://rt.test/vehicles"])

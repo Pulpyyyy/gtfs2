@@ -182,14 +182,13 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         if rt_active:
             rt_paused = await self._realtime_paused(data, rt_cfg)
         if rt_active and not rt_paused:
-            if not await self._read_realtime(data, rt_cfg, run_static):
-                # the trip updates could not be read: the departures stand
-                # as the timetable gave them
-                await self._read_records()
-                return self._data
             # the trip updates just read, kept for the leg file below:
-            # they carry the realtime of every stop, the sensor reads one
-            rt_feed = getattr(self, "_feed_entities", None)
+            # they carry the realtime of every stop, the sensor reads one.
+            # Not read, the departures stand as the timetable gave them,
+            # and the leg file still follows a timetable read this minute:
+            # it used to return here, the file left on the last list
+            if await self._read_realtime(data, rt_cfg, run_static):
+                rt_feed = getattr(self, "_feed_entities", None)
         else:
             # paused by the window, switched off, or never configured: the
             # delays and alerts read before are the ones of another moment,
