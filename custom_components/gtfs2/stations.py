@@ -71,21 +71,22 @@ def get_station_list(schedule, route_id=None):
     morning stops), is nowhere to get on (see _boards).
     """
     _LOGGER.debug("Getting station list for route: %s", route_id)
-    where = ""
     if route_id:
-        where = f"""
-        where exists (
-            select 1 from stop_times st
-            inner join trips t on t.trip_id = st.trip_id
-            where st.stop_id = s.stop_id and t.route_id = :route_id
-              and {_boards("st")}
-        )"""
-    sql = f"""
-    SELECT distinct s.stop_name
-    from stops s
-    {where}
-    order by s.stop_name
-    """  # noqa: S608
+        # read from the line's trips, through the trips(route_id) index
+        # check_datasource_index gives every datasource: asked of every
+        # stop of the network whether one of the line's trips calls there,
+        # the SNCF took 1.3 to 2.1 s a line, IDFM 1 to 1.3 s
+        sql = f"""
+        SELECT distinct s.stop_name
+        from trips t
+        inner join stop_times st on st.trip_id = t.trip_id
+        inner join stops s on s.stop_id = st.stop_id
+        where t.route_id = :route_id
+          and {_boards("st")}
+        order by s.stop_name
+        """  # noqa: S608
+    else:
+        sql = "SELECT distinct s.stop_name from stops s order by s.stop_name"
     with schedule.engine.connect() as conn:
         # bound, not inlined: a route_id is the feed's own text, and one
         # carrying a quote ("L'Express") would end the literal and the screen
