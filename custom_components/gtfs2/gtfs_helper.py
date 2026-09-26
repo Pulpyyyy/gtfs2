@@ -2230,17 +2230,17 @@ def _build_local_stop_element(self, row, base_datetime,
             delay_rt_derived = str(td)
         _LOGGER.debug("Delay derived: %s, departure_rt: %s", delay_rt_derived, departure_rt)
     else:
-        #depart_time_corrected_time = (dt_util.parse_datetime(f"{base_date} {self._departure_time}")).replace(tzinfo=timezone_stop)
-        depart_time_corrected_time = dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_stop)
+        # base_datetime is the agency's wall clock, as the departure above
+        # reads it: labelled with the stop's zone, a stop west of the agency
+        # (Amtrak, Los Angeles against New York) kept departures already gone
+        depart_time_corrected_time = dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_agency)
     #_LOGGER.debug("Departure time corrected based on realtime-time: %s", depart_time_corrected_time)
 
     if delay_rt != "-" and delay_rt != 0:
-        #depart_time_corrected_delay = (dt_util.parse_datetime(f"{base_date} {self._departure_time}") + datetime.timedelta(seconds=delay_rt)).replace(tzinfo=timezone_stop)
-        depart_time_corrected_delay = (dt_util.parse_datetime(base_datetime) + datetime.timedelta(seconds=delay_rt)).replace(tzinfo=timezone_stop)
+        depart_time_corrected_delay = (dt_util.parse_datetime(base_datetime) + datetime.timedelta(seconds=delay_rt)).replace(tzinfo=timezone_agency)
     else:
         delay_rt = "-"
-        #depart_time_corrected_delay = dt_util.parse_datetime(f"{base_date} {self._departure_time}").replace(tzinfo=timezone_stop)
-        depart_time_corrected_delay = dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_stop)
+        depart_time_corrected_delay = dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_agency)
     #_LOGGER.debug("Departure time corrected based on realtime-delay: %s", depart_time_corrected_delay)
 
     if depart_time_corrected_delay > depart_time_corrected_time:
