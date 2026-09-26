@@ -271,14 +271,20 @@ def _station_pattern(calls, station_of):
 
 def _trip_patterns(schedule, trip_meta, station_of):
     """{route_id: {direction: {station pattern: [trip_id, ...]}}} of the
-    trips of trip_meta, read in one streaming pass: ordering by trip_id
-    alone rides the gtfs2_stop_times_trip_id index, the few stops of each
-    trip are sorted here."""
+    trips of trip_meta, read in one streaming pass, the few stops of each
+    trip sorted here.
+
+    Read in the order of pygtfs' primary key (feed_id, trip_id, stop_id,
+    stop_sequence), which holds every column read: the import database
+    has one feed, and its stop_times indexes are only built after the
+    repair (drop_import_indexes), so ordered by trip_id alone SQLite
+    sorted every call of the feed first (3 M calls: 11 s, 8 s now).
+    """
     patterns = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(
             "SELECT trip_id, stop_id, stop_sequence FROM stop_times"
-            " ORDER BY trip_id"
+            " ORDER BY feed_id, trip_id"
         ))
         for trip_id, calls in groupby(rows, key=lambda row: row[0]):
             if trip_id not in trip_meta:
