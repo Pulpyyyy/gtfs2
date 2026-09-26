@@ -2409,119 +2409,92 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
     return data_returned
 
 
+def _local_stop_feed(self):
+    """The trip updates a local stops refresh lays on its departures,
+    downloaded to a local file and read once for all of them: None
+    without realtime, an empty list when the download failed."""
+    if not self._realtime:
+        return None
+    self._rt_group = "trip"
+    rt_key = dict(getattr(self, "_rt_key", None) or {})
+    if rt_key.get(CONF_API_KEY_LOCATION) == "query_string":
+        # the coordinator already put this key in the url: handed on,
+        # get_gtfs_rt appended it a second time (?key=K&key=K)
+        rt_key.pop(CONF_API_KEY_LOCATION)
+    self._rt_data = {
+        "url": self._trip_update_url,
+        CONF_API_KEY : rt_key.get(CONF_API_KEY,None),
+        CONF_API_KEY_NAME : rt_key.get(CONF_API_KEY_NAME, None),
+        CONF_API_KEY_LOCATION : rt_key.get(CONF_API_KEY_LOCATION,None),
+        CONF_ACCEPT_HEADER_PB :rt_key.get(CONF_ACCEPT_HEADER_PB,None),
+        "file": self._data["name"] + "_localstop",
+        }
+    _LOGGER.debug("self rt_data: %s, self headers: %s, self data: %s", self._rt_data, self._headers, self._data)
+
+    if get_gtfs_rt(self.hass, DEFAULT_PATH_RT, self._rt_data) != "ok":
+        # the timetable still stands: the departures are listed without
+        # their delays this cycle, where they all went with the feed
+        _LOGGER.warning("Could not download RT data from %s, listing the "
+                        "timetable alone", self._trip_update_url)
+    else:
+        # use local file created as new url
+        self._trip_update_url = "file://" + DEFAULT_PATH_RT + "/" + self._data["name"] + "_localstop.rt"
+
+    if not self._trip_update_url.startswith("file://"):
+        # the download failed: an empty feed, so the lines below do not
+        # each go and ask the host again
+        return []
+    return get_gtfs_feed_entities(
+        url=self._trip_update_url, headers=self._headers, label="trip_data"
+    ) or []
+
+
+def _local_row_zones(row, timezone_local):
+    """(agency zone, stop zone) a local stop row is read in: the agency's,
+    else the stop's, for the first; the stop's for the second; Home
+    Assistant's when the feed names none."""
+    agency_zone = row["agency_timezone"] if row["agency_timezone"] is not None else row["stop_timezone"]
+    return (dt_util.get_time_zone(agency_zone) if agency_zone is not None else timezone_local,
+            dt_util.get_time_zone(row["stop_timezone"]) if row["stop_timezone"] is not None else timezone_local)
+
+
 def _interpret_local_stop_rows(self, rows):
     """Turn raw SQL-shaped rows into the local-stops departures list.
 
-    No database: `rows` only needs to be a list of plain dicts
+    No database: `rows` only needs to be a list of plain dicts, ordered
+    by stop as the query orders them.
     """
     offset = self._data["offset"]
-    timetable = []
-    local_stops_list = []
-    prev_stop_id = ""
-    prev_entry = entry = {}
-
-    # Define timezone
     if self.hass.config.time_zone is None:
         _LOGGER.error("Timezone is not set in Home Assistant configuration, using UTC")
-        timezone_local = dt_util.get_time_zone("UTC")
-    else:
-        timezone_local = dt_util.get_time_zone(self.hass.config.time_zone)
+    timezone_local = dt_util.get_time_zone(self.hass.config.time_zone or "UTC")
     _LOGGER.debug("Local timezone: %s",timezone_local)
-    
     now_tz = dt_util.now().replace(tzinfo=timezone_local) + datetime.timedelta(minutes=offset)
     _LOGGER.debug("Default 'now' on local timezone, incl. offset (if configured): %s",now_tz)
 
-	
-    # Set elements for realtime retrieval via local file.
-    if self._realtime:
-        self._rt_group = "trip"
-        rt_key = dict(getattr(self, "_rt_key", None) or {})
-        if rt_key.get(CONF_API_KEY_LOCATION) == "query_string":
-            # the coordinator already put this key in the url: handed on,
-            # get_gtfs_rt appended it a second time (?key=K&key=K)
-            rt_key.pop(CONF_API_KEY_LOCATION)
-        self._rt_data = {
-            "url": self._trip_update_url,
-            CONF_API_KEY : rt_key.get(CONF_API_KEY,None),
-            CONF_API_KEY_NAME : rt_key.get(CONF_API_KEY_NAME, None),
-            CONF_API_KEY_LOCATION : rt_key.get(CONF_API_KEY_LOCATION,None),
-            CONF_ACCEPT_HEADER_PB :rt_key.get(CONF_ACCEPT_HEADER_PB,None),
-            "file": self._data["name"] + "_localstop",
-            }
-        _LOGGER.debug("self rt_data: %s, self headers: %s, self data: %s", self._rt_data, self._headers, self._data)
+    feed_entities = _local_stop_feed(self)
 
-        check = get_gtfs_rt(self.hass,DEFAULT_PATH_RT,self._rt_data)
-
-        # check if local file created
-        if check != "ok":
-            # the timetable still stands: the departures are listed without
-            # their delays this cycle, where they all went with the feed
-            _LOGGER.warning("Could not download RT data from %s, listing the "
-                            "timetable alone", self._trip_update_url)
-        else:
-            # use local file created as new url
-            self._trip_update_url = "file://" + DEFAULT_PATH_RT + "/" + self._data["name"] + "_localstop.rt"
-
-    # Fetch + parse the RT feed once for this refresh cycle.
-    feed_entities = None
-    if self._realtime and not self._trip_update_url.startswith("file://"):
-        # the download failed: an empty feed, so the lines below do not
-        # each go and ask the host again
-        feed_entities = []
-    elif self._realtime:
-        feed_entities = get_gtfs_feed_entities(
-            url=self._trip_update_url, headers=self._headers, label="trip_data"
-        ) or []
-
-    for row in rows:  
-        #_LOGGER.debug("Row from query: %s", row)
-        #defining TZ for row
-        #_LOGGER.debug("Configured Agency timezone: %s", row['agency_timezone'])
-        #_LOGGER.debug("Configured Stop timezone: %s", row['stop_timezone'])
-        if row['agency_timezone'] is not None:
-            timezone_agency = dt_util.get_time_zone(row['agency_timezone'])
-        elif row['stop_timezone'] is not None:
-            timezone_agency = dt_util.get_time_zone(row['stop_timezone'])
-        else:
-            timezone_agency = timezone_local
-        if row['stop_timezone'] is not None:
-            timezone_stop = dt_util.get_time_zone(row['stop_timezone'])
-        else:
-            timezone_stop = timezone_local
-        _LOGGER.debug("Using Agency timezone: %s", timezone_agency)
-        _LOGGER.debug("Using Stop timezone: %s", timezone_stop)
-
-        if row["stop_id"] != prev_stop_id and prev_stop_id != "":
-            local_stops_list.append(prev_entry)
-            timetable = []
-
-        entry = {"stop_id": row['stop_id'], "stop_name": row['stop_name'], "stop_sequence": row['stop_sequence'], "latitude": row['latitude'], "longitude": row['longitude'], "departure": timetable, "offset": offset}
+    # {stop_id: its entry}, the entry read from the stop's last row
+    stops = {}
+    for row in rows:
+        timezone_agency, timezone_stop = _local_row_zones(row, timezone_local)
+        _LOGGER.debug("Using Agency timezone: %s, Stop timezone: %s", timezone_agency, timezone_stop)
+        timetable = stops[row["stop_id"]]["departure"] if row["stop_id"] in stops else []
+        stops[row["stop_id"]] = {"stop_id": row['stop_id'], "stop_name": row['stop_name'], "stop_sequence": row['stop_sequence'], "latitude": row['latitude'], "longitude": row['longitude'], "departure": timetable, "offset": offset}
         self._icon = ICONS.get(row['route_type'], ICON)
-       
+
         element = _build_local_stop_element(
-            self, row, row["departure_dt"], 
+            self, row, row["departure_dt"],
             timezone_agency, timezone_stop, now_tz,
             apply_now_filter=True, feed_entities=feed_entities)
-            
-        if element is not None:
-            if element not in timetable:
-                timetable.append(element)
-            _LOGGER.debug("Timetable: %s", timetable)
+        if element is not None and element not in timetable:
+            timetable.append(element)
 
-        prev_entry = entry.copy()
-        prev_stop_id = str(row["stop_id"])
-        entry["departure"] = timetable
-
-
-    if entry:
-        local_stops_list.append(entry)
-
+    local_stops_list = list(stops.values())
     for stop in local_stops_list:
         stop["departure"].sort(key=lambda d: d["departure_datetime"])
-
-    data_returned = local_stops_list
-    _LOGGER.debug("Interpreted local stop rows returned: %s", data_returned)
-    return data_returned
+    _LOGGER.debug("Interpreted local stop rows returned: %s", local_stops_list)
+    return local_stops_list
 
 def get_local_stops_next_departures(self):
     _LOGGER.debug("Get local stop departure with data: %s", self._data)
