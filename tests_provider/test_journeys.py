@@ -227,11 +227,14 @@ class Fixture:
                 for trip_id, route, way, service in conn.execute(text(
                         "SELECT trip_id, route_id, direction_id, service_id FROM trips")):
                     self._trips[trip_id] = (route, way, service)
-                for trip_id, seq, stop_id, arrival, departure in conn.execute(text(
-                        "SELECT trip_id, stop_sequence, stop_id, arrival_time, "
-                        "departure_time FROM stop_times ORDER BY trip_id, stop_sequence")):
+                # each call with its own ways on and off: a trip calling
+                # twice at a stop may let riders through at one call only
+                # (Kennington, the second call with neither)
+                for trip_id, seq, stop_id, arrival, departure, pickup, drop_off in conn.execute(text(
+                        "SELECT trip_id, stop_sequence, stop_id, arrival_time, departure_time, "
+                        "pickup_type, drop_off_type FROM stop_times ORDER BY trip_id, stop_sequence")):
                     self._calls.setdefault(trip_id, []).append(
-                        (stop_id, arrival, departure))
+                        (stop_id, arrival, departure, _flag(pickup) != 1, _flag(drop_off) != 1))
             self._running = {}
             with self.schedule.engine.connect() as conn:
                 ends = [str(row[0])[:10] for row in conn.execute(text(
@@ -244,13 +247,12 @@ class Fixture:
             if route != route_id or (direction is not None and str(way) != str(direction)):
                 continue
             leave = None
-            for stop_id, arrival, departure in self._calls.get(trip_id, ()):
+            for stop_id, arrival, departure, way_on, way_off in self._calls.get(trip_id, ()):
                 if (stop_id in destinations and leave is not None and arrival is not None
-                        and (trip_id, stop_id) in self.ways_off):
+                        and way_off):
                     rides.append((service, gtfs_seconds(leave), trip_id))
                     break
-                if (stop_id in origins and departure is not None
-                        and (trip_id, stop_id) in self.ways_on):
+                if stop_id in origins and departure is not None and way_on:
                     leave = departure
         best = None
         day = now.astimezone(zone).date() - datetime.timedelta(days=1)

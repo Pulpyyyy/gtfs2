@@ -344,14 +344,17 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
         end_station_where = "AND destination_stop_time.stop_id IN " + end_group
         # a trip passing a place twice offers the pair twice (Palm Bus 21 calls
         # at Gare SNCF de Cannes on its way out and on its way back): the ride
-        # is the shortest one, no other call at either end between the two
+        # is the shortest one, no other call at either end between the two.
+        # Only a call the rider could use counts: at Kennington a trip calls
+        # twice, the second time with no way on or off, and counted as one it
+        # lost the trip altogether
         shortest_ride_where = f"""AND NOT EXISTS (
                 SELECT 1 FROM stop_times between_stop
                 WHERE between_stop.trip_id = trip.trip_id
                   AND between_stop.stop_sequence > origin_stop_time.stop_sequence
                   AND between_stop.stop_sequence < destination_stop_time.stop_sequence
-                  AND (between_stop.stop_id IN {origin_group}
-                       OR between_stop.stop_id IN {end_group}))"""
+                  AND ((between_stop.stop_id IN {origin_group} AND {_boards("between_stop")})
+                       OR (between_stop.stop_id IN {end_group} AND {_alights("between_stop")})))"""
         direction_where = ("AND (trip.direction_id = :direction OR trip.direction_id IS NULL)"
                            if str(direction) in ("0", "1") else "")
         # a place is shared by every line calling at it: the entry's line only
