@@ -346,43 +346,11 @@ def _read_service_spans(zin):
     return spans
 
 
-def _read_trips(zip_path):
-    """What trips.txt says about every line, in one pass over it.
-
-    Returns ({route_id: "A ↔ B"}, {route_id: (first date, last date)}): the
-    destination each direction shows most often, and the days the line
-    runs. A direction whose trips mostly show a code, or nothing, is left
-    out of the first; a line with none left is not in it. Both answers come
-    from the same reading because that file is the expensive one: 196 MB on
-    the British national feed, and reading it twice showed."""
-    shown = defaultdict(lambda: defaultdict(Counter))
-    serves = defaultdict(set)
-    place_words = frozenset()
-    spans = {}
-    try:
-        with zipfile.ZipFile(zip_path) as zin:
-            member = _member(zin, "trips.txt")
-            if member is None:
-                return {}, {}
-            calendar = _read_service_spans(zin)
-            with zin.open(member) as fh:
-                reader = table_reader(fh)
-                names = reader.fieldnames or []
-                headsigns = "trip_headsign" in names
-                for row in reader:
-                    if headsigns:
-                        shown[row.get("route_id")][row.get("direction_id") or ""][
-                            (row.get("trip_headsign") or "").strip()] += 1
-                    service = calendar.get(row.get("service_id"))
-                    if service:
-                        serves[str(row.get("route_id"))].add(service)
-            if headsigns:
-                place_words = _read_place_words(zin)
-    except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.warning("Could not read the trips of %s: %s", zip_path, ex)
-        return {}, {}
-    for route_id, windows in serves.items():
-        spans[route_id] = (min(w[0] for w in windows), max(w[1] for w in windows))
+def _headsign_ends(shown, place_words):
+    """{route_id: "A ↔ B"} out of {route_id: {direction: Counter of the
+    headsigns its trips show}}: the place each direction shows most often.
+    A direction whose trips mostly show a code, or nothing, is left out; a
+    line with none left is not in it."""
     ends = {}
     for route_id, directions in shown.items():
         places = []
@@ -397,7 +365,44 @@ def _read_trips(zip_path):
         places = list(dict.fromkeys(places))[:2]
         if places:
             ends[str(route_id)] = " ↔ ".join(places)
-    return ends, spans
+    return ends
+
+
+def _read_trips(zip_path):
+    """What trips.txt says about every line, in one pass over it.
+
+    Returns ({route_id: "A ↔ B"}, {route_id: (first date, last date)}): the
+    destination each direction shows most often (_headsign_ends), and the
+    days the line runs. Both answers come from the same reading because
+    that file is the expensive one: 196 MB on the British national feed,
+    and reading it twice showed."""
+    shown = defaultdict(lambda: defaultdict(Counter))
+    serves = defaultdict(set)
+    place_words = frozenset()
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            member = _member(zin, "trips.txt")
+            if member is None:
+                return {}, {}
+            calendar = _read_service_spans(zin)
+            with zin.open(member) as fh:
+                reader = table_reader(fh)
+                headsigns = "trip_headsign" in (reader.fieldnames or [])
+                for row in reader:
+                    if headsigns:
+                        shown[row.get("route_id")][row.get("direction_id") or ""][
+                            (row.get("trip_headsign") or "").strip()] += 1
+                    service = calendar.get(row.get("service_id"))
+                    if service:
+                        serves[str(row.get("route_id"))].add(service)
+            if headsigns:
+                place_words = _read_place_words(zin)
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.warning("Could not read the trips of %s: %s", zip_path, ex)
+        return {}, {}
+    spans = {route_id: (min(w[0] for w in windows), max(w[1] for w in windows))
+             for route_id, windows in serves.items()}
+    return _headsign_ends(shown, place_words), spans
 
 
 def headsign_ends(gtfs_dir, filename, route_ids):
@@ -443,32 +448,40 @@ def route_spans(gtfs_dir, filename, route_ids):
     return {r: spans[r] for r in route_ids if r in spans}
 
 
+def _read_trip_calls(zin, route_ids):
+    """({trip_id: route_id} of these lines, Counter of each trip's calls,
+    {trip_id: (sequence, stop_id)} of its first and of its last call,
+    {stop_id: stop_name}), read from the zip's tables."""
+    trips, calls, first, last = {}, Counter(), {}, {}
+    files = {n.rsplit("/", 1)[-1]: n for n in zin.namelist()}
+
+    def rows(name):
+        return table_reader(zin.open(files[name]))
+
+    for row in rows("trips.txt"):
+        if row.get("route_id") in route_ids:
+            trips[row["trip_id"]] = row["route_id"]
+    for row in rows("stop_times.txt"):
+        trip = row.get("trip_id")
+        if trip not in trips:
+            continue
+        sequence = int(row["stop_sequence"])
+        calls[trip] += 1
+        if trip not in first or sequence < first[trip][0]:
+            first[trip] = (sequence, row["stop_id"])
+        if trip not in last or sequence > last[trip][0]:
+            last[trip] = (sequence, row["stop_id"])
+    names = {row["stop_id"]: row.get("stop_name") for row in rows("stops.txt")}
+    return trips, calls, first, last, names
+
+
 def _read_stop_ends(zip_path, route_ids):
     """{route_id: "A > B"} for these lines: the first and last stop of the
     trip that calls at the most stops, read from the zip's stop_times.txt,
     as _route_endpoints reads it from the database."""
-    trips, calls, first, last = {}, Counter(), {}, {}
     try:
         with zipfile.ZipFile(zip_path) as zin:
-            files = {n.rsplit("/", 1)[-1]: n for n in zin.namelist()}
-
-            def rows(name):
-                return table_reader(zin.open(files[name]))
-
-            for row in rows("trips.txt"):
-                if row.get("route_id") in route_ids:
-                    trips[row["trip_id"]] = row["route_id"]
-            for row in rows("stop_times.txt"):
-                trip = row.get("trip_id")
-                if trip not in trips:
-                    continue
-                sequence = int(row["stop_sequence"])
-                calls[trip] += 1
-                if trip not in first or sequence < first[trip][0]:
-                    first[trip] = (sequence, row["stop_id"])
-                if trip not in last or sequence > last[trip][0]:
-                    last[trip] = (sequence, row["stop_id"])
-            names = {row["stop_id"]: row.get("stop_name") for row in rows("stops.txt")}
+            trips, calls, first, last, names = _read_trip_calls(zin, route_ids)
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not read the stops of %s: %s", zip_path, ex)
         return {}
