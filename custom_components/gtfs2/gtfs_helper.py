@@ -1152,11 +1152,27 @@ def _segments_of(places):
     return pieces
 
 
+def _runs_forward(shared):
+    """Whether a piece runs the chain forward, from the chain positions of
+    the places it shares with it, in riding order: most pairs of them in
+    the chain's order. Counted over pairs, not steps: a way back riding a
+    one-way loop in the outbound sense (Autolinee Toscane 93 round
+    Albereto) makes many short steps up the chain after a few long ones
+    down it."""
+    up = down = 0
+    for i, a in enumerate(shared):
+        for b in shared[i + 1:]:
+            up += b > a
+            down += b < a
+    return up >= down
+
+
 def _lay_piece(order, piece):
     """Slot the places of a piece into the chain, each after the place
     preceding it, the piece read forward or backward as the places it
-    shares with the chain agree. False, the chain left alone, when a chain
-    already started shares fewer than two places with it."""
+    shares with the chain agree (_runs_forward). False, the chain left
+    alone, when a chain already started shares fewer than two places with
+    it."""
     position = {p: i for i, p in enumerate(order)}
     shared = [position[p] for p in piece if p in position]
     if not order:
@@ -1164,9 +1180,7 @@ def _lay_piece(order, piece):
     elif len(shared) < 2:
         return False
     else:
-        up = sum(1 for a, b in zip(shared, shared[1:]) if b > a)
-        down = sum(1 for a, b in zip(shared, shared[1:]) if b < a)
-        forward = up >= down
+        forward = _runs_forward(shared)
     prev = -1
     for p in (piece if forward else reversed(piece)):
         if p in position:
