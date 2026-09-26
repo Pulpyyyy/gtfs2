@@ -215,6 +215,12 @@ def _normalize_datetimes(value):
 
 CASES = _discover_cases(CASE_ROOT)
 
+# the schedule get_gtfs hands the refresh. An object and not a word: a
+# word is what get_gtfs answers when there is no database, and the refresh
+# reads nothing from it. The captures name it by the word they were
+# recorded with
+SCHEDULE = object()
+
 
 @pytest.mark.parametrize("case_id,case_dir", CASES, ids=[c[0] for c in CASES])
 def test_stop_static(case_id: str, case_dir: Path):
@@ -239,14 +245,52 @@ def test_stop_static(case_id: str, case_dir: Path):
 
         coord = coordinator_mod.GTFSLocalStopUpdateCoordinator(hass, entry)
 
-        with patch.object(coordinator_mod, "get_gtfs", return_value="FAKE_SCHEDULE"), \
+        with patch.object(coordinator_mod, "get_gtfs", return_value=SCHEDULE), \
              patch.object(coordinator_mod, "check_datasource_index", return_value=None), \
              patch.object(coordinator_mod, "get_local_stops_next_departures", return_value=precomputed_local_stops):
             result = asyncio.run(coord._async_update_data())
 
     result = _normalize_datetimes(result)
+    assert result["schedule"] is SCHEDULE
+    result["schedule"] = "FAKE_SCHEDULE"
 
     assert result == expected, (
         f"[{case_id}] ({label}) coordinator.data did not match "
         f"case_*_static_stop_output_coordinator_data.txt"
     )
+
+
+def test_a_source_without_a_database_says_it_once(caplog):
+    """get_gtfs answers a word while the source has no database. The index
+    check and the stops each warned at every refresh; the stop sensors,
+    one per stop found, cannot say it, none is found. The coordinator
+    says it once, reads nothing, and says it again only once the database
+    has come back and gone again."""
+    dt_util.set_default_time_zone(dt_util.get_time_zone(TIMEZONE))
+    coord = coordinator_mod.GTFSLocalStopUpdateCoordinator(_FakeHass(TIMEZONE), _FakeConfigEntry())
+    schedules = iter(["not_built", "not_built", SCHEDULE, "not_built"])
+    reads = []
+
+    def refresh():
+        with patch.object(coordinator_mod, "get_gtfs", return_value=next(schedules)), \
+             patch.object(coordinator_mod, "check_datasource_index",
+                          side_effect=lambda *args: reads.append("index")), \
+             patch.object(coordinator_mod, "get_local_stops_next_departures",
+                          side_effect=lambda *args: reads.append("stops") or []):
+            return asyncio.run(coord._async_update_data())
+
+    def said():
+        return [r for r in caplog.records if r.levelname == "WARNING"]
+
+    with caplog.at_level("DEBUG"):
+        first = refresh()
+        refresh()
+    assert first["local_stops_next_departures"] == [] and first["extracting"] is False
+    assert reads == []
+    assert len(said()) == 1 and "not_built" in said()[0].getMessage()
+    with caplog.at_level("DEBUG"):
+        refresh()
+    assert reads == ["index", "stops"]
+    with caplog.at_level("DEBUG"):
+        refresh()
+    assert len(said()) == 2

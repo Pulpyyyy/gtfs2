@@ -494,10 +494,14 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             self._data["extracting"] = True
             return self._data
 
+        if self._no_schedule(data["file"]):
+            self._data["local_stops_next_departures"] = []
+            return self._data
+
         await self.hass.async_add_executor_job(
                 check_datasource_index, self.hass, self._pygtfs, self.hass.config.path(DEFAULT_PATH), data["file"]
             )
-            
+
         self._realtime = False
         # same resolution as the generic coordinator: the datasource entry
         # of the source first, this entry's own options as the fallback
@@ -553,5 +557,23 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         except Exception as ex:
             _LOGGER.exception("Error getting local stops data: %s", ex)
             raise UpdateFailed(f"Error in getting local stops data: {ex}")
-        #_LOGGER.debug("Data from coordinator: %s", self._data)              
+        #_LOGGER.debug("Data from coordinator: %s", self._data)
         return self._data
+
+    def _no_schedule(self, file) -> bool:
+        """Whether get_gtfs answered a word, no database to read, said once.
+
+        The index check and the stops each warned at every refresh. The
+        stop sensors cannot say it for them: there is one per stop found,
+        and with no database none is found. So the coordinator says it,
+        once for each reason, and again only once the database is back
+        and gone again.
+        """
+        if self._pygtfs is not None and not isinstance(self._pygtfs, str):
+            self._nothing_said = None
+            return False
+        reason = self._pygtfs or "empty"
+        if reason != getattr(self, "_nothing_said", None):
+            _LOGGER.warning("Datasource %s has no usable schedule (%s), no local stops", file, reason)
+            self._nothing_said = reason
+        return True
