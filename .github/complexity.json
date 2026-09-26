@@ -5,7 +5,6 @@
   "departure_attributes.py next_service_info": 13,
   "flow_source.py async_step_source_url": 12,
   "gtfs_db.py on_a_copy": 11,
-  "gtfs_db.py prune_gtfs_datasource": 16,
   "gtfs_helper.py get_pair_direction": 12,
   "gtfs_helper.py get_route_list": 11,
   "gtfs_rt_helper.py _fetch_gtfs_feed_entities": 12,

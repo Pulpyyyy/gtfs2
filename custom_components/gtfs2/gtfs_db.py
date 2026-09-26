@@ -562,92 +562,17 @@ def prune_gtfs_datasource(gtfs_dir, filename, keep_routes, dry_run=False):
     conn = sqlite3.connect(sqlite_file, timeout=300)
     try:
         cur = conn.cursor()
-        placeholders = ",".join("?" * len(keep_routes))
-        known = {r[0] for r in cur.execute(
-            f"select route_id from routes where route_id in ({placeholders})",  # noqa: S608
-            tuple(keep_routes))}
-        if unknown := set(keep_routes) - known:
-            _LOGGER.warning("Pruning %s: these routes are not in the datasource: %s", filename, unknown)
-
-        cur.execute("create temp table gtfs2_keep(feed_id integer, trip_id varchar, "
-                    "primary key(feed_id, trip_id)) without rowid")
-        cur.execute(f"insert into gtfs2_keep select feed_id, trip_id from trips "  # noqa: S608
-                    f"where route_id in ({placeholders})", tuple(keep_routes))
-        kept_trips = cur.execute("select count(*) from gtfs2_keep").fetchone()[0]
-        total_trips = cur.execute("select count(*) from trips").fetchone()[0]
+        kept_trips, total_trips = _collect_keep(cur, filename, keep_routes)
         if not kept_trips:
             _LOGGER.error("Cannot prune %s: routes %s match no trips, aborting to avoid data loss",
                           filename, keep_routes)
             return None
 
-        # the services those trips run on, collected once and keyed, so the
-        # calendar rebuilds below probe an index instead of scanning trips
-        cur.execute("create temp table gtfs2_keep_services("
-                    "feed_id integer, service_id varchar, "
-                    "primary key(feed_id, service_id)) without rowid")
-        cur.execute("insert into gtfs2_keep_services "
-                    "select distinct t.feed_id, t.service_id from trips t "
-                    "inner join gtfs2_keep k "
-                    "on k.feed_id = t.feed_id and k.trip_id = t.trip_id")
-
         stats = {"file": filename, "routes": sorted(keep_routes), "dry_run": dry_run,
                  "trips_before": total_trips, "trips_after": kept_trips,
                  "size_before_mb": round(size_before / 1048576, 1)}
-
-        for table, feed_col in PRUNE_TRIP_DEPENDENTS:
-            if not _table_has_columns(cur, table, feed_col, "trip_id"):
-                _LOGGER.debug("Pruning %s: skipping absent or unexpected table %s", filename, table)
-                continue
-            before = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-            if dry_run:
-                after = cur.execute(
-                    f"select count(*) from {table} t inner join gtfs2_keep k "  # noqa: S608
-                    f"on k.feed_id = t.{feed_col} and k.trip_id = t.trip_id").fetchone()[0]
-            else:
-                _rebuild_keep(cur, table, "exists (select 1 from gtfs2_keep k "
-                              f"where k.feed_id = src.{feed_col} and k.trip_id = src.trip_id)")
-                after = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-            stats[f"{table}_before"], stats[f"{table}_after"] = before, after
-
-        for table, feed_col in PRUNE_SERVICE_DEPENDENTS:
-            if not _table_has_columns(cur, table, feed_col, "service_id"):
-                _LOGGER.debug("Pruning %s: skipping absent or unexpected table %s",
-                              filename, table)
-                continue
-            orphan = _ORPHAN_SERVICE.format(table=table, feed_col=feed_col)
-            before = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-            if dry_run:
-                kept = cur.execute(
-                    f"select count(*) from {table} where not {orphan}").fetchone()[0]  # noqa: S608
-                after = kept
-            else:
-                _rebuild_keep(cur, table, "not " + _ORPHAN_SERVICE.format(
-                    table="src", feed_col=feed_col))
-                after = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-            stats[f"{table}_before"], stats[f"{table}_after"] = before, after
-
-        # an interned datasource keeps its stop_times in gtfs2_stop_times, keyed
-        # by tk, and exposes the original shape as a view. _table_has_columns
-        # skips the view, so the rows have to be removed here instead.
-        if _table_has_columns(cur, "gtfs2_stop_times", "tk"):
-            keep_tk = ("select k.tk from gtfs2_trip_key k "
-                       "inner join gtfs2_keep g on g.trip_id = k.trip_id")
-            before = cur.execute("select count(*) from gtfs2_stop_times").fetchone()[0]
-            if dry_run:
-                after = cur.execute(
-                    f"select count(*) from gtfs2_stop_times where tk in ({keep_tk})"  # noqa: S608
-                ).fetchone()[0]
-            else:
-                _rebuild_keep(cur, "gtfs2_stop_times", f"src.tk in ({keep_tk})")
-                # the key tables hold the long identifiers interning removed
-                # from every row: leaving them behind keeps most of the weight
-                _rebuild_keep(cur, "gtfs2_trip_key",
-                              "src.tk in (select tk from gtfs2_stop_times)")
-                _rebuild_keep(cur, "gtfs2_stop_key",
-                              "src.sk in (select sk from gtfs2_stop_times)")
-                after = cur.execute("select count(*) from gtfs2_stop_times").fetchone()[0]
-            stats["gtfs2_stop_times_before"] = before
-            stats["gtfs2_stop_times_after"] = after
+        _prune_dependents(cur, filename, dry_run, stats)
+        _prune_interned(cur, dry_run, stats)
 
         if dry_run:
             conn.rollback()
@@ -672,6 +597,102 @@ def prune_gtfs_datasource(gtfs_dir, filename, keep_routes, dry_run=False):
                  filename, stats["size_before_mb"], stats["size_after_mb"],
                  stats["trips_after"], stats["trips_before"])
     return stats
+
+
+def _collect_keep(cur, filename, keep_routes):
+    """Fill the temp tables gtfs2_keep, the trips of keep_routes, and
+    gtfs2_keep_services, the services they run on. Returns (trips kept,
+    trips in the datasource)."""
+    placeholders = ",".join("?" * len(keep_routes))
+    known = {r[0] for r in cur.execute(
+        f"select route_id from routes where route_id in ({placeholders})",  # noqa: S608
+        tuple(keep_routes))}
+    if unknown := set(keep_routes) - known:
+        _LOGGER.warning("Pruning %s: these routes are not in the datasource: %s", filename, unknown)
+
+    cur.execute("create temp table gtfs2_keep(feed_id integer, trip_id varchar, "
+                "primary key(feed_id, trip_id)) without rowid")
+    cur.execute(f"insert into gtfs2_keep select feed_id, trip_id from trips "  # noqa: S608
+                f"where route_id in ({placeholders})", tuple(keep_routes))
+    kept_trips = cur.execute("select count(*) from gtfs2_keep").fetchone()[0]
+    total_trips = cur.execute("select count(*) from trips").fetchone()[0]
+    if not kept_trips:
+        return kept_trips, total_trips
+
+    # the services those trips run on, collected once and keyed, so the
+    # calendar rebuilds below probe an index instead of scanning trips
+    cur.execute("create temp table gtfs2_keep_services("
+                "feed_id integer, service_id varchar, "
+                "primary key(feed_id, service_id)) without rowid")
+    cur.execute("insert into gtfs2_keep_services "
+                "select distinct t.feed_id, t.service_id from trips t "
+                "inner join gtfs2_keep k "
+                "on k.feed_id = t.feed_id and k.trip_id = t.trip_id")
+    return kept_trips, total_trips
+
+
+def _prune_dependents(cur, filename, dry_run, stats):
+    """Keep, of each table hanging off a trip or a service, the rows of the
+    kept ones (only count them on a dry run), their counts put in stats."""
+    for table, feed_col in PRUNE_TRIP_DEPENDENTS:
+        if not _table_has_columns(cur, table, feed_col, "trip_id"):
+            _LOGGER.debug("Pruning %s: skipping absent or unexpected table %s", filename, table)
+            continue
+        before = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
+        if dry_run:
+            after = cur.execute(
+                f"select count(*) from {table} t inner join gtfs2_keep k "  # noqa: S608
+                f"on k.feed_id = t.{feed_col} and k.trip_id = t.trip_id").fetchone()[0]
+        else:
+            _rebuild_keep(cur, table, "exists (select 1 from gtfs2_keep k "
+                          f"where k.feed_id = src.{feed_col} and k.trip_id = src.trip_id)")
+            after = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
+        stats[f"{table}_before"], stats[f"{table}_after"] = before, after
+
+    for table, feed_col in PRUNE_SERVICE_DEPENDENTS:
+        if not _table_has_columns(cur, table, feed_col, "service_id"):
+            _LOGGER.debug("Pruning %s: skipping absent or unexpected table %s",
+                          filename, table)
+            continue
+        orphan = _ORPHAN_SERVICE.format(table=table, feed_col=feed_col)
+        before = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
+        if dry_run:
+            after = cur.execute(
+                f"select count(*) from {table} where not {orphan}").fetchone()[0]  # noqa: S608
+        else:
+            _rebuild_keep(cur, table, "not " + _ORPHAN_SERVICE.format(
+                table="src", feed_col=feed_col))
+            after = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
+        stats[f"{table}_before"], stats[f"{table}_after"] = before, after
+
+
+def _prune_interned(cur, dry_run, stats):
+    """The same for an interned datasource's stop_times and key tables.
+
+    An interned datasource keeps its stop_times in gtfs2_stop_times, keyed
+    by tk, and exposes the original shape as a view. _table_has_columns
+    skips the view, so the rows have to be removed here instead.
+    """
+    if not _table_has_columns(cur, "gtfs2_stop_times", "tk"):
+        return
+    keep_tk = ("select k.tk from gtfs2_trip_key k "
+               "inner join gtfs2_keep g on g.trip_id = k.trip_id")
+    before = cur.execute("select count(*) from gtfs2_stop_times").fetchone()[0]
+    if dry_run:
+        after = cur.execute(
+            f"select count(*) from gtfs2_stop_times where tk in ({keep_tk})"  # noqa: S608
+        ).fetchone()[0]
+    else:
+        _rebuild_keep(cur, "gtfs2_stop_times", f"src.tk in ({keep_tk})")
+        # the key tables hold the long identifiers interning removed
+        # from every row: leaving them behind keeps most of the weight
+        _rebuild_keep(cur, "gtfs2_trip_key",
+                      "src.tk in (select tk from gtfs2_stop_times)")
+        _rebuild_keep(cur, "gtfs2_stop_key",
+                      "src.sk in (select sk from gtfs2_stop_times)")
+        after = cur.execute("select count(*) from gtfs2_stop_times").fetchone()[0]
+    stats["gtfs2_stop_times_before"] = before
+    stats["gtfs2_stop_times_after"] = after
 
 
 def _rebuild_keep(cur, table, keep_where, params=()):
