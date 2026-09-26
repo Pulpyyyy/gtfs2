@@ -46,6 +46,47 @@ def _iso(value):
     return None
 
 
+def _earliest(day, other):
+    """The earlier of two ISO days, either one standing alone."""
+    return min(day, other) if day and other else day or other
+
+
+def _latest(day, other):
+    """The later of two ISO days, either one standing alone."""
+    return max(day, other) if day and other else day or other
+
+
+def _feed_info(rows):
+    """The publisher, version, start and end of the feed_info rows: its
+    first row says them, None each when the feed leaves them out."""
+    for row in rows:
+        return {
+            "feed_publisher_name": (row.get("feed_publisher_name") or "").strip() or None,
+            "feed_version": (row.get("feed_version") or "").strip() or None,
+            "feed_start_date": _iso(row.get("feed_start_date")),
+            "feed_end_date": _iso(row.get("feed_end_date")),
+        }
+    return {}
+
+
+def _service_days(calendar, calendar_dates):
+    """(first, last) service day of the calendars: the windows of calendar
+    rows whose weekdays are not all off, and the additions of the
+    calendar_dates rows."""
+    first = last = None
+    for row in calendar:
+        if not any((row.get(day) or "").strip() == "1" for day in WEEKDAYS):
+            # the TAO shape: every flag off, the dates mean nothing
+            continue
+        first = _earliest(first, _iso(row.get("start_date")))
+        last = _latest(last, _iso(row.get("end_date")))
+    for row in calendar_dates:
+        if (row.get("exception_type") or "").strip() == "1":
+            day = _iso(row.get("date"))
+            first, last = _earliest(first, day), _latest(last, day)
+    return first, last
+
+
 def read_feed_window(zip_path):
     """What the zip says of its validity, as ISO dates, {} without a zip.
 
@@ -70,38 +111,16 @@ def read_feed_window(zip_path):
         names = {name.split("/")[-1]: name for name in archive.namelist()}
 
         def rows(member):
+            # a table the feed leaves out reads as no row
+            if member not in names:
+                return
             with archive.open(names[member]) as raw:
                 yield from table_reader(raw)
 
         try:
-            if "feed_info.txt" in names:
-                for row in rows("feed_info.txt"):
-                    window["feed_publisher_name"] = (row.get("feed_publisher_name") or "").strip() or None
-                    window["feed_version"] = (row.get("feed_version") or "").strip() or None
-                    window["feed_start_date"] = _iso(row.get("feed_start_date"))
-                    window["feed_end_date"] = _iso(row.get("feed_end_date"))
-                    break
-            first = last = None
-            if "calendar.txt" in names:
-                for row in rows("calendar.txt"):
-                    if not any((row.get(day) or "").strip() == "1" for day in WEEKDAYS):
-                        # the TAO shape: every flag off, the dates mean nothing
-                        continue
-                    start, end = _iso(row.get("start_date")), _iso(row.get("end_date"))
-                    if start:
-                        first = min(first, start) if first else start
-                    if end:
-                        last = max(last, end) if last else end
-            if "calendar_dates.txt" in names:
-                for row in rows("calendar_dates.txt"):
-                    if (row.get("exception_type") or "").strip() != "1":
-                        continue
-                    day = _iso(row.get("date"))
-                    if day:
-                        first = min(first, day) if first else day
-                        last = max(last, day) if last else day
-            window["first_service_day"] = first
-            window["last_service_day"] = last
+            window.update(_feed_info(rows("feed_info.txt")))
+            window["first_service_day"], window["last_service_day"] = _service_days(
+                rows("calendar.txt"), rows("calendar_dates.txt"))
         except (KeyError, OSError, UnicodeDecodeError, csv.Error) as ex:
             _LOGGER.warning("Could not read the feed window of %s: %s", zip_path, ex)
     return window
