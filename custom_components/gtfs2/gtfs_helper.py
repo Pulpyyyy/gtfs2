@@ -1201,7 +1201,8 @@ def _chain_of(trips, place):
     fullest piece is laid first, and every other piece is read forward or
     backward, whichever way the places it shares with the chain already
     agree with, then its places are slotted in after the place preceding
-    them. A piece sharing nothing yet waits for the chain to grow.
+    them. A piece sharing nothing yet waits for the chain to grow. Once
+    every piece is laid, the places settle (_settle).
     """
     pieces = {}
     for _trip_id, trip_stops in trips.items():
@@ -1219,6 +1220,62 @@ def _chain_of(trips, place):
                 order.extend(p for p in piece if p not in order)
             break
         pending = waiting
+    return _settle(order, pieces)
+
+
+def _ridden_next_to(order, pieces):
+    """({place: {place ridden just before it: weight}}, the same for just
+    after), each piece read the way it runs the chain (_runs_forward) and
+    weighed by how many patterns ride it."""
+    position = {p: i for i, p in enumerate(order)}
+    before = {p: {} for p in order}
+    after = {p: {} for p in order}
+    for piece, count in pieces.items():
+        if not _runs_forward([position[p] for p in piece]):
+            piece = piece[::-1]
+        for a, b in zip(piece, piece[1:]):
+            before[b][a] = before[b].get(a, 0) + count
+            after[a][b] = after[a].get(b, 0) + count
+    return before, after
+
+
+def _slot_costs(rest, before, after):
+    """For each slot of a place among the others (rest), how much the
+    steps ridden through it go against the chain: the places ridden
+    before it set after the slot, those ridden after it set before."""
+    cost = sum(before.values())
+    costs = [cost]
+    for q in rest:
+        cost += after.get(q, 0) - before.get(q, 0)
+        costs.append(cost)
+    return costs
+
+
+def _settle(order, pieces):
+    """The chain with each place moved, one at a time, to the slot the
+    rides through it contradict least, until none moves.
+
+    A piece slots a place it brings after the place preceding it, which is
+    a guess when the piece knows nothing of the places the chain already
+    holds between its neighbours: on Rome 8 the long outbound ride brings a
+    pole of Gianicolense/Colli Portuensi without the two stops the way back
+    passes there, and it landed after them, where a shorter ride laid later
+    calls at it before them. A place moves only to a slot strictly better,
+    the nearest of equals.
+    """
+    for _round in range(len(order)):
+        before, after = _ridden_next_to(order, pieces)
+        moved = False
+        for p in list(order):
+            here = order.index(p)
+            rest = order[:here] + order[here + 1:]
+            costs = _slot_costs(rest, before[p], after[p])
+            slot = min(range(len(costs)), key=lambda i: (costs[i], abs(i - here)))
+            if costs[slot] < costs[here]:
+                order[:] = rest[:slot] + [p] + rest[slot:]
+                moved = True
+        if not moved:
+            break
     return order
 
 
