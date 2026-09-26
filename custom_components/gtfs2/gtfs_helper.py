@@ -1376,15 +1376,32 @@ def _loop_termini(trips, place):
             if stops and place.get(stops[0][0]) == place.get(stops[-1][0])}
 
 
-def _origin_boarding(conn, route_id, origin_stop_id):
+def _origin_boarding(conn, route_id, origin_stop_id, direction=None):
     """The calls of the route at the origin's place a rider can get on at,
-    as {(trip_id, stop_sequence)}: what _calls_out starts a ride from."""
+    as {(trip_id, stop_sequence)}: what _calls_out starts a ride from.
+
+    Keyed on the trip _STOP_ROWS samples for each pattern of stops, as the
+    rides are read from that trip alone: a call counts when any trip of the
+    pattern boards there. Read from the sampled trip's own flag, a pattern
+    whose sample only sets down at the origin lost its way out (Amtrak's
+    Stockton, where one Thruway bus of three does not pick up)."""
     return {(row[0], row[1]) for row in conn.execute(text(f"""
-        select st.trip_id, st.stop_sequence
-        from stop_times st
-        inner join trips t on t.trip_id = st.trip_id
-        where t.route_id = :route_id and st.stop_id in {_STOP_GROUP}
-        and {_boards("st")}"""), {"route_id": route_id, "origin": origin_stop_id})}  # noqa: S608
+        with ride as (
+            select t.trip_id, group_concat(st.stop_sequence || ':' || st.stop_id) as stops
+            from trips t
+            inner join stop_times st on st.trip_id = t.trip_id
+            where t.route_id = :route_id
+            and (:direction is null or t.direction_id = :direction or t.direction_id is null)
+            group by t.trip_id
+        ), sample as (
+            select trip_id, min(trip_id) over (partition by stops) as sample_id from ride
+        )
+        select distinct sample.sample_id, st.stop_sequence
+        from sample
+        inner join stop_times st on st.trip_id = sample.trip_id
+        where st.stop_id in {_STOP_GROUP}
+        and {_boards("st")}"""), {"route_id": route_id, "origin": origin_stop_id,  # noqa: S608
+                                  "direction": _direction_param(direction)})}
 
 
 def _calls_out(trips, place, origin_place, boarding=None):
@@ -1612,7 +1629,7 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
         rows = conn.execute(text(sql), {**scope, "origin": origin_stop_id}).fetchall()
         trip_count = dict(conn.execute(text(weights_sql), {**scope, "origin": origin_stop_id}).fetchall())
         alighting = {row[0] for row in conn.execute(text(alighting_sql), {**scope, "origin": origin_stop_id})}
-        boarding = (_origin_boarding(conn, route_id, origin_stop_id)
+        boarding = (_origin_boarding(conn, route_id, origin_stop_id, direction)
                     if towards is not None else None)
     alightable = {place[s] for s in alighting if s in place}
     position = {x[0]: i for i, x in enumerate(line)}
