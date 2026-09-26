@@ -566,97 +566,61 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
     return hits
 
 
-def journey_alerts(coordinator, feed_entities):
-    """What the alert feed says about this sensor's journey, as the
-    coordinator publishes it: the worst sentence for each end, the whole
-    stack behind it, and the cause and effect of the sentence shown.
-
-    What it reads of the coordinator is read here, once: the entry's data,
-    the route, the two stops, the trips on the board and hass for the
-    language; feed_entities is the alert feed as fetched.
-    """
-    rt_alerts = {}
-    if not feed_entities:
-        _LOGGER.debug("No proper RT feed entities for alerts")
-        return rt_alerts
-    data = getattr(coordinator, "_data", None) or {}
-    forget_stale_stops(data)
-    route_id = coordinator._route_id
-    trip_id = getattr(coordinator, "_trip_id", None)
-    origin_ids = _stop_aliases(data, coordinator._stop_id)
-    destination_ids = _stop_aliases(data, coordinator._destination_id)
-    # the destination the flow stored can be a station name rather than an
-    # id, which never matched anything; the departure knows the real one
-    arrival = (data.get("next_departure") or {}).get("destination_stop_id")
-    if arrival:
-        # a new set: the two come out of the cache, and merging in place
-        # wrote one sensor's arrival into another's entry
-        destination_ids = destination_ids | _stop_aliases(data, arrival)
-    journey_ids = _journey_stops(data, trip_id)
-    route_facts = _route_facts(data, route_id)
-    language = _alert_language(getattr(coordinator, "hass", None))
-    # the trips on the board: the next departure, then the ones listed
-    # behind it, so an alert naming any of them is read
-    head = str(trip_id or "")
+def _board_trips(coordinator):
+    """(head, listed): the trip of the next departure, None when unknown,
+    and the ones listed behind it, so an alert naming any of them is
+    read."""
+    head = str(getattr(coordinator, "_trip_id", None) or "")
     head = head if head and head != "no_trip_information" else None
     listed = []
     for t in getattr(coordinator, "_trip_list", None) or []:
         if t and str(t) != head and str(t) not in listed:
             listed.append(str(t))
-    # the ride ahead: from now to the departure the sensor announces, the
-    # span an alert has to cover to be about this journey
+    return head, listed
+
+
+def _ride_span(data):
+    """(now, until) as timestamps: from now to the departure the sensor
+    announces, the span an alert has to cover to be about this journey."""
     now_ts = int(dt_util.utcnow().timestamp())
     leaves = (data.get("next_departure") or {}).get("departure_time")
-    until_ts = now_ts
     if hasattr(leaves, "timestamp"):
-        until_ts = max(now_ts, int(leaves.timestamp()))
-    origin_alerts = []
-    destination_alerts = []
-    for entity in feed_entities:
-        if not entity.HasField("alert"):
-            continue
-        alert = entity.alert
-        when = _alert_when(alert, now_ts, until_ts)
-        if when == "over":
-            # it applied to a day gone by; the feed drops it later
-            continue
-        hits = _alert_scope(alert, origin_ids, destination_ids,
-                            route_id, head, journey_ids, listed,
-                            route_facts, getattr(coordinator, "_direction", None))
-        if not any(hits.values()):
-            continue
-        # an alert with no readable header still carries its cause and its
-        # effect, and it does not take a sentence to say that something is
-        # going on
-        item = {"text": _alert_text(alert.header_text, language)}
-        item.update(_alert_kind(alert))
-        # when it applies: a later alert starts after the departure
-        # announced, and is kept, since a rider wants to know, but ranked
-        # after what happens on this ride. A card can say "from Saturday"
-        # rather than show a closure four days ahead as if it were tonight's
-        periods = _alert_periods(alert)
-        if periods:
-            item["periods"] = periods
-        stops = _stop_names(data, hits["stops"])
-        if stops:
-            item["stops"] = stops
-        if hits["trips"]:
-            # which departures of the board it names, head first
-            item["trips"] = list(hits["trips"])
-            if head not in hits["trips"] and not any(
-                    hits[k] for k in ("origin", "destination", "route", "journey")):
-                # about a later departure only: kept, ranked after what
-                # concerns the next one, so it never takes its sentence
-                item["later_only"] = True
-        _LOGGER.debug("RT Alert for route: %s, scope: %s, alert: %s", route_id, hits, alert.header_text)
-        # an alert about the line, about the train itself, or about a stop
-        # somewhere along the way speaks for the whole journey
-        whole_journey = hits["route"] or hits["trip"] or hits["journey"]
-        if hits["origin"] or whole_journey:
-            origin_alerts.append(item)
-        if hits["destination"] or whole_journey:
-            destination_alerts.append(item)
-    ride = (_stamp(now_ts), _stamp(until_ts))
+        return now_ts, max(now_ts, int(leaves.timestamp()))
+    return now_ts, now_ts
+
+
+def _alert_item(alert, hits, data, language, head):
+    """What a card gets of one alert about the journey."""
+    # an alert with no readable header still carries its cause and its
+    # effect, and it does not take a sentence to say that something is
+    # going on
+    item = {"text": _alert_text(alert.header_text, language)}
+    item.update(_alert_kind(alert))
+    # when it applies: a later alert starts after the departure
+    # announced, and is kept, since a rider wants to know, but ranked
+    # after what happens on this ride. A card can say "from Saturday"
+    # rather than show a closure four days ahead as if it were tonight's
+    periods = _alert_periods(alert)
+    if periods:
+        item["periods"] = periods
+    stops = _stop_names(data, hits["stops"])
+    if stops:
+        item["stops"] = stops
+    if hits["trips"]:
+        # which departures of the board it names, head first
+        item["trips"] = list(hits["trips"])
+        if head not in hits["trips"] and not any(
+                hits[k] for k in ("origin", "destination", "route", "journey")):
+            # about a later departure only: kept, ranked after what
+            # concerns the next one, so it never takes its sentence
+            item["later_only"] = True
+    return item
+
+
+def _publish_alerts(origin_alerts, destination_alerts, ride):
+    """The alert attributes: each end's list, ranked, its sentence and the
+    cause and effect of the sentence shown."""
+    rt_alerts = {}
     origin_alerts = _rank_alerts(origin_alerts, ride)
     destination_alerts = _rank_alerts(destination_alerts, ride)
     # A journey can be under several alerts at once and the strings hold one
@@ -682,8 +646,64 @@ def journey_alerts(coordinator, feed_entities):
     # Taken from two different alerts, as they were, a card that styles
     # itself on them paints a service notice as an incident. Origin first,
     # because that is the sentence a start/stop card reads.
-    head = (origin_now or destination_now or [{}])[0]
+    shown = (origin_now or destination_now or [{}])[0]
     for field in ("cause", "effect"):
-        if field in head:
-            rt_alerts["alert_" + field] = head[field]
+        if field in shown:
+            rt_alerts["alert_" + field] = shown[field]
     return rt_alerts
+
+
+def journey_alerts(coordinator, feed_entities):
+    """What the alert feed says about this sensor's journey, as the
+    coordinator publishes it: the worst sentence for each end, the whole
+    stack behind it, and the cause and effect of the sentence shown.
+
+    What it reads of the coordinator is read here, once: the entry's data,
+    the route, the two stops, the trips on the board and hass for the
+    language; feed_entities is the alert feed as fetched.
+    """
+    if not feed_entities:
+        _LOGGER.debug("No proper RT feed entities for alerts")
+        return {}
+    data = getattr(coordinator, "_data", None) or {}
+    forget_stale_stops(data)
+    route_id = coordinator._route_id
+    origin_ids = _stop_aliases(data, coordinator._stop_id)
+    destination_ids = _stop_aliases(data, coordinator._destination_id)
+    # the destination the flow stored can be a station name rather than an
+    # id, which never matched anything; the departure knows the real one
+    arrival = (data.get("next_departure") or {}).get("destination_stop_id")
+    if arrival:
+        # a new set: the two come out of the cache, and merging in place
+        # wrote one sensor's arrival into another's entry
+        destination_ids = destination_ids | _stop_aliases(data, arrival)
+    journey_ids = _journey_stops(data, getattr(coordinator, "_trip_id", None))
+    route_facts = _route_facts(data, route_id)
+    language = _alert_language(getattr(coordinator, "hass", None))
+    head, listed = _board_trips(coordinator)
+    now_ts, until_ts = _ride_span(data)
+    origin_alerts = []
+    destination_alerts = []
+    for entity in feed_entities:
+        if not entity.HasField("alert"):
+            continue
+        alert = entity.alert
+        if _alert_when(alert, now_ts, until_ts) == "over":
+            # it applied to a day gone by; the feed drops it later
+            continue
+        hits = _alert_scope(alert, origin_ids, destination_ids,
+                            route_id, head, journey_ids, listed,
+                            route_facts, getattr(coordinator, "_direction", None))
+        if not any(hits.values()):
+            continue
+        item = _alert_item(alert, hits, data, language, head)
+        _LOGGER.debug("RT Alert for route: %s, scope: %s, alert: %s", route_id, hits, alert.header_text)
+        # an alert about the line, about the train itself, or about a stop
+        # somewhere along the way speaks for the whole journey
+        whole_journey = hits["route"] or hits["trip"] or hits["journey"]
+        if hits["origin"] or whole_journey:
+            origin_alerts.append(item)
+        if hits["destination"] or whole_journey:
+            destination_alerts.append(item)
+    return _publish_alerts(origin_alerts, destination_alerts,
+                           (_stamp(now_ts), _stamp(until_ts)))

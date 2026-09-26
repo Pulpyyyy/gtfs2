@@ -1,7 +1,6 @@
 {
   "__init__.py async_prune_datasources": 11,
   "__init__.py setup": 13,
-  "alerts.py journey_alerts": 22,
   "config_flow.py async_step_route": 12,
   "departure_attributes.py next_service_info": 13,
   "direction_repair.py _repair": 16,
