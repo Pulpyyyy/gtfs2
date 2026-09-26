@@ -1001,9 +1001,14 @@ def check_route(check, fx, route_id, direction, kind):
                 # Riding order across every trip of the line, one branch at a
                 # time where the rides leave it open. Read from all the
                 # line's trips: a place follows the places any of them calls
-                # at just before it on its way from the origin (counted again
-                # from a later call at the origin, a place met again on a
-                # ride starting a new stretch). Among the places free to come
+                # at just before it on its way from the origin (counted from
+                # a call at the origin a rider can board at, again from each
+                # later one). A place met again on a ride, a spur's way back,
+                # orders nothing, and what comes next follows the last place
+                # met for the first time, as the list places spurs; a place
+                # the list does not offer (no way off) orders nothing either.
+                # Reading them as edges made cycles the walk could not leave
+                # (the 48-feed sweep, 2026-09-26). Among the places free to come
                 # next, one that follows the place just listed goes on with
                 # the branch in progress; otherwise, and between several, the
                 # busiest by the trips of the rides reaching it, then the
@@ -1021,6 +1026,8 @@ def check_route(check, fx, route_id, direction, kind):
                                 trips_at[e] = trips_at.get(e, 0) + len(everything[other])
                             if s is None:
                                 break
+                            if count is None and not fx.boards(everything[other], s):
+                                continue
                             count, previous, stretch, ride = 0, None, set(), set()
                             continue
                         e = ids[entry_of[s]]
@@ -1030,13 +1037,13 @@ def check_route(check, fx, route_id, direction, kind):
                         ride.add(e)
                         fewest[e] = min(fewest.get(e, count), count)
                         before.setdefault(e, set())
+                        if e not in at:
+                            continue
                         if e in stretch:
-                            stretch = {e}
-                        elif previous is not None and previous != e:
+                            continue
+                        if previous is not None:
                             before[e].add(previous)
-                            stretch.add(e)
-                        else:
-                            stretch.add(e)
+                        stretch.add(e)
                         previous = e
 
                 def busiest(e):
@@ -1077,8 +1084,10 @@ def check_route(check, fx, route_id, direction, kind):
                 ride = []
                 for stop in pattern[o + 1:] + (None,):
                     if stop is None or entry_of.get(stop) == entry_of[origin]:
-                        known = [at[ids[entry_of[s]]] for s in ride
-                                 if s in entry_of and ids[entry_of[s]] in at]
+                        # first meetings only, as check_towards reads a ride:
+                        # a spur's way back meets its places again
+                        known = list(dict.fromkeys(at[ids[entry_of[s]]] for s in ride
+                                 if s in entry_of and ids[entry_of[s]] in at))
                         ends = (known[-1],) if known else ()
                         for piece in pieces_of(known):
                             if rides_in_order(piece, len(offered) * 4, ends, ways=(True,)):
