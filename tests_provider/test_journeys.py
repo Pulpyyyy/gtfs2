@@ -703,14 +703,19 @@ def line_patterns(schedule, route_id):
 
 def rode_past_an_end(schedule, result, origins, destinations):
     """The stops the answer's trip calls at between its two ends that are one
-    of those ends again: a shorter ride was on the same trip."""
+    of those ends again, where a rider could board (the origin) or leave
+    (the destination): a shorter ride was on the same trip. A call nobody
+    may use there cuts nothing (Kennington's second call, no way on or
+    off, as the departure query reads it since the 48-feed sweep)."""
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(
-            "SELECT stop_id FROM stop_times WHERE trip_id = :t "
+            "SELECT stop_id, pickup_type, drop_off_type FROM stop_times WHERE trip_id = :t "
             "AND stop_sequence > :o AND stop_sequence < :d"),
             {"t": result.get("trip_id"), "o": result["origin_stop_sequence"],
              "d": result["destination_stop_time"]["Sequence"]}).fetchall()
-    return [r[0] for r in rows if r[0] in origins or r[0] in destinations]
+    return [stop for stop, pickup, drop_off in rows
+            if (stop in origins and _flag(pickup) != 1)
+            or (stop in destinations and _flag(drop_off) != 1)]
 
 
 SPREAD = 6
