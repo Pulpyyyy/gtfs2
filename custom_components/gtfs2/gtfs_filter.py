@@ -134,6 +134,91 @@ def _copy_filtered(zin, zout, member, name, keep):
     return kept, total
 
 
+def _filter_trips(zin, zout, member, route_ids):
+    """Copy the trips of the chosen routes: it decides everything else that
+    survives. Returns (their trip_ids, their service_ids, trips read)."""
+    trip_ids, service_ids = set(), set()
+    rows = _rows(zin, member)
+    header = _header(rows, "trips.txt")
+    i_route = header.index("route_id")
+    i_trip = header.index("trip_id")
+    i_service = header.index("service_id")
+    total = 0
+    with _Writer(zout, "trips.txt", header) as out:
+        for row in rows:
+            total += 1
+            if row[i_route].strip() in route_ids:
+                out.row(row)
+                trip_ids.add(row[i_trip].strip())
+                service_ids.add(row[i_service].strip())
+    return trip_ids, service_ids, total
+
+
+def _filter_stop_times(zin, zout, member, trip_ids):
+    """Copy the calls of the kept trips. stop_times is the weight of the
+    feed: one pass, collecting the stops they call at. Returns (those
+    stop_ids, calls kept, calls read)."""
+    stop_ids = set()
+    rows = _rows(zin, member)
+    header = _header(rows, "stop_times.txt")
+    i_trip = header.index("trip_id")
+    i_stop = header.index("stop_id")
+    kept = total = 0
+    with _Writer(zout, "stop_times.txt", header) as out:
+        for row in rows:
+            total += 1
+            if row[i_trip].strip() in trip_ids:
+                out.row(row)
+                stop_ids.add(row[i_stop].strip())
+                kept += 1
+    return stop_ids, kept, total
+
+
+def _filter_stops(zin, zout, stop_ids):
+    """Copy the stops called at, and their parent stations: a first pass
+    finds the parents, so a platform never loses the station above it."""
+    member = _member(zin, "stops.txt")
+    if not member:
+        return
+    header = _header(_rows(zin, member), "stops.txt")
+    i_stop = header.index("stop_id")
+    parents = set()
+    if "parent_station" in header:
+        i_parent = header.index("parent_station")
+        for row in _skip_header(_rows(zin, member)):
+            if row[i_stop].strip() in stop_ids and row[i_parent].strip():
+                parents.add(row[i_parent].strip())
+    _copy_filtered(
+        zin, zout, member, "stops.txt",
+        lambda row: (row[i_stop].strip() in stop_ids
+                     or row[i_stop].strip() in parents))
+
+
+def _filter_by_column(zin, zout, trip_ids, service_ids):
+    """Copy the calendars of the kept services and the frequencies of the
+    kept trips; a table without the column is left out."""
+    for name, column, wanted in (
+            ("calendar.txt", "service_id", service_ids),
+            ("calendar_dates.txt", "service_id", service_ids),
+            ("frequencies.txt", "trip_id", trip_ids)):
+        if member := _member(zin, name):
+            header = _header(_rows(zin, member), name)
+            if column not in header:
+                continue
+            index = header.index(column)
+            _copy_filtered(zin, zout, member, name,
+                           lambda row, i=index, w=wanted: row[i].strip() in w)
+
+
+def _copy_whole(zin, zout, drop_feed_info):
+    """Copy the tables that describe the network as they are."""
+    for name in KEPT_WHOLE:
+        if name == "feed_info.txt" and drop_feed_info:
+            continue
+        if member := _member(zin, name):
+            zout.writestr(name, zin.read(member))
+
+
 def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
     """Write to dst the part of the feed src that the chosen routes use.
 
@@ -145,83 +230,20 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
     started = time.perf_counter()
     route_ids = set(route_ids)
     try:
-        with zipfile.ZipFile(src) as zin, \
-             zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zout:
+        with zipfile.ZipFile(src) as zin,              zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zout:
             required = {name: _member(zin, name)
                         for name in ("routes.txt", "trips.txt", "stop_times.txt")}
             if missing := [n for n, m in required.items() if m is None]:
                 _LOGGER.error("Cannot filter %s: no %s in the feed",
                               src, ", ".join(missing))
                 raise ValueError("not a usable GTFS feed")
-
-            # trips first: it decides everything else that survives
-            trip_ids, service_ids = set(), set()
-            rows = _rows(zin, required["trips.txt"])
-            header = _header(rows, "trips.txt")
-            i_route = header.index("route_id")
-            i_trip = header.index("trip_id")
-            i_service = header.index("service_id")
-            trips_total = 0
-            with _Writer(zout, "trips.txt", header) as out:
-                for row in rows:
-                    trips_total += 1
-                    if row[i_route].strip() in route_ids:
-                        out.row(row)
-                        trip_ids.add(row[i_trip].strip())
-                        service_ids.add(row[i_service].strip())
-
-            # stop_times is the weight of the feed: one pass, collecting the
-            # stops the kept trips call at
-            stop_ids = set()
-            rows = _rows(zin, required["stop_times.txt"])
-            header = _header(rows, "stop_times.txt")
-            i_trip = header.index("trip_id")
-            i_stop = header.index("stop_id")
-            st_kept = st_total = 0
-            with _Writer(zout, "stop_times.txt", header) as out:
-                for row in rows:
-                    st_total += 1
-                    if row[i_trip].strip() in trip_ids:
-                        out.row(row)
-                        stop_ids.add(row[i_stop].strip())
-                        st_kept += 1
-
-            # stops: a first pass finds the parent stations of the kept
-            # stops, so a platform never loses the station above it
-            if member := _member(zin, "stops.txt"):
-                rows = _rows(zin, member)
-                header = _header(rows, "stops.txt")
-                i_stop = header.index("stop_id")
-                i_parent = (header.index("parent_station")
-                            if "parent_station" in header else None)
-                parents = set()
-                if i_parent is not None:
-                    for row in _skip_header(_rows(zin, member)):
-                        if row[i_stop].strip() in stop_ids and row[i_parent].strip():
-                            parents.add(row[i_parent].strip())
-                _copy_filtered(
-                    zin, zout, member, "stops.txt",
-                    lambda row: (row[i_stop].strip() in stop_ids
-                                 or row[i_stop].strip() in parents))
-
-            for name, column, wanted in (
-                    ("calendar.txt", "service_id", service_ids),
-                    ("calendar_dates.txt", "service_id", service_ids),
-                    ("frequencies.txt", "trip_id", trip_ids)):
-                if member := _member(zin, name):
-                    rows = _rows(zin, member)
-                    header = _header(rows, name)
-                    if column not in header:
-                        continue
-                    index = header.index(column)
-                    _copy_filtered(zin, zout, member, name,
-                                   lambda row, i=index, w=wanted: row[i].strip() in w)
-
-            for name in KEPT_WHOLE:
-                if name == "feed_info.txt" and drop_feed_info:
-                    continue
-                if member := _member(zin, name):
-                    zout.writestr(name, zin.read(member))
+            trip_ids, service_ids, trips_total = _filter_trips(
+                zin, zout, required["trips.txt"], route_ids)
+            stop_ids, st_kept, st_total = _filter_stop_times(
+                zin, zout, required["stop_times.txt"], trip_ids)
+            _filter_stops(zin, zout, stop_ids)
+            _filter_by_column(zin, zout, trip_ids, service_ids)
+            _copy_whole(zin, zout, drop_feed_info)
     except (OSError, LookupError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
         # LookupError: a row shorter than its header, or a column the feed
         # names elsewhere; the feed is then kept whole rather than trimmed
