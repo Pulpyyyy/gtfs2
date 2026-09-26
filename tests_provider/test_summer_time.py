@@ -20,8 +20,11 @@ time, each once.
 
 The feed's clocks are read as wall clock times of the service day, the way
 the sensor and nearly every agency read them. GTFS measures them from noon
-minus 12 hours, which differs by an hour before 02:00 on these two days;
-no feed here relies on that reading.
+minus 12 hours, which differs by an hour before 02:00 on these two days.
+Kept on purpose (user decision, 2026-09-26): the one feed of the 48-feed
+sweep where it shows is Auckland, whose TMK trips at 25:00, 26:00 and
+27:00 on the eve of spring forward read 01:00, 02:00 (a time that does not
+exist, laid on 03:00) and 03:00.
 
     pytest tests_provider/test_summer_time.py
 """
@@ -166,7 +169,14 @@ def test_the_next_ride_holds_on_the_day_the_clocks_change(record_property, fixtu
             else:
                 ok = all(got is not None and abs(got.timestamp() - expected[0].timestamp()) < 60
                          for got in (shown, first))
-            forward = all(a < b for a, b in zip(listed, listed[1:]))
+            # each once: a trip listed once. Two trips leaving at one instant
+            # are two departures; read the wall clock way, Auckland's 26:00
+            # and 27:00 on its spring-forward eve are two such (see above)
+            trips = (result or {}).get("next_departures_trip_id") or []
+            forward = (all(a <= b for a, b in zip(listed, listed[1:]))
+                       and len(set(zip(listed, trips))) == len(listed)
+                       if len(trips) == len(listed) else
+                       all(a < b for a, b in zip(listed, listed[1:])))
             asked = {"origin": origin, "destination": destination, "route": route_id,
                      "day": day, "at": f"{at:%H:%M}", "utc": f"{now.astimezone(UTC):%H:%M}"}
             check.note(ok, (

@@ -1306,7 +1306,7 @@ PARALLEL = ("next_departures_lines", "next_departures_headsign",
 
 def shape_of(result, short_name):
     """How the answer's lists hold together: departures in time order
-    without a repeat, every companion list one item per departure, one line
+    without a trip repeated, every companion list one item per departure, one line
     only and it is the entry's, durations that are whole minutes at or
     above zero. Returned as fields so results.json keeps them."""
     departures = result.get("next_departures") or []
@@ -1317,9 +1317,14 @@ def shape_of(result, short_name):
     lines = sorted({item.split(" (", 1)[-1][:-1].split("/", 1)[0]
                     for item in result.get("next_departures_lines") or []})
     durations = result.get("next_departures_durations") or []
+    # a repeat is the same trip listed twice: two trips leaving at one
+    # instant are two departures (Amtrak's Thruway buses, Zou's school runs;
+    # 239 sweep lines read them as one repeated, 2026-09-26)
+    trips = result.get("next_departures_trip_id") or []
+    listed = list(zip(departures, trips)) if len(trips) == len(departures) else departures
     shape = {
         "departures": len(departures),
-        "ordered": departures == sorted(departures) and len(set(departures)) == len(departures),
+        "ordered": departures == sorted(departures) and len(set(listed)) == len(listed),
         "parallel": all(n == len(departures) for n in lengths.values()),
         "lengths": lengths,
         "lines": lines,
