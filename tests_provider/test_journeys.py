@@ -109,7 +109,41 @@ def _function(module, name):
     return missing
 
 
-get_next_departure = _function(gtfs_helper, "get_next_departure")
+# the answers of the case under way, emptied as each journeys case starts;
+# test_summer_time, which asks through here too, keeps its answers for the
+# session, each only ever given back to the same question at the same
+# instant on the same schedule
+_ANSWERS = {}
+
+
+def _frozen(value):
+    """A question's arguments as a key: a dict or a list by its content, an
+    object (the schedule, hass) by its identity."""
+    if isinstance(value, dict):
+        return tuple(sorted((key, _frozen(item)) for key, item in value.items()))
+    if isinstance(value, (list, tuple)):
+        return tuple(_frozen(item) for item in value)
+    if isinstance(value, (str, int, float, bool, type(None))):
+        return value
+    return id(value)
+
+
+def _asked_once(function):
+    """function, asked once per case for the same arguments at the same
+    frozen instant: several rides of a line share a pair of places on the
+    same day (gtfs-nl asked 1,800 of its departures again, Amtrak 600),
+    and the answer is the same. Every check still reads it."""
+    def once(*args):
+        key = (datetime.datetime.now(datetime.UTC), _frozen(args))
+        if key not in _ANSWERS:
+            # the arguments are kept with the answer: an object keyed by its
+            # identity stays alive, so no other one takes its id meanwhile
+            _ANSWERS[key] = (function(*args), args)
+        return _ANSWERS[key][0]
+    return once
+
+
+get_next_departure = _asked_once(_function(gtfs_helper, "get_next_departure"))
 get_stop_list = _function(gtfs_helper, "get_stop_list")
 get_destination_stop_list = _function(gtfs_helper, "get_destination_stop_list")
 get_next_service_date = _function(gtfs_helper, "get_next_service_date")
@@ -829,6 +863,7 @@ CASES = _cases()
 
 @pytest.mark.parametrize("fixture,route_id,direction,kind", CASES)
 def test_journeys(record_property, fixture, route_id, direction, kind):
+    _ANSWERS.clear()
     fx = fixture_of(fixture)
     # HA sets its default zone once at startup from the configured one, which
     # on an install reading a French network is the French one; left in UTC
