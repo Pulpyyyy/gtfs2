@@ -48,6 +48,7 @@ import zoneinfo
 from pathlib import Path
 
 import pytest
+from sqlalchemy import text
 from freezegun import freeze_time
 
 import ha_stub
@@ -84,9 +85,12 @@ HOPITAL, JULES_VERNE = "ORLEANS:StopArea:THOPIT2", "ORLEANS:StopArea:TVERNE2"
 
 
 class Feed:
-    """The zip's rows, read the way a rider reads a timetable."""
+    """The zip's rows, read the way a rider reads a timetable; the places
+    its records group into are the component's, read on the database built
+    from the same zip."""
 
-    def __init__(self, archive):
+    def __init__(self, archive, schedule):
+        self.schedule = schedule
         with zipfile.ZipFile(archive) as zin:
             def rows(name):
                 if name not in zin.namelist():
@@ -118,21 +122,12 @@ class Feed:
         return cal[weekday] == "1"
 
     def place(self, stop_id):
-        """The records a rider waits at: one parent station, or one name
-        within a stone's throw where the feed names no parent."""
-        chosen = self.stops[stop_id]
-        parent = chosen.get("parent_station") or ""
-        found = set()
-        for other_id, other in self.stops.items():
-            other_parent = other.get("parent_station") or ""
-            if other_id == stop_id or (parent and other_parent == parent):
-                found.add(other_id)
-            elif (not parent and not other_parent
-                  and other["stop_name"] == chosen["stop_name"]
-                  and abs(float(other["stop_lat"]) - float(chosen["stop_lat"])) <= gtfs_helper.PLACE_LAT
-                  and abs(float(other["stop_lon"]) - float(chosen["stop_lon"])) <= gtfs_helper.PLACE_LON):
-                found.add(other_id)
-        return found
+        """The records a rider waits at, as the component groups them
+        (_place_group), never by a copy of its rule here."""
+        with self.schedule.engine.connect() as conn:
+            return {stop_id} | {row[0] for row in conn.execute(
+                text("SELECT stop_id FROM stops WHERE stop_id IN " + gtfs_helper._place_group("s")),
+                {"s": stop_id})}
 
     def rides(self, route_id, origin, destination):
         """(service_id, departure clock) of every trip of the line a rider
@@ -180,7 +175,8 @@ class Feed:
 
 @pytest.fixture(scope="module")
 def tao():
-    return fixture_db.shared(str(TAO)), Feed(TAO / "static.zip")
+    schedule = fixture_db.shared(str(TAO))
+    return schedule, Feed(TAO / "static.zip", schedule)
 
 
 @pytest.fixture(autouse=True)
@@ -281,7 +277,8 @@ def calendar_feed(tmp_path_factory):
     with zipfile.ZipFile(root / "static.zip", "w") as zout:
         for name, body in CALENDAR_FEED.items():
             zout.writestr(name, body)
-    return fixture_db.build(str(root)), Feed(root / "static.zip")
+    schedule = fixture_db.build(str(root))
+    return schedule, Feed(root / "static.zip", schedule)
 
 
 @pytest.mark.parametrize("route_id, origin, destination, asked, answer", CALENDAR_CASES,

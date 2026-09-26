@@ -7,7 +7,6 @@ source's database when the entry goes.
 """
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 
 import pygtfs
@@ -26,26 +25,18 @@ def _database(tmp_path):
     return tmp_path / "sncf.sqlite"
 
 
+# Arles then Miramas is ridden by the K7, K9 and K34; the C7 calls at
+# Miramas but never at Arles (read from the fixture's stop_times, written
+# out rather than asked of the database again the component's way)
+K7 = "FR:Line::7B48FDEF-35FE-45ED-BA4D-A638BCE7E21A:"
+K9 = "FR:Line::A997C5D1-9FC9-42ED-B213-C74411746662:"
+K34 = "FR:Line::b1eda504-6395-4189-9623-6460d66f2bae:"
+
+
 def test_the_lines_between_the_two_stations(tmp_path):
-    db = _database(tmp_path)
-    conn = sqlite3.connect(db)
-    # a pair of stations one trip rides in that order, and the lines doing so
-    origin, destination = conn.execute(
-        "select so.stop_name, sd.stop_name from stop_times o "
-        "join stop_times d on d.trip_id = o.trip_id and d.stop_sequence > o.stop_sequence "
-        "join stops so on so.stop_id = o.stop_id join stops sd on sd.stop_id = d.stop_id "
-        "where so.stop_name <> sd.stop_name limit 1").fetchone()
-    expected = {r[0] for r in conn.execute(
-        "select distinct t.route_id from trips t join stop_times o on o.trip_id = t.trip_id "
-        "join stops so on so.stop_id = o.stop_id join stop_times d on d.trip_id = t.trip_id "
-        "join stops sd on sd.stop_id = d.stop_id where so.stop_name = ? and sd.stop_name = ? "
-        "and o.stop_sequence < d.stop_sequence", (origin, destination))}
-    every = {r[0] for r in conn.execute("select route_id from routes")}
-    conn.close()
-    data = {"file": "sncf", "route": "train", "origin": origin, "destination": destination}
-    got = set(gtfs_helper.train_entry_routes(str(tmp_path), data))
-    assert got == expected and got
-    assert got < every          # not every line of the source
+    _database(tmp_path)
+    data = {"file": "sncf", "route": "train", "origin": "Arles", "destination": "Miramas"}
+    assert set(gtfs_helper.train_entry_routes(str(tmp_path), data)) == {K7, K9, K34}
 
 
 def test_no_database_no_lines(tmp_path):

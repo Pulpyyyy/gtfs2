@@ -54,6 +54,7 @@ ha_stub.install()
 import homeassistant.util.dt as dt_util  # noqa: E402
 
 import fixture_db  # noqa: E402
+import test_journeys as tj  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
 
@@ -178,22 +179,10 @@ def _service_days(conn):
     return runs
 
 
-def _seconds(stored):
-    """Seconds from the service day's midnight. The db stores an hour past 24
-    on 1970-01-02, so the date in front counts as days."""
-    stored = str(stored)
-    days = 0
-    if " " in stored:
-        day, stored = stored.split(" ", 1)
-        days = (datetime.date.fromisoformat(day) - datetime.date(1970, 1, 1)).days
-    h, m, s = (int(float(part)) for part in stored.split(":"))
-    return days * 86400 + h * 3600 + m * 60 + s
-
-
 def _laid(day, stored, zone):
     """A stop time on its service day, as an instant."""
     return (datetime.datetime.combine(day, datetime.time(0), zone)
-            + datetime.timedelta(seconds=_seconds(stored)))
+            + datetime.timedelta(seconds=gtfs_helper.gtfs_seconds(stored)))
 
 
 def _plain_day(days, zone):
@@ -224,13 +213,13 @@ def _night_calls(conn, promise):
         "t.route_id, t.direction_id, r.route_type, "
         "(SELECT nx.stop_id FROM stop_times nx WHERE nx.trip_id = st.trip_id "
         " AND nx.stop_sequence > st.stop_sequence "
-        f" AND {_WAY_OFF.format('nx')} ORDER BY nx.stop_sequence LIMIT 1) "
+        f" AND {gtfs_helper._alights('nx')} ORDER BY nx.stop_sequence LIMIT 1) "
         "AS next_stop "
         "FROM stop_times st "
         "INNER JOIN trips t ON t.trip_id = st.trip_id "
         "INNER JOIN routes r ON r.route_id = t.route_id "
         "WHERE st.departure_time >= '1970-01-02' "
-        f"AND {_WAY_ON.format('st')} "
+        f"AND {gtfs_helper._boards('st')} "
         "ORDER BY st.stop_id, st.departure_time, st.trip_id")).fetchall()
     seen, calls = set(), []
     for row in rows:
@@ -247,49 +236,34 @@ def _night_calls(conn, promise):
     return calls[::step][:SAMPLE]
 
 
-# the rule the queries hold to: a call with a way on, a call with a way off
-_WAY_ON = "coalesce(cast({0}.pickup_type as integer), 0) <> 1"
-_WAY_OFF = "coalesce(cast({0}.drop_off_type as integer), 0) <> 1"
+def rider_of(name, shape):
+    """What the feed says of a ride, read call by call (test_journeys'
+    Fixture) on the database of this shape: the component's places
+    (_place_group), the shortest ride on a trip, any way round."""
+    if (name, shape) not in _RIDERS:
+        if shape == "calendar":
+            rider = tj.Fixture(FIXTURES / name)
+            rider.schedule = schedule_of(name, shape)
+        else:
+            rider = tj.fixture_of(name)
+        _RIDERS[(name, shape)] = rider
+    return _RIDERS[(name, shape)]
 
-_WHOLE_STOP = ("(SELECT sibling.stop_id FROM stops chosen, stops sibling "
-               "WHERE chosen.stop_id = :{0} AND (sibling.stop_id = chosen.stop_id "
-               "OR (chosen.parent_station IS NOT NULL AND chosen.parent_station <> '' "
-               "AND sibling.parent_station = chosen.parent_station)))")
+
+_RIDERS = {}
 
 
-def _first_ride(conn, days, call, zone, now):
+def _first_ride(rider, call, now):
     """The first departure after now of a trip riding the call's stop before
-    the next one, matched as the sensor matches them: on the entry's line,
-    either way round (the pair and the order of the calls decide it; the
-    sensor reads a direction at a loop's terminus only), each end on its
-    whole stop, the record and the platforms grouped with it, and the
-    shortest ride of a trip calling at either end more than once: no other
-    call a rider could use at either end in between. Held to direction_id
-    and to any call of the place, it read another ride of the same trip,
-    boarding at the place's first record a minute earlier (GtfsDe, IDFM),
-    and missed the other way's trips (gtfs-nl): the 48-feed sweep,
-    2026-09-26."""
-    best = None
-    for service_id, stored in conn.execute(text(
-            "SELECT t.service_id, o.departure_time FROM trips t "
-            "INNER JOIN stop_times o ON o.trip_id = t.trip_id "
-            "INNER JOIN stop_times x ON x.trip_id = t.trip_id "
-            f"WHERE o.stop_id IN {_WHOLE_STOP.format('o')} "
-            f"AND x.stop_id IN {_WHOLE_STOP.format('d')} "
-            "AND o.stop_sequence < x.stop_sequence AND t.route_id = :route "
-            f"AND {_WAY_ON.format('o')} AND {_WAY_OFF.format('x')} "
-            "AND NOT EXISTS (SELECT 1 FROM stop_times b WHERE b.trip_id = t.trip_id "
-            "AND b.stop_sequence > o.stop_sequence AND b.stop_sequence < x.stop_sequence "
-            f"AND ((b.stop_id IN {_WHOLE_STOP.format('o')} AND {_WAY_ON.format('b')}) "
-            f"OR (b.stop_id IN {_WHOLE_STOP.format('d')} AND {_WAY_OFF.format('b')})))"),  # noqa: S608
-            {"o": call.stop_id, "d": call.next_stop, "route": call.route_id}):
-        if stored is None:
-            continue
-        for day in _near(days.get(service_id, ()), now):
-            at = _laid(day, stored, zone)
-            if at > now and (best is None or at < best):
-                best = at
-    return best
+    the next one, as the feed's calls tell it: on the entry's line, either
+    way round (the sensor reads a direction at a loop's terminus only), each
+    end on its whole place, the shortest ride of a trip calling at either
+    end more than once. It was a copy of the component's query, which went
+    on reading a place as its parent station alone after the component
+    grouped records by name and distance too."""
+    ride = rider.next_ride(call.route_id, None, rider.siblings_of(call.stop_id),
+                           rider.siblings_of(call.next_stop), now)
+    return ride[0] if ride else None
 
 
 def _calls_within(conn, days, stop_id, zone, now):
@@ -300,7 +274,7 @@ def _calls_within(conn, days, stop_id, zone, now):
     for trip_id, service_id, stored in conn.execute(text(
             "SELECT st.trip_id, t.service_id, st.departure_time FROM stop_times st "
             "INNER JOIN trips t ON t.trip_id = st.trip_id WHERE st.stop_id = :s "
-            f"AND {_WAY_ON.format('st')}"),  # noqa: S608
+            f"AND {gtfs_helper._boards('st')}"),  # noqa: S608
             {"s": stop_id}):
         if stored is None:
             continue
@@ -370,14 +344,14 @@ def _hass(zone_name, where=None):
             attributes={"latitude": where[0], "longitude": where[1]} if where else {})))
 
 
-def check_route(conn, schedule, days, names, zone_name, zone, call, label, now):
+def check_route(rider, schedule, names, zone_name, zone, call, label, now):
     data = {"schedule": schedule, "gtfs_dir": ".", "file": "fixture",
             "route_type": str(call.route_type), "offset": 0,
             "origin": f"{call.stop_id}: {names.get(call.stop_id)}",
             "destination": f"{call.next_stop}: {names.get(call.next_stop)}",
             "route": call.route_id, "direction": str(call.direction_id),
             "include_tomorrow": True}
-    want = _first_ride(conn, days, call, zone, now)
+    want = _first_ride(rider, call, now)
     result = gtfs_helper.get_next_departure(_hass(zone_name), data)
     got = _instant(result.get("departure_time")) if result else None
     want = _instant(want)
@@ -391,7 +365,7 @@ def check_route(conn, schedule, days, names, zone_name, zone, call, label, now):
                     "trip": result.get("trip_id") if result else None}}
 
 
-def check_service(conn, schedule, days, names, zone_name, zone, call, label, now):
+def check_service(rider, schedule, names, zone_name, zone, call, label, now):
     """The departures service of the route promise's entry, over its two days."""
     entry = types.SimpleNamespace(options={}, data={
         "file": "fixture", "name": "night", "route_type": str(call.route_type),
@@ -405,7 +379,7 @@ def check_service(conn, schedule, days, names, zone_name, zone, call, label, now
         return fn(*args)
 
     hass.async_add_executor_job = job
-    want = _instant(_first_ride(conn, days, call, zone, now))
+    want = _instant(_first_ride(rider, call, now))
     # the service opens the datasource itself and lets it go after; this
     # one is the fixture's, and its engine is kept for the next case
     with patch.object(gtfs_helper, "get_gtfs", return_value=schedule), \
@@ -480,6 +454,7 @@ def test_night(record_property, fixture, promise, shape):
         if not calls:
             pytest.skip("no call past 24:00 this promise covers")
         zone = zoneinfo.ZoneInfo(zone_name)
+        rider = rider_of(fixture, shape)
         dt_util.set_default_time_zone(dt_util.get_time_zone(zone_name))
         checks = []
         saved = _pin_process_zone(zone_name, datetime.datetime.now(UTC))
@@ -501,10 +476,10 @@ def test_night(record_property, fixture, promise, shape):
                 for label, now in clocks:
                     with freeze_time(now.astimezone(UTC)):
                         if promise == "route":
-                            checks.append(check_route(conn, schedule, days, names, zone_name,
+                            checks.append(check_route(rider, schedule, names, zone_name,
                                                       zone, call, label, now))
                         elif promise == "service":
-                            checks.append(check_service(conn, schedule, days, names, zone_name,
+                            checks.append(check_service(rider, schedule, names, zone_name,
                                                         zone, call, label, now))
                         else:
                             checks.append(check_local_stop(conn, schedule, days,
