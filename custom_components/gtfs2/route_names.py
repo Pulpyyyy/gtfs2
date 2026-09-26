@@ -19,7 +19,7 @@ from datetime import date
 
 from sqlalchemy.sql import text
 
-from .gtfs_filter import read_zip_agencies, read_zip_routes, table_reader
+from .gtfs_filter import _member, read_zip_agencies, read_zip_routes, table_reader
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -302,8 +302,7 @@ def _names_a_place(headsign, places=frozenset()):
 
 def _read_place_words(zin):
     """The stop names of an open feed and their first words, casefolded."""
-    member = next((n for n in zin.namelist()
-                   if n.rsplit("/", 1)[-1] == "stops.txt"), None)
+    member = _member(zin, "stops.txt")
     if member is None:
         return frozenset()
     words = set()
@@ -333,14 +332,12 @@ def _read_service_spans(zin):
         was = spans.get(service)
         spans[service] = ((min(was[0], first), max(was[1], last)) if was
                           else (first, last))
-    member = next((n for n in zin.namelist()
-                   if n.rsplit("/", 1)[-1] == "calendar.txt"), None)
+    member = _member(zin, "calendar.txt")
     if member is not None:
         with zin.open(member) as fh:
             for row in table_reader(fh):
                 seen(row.get("service_id"), row.get("start_date"), row.get("end_date"))
-    member = next((n for n in zin.namelist()
-                   if n.rsplit("/", 1)[-1] == "calendar_dates.txt"), None)
+    member = _member(zin, "calendar_dates.txt")
     if member is not None:
         with zin.open(member) as fh:
             for row in table_reader(fh):
@@ -364,8 +361,7 @@ def _read_trips(zip_path):
     spans = {}
     try:
         with zipfile.ZipFile(zip_path) as zin:
-            member = next((n for n in zin.namelist()
-                           if n.rsplit("/", 1)[-1] == "trips.txt"), None)
+            member = _member(zin, "trips.txt")
             if member is None:
                 return {}, {}
             calendar = _read_service_spans(zin)
@@ -516,9 +512,9 @@ def _stop_times_size(zip_path):
     """
     try:
         with zipfile.ZipFile(zip_path) as zin:
-            for info in zin.infolist():
-                if info.filename.rsplit("/", 1)[-1] == "stop_times.txt":
-                    return info.file_size
+            member = _member(zin, "stop_times.txt")
+            if member is not None:
+                return zin.getinfo(member).file_size
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.debug("Could not size the stops of %s: %s", zip_path, ex)
     return None
