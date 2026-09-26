@@ -834,10 +834,15 @@ def intern_gtfs_datasource(gtfs_dir, filename, dry_run=False):
         cur.execute(f"create table gtfs2_stop_times (tk integer not null, "  # noqa: S608
                     f"stop_sequence integer not null, sk integer not null, {carried_ddl}, "
                     f"primary key (tk, stop_sequence)) without rowid")
+        # in key order: in the order the feed lists its calls, which need
+        # not go trip by trip, the rows landed all over the key's tree and
+        # each insert went looking for its page: interning 3 M rows took
+        # 80 s, 47 s in order
         cur.execute(f"insert into gtfs2_stop_times select k.tk, st.stop_sequence, s.sk, "  # noqa: S608
                     f"{', '.join('st.' + c for c in carried)} from stop_times st "
                     f"join gtfs2_trip_key k on k.trip_id = st.trip_id "
-                    f"join gtfs2_stop_key s on s.stop_id = st.stop_id")
+                    f"join gtfs2_stop_key s on s.stop_id = st.stop_id "
+                    f"order by k.tk, st.stop_sequence")
 
         cur.execute("drop table stop_times")
         cur.execute("create index gtfs2_stop_times_sk on gtfs2_stop_times(sk)")
