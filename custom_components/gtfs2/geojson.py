@@ -135,6 +135,11 @@ def get_representative_trip(schedule, route_id, direction, origin_id=None, desti
     """
     if not route_id:
         return None
+    # a sentinel of get_gtfs ("not_built", "no_zip_file") holds no database
+    # to read: matched by shape, as the helpers of gtfs_helper do
+    if schedule is None or isinstance(schedule, str):
+        _LOGGER.debug("No usable schedule to draw route %s (%s)", route_id, schedule or "empty")
+        return None
     origin_id = str(origin_id) if origin_id else None
     destination_id = str(destination_id) if destination_id else None
     where = "t.route_id = :route_id"

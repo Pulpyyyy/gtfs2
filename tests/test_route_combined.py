@@ -249,6 +249,12 @@ def _normalize_datetimes(value):
 
 CASES = _discover_cases(CASE_ROOT)
 
+# the schedule get_gtfs hands the refresh. An object and not a word: a
+# word is what get_gtfs answers when there is no database, and the refresh
+# reads nothing from it. The captures name it by the word they were
+# recorded with
+SCHEDULE = object()
+
 
 @pytest.mark.parametrize("case_id,case_dir", CASES, ids=[c[0] for c in CASES])
 def test_coordinator_case(case_id: str, case_dir: Path):
@@ -298,7 +304,7 @@ def test_coordinator_case(case_id: str, case_dir: Path):
 
         coord = coordinator_mod.GTFSUpdateCoordinator(hass, entry)
 
-        with patch.object(coordinator_mod, "get_gtfs", return_value="FAKE_SCHEDULE"), \
+        with patch.object(coordinator_mod, "get_gtfs", return_value=SCHEDULE), \
              patch.object(coordinator_mod, "get_next_departure", side_effect=next_departure_from_rows), \
              patch.object(coordinator_mod, "check_datasource_index", return_value=None), \
              patch.object(exports_mod, "write_route_file", return_value=None), \
@@ -316,6 +322,8 @@ def test_coordinator_case(case_id: str, case_dir: Path):
     # read for it off the loop; against this fake schedule they are empty
     for key in ("departure_rows", "departure_rows_origin", "records"):
         result.pop(key, None)
+    assert result["schedule"] is SCHEDULE
+    result["schedule"] = "FAKE_SCHEDULE"
     assert result == expected, (
         f"[{case_id}] ({label}) coordinator.data did not match "
         f"case_*_coordinator_output_data.txt"

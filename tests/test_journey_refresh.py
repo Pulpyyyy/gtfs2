@@ -452,7 +452,7 @@ def test_records_that_cannot_be_read_are_read_next_minute(tmp_path):
     # gives it, and any word stands for no schedule the same way
     (None, "no_data_file"),
 ])
-def test_a_source_without_a_database_shows_an_empty_board(tmp_path, files, answer):
+def test_a_source_without_a_database_shows_an_empty_board(tmp_path, files, answer, caplog):
     real = {"get_gtfs", "check_extracting", "check_datasource_index",
             "get_next_departure", "departure_records"}
     if files is None:
@@ -461,13 +461,23 @@ def test_a_source_without_a_database_shows_an_empty_board(tmp_path, files, answe
     refresh.answers["get_gtfs"] = answer
     for name in files or ():
         (tmp_path / "gtfs2" / name).write_bytes(b"PK")
-    result = refresh.run()
+    with caplog.at_level("DEBUG"):
+        result = refresh.run()
     assert result["schedule"] == answer
     assert result["next_departure"] == {}
     assert result["extracting"] is False
-    assert result["next_service_date"] == "2026-10-01"
     assert result["records"] == {"origin": None, "destination": None, "trip": None,
                                  "route": None, "agency": None}
+    # nothing is read from a word: no index check, no departures, no line
+    # drawn, no next service date. Each of them warned, five warnings a
+    # sensor for one missing file; the sensor now says it once
+    for name in ("check_datasource_index", "get_next_departure", "export_route_shape",
+                 "export_timetable", "next_service_date_for"):
+        assert refresh.count(name) == 0, name
+    assert "next_service_date" not in result
+    assert not [record for record in caplog.records if record.levelname != "DEBUG"]
+    # no reading time either: the timetable is tried again the next minute
+    assert "gtfs_updated_at" not in result
     # nothing is built from here: no database appears
     assert not (tmp_path / "gtfs2" / "town.sqlite").exists()
     # and a minute later the schedule is asked for again
@@ -475,6 +485,19 @@ def test_a_source_without_a_database_shows_an_empty_board(tmp_path, files, answe
     assert refresh.coordinator._pygtfs == answer
     if files is None:
         assert refresh.count("get_gtfs") == 2
+
+
+def test_the_minute_after_the_database_is_built_it_is_read(tmp_path):
+    """A refresh button builds the database while the sensor stands empty:
+    the next minute reads it, not the end of the refresh interval."""
+    refresh = Refresh(tmp_path)
+    refresh.answers["get_gtfs"] = "not_built"
+    assert refresh.run()["next_departure"] == {}
+    refresh.answers["get_gtfs"] = SCHEDULE
+    result = refresh.run(later(1))
+    assert result["schedule"] is SCHEDULE
+    assert result["next_departure"]["trip_id"] == "T1"
+    assert refresh.count("get_next_departure") == 1
 
 
 # --- realtime ----------------------------------------------------------------

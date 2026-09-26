@@ -256,6 +256,16 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
 
     async def _read_timetable(self, data) -> None:
         """Read the departures from the timetable, and write the files drawn from it."""
+        if self._pygtfs is None or isinstance(self._pygtfs, str):
+            # a sentinel of get_gtfs: no database to read. The index check,
+            # the departures, the route shape and the next service date each
+            # said so in the log beside the sensor, five warnings a sensor
+            # for one missing file; the sensor says it once. No reading time
+            # is written, so the minute after a refresh builds the database
+            # reads it
+            _LOGGER.debug("No usable schedule for %s (%s), timetable not read",
+                          data["file"], self._pygtfs or "empty")
+            return
         await self.hass.async_add_executor_job(
                 check_datasource_index, self.hass, self._pygtfs, self.hass.config.path(DEFAULT_PATH), data["file"]
             )

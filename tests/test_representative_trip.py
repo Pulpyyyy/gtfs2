@@ -249,3 +249,13 @@ def test_a_shape_counts_after_the_sensor_stops(schedule):
     ])
     assert pick(feed, K8, "1") == "A_SHAPED"
     assert pick(feed, K8, "1", TRAIN_ORLEANS, TRAIN_PARIS) == "B_BARE"
+
+
+@pytest.mark.parametrize("sentinel", ["not_built", "no_zip_file", None])
+def test_no_database_draws_nothing_and_says_nothing(sentinel, caplog):
+    """get_gtfs hands back a word, not a schedule, while the source has no
+    database: there is nothing to draw, and no warning to write about it.
+    It used to ask the word for its engine."""
+    with caplog.at_level("DEBUG"):
+        assert geojson.get_representative_trip(sentinel, K8, "1", TRAIN_ORLEANS, TRAIN_PARIS) is None
+    assert not [record for record in caplog.records if record.levelname != "DEBUG"]
