@@ -597,13 +597,13 @@ def _leg_runs(t, trips, trip_updates):
     return keyed
 
 
-def _time_call(run, update, by_sequence, called_twice):
-    """Lay one stop update on its call of the run; True when the call now
-    carries realtime (a time, a delay, a skip)."""
+def _call_of(run, update, by_sequence, called_twice):
+    """The call of the run a stop update times, None when it names none of
+    them, or names the pass of a stop called twice that the ride skips."""
     stop_id = str(update.get("stop_id") or "") or by_sequence.get(update.get("stop_sequence"))
     stop = run["stops"].get(stop_id) if stop_id else None
     if stop is None:
-        return False
+        return None
     told = update.get("stop_sequence")
     if (stop_id in called_twice and told is not None
             and stop.get("sequence") not in (None, told)):
@@ -611,6 +611,26 @@ def _time_call(run, update, by_sequence, called_twice):
         # call it times: this one is the pass the ride skips.
         # Only then, since a feed may number its calls its own
         # way (the SNCF does) and the id is enough elsewhere
+        return None
+    return stop
+
+
+def _update_clock(update):
+    """(time, delay) a stop update gives: the departure's when it says
+    anything, the arrival's otherwise; 0 or None for what it leaves out."""
+    arrival = update.get("arrival") or {}
+    departure = update.get("departure") or {}
+    when = departure.get("time") or arrival.get("time") or 0
+    delay = (departure.get("delay") if (departure.get("time") or departure.get("delay"))
+             else arrival.get("delay"))
+    return when, delay
+
+
+def _time_call(run, update, by_sequence, called_twice):
+    """Lay one stop update on its call of the run; True when the call now
+    carries realtime (a time, a delay, a skip)."""
+    stop = _call_of(run, update, by_sequence, called_twice)
+    if stop is None:
         return False
     called = stop_relationship(update)
     if called == SKIPPED_STOP:
@@ -619,10 +639,7 @@ def _time_call(run, update, by_sequence, called_twice):
     if called == NO_DATA_STOP:
         stop["no_data"] = True
         return False
-    arrival = update.get("arrival") or {}
-    departure_update = update.get("departure") or {}
-    when = departure_update.get("time") or arrival.get("time") or 0
-    delay = departure_update.get("delay") if (departure_update.get("time") or departure_update.get("delay")) else arrival.get("delay")
+    when, delay = _update_clock(update)
     if when:
         stop["expected"] = datetime.datetime.fromtimestamp(int(when), datetime.timezone.utc).isoformat()
     if when and not delay and stop.get("scheduled"):
