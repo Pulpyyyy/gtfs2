@@ -1501,8 +1501,14 @@ def check_next_service(check, fx, route_type, pairs):
         days = pair_service_days(fx.schedule, origin, destination, route_type)
         who = f"{origin} -> {destination}"
         if not days:
-            check.note(False, f"no service day for {who}",
-                       origin=origin, destination=destination)
+            # the feed serves the pair on no day: a service of no weekday
+            # and no added date (Kraków's 1678_SO), or a stop nobody gets
+            # on or off at (Metro-North's Highbridge Yard). Nothing is the
+            # answer; it was counted as a failure of the sample itself
+            got = get_next_service_date(fx.schedule, origin, destination,
+                                        datetime.date.today().isoformat(), route_type)
+            check.note(got is None, f"no service day for {who}: got {got}",
+                       origin=origin, destination=destination, never_served=True)
             continue
         first, last = days[0], days[-1]
         for asked in (first, shifted(first, 1), shifted(last, 1)):
