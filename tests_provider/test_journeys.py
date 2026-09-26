@@ -151,9 +151,12 @@ class Fixture:
             # timepoints go untimed (Clemson leaves three in four so), and
             # a departure is only ever listed between timed calls
             self.timed = set()
-            for trip_id, stop_id, pickup, drop_off, arrival, departure in conn.execute(text(
-                    "SELECT trip_id, stop_id, pickup_type, drop_off_type, "
+            # and each call's own: (trip, stop_sequence) -> (way on, way off)
+            self.call_ways = {}
+            for trip_id, stop_id, seq, pickup, drop_off, arrival, departure in conn.execute(text(
+                    "SELECT trip_id, stop_id, stop_sequence, pickup_type, drop_off_type, "
                     "arrival_time, departure_time FROM stop_times")):
+                self.call_ways[(trip_id, int(seq))] = (_flag(pickup) != 1, _flag(drop_off) != 1)
                 if _flag(pickup) != 1:
                     self.ways_on.add((trip_id, stop_id))
                 if _flag(drop_off) != 1:
@@ -191,6 +194,15 @@ class Fixture:
     def alights(self, trip_ids, stop_id):
         """Some of these trips sets riders down at the stop."""
         return any((t, stop_id) in self.ways_off for t in trip_ids)
+
+    def rides_through(self, result):
+        """The departure answered leaves from a call with a way on and
+        reaches one with a way off, on its own trip."""
+        trip = result.get("trip_id")
+        on = self.call_ways.get((trip, int(result.get("origin_stop_sequence") or -1)), (False, False))[0]
+        off = self.call_ways.get((trip, int((result.get("destination_stop_time") or {}).get("Sequence") or -1)),
+                                 (False, False))[1]
+        return on and off
 
     def times(self, trip_ids, stop_id):
         """Some of these trips gives the stop a time."""
@@ -1177,12 +1189,16 @@ def check_route(check, fx, route_id, direction, kind):
                 origins, reached = fx.siblings_of(origin), fx.siblings_of(destination)
                 if kind == "pairs" and not (fx.boards(trip_ids, pattern[o])
                                             and fx.alights(trip_ids, pattern[d])):
-                    # the feed forbids one end of this ride: nothing is the
-                    # answer, whatever the clock says
+                    # the feed forbids one end of this ride: its trips never
+                    # take the rider from here to there, another trip of the
+                    # line, or another record of the place, may. So the
+                    # answer is nothing, or a ride whose own calls let the
+                    # rider on and off (it was nothing only: 199 sweep lines
+                    # where another pattern served the pair, 2026-09-26)
                     result = get_next_departure(hass, data)
                     asked = asked_of(pattern, o, d, route_id, kept)
                     got = got_of(result)
-                    check.note(not result, f"asked {pattern[o]} -> {pattern[d]} on "
+                    check.note(not result or fx.rides_through(result), f"asked {pattern[o]} -> {pattern[d]} on "
                                f"{route_id}: no way {'on' if not fx.boards(trip_ids, pattern[o]) else 'off'}"
                                f" on this ride, got {got['trip'] if got else 'nothing'}",
                                asked=asked, got=got, forbidden=True)
@@ -1742,7 +1758,10 @@ def check_train_route(check, fx, route_id, direction, kind):
                     continue
                 if not (fx.boards(trip_ids, pattern[o]) and fx.alights(trip_ids, pattern[d])):
                     # a set-down only station, a station the train passes:
-                    # not a journey, whatever runs
+                    # not a journey on this ride. The pair is asked by name
+                    # on the whole line, where another train may serve it:
+                    # nothing, or a train whose own calls let the rider on
+                    # and off
                     data = {
                         "schedule": schedule,
                         "gtfs_dir": ".", "file": "fixture",
@@ -1756,7 +1775,7 @@ def check_train_route(check, fx, route_id, direction, kind):
                     asked = asked_of([fx.stop_names[s] for s in pattern], o, d,
                                      short_name, None)
                     got = got_of(result, by_name=True)
-                    check.note(not result, f"asked {name_o} -> {name_d} on {short_name}: "
+                    check.note(not result or fx.rides_through(result), f"asked {name_o} -> {name_d} on {short_name}: "
                                f"no way {'on' if not fx.boards(trip_ids, pattern[o]) else 'off'}"
                                f" on this ride, got {got['trip'] if got else 'nothing'}",
                                asked=asked, got=got, forbidden=True)
