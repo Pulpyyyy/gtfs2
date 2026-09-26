@@ -298,6 +298,37 @@ def test_an_error_of_our_own_keeps_its_stack(tmp_path, monkeypatch, caplog):
     assert len(logged) == 1 and logged[0].exc_info is not None
 
 
+class _BrokenOff:
+    """A download that stops answering halfway through its body."""
+
+    url = "https://h/src.zip"
+    status_code = 200
+    headers = {}
+
+    def raise_for_status(self):
+        pass
+
+    def iter_content(self, chunk_size=None):
+        yield b"PK\x03\x04 the first half of a feed"
+        raise requests.ConnectionError("connection reset")
+
+    def close(self):
+        pass
+
+
+def test_a_source_created_on_a_download_that_breaks_off_leaves_nothing(tmp_path, monkeypatch, caplog):
+    # the creation of a source downloads through the same code as a
+    # refresh; its own copy of it left the half-written .new behind
+    gtfs_dir = tmp_path / "gtfs2"
+    monkeypatch.setattr(source_zip, "inner_zips", lambda url, headers: [])
+    monkeypatch.setattr(source_zip, "_open_source", lambda data, url, headers: _BrokenOff())
+    data = {"file": "src", "extract_from": "url", "url": "https://h/src.zip", source_zip.CONF_INNER_ZIP: None}
+    with caplog.at_level(logging.ERROR, logger=source_zip.__name__):
+        assert source_zip.ensure_source_zip(_hass(gtfs_dir), "gtfs2", data) == "no_data_file"
+    assert list(gtfs_dir.iterdir()) == []
+    assert [r for r in caplog.records if r.message.startswith("Could not download")]
+
+
 def test_an_error_status_is_a_failed_download(tmp_path, monkeypatch):
     gtfs_dir = _built(tmp_path)
 

@@ -61,8 +61,10 @@ def test_the_refresh_download_takes_the_member_out(tmp_path, monkeypatch):
     monkeypatch.setattr(source_zip, "routes_in", lambda path: {"R1"})
     monkeypatch.setattr(source_zip, "_open_source",
                         lambda data, url, headers: types.SimpleNamespace(raise_for_status=lambda: None))
+    # a refresh never keeps an envelope: the source already named its network
     monkeypatch.setattr(source_zip, "stage_zip",
-                        lambda response, path, inner=None: staged_with.append(inner))
+                        lambda response, path, inner=None, envelope_ok=False:
+                        staged_with.append(inner) if not envelope_ok else None)
     hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
     got = source_zip.refresh_datasource(hass, "gtfs2", {
         "file": "septa", "url": "https://h/gtfs_public.zip", "extract_from": "url",

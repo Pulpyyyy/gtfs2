@@ -213,28 +213,15 @@ def ensure_source_zip(hass, path, data):
             return "no_zip_file"
         return _offer_or_take(data, zip_path) or _holds_a_feed(zip_path)
     if not os.path.exists(zip_path):
-        try:
-            url, headers = _source_request(data)
-            # what the url answers is read before it is fetched: an envelope
-            # of zips holds one network per member, and the user picks which
-            # before a byte of the wrong one is downloaded
-            if not data.get(CONF_INNER_ZIP):
-                inner = inner_zips(url, headers)
-                if inner:
-                    data["inner_zips"] = inner
-                    return "zip_holds_zips"
-            r = _open_source(data, url, headers)
-            r.raise_for_status()
-            staged = stage_zip(r, zip_path, data.get(CONF_INNER_ZIP),
-                               envelope_ok=not data.get(CONF_INNER_ZIP))
-            if staged is None:
-                return "no_data_file"
-            adopt_zip(r, staged, zip_path)
-        except Exception as ex:  # pylint: disable=broad-except
-            # a host that does not answer says so in one line; the stack is
-            # kept for anything else, an error of our own
-            log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
-            log("The given URL or GTFS data file/folder was not found: %s", ex)
+        # what the url answers is read before it is fetched: an envelope
+        # of zips holds one network per member, and the user picks which
+        # before a byte of the wrong one is downloaded
+        if not data.get(CONF_INNER_ZIP):
+            inner = inner_zips(*_source_request(data))
+            if inner:
+                data["inner_zips"] = inner
+                return "zip_holds_zips"
+        if not _fetch_zip(data, zip_path, envelope_ok=not data.get(CONF_INNER_ZIP)):
             return "no_data_file"
     # a host that refuses ranges answered the envelope whole: the networks
     # are offered from the file, and the pick taken out of it
@@ -348,22 +335,22 @@ def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
     return {route: None for route in sorted(loaded)}
 
 
-def _download_source(data, zip_path):
-    """Fetch a source's new edition into its kept zip, for a refresh.
+def _fetch_zip(data, zip_path, envelope_ok=False):
+    """Download a source's feed into zip_path, for its creation or a refresh.
 
-    Returns True when the zip now holds the new edition, False when the
-    download failed or was no feed; the kept zip is then as it was.
+    Downloaded beside the current zip and swapped in only once complete
+    and proven a feed: the zip is the only full record of the feed and
+    must survive a failed or hijacked download. A host that stopped
+    answering ranges sends the whole envelope: the network picked is taken
+    out of it in stage_zip. False when it failed, said in the log, the zip
+    as it was and no half-written copy left: the creation of a source had
+    a copy of this of its own, and left one when a download broke off.
     """
-    # download beside the current zip and swap only once complete and
-    # proven to be a zip: the zip is the only full record of the feed
-    # and must survive a failed or hijacked download
     try:
         url, headers = _source_request(data)
         r = _open_source(data, url, headers)
         r.raise_for_status()
-        # a host that stopped answering ranges sends the whole envelope:
-        # the network picked is taken out of it here
-        staged = stage_zip(r, zip_path, data.get(CONF_INNER_ZIP))
+        staged = stage_zip(r, zip_path, data.get(CONF_INNER_ZIP), envelope_ok=envelope_ok)
         if staged is None:
             return False
         adopt_zip(r, staged, zip_path)
@@ -485,7 +472,7 @@ def refresh_datasource(hass, path, data):
 
     zip_name = filename + ".zip"
     zip_path = os.path.join(gtfs_dir, zip_name)
-    if data.get("extract_from", "url") == "url" and not _download_source(data, zip_path):
+    if data.get("extract_from", "url") == "url" and not _fetch_zip(data, zip_path):
         return False
     if not os.path.exists(zip_path):
         _LOGGER.error("No source zip to refresh %s from", filename)
