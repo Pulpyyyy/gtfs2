@@ -106,6 +106,61 @@ def _calls_in_order(stops, origin_id, destination_id):
     return not destination_id or destination_id in stops[start:]
 
 
+def _route_trip_calls(schedule, route_id, direction):
+    """(shaped, stops) for a route and direction: the trips that have a
+    shape, and {trip_id: its stop ids in riding order}. None when the
+    database cannot be read; an empty dict when the line has no trip."""
+    where = "t.route_id = :route_id"
+    params = {"route_id": str(route_id)}
+    # direction_id is optional in GTFS and gtfs2 stringifies a missing one
+    if direction not in (None, "", "None"):
+        where += " AND CAST(t.direction_id AS TEXT) = :direction"
+        params["direction"] = str(direction)
+    # ONE pass over stop_times, filtered by a subquery on trips, and never a
+    # join. pygtfs creates no index on stop_times at all, so joining it to a
+    # filtered trips set makes SQLite scan the whole table once per candidate
+    # trip: measured on a mid-sized city feed (680k stop_times, 1818 trips on
+    # the line) that was 17.3 SECONDS against 45 ms this way, for the same
+    # answer. The ranking needs every trip's stops in order, so the rows come
+    # back as they are and are ranked here. Which trips have a shape is a
+    # question for trips alone, indexed and small.
+    sql_shaped = f"SELECT t.trip_id FROM trips t WHERE {where} AND t.shape_id IS NOT NULL"
+    sql_calls = f"""
+    SELECT st.trip_id, st.stop_id, st.stop_sequence
+    FROM stop_times st
+    WHERE st.trip_id IN (SELECT t.trip_id FROM trips t WHERE {where})
+    """
+    calls = {}
+    try:
+        with schedule.engine.connect() as conn:
+            shaped = {row[0] for row in conn.execute(text(sql_shaped), params)}
+            for trip_id, stop_id, sequence in conn.execute(text(sql_calls), params):
+                calls.setdefault(trip_id, []).append((sequence, stop_id))
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.warning("Could not find a trip to draw route %s direction %s: %s", route_id, direction, ex)
+        return None
+    return shaped, {trip_id: tuple(stop_id for _, stop_id in sorted(rows))
+                    for trip_id, rows in calls.items()}
+
+
+def _rank_representative(stops, shaped, origin_id, destination_id):
+    """The trip get_representative_trip draws, out of {trip_id: its stops}
+    and the trips with a shape, by the ranking its docstring gives."""
+    trips = list(stops)
+    if origin_id or destination_id:
+        ridden = [trip_id for trip_id in trips if _calls_in_order(stops[trip_id], origin_id, destination_id)]
+        if ridden:
+            trips = ridden
+        else:
+            _LOGGER.debug("No trip calls at %s then %s, drawing from all of them",
+                          origin_id, destination_id)
+    trips = [trip_id for trip_id in trips if trip_id in shaped] or trips
+    most = max(len(stops[trip_id]) for trip_id in trips)
+    trips = [trip_id for trip_id in trips if len(stops[trip_id]) == most]
+    followed = Counter(stops[trip_id] for trip_id in trips)
+    return min(trips, key=lambda trip_id: (-followed[stops[trip_id]], trip_id))
+
+
 def get_representative_trip(schedule, route_id, direction, origin_id=None, destination_id=None):
     """The trip that stands for a route and direction on the map.
 
@@ -140,54 +195,15 @@ def get_representative_trip(schedule, route_id, direction, origin_id=None, desti
     if schedule is None or isinstance(schedule, str):
         _LOGGER.debug("No usable schedule to draw route %s (%s)", route_id, schedule or "empty")
         return None
-    origin_id = str(origin_id) if origin_id else None
-    destination_id = str(destination_id) if destination_id else None
-    where = "t.route_id = :route_id"
-    params = {"route_id": str(route_id)}
-    # direction_id is optional in GTFS and gtfs2 stringifies a missing one
-    if direction not in (None, "", "None"):
-        where += " AND CAST(t.direction_id AS TEXT) = :direction"
-        params["direction"] = str(direction)
-    # ONE pass over stop_times, filtered by a subquery on trips, and never a
-    # join. pygtfs creates no index on stop_times at all, so joining it to a
-    # filtered trips set makes SQLite scan the whole table once per candidate
-    # trip: measured on a mid-sized city feed (680k stop_times, 1818 trips on
-    # the line) that was 17.3 SECONDS against 45 ms this way, for the same
-    # answer. The ranking needs every trip's stops in order, so the rows come
-    # back as they are and are ranked here. Which trips have a shape is a
-    # question for trips alone, indexed and small.
-    sql_shaped = f"SELECT t.trip_id FROM trips t WHERE {where} AND t.shape_id IS NOT NULL"
-    sql_calls = f"""
-    SELECT st.trip_id, st.stop_id, st.stop_sequence
-    FROM stop_times st
-    WHERE st.trip_id IN (SELECT t.trip_id FROM trips t WHERE {where})
-    """
-    calls = {}
-    try:
-        with schedule.engine.connect() as conn:
-            shaped = {row[0] for row in conn.execute(text(sql_shaped), params)}
-            for trip_id, stop_id, sequence in conn.execute(text(sql_calls), params):
-                calls.setdefault(trip_id, []).append((sequence, stop_id))
-    except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.warning("Could not find a trip to draw route %s direction %s: %s", route_id, direction, ex)
+    read = _route_trip_calls(schedule, route_id, direction)
+    if read is None:
         return None
-    if not calls:
+    shaped, stops = read
+    if not stops:
         _LOGGER.debug("No trip at all for route %s direction %s", route_id, direction)
         return None
-    stops = {trip_id: tuple(stop_id for _, stop_id in sorted(rows)) for trip_id, rows in calls.items()}
-    trips = list(stops)
-    if origin_id or destination_id:
-        ridden = [trip_id for trip_id in trips if _calls_in_order(stops[trip_id], origin_id, destination_id)]
-        if ridden:
-            trips = ridden
-        else:
-            _LOGGER.debug("No trip of route %s direction %s calls at %s then %s, drawing from all of them",
-                          route_id, direction, origin_id, destination_id)
-    trips = [trip_id for trip_id in trips if trip_id in shaped] or trips
-    most = max(len(stops[trip_id]) for trip_id in trips)
-    trips = [trip_id for trip_id in trips if len(stops[trip_id]) == most]
-    followed = Counter(stops[trip_id] for trip_id in trips)
-    trip_id = min(trips, key=lambda trip_id: (-followed[stops[trip_id]], trip_id))
+    trip_id = _rank_representative(stops, shaped, str(origin_id) if origin_id else None,
+                                   str(destination_id) if destination_id else None)
     _LOGGER.debug("Drawing route %s direction %s from trip: %s", route_id, direction, trip_id)
     return trip_id
 
