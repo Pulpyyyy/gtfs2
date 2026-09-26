@@ -10,7 +10,6 @@
   "gtfs_db.py prune_gtfs_datasource": 16,
   "gtfs_filter.py filter_gtfs_zip": 19,
   "gtfs_helper.py _chain_of": 11,
-  "gtfs_helper.py _interpret_departure_rows": 23,
   "gtfs_helper.py _interpret_local_stop_rows": 16,
   "gtfs_helper.py get_pair_direction": 12,
   "gtfs_helper.py get_route_list": 11,
