@@ -2449,6 +2449,31 @@ def _local_stop_feed(self):
     ) or []
 
 
+def _feed_by_trip(feed_entities):
+    """{("trip", trip_id) or ("id", entity id): [positions]} of the trip
+    updates of a feed: the two ways a local stop departure matches one,
+    by trip (_follows_trip in trip mode)."""
+    index = {}
+    for position, entity in enumerate(feed_entities or ()):
+        if not entity.get("trip_update", False):
+            continue
+        index.setdefault(("trip", entity["trip_update"]["trip"].get("trip_id") or ""), []).append(position)
+        index.setdefault(("id", entity.get("id") or ""), []).append(position)
+    return index
+
+
+def _trip_entities(self, feed_entities, index, row):
+    """The trip updates a local stop departure can take its realtime from,
+    in feed order: those naming its trip, or whose id is its trip's short
+    name. Handed the whole feed, every departure walked all of it for its
+    own trip: 300 departures on a 20000 trip feed took 14 s a refresh."""
+    if feed_entities is None or getattr(self, "_trip_list", None):
+        return feed_entities
+    positions = set(index.get(("trip", row["trip_id"]), ()))
+    positions.update(index.get(("id", row["trip_short_name"]), ()))
+    return [feed_entities[position] for position in sorted(positions)]
+
+
 def _local_row_zones(row, timezone_local):
     """(agency zone, stop zone) a local stop row is read in: the agency's,
     else the stop's, for the first; the stop's for the second; Home
@@ -2473,6 +2498,7 @@ def _interpret_local_stop_rows(self, rows):
     _LOGGER.debug("Default 'now' on local timezone, incl. offset (if configured): %s",now_tz)
 
     feed_entities = _local_stop_feed(self)
+    feed_index = _feed_by_trip(feed_entities)
 
     # {stop_id: its entry}, the entry read from the stop's last row
     stops = {}
@@ -2486,7 +2512,8 @@ def _interpret_local_stop_rows(self, rows):
         element = _build_local_stop_element(
             self, row, row["departure_dt"],
             timezone_agency, timezone_stop, now_tz,
-            apply_now_filter=True, feed_entities=feed_entities)
+            apply_now_filter=True,
+            feed_entities=_trip_entities(self, feed_entities, feed_index, row))
         if element is not None and element not in timetable:
             timetable.append(element)
 
