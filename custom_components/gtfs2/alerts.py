@@ -444,6 +444,81 @@ def _alert_text(translated, language):
     return translations[0].text.strip()
 
 
+def _entity_fields(x):
+    """The fields of one informed entity, None for each one it leaves out:
+    (stop, route, trip, agency, route_type, direction), the last two as
+    text."""
+    return (x.stop_id if x.HasField("stop_id") else None,
+            x.route_id if x.HasField("route_id") else None,
+            x.trip.trip_id if x.HasField("trip") else None,
+            x.agency_id if x.HasField("agency_id") else None,
+            str(x.route_type) if x.HasField("route_type") else None,
+            str(x.direction_id) if x.HasField("direction_id") else None)
+
+
+def _about_something_else(fields, route_id, route_facts, direction):
+    """Whether an entity names another line, operator, kind of line or way
+    than the journey's. An unknown fact of the journey judges nothing; the
+    line is compared the way the trip updates are (_same_route)."""
+    from .gtfs_rt_helper import _same_route  # it imports this module
+    _stop, e_route, _trip, e_agency, e_type, e_direction = fields
+    route_agency, route_type = route_facts
+    return ((e_route is not None and not _same_route(route_id, e_route))  # another line
+            or (e_agency is not None and route_agency is not None
+                and e_agency != route_agency)                           # another operator's
+            or (e_type is not None and route_type is not None
+                and e_type != route_type)                               # another kind of line
+            or (e_direction is not None and direction is not None
+                and e_direction != direction))                          # the other way
+
+
+def _read_trip_entity(fields, hits, trip_id, followed, journey_stops):
+    """Note the trips of the board an entity names; True when that is all
+    it says of this journey, False when it names the next departure and its
+    stop is still to be read as one of the journey's ends."""
+    e_stop, _route, e_trip, _agency, _type, _direction = fields
+    named = [t for t in followed if _same_trip(e_trip, t)]
+    if not named:
+        # the fields of one entity hold together: "this trip, at this stop"
+        # is about that trip alone. Read field by field, an alert on
+        # another train calling at your station was hung on your origin
+        return True
+    for t in named:
+        if t not in hits["trips"]:
+            hits["trips"].append(t)
+            hits["trip"] = True
+    if trip_id is None or str(trip_id) not in named:
+        # a later departure of the board, not the next one: its stop is
+        # kept for the card, but "T2 skips your origin" says nothing of
+        # the next departure's own ends
+        if e_stop is not None and e_stop not in hits["stops"] and e_stop in journey_stops:
+            hits["stops"].append(e_stop)
+        return True
+    return False
+
+
+def _read_stop_entity(fields, hits, origin_ids, destination_ids, journey_ids):
+    """Which end of the journey an entity names, or the whole line: one
+    naming a line, an operator or a kind of line and nothing narrower is
+    about the whole line."""
+    e_stop, e_route, e_trip, e_agency, e_type, _direction = fields
+    if e_stop is not None and e_stop in origin_ids:
+        hits["origin"] = True
+    elif e_stop is not None and e_stop in destination_ids:
+        hits["destination"] = True
+    elif e_stop is not None and e_stop in journey_ids:
+        hits["journey"] = True
+    elif e_stop is None and (e_route is not None or (
+            not e_trip and (e_agency is not None or e_type is not None))):
+        hits["route"] = True
+        return
+    else:
+        return
+    # the stops of the journey it names, in the feed's order
+    if e_stop not in hits["stops"]:
+        hits["stops"].append(e_stop)
+
+
 def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
                  journey_ids=None, trip_ids=(), route_facts=(None, None), direction=None):
     """Which end of this journey an alert names, over ALL its informed entities.
@@ -475,64 +550,19 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
     the trip updates are (_same_route): a feed that qualifies its ids
     named the line and was read as another one.
     """
-    from .gtfs_rt_helper import _same_route  # it imports this module
     journey_ids = journey_ids or set()
-    route_agency, route_type = route_facts
     direction = str(direction) if str(direction) in ("0", "1") else None
     hits = {"origin": False, "destination": False, "route": False,
             "trip": False, "journey": False, "trips": [], "stops": []}
     followed = [str(t) for t in [trip_id, *trip_ids] if t]
+    journey_stops = set(origin_ids) | set(destination_ids) | set(journey_ids)
     for x in alert.informed_entity:
-        e_stop = x.stop_id if x.HasField("stop_id") else None
-        e_route = x.route_id if x.HasField("route_id") else None
-        e_trip = x.trip.trip_id if x.HasField("trip") else None
-        e_agency = x.agency_id if x.HasField("agency_id") else None
-        e_type = str(x.route_type) if x.HasField("route_type") else None
-        e_direction = str(x.direction_id) if x.HasField("direction_id") else None
-        if e_route is not None and not _same_route(route_id, e_route):
-            continue                      # an alert about another line
-        if e_agency is not None and route_agency is not None and e_agency != route_agency:
-            continue                      # another operator's
-        if e_type is not None and route_type is not None and e_type != route_type:
-            continue                      # another kind of line
-        if e_direction is not None and direction is not None and e_direction != direction:
-            continue                      # the other way
-        if e_trip:
-            named = [t for t in followed if _same_trip(e_trip, t)]
-            if not named:
-                # the fields of one entity hold together: "this trip, at
-                # this stop" is about that trip alone. Read field by field,
-                # an alert on another train calling at your station was
-                # hung on your origin
-                continue
-            for t in named:
-                if t not in hits["trips"]:
-                    hits["trips"].append(t)
-                    hits["trip"] = True
-            if trip_id is None or str(trip_id) not in named:
-                # a later departure of the board, not the next one: its
-                # stop is kept for the card, but "T2 skips your origin"
-                # says nothing of the next departure's own ends
-                if e_stop is not None and e_stop not in hits["stops"] and (
-                        e_stop in origin_ids or e_stop in destination_ids
-                        or e_stop in journey_ids):
-                    hits["stops"].append(e_stop)
-                continue
-        if e_stop is not None and e_stop in origin_ids:
-            hits["origin"] = True
-        elif e_stop is not None and e_stop in destination_ids:
-            hits["destination"] = True
-        elif e_stop is not None and e_stop in journey_ids:
-            hits["journey"] = True
-        elif e_stop is None and (e_route is not None or (
-                not e_trip and (e_agency is not None or e_type is not None))):
-            hits["route"] = True
+        fields = _entity_fields(x)
+        if _about_something_else(fields, route_id, route_facts, direction):
             continue
-        else:
+        if fields[2] and _read_trip_entity(fields, hits, trip_id, followed, journey_stops):
             continue
-        # the stops of the journey it names, in the feed's order
-        if e_stop not in hits["stops"]:
-            hits["stops"].append(e_stop)
+        _read_stop_entity(fields, hits, origin_ids, destination_ids, journey_ids)
     return hits
 
 
