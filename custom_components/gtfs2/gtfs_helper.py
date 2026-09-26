@@ -1311,12 +1311,38 @@ def _direction_param(direction):
     return int(direction)
 
 
+# the rows the flow's screens read of a line, per edition of the database:
+# the origin, towards, destination and pair screens each read the same
+# ones again, every trip of the line grouped each time (TAO tram A, 1.5 s
+# a read). The last few only: a flow reads one line at a time
+_LINE_ROWS = {}
+_LINE_ROWS_KEPT = 8
+
+
+def _line_rows(conn, sql, params):
+    """conn.execute(text(sql), params).fetchall(), kept while the database
+    file stays the same one, unchanged; read afresh when it cannot say."""
+    try:
+        path = conn.engine.url.database
+        stat = os.stat(path)
+    except (AttributeError, OSError, TypeError, ValueError):
+        return conn.execute(text(sql), params).fetchall()
+    key = (path, stat.st_ino, stat.st_mtime_ns, stat.st_size, sql, tuple(sorted(params.items())))
+    rows = _LINE_ROWS.get(key)
+    if rows is None:
+        rows = conn.execute(text(sql), params).fetchall()
+        while len(_LINE_ROWS) >= _LINE_ROWS_KEPT:
+            _LINE_ROWS.pop(next(iter(_LINE_ROWS)), None)
+        _LINE_ROWS[key] = rows
+    return rows
+
+
 def _line_of(conn, route_id, direction=None):
     """_ride_of for a route, its sampled trips kept beside: (kept,
     station_names, place, trips)."""
-    rows = conn.execute(text(_STOP_ROWS), {
-        "route_id": route_id, "direction": _direction_param(direction)}).fetchall()
-    heading = conn.execute(text(_HEADING_ROWS), {"route_id": route_id}).fetchall()
+    rows = _line_rows(conn, _STOP_ROWS, {
+        "route_id": route_id, "direction": _direction_param(direction)})
+    heading = _line_rows(conn, _HEADING_ROWS, {"route_id": route_id})
     kept, station_names, place = _ride_of(rows, heading)
     trips, _info = _trips_of(rows)
     return kept, station_names, place, trips
@@ -1338,7 +1364,7 @@ def _origin_boarding(conn, route_id, origin_stop_id, direction=None):
     pattern boards there. Read from the sampled trip's own flag, a pattern
     whose sample only sets down at the origin lost its way out (Amtrak's
     Stockton, where one Thruway bus of three does not pick up)."""
-    return {(row[0], row[1]) for row in conn.execute(text(f"""
+    return {(row[0], row[1]) for row in _line_rows(conn, f"""
         with ride as (
             select t.trip_id, group_concat(st.stop_sequence || ':' || st.stop_id) as stops
             from trips t
@@ -1353,8 +1379,8 @@ def _origin_boarding(conn, route_id, origin_stop_id, direction=None):
         from sample
         inner join stop_times st on st.trip_id = sample.trip_id
         where st.stop_id in {_STOP_GROUP}
-        and {_boards("st")}"""), {"route_id": route_id, "origin": origin_stop_id,  # noqa: S608
-                                  "direction": _direction_param(direction)})}
+        and {_boards("st")}""", {"route_id": route_id, "origin": origin_stop_id,  # noqa: S608
+                                 "direction": _direction_param(direction)})}
 
 
 def _calls_out(trips, place, origin_place, boarding=None):
