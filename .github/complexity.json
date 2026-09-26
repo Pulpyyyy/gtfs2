@@ -2,7 +2,6 @@
   "__init__.py async_prune_datasources": 11,
   "__init__.py setup": 13,
   "config_flow.py async_step_route": 12,
-  "departure_attributes.py next_service_info": 13,
   "flow_source.py async_step_source_url": 12,
   "gtfs_db.py on_a_copy": 11,
   "gtfs_helper.py get_pair_direction": 12,

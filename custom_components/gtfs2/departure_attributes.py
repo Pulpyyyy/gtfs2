@@ -74,6 +74,84 @@ def departure_records(schedule, data):
     return records
 
 
+def _days_from_today(day, offset):
+    """How many days a date lies after today, the sensor's minutes offset
+    applied to what counts as today."""
+    return (day - (dt_util.now() + timedelta(minutes=offset or 0)).date()).days
+
+
+def _resting_info(attributes, next_service, offset):
+    """next_service_info with no departure to show.
+
+    Three situations, and the user needs to tell them apart. In order of
+    how much is known:
+
+      nothing scheduled at all   no date to give, only say so
+      next one is days away      name the date
+      departures today           not this branch, the state is set
+
+    The query reaches past today, so a next departure tomorrow is already
+    carried by the state and never lands here.
+
+    So: whenever a next date exists it is published, and the wording
+    follows how far off it is. "no more departures" is kept for the only
+    case where it is the whole truth.
+    """
+    if not next_service:
+        attributes.pop(ATTR_NEXT_SERVICE_DATE, None)
+        # nothing found within the search horizon: this line has no
+        # scheduled service left at all. -1 rather than a missing key,
+        # so a card can tell "never again" apart from "running now":
+        # both would otherwise be the absence of an attribute.
+        attributes[ATTR_NEXT_SERVICE_IN_DAYS] = -1
+        attributes[ATTR_INFO] = "No scheduled departures"
+        return
+    # How far off that is, so a card can say "tomorrow" or "Monday"
+    # without re-deriving it: the offset already applies to what counts
+    # as today here.
+    try:
+        delta = _days_from_today(date.fromisoformat(next_service), offset)
+    except (TypeError, ValueError):
+        delta = None
+    attributes[ATTR_NEXT_SERVICE_DATE] = next_service
+    attributes[ATTR_NEXT_SERVICE_IN_DAYS] = delta
+    # today, but every departure is behind us; otherwise the query
+    # already reaches past today, so a next date with nothing to show is
+    # worth naming whatever it is
+    attributes[ATTR_INFO] = ("No more departures today" if delta == 0
+                             else f"No departures until {next_service}")
+
+
+def _departure_day_info(attributes, state, offset):
+    """next_service_info with a departure to show.
+
+    There is a departure, but is it today's? The query reaches past today,
+    so the state can carry tomorrow's first departure. The line is resting
+    today all the same, and a card needs the machine-readable date for its
+    badge, not only the sentence below: publish the same two attributes as
+    when there is nothing to show at all, derived from the departure
+    itself. Deleting them here was what kept a badge blank on a line whose
+    next trip is tomorrow morning.
+    """
+    delta = None
+    if state:
+        try:
+            delta = _days_from_today(dt_util.as_local(state).date(), offset)
+        except (TypeError, ValueError):
+            delta = None
+    if delta is not None and delta > 0:
+        shown = dt_util.as_local(state)
+        attributes[ATTR_NEXT_SERVICE_DATE] = shown.date().isoformat()
+        attributes[ATTR_NEXT_SERVICE_IN_DAYS] = delta
+        attributes[ATTR_INFO] = (
+            f"Next departures tomorrow at {shown.strftime(TIME_STR_FORMAT)}"
+            if delta == 1
+            else f"No departures until {shown.date().isoformat()}")
+    else:
+        for k in (ATTR_NEXT_SERVICE_DATE, ATTR_NEXT_SERVICE_IN_DAYS, ATTR_INFO):
+            attributes.pop(k, None)
+
+
 def next_service_info(attributes, state, next_service, offset):
     """When the line next runs, as a date, a count of days and a sentence.
 
@@ -81,79 +159,9 @@ def next_service_info(attributes, state, next_service, offset):
     coordinator found past today, offset the sensor's minutes offset.
     """
     if state is None:
-        # Three situations, and the user needs to tell them apart. In
-        # order of how much is known:
-        #
-        #   nothing scheduled at all   no date to give, only say so
-        #   next one is days away      name the date
-        #   departures today           not this branch, the state is set
-        #
-        # The query reaches past today, so a next departure tomorrow is
-        # already carried by the state and never lands here.
-        #
-        # So: whenever a next date exists it is published, and the wording
-        # follows how far off it is. "no more departures" is kept for the
-        # only case where it is the whole truth.
-        delta = None
-        if next_service:
-            # How far off that is, so a card can say "tomorrow" or "Monday"
-            # without re-deriving it: the offset already applies to what
-            # counts as today here.
-            try:
-                today = (dt_util.now() + timedelta(
-                    minutes=offset or 0)).date()
-                delta = (date.fromisoformat(next_service) - today).days
-            except (TypeError, ValueError):
-                delta = None
-        if next_service:
-            attributes[ATTR_NEXT_SERVICE_DATE] = next_service
-            attributes[ATTR_NEXT_SERVICE_IN_DAYS] = delta
-            if delta == 0:
-                # today, but every departure is behind us
-                attributes[ATTR_INFO] = "No more departures today"
-            else:
-                # the query already reaches past today, so a next date
-                # with nothing to show is worth naming whatever it is
-                attributes[ATTR_INFO] = f"No departures until {next_service}"
-        else:
-            if ATTR_NEXT_SERVICE_DATE in attributes:
-                del attributes[ATTR_NEXT_SERVICE_DATE]
-            # nothing found within the search horizon: this line has no
-            # scheduled service left at all. -1 rather than a missing key,
-            # so a card can tell "never again" apart from "running now":
-            # both would otherwise be the absence of an attribute.
-            attributes[ATTR_NEXT_SERVICE_IN_DAYS] = -1
-            attributes[ATTR_INFO] = "No scheduled departures"
+        _resting_info(attributes, next_service, offset)
     else:
-        # There is a departure, but is it today's? The query reaches past
-        # today, so the state can carry tomorrow's first departure. The line is resting today all the same, and a
-        # card needs the machine-readable date for its badge, not only
-        # the sentence below: publish the same two attributes as when
-        # there is nothing to show at all, derived from the departure
-        # itself. Deleting them here was what kept a badge blank on a
-        # line whose next trip is tomorrow morning.
-        delta = None
-        if state:
-            try:
-                today = (dt_util.now() + timedelta(
-                    minutes=offset or 0)).date()
-                delta = (dt_util.as_local(state).date() - today).days
-            except (TypeError, ValueError):
-                delta = None
-        if delta is not None and delta > 0:
-            shown = dt_util.as_local(state)
-            attributes[ATTR_NEXT_SERVICE_DATE] = shown.date().isoformat()
-            attributes[ATTR_NEXT_SERVICE_IN_DAYS] = delta
-            attributes[ATTR_INFO] = (
-                f"Next departures tomorrow at {shown.strftime(TIME_STR_FORMAT)}"
-                if delta == 1
-                else f"No departures until {shown.date().isoformat()}")
-        else:
-            for k in (ATTR_NEXT_SERVICE_DATE, ATTR_NEXT_SERVICE_IN_DAYS):
-                if k in attributes:
-                    del attributes[k]
-            if ATTR_INFO in attributes:
-                del attributes[ATTR_INFO]
+        _departure_day_info(attributes, state, offset)
 
 
 def next_departure_lists(attributes, departure, listed):
