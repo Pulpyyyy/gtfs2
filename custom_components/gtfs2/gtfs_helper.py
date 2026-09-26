@@ -1557,6 +1557,51 @@ def get_stop_list(schedule, route_id, direction=None):
     return stops
 
 
+def _groups_of(before):
+    """{place: group}, the places that come before one another, directly or
+    round a cycle, in one group (a strongly connected component of the
+    "comes after" relation, Tarjan's walk without recursion)."""
+    index, low, group, stack, on_stack = {}, {}, {}, [], set()
+    counter = 0
+    for root in before:
+        if root in index:
+            continue
+        work = [(root, iter(before[root]))]
+        index[root] = low[root] = counter
+        counter += 1
+        stack.append(root)
+        on_stack.add(root)
+        while work:
+            node, following = work[-1]
+            nxt = next((q for q in following if q in before), None)
+            if nxt is not None:
+                if nxt not in index:
+                    index[nxt] = low[nxt] = counter
+                    counter += 1
+                    stack.append(nxt)
+                    on_stack.add(nxt)
+                    work.append((nxt, iter(before[nxt])))
+                elif nxt in on_stack:
+                    low[node] = min(low[node], index[nxt])
+                continue
+            work.pop()
+            if work:
+                low[work[-1][0]] = min(low[work[-1][0]], low[node])
+            if low[node] == index[node]:
+                _close_group(node, stack, on_stack, group)
+    return group
+
+
+def _close_group(root, stack, on_stack, group):
+    """Take a finished group off _groups_of's stack, named after its root."""
+    while True:
+        member = stack.pop()
+        on_stack.discard(member)
+        group[member] = root
+        if member == root:
+            return
+
+
 def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, towards=None):
     """The places a trip really reaches from the departure place.
 
@@ -1684,9 +1729,17 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
         for p in set(ride):
             weight[p] = weight.get(p, 0) + trip_count.get(trip_id, 1)
 
+    # places that come before one another, two variants riding them in
+    # opposite orders, form one group: it is free once what comes before it
+    # from outside is placed. Waiting for each other, they came last, after
+    # the terminus (TEC B0026 listed Noduwez after Jodoigne; the 48-feed
+    # sweep). Without such a cycle every place is a group of its own
+    group = _groups_of(before)
     order, placed, last = [], set(), None
     while len(order) < len(reach):
-        ready = [p for p in reach if p not in placed and not (before[p] - placed)]
+        blocked = {group[p] for p in reach if p not in placed
+                   for q in before[p] if q not in placed and group[q] != group[p]}
+        ready = [p for p in reach if p not in placed and group[p] not in blocked]
         # nothing free: a loop's rotations order each other round
         pool = ready or [p for p in reach if p not in placed]
         going_on = [p for p in pool if last in before[p]]
