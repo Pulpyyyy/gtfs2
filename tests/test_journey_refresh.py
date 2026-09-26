@@ -487,6 +487,31 @@ def test_a_source_without_a_database_shows_an_empty_board(tmp_path, files, answe
         assert refresh.count("get_gtfs") == 2
 
 
+def test_a_database_gone_between_two_readings_empties_the_board_at_once(tmp_path):
+    # the sensor kept the last reading's schedule and departures until the
+    # refresh interval was up, up to 15 minutes after the file was deleted
+    refresh = Refresh(tmp_path)
+    assert refresh.run()["next_departure"]["trip_id"] == "T1"
+    refresh.answers["get_gtfs"] = "not_built"
+    result = refresh.run(later(1))
+    assert result["schedule"] == "not_built"
+    assert result["next_departure"] == {}
+    assert refresh.count("get_next_departure") == 1
+
+
+def test_between_two_readings_the_minute_carries_its_own_schedule(tmp_path):
+    # a refresh swapped a new database in: schedule_for closed the last
+    # reading's schedule, the realtime and the leg file read this one
+    refresh = Refresh(tmp_path, options=REALTIME)
+    refresh.run()
+    reopened = object()
+    refresh.answers["get_gtfs"] = reopened
+    result = refresh.run(later(1))
+    assert refresh.count("get_next_departure") == 1
+    assert result["schedule"] is reopened
+    assert refresh.calls["rt_window_gate"][-1][2] is reopened
+
+
 def test_the_minute_after_the_database_is_built_it_is_read(tmp_path):
     """A refresh button builds the database while the sensor stands empty:
     the next minute reads it, not the end of the refresh interval."""

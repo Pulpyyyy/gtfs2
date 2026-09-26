@@ -159,7 +159,11 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             self._data["extracting"] = True
             return self._data
 
-        run_static = self._static_refresh_due(previous_data, options, data["name"])
+        # a database gone since the last reading: read the timetable now,
+        # which empties the board, rather than showing the last departures
+        # until the refresh interval is up
+        run_static = (self._pygtfs is None or isinstance(self._pygtfs, str)
+                      or self._static_refresh_due(previous_data, options, data["name"]))
 
         # the trip updates of this refresh, when realtime reads them below
         rt_feed = None
@@ -169,6 +173,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             # reaching this point means check_extracting said no, so clear the flag
             # rather than carrying over the one previous_data was left with
             self._data["extracting"] = False
+            # and the schedule of this minute, not the last reading's:
+            # schedule_for closes that one when the database changed, and
+            # the realtime and the leg file read through what is here
+            self._data["schedule"] = self._pygtfs
         else:
             await self._read_timetable(data)
 
