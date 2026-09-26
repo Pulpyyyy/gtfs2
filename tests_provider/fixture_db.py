@@ -16,18 +16,31 @@ shared() builds a fixture once per session and hands every test the same
 schedule, to read. A test that writes into its database (test_night folds
 calendar_dates into calendar) takes a build() of its own. Every database of
 a session sits in one temporary folder, removed when the session ends.
+
+A fixture of fixtures/ is imported once and kept, and each build() is a
+copy of that import: the 49-feed sweep imported each feed again in every
+process and every test file that read it (Leipzig four times in
+test_night alone, 12 to 19 s each on the big cuts). The kept import sits
+in the system temp folder under gtfs2-fixture-cache/<fixture>/, one per
+fixture, named by a digest of the zip, of this file, of the component's
+code and of pygtfs's version: any of them changed, the fixture is
+imported again and its older import removed. A zip made on the fly (a
+test's own feed in a temporary folder) is imported each time, as before.
 """
 from __future__ import annotations
 
 import atexit
 import contextlib
 import datetime
+import hashlib
 import io
 import os
 import shutil
 import tempfile
 import types
 import zipfile
+from importlib.metadata import version
+from pathlib import Path
 
 import ha_stub
 import pygtfs
@@ -36,6 +49,9 @@ from sqlalchemy import event
 _ROOT = None
 _ENGINES = []
 _SHARED = {}
+_FIXTURES = Path(__file__).resolve().parent / "fixtures"
+_CACHE = Path(tempfile.gettempdir()) / "gtfs2-fixture-cache"
+_CODE = {}
 
 
 def _root():
@@ -60,6 +76,68 @@ def build(fixtures):
     indexes it, its SQLite clock frozen. A new database on each call."""
     directory = tempfile.mkdtemp(dir=_root())
     path = os.path.join(directory, "fixture.sqlite")
+    if Path(fixtures).resolve().parent == _FIXTURES:
+        shutil.copyfile(_kept(fixtures), path)
+        schedule = pygtfs.Schedule(path)
+        _ENGINES.append(schedule.engine)
+    else:
+        schedule = _import(fixtures, directory, path)
+    _freeze_sqlite_now(schedule.engine)
+    return schedule
+
+
+def _kept(fixtures):
+    """The kept import of a fixture of fixtures/, made when missing."""
+    source = os.path.join(fixtures, "static.zip")
+    with open(source, "rb") as f:
+        digest = hashlib.file_digest(f, "sha256")
+    digest.update(_code_digest())
+    folder = _CACHE / Path(fixtures).resolve().name
+    kept = folder / f"{digest.hexdigest()[:16]}.sqlite"
+    if kept.exists():
+        return kept
+    folder.mkdir(parents=True, exist_ok=True)
+    directory = tempfile.mkdtemp(dir=_root())
+    path = os.path.join(directory, "fixture.sqlite")
+    _import(fixtures, directory, path).engine.dispose()
+    # several processes may import the same fixture at once: each writes
+    # its own file and renames it in place, the last rename wins whole
+    partial = folder / f"{kept.name}.{os.getpid()}"
+    shutil.copyfile(path, partial)
+    try:
+        os.replace(partial, kept)
+    except PermissionError:
+        # another process got there first and is copying it: Windows
+        # refuses to replace an open file, and theirs is the same import
+        if not kept.exists():
+            raise
+        with contextlib.suppress(OSError):
+            partial.unlink()
+    for older in folder.glob("*.sqlite"):
+        if older != kept:
+            # another process may still be copying it: Windows refuses,
+            # and the next import of this fixture removes it
+            with contextlib.suppress(OSError):
+                older.unlink()
+    return kept
+
+
+def _code_digest():
+    """What an import depends on besides the zip: this file, the
+    component's code (the index step, the feed_info check) and pygtfs."""
+    component = Path(ha_stub.COMPONENT)
+    if component not in _CODE:
+        digest = hashlib.sha256(Path(__file__).read_bytes())
+        for source in sorted(component.glob("*.py")):
+            digest.update(source.name.encode())
+            digest.update(source.read_bytes())
+        digest.update(version("pygtfs").encode())
+        _CODE[component] = digest.digest()
+    return _CODE[component]
+
+
+def _import(fixtures, directory, path):
+    """fixtures/static.zip through pygtfs into path, indexed."""
     schedule = pygtfs.Schedule(path)
     _ENGINES.append(schedule.engine)
     source = os.path.join(fixtures, "static.zip")
@@ -78,7 +156,6 @@ def build(fixtures):
     hass = types.SimpleNamespace(config=types.SimpleNamespace(
         path=lambda *parts: os.path.join(directory, *parts)))
     ha_stub.load("gtfs_helper").check_datasource_index(hass, schedule, "", "fixture")
-    _freeze_sqlite_now(schedule.engine)
     return schedule
 
 
