@@ -131,7 +131,7 @@ def test_the_refresh_does_not_wait_for_the_timetable(tmp_path, monkeypatch):
     asyncio.run(run())
 
 
-def test_a_rebuilt_database_writes_the_timetable_again(tmp_path, monkeypatch):
+def test_a_rebuilt_database_writes_the_timetable_again(tmp_path, monkeypatch, caplog):
     """Same day, same zip, a new database: the runs are read from it.
 
     A refresh adopts the zip first and builds the database after (IDFM
@@ -185,4 +185,9 @@ def test_a_rebuilt_database_writes_the_timetable_again(tmp_path, monkeypatch):
         await refresh("2:2:2")
         assert written == ["Métro 4", "Métro 4"]
 
-    asyncio.run(run())
+    with caplog.at_level("INFO"):
+        asyncio.run(run())
+    # the first write of a start is not news, the rebuild is, and says why
+    told = [r.getMessage() for r in caplog.records
+            if r.levelname == "INFO" and "Writing the timetable" in r.getMessage()]
+    assert told == ["Writing the timetable timetable_metro_4.json: the database changed"]

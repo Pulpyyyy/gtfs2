@@ -140,7 +140,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._route_export_trip = None
         # the writing of the route file under way, if any (see _export_route_shape)
         self._route_task = None
-        # the service day and zip edition the timetable file was written for
+        # the service day, zip and database editions the timetable file was written for
         self._timetable_export = None
         # the writing of it under way, if any (see _export_timetable)
         self._timetable_task = None

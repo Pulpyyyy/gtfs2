@@ -299,15 +299,27 @@ def test_shape_named_by_no_trip_stop_draws_the_stops_alone(tmp_path, schedule):
 ELSEWHERE = [("ELSEWHERE", "48.0", "2.0", "0", "0"), ("ELSEWHERE", "48.1", "2.1", "1", "0")]
 
 
-def test_the_zip_names_the_shape_when_the_database_is_another_edition(tmp_path, schedule):
+def test_the_zip_names_the_shape_when_the_database_is_another_edition(tmp_path, schedule, caplog):
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip", shapes=SHAPE_ROWS + ELSEWHERE)
-    geojson.write_route_file(*writer_args(tmp_path, schedule(shape_id="ELSEWHERE")), trip_id="T1")
+    with caplog.at_level("INFO"):
+        geojson.write_route_file(*writer_args(tmp_path, schedule(shape_id="ELSEWHERE")), trip_id="T1")
     written = route_file(tmp_path)
     line = written["features"][0]
     assert line["geometry"] == {"type": "LineString", "coordinates": SHAPE_POINTS}
     assert line["properties"]["shape_id"] == SHAPE
     assert written["properties"]["shape_id"] == SHAPE
+    # and the log says the two files are not one edition
+    told = [r.getMessage() for r in caplog.records if "two editions" in r.getMessage()]
+    assert len(told) == 1 and "ELSEWHERE" in told[0] and SHAPE in told[0]
+
+
+def test_one_edition_tells_the_log_nothing(tmp_path, schedule, caplog):
+    (tmp_path / "gtfs2").mkdir()
+    write_zip(tmp_path / "gtfs2" / "feed.zip")
+    with caplog.at_level("INFO"):
+        geojson.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
+    assert not [r for r in caplog.records if "two editions" in r.getMessage()]
 
 
 def test_a_trip_the_zip_does_not_carry_draws_the_stops_alone(tmp_path, schedule):

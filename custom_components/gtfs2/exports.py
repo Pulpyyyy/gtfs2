@@ -40,6 +40,29 @@ def _route_export_state(zip_path, file):
     return edition, os.path.exists(file)
 
 
+def _what_changed(previous, key, parts):
+    """Which parts of an export key moved since the file was written, for
+    the log line that says why it is written again."""
+    changed = [part for part, old, new in zip(parts, previous, key) if old != new]
+    return ", ".join(changed) + " changed" if changed else "written again"
+
+
+# what the parts of each export key are, in the words of the log
+_ROUTE_KEY_PARTS = ("the line", "the trip", "the zip", "the database")
+_TIMETABLE_KEY_PARTS = ("the service day", "the zip", "the database")
+
+
+def _route_write_reason(present, previous, drawn, export_key):
+    """Why the route file is written again, for the log."""
+    if not present:
+        return "there is no file"
+    if previous is None:
+        # the first look since the start: what the file on disk says
+        return (f"the file draws trip {drawn}" if drawn else
+                "the file is older than the zip or the database, or unreadable")
+    return _what_changed(previous, export_key, _ROUTE_KEY_PARTS)
+
+
 def _drawn_trip(zip_path, file, db_path):
     """The trip a route file already draws, when it is at least as new as
     the zip and the database it was drawn from; None when there is no such
@@ -127,16 +150,22 @@ async def export_route_shape(coordinator, data) -> None:
     edition, present = await coordinator.hass.async_add_executor_job(_route_export_state, zip_path, file)
     # the database edition too: a rebuild that keeps the trip id and the
     # zip still changes the shape_id the file names (see _drawn_trip)
-    export_key = f"{route_id}_{direction}:{trip_id}:{edition}:{pick[-1]}"
-    if export_key == coordinator._route_export_trip and present:
+    export_key = (f"{route_id}_{direction}", trip_id, edition, pick[-1])
+    previous = coordinator._route_export_trip
+    if export_key == previous and present:
         return
-    if present and await coordinator.hass.async_add_executor_job(_drawn_trip, zip_path, file, db_path) == trip_id:
-        # written by an earlier run, and still the line of this zip
-        coordinator._route_export_trip = export_key
-        return
+    drawn = None
+    if present:
+        drawn = await coordinator.hass.async_add_executor_job(_drawn_trip, zip_path, file, db_path)
+        if drawn == trip_id:
+            # written by an earlier run, and still the line of this zip
+            coordinator._route_export_trip = export_key
+            return
     if coordinator._route_task is not None and not coordinator._route_task.done():
         # one writing at a time: the next refresh looks again
         return
+    _LOGGER.info("Writing the route file %s for trip %s: %s", os.path.basename(file),
+                 trip_id, _route_write_reason(present, previous, drawn, export_key))
     coordinator._route_id = route_id
     coordinator._direction = direction
     coordinator._route_task = coordinator.hass.async_create_background_task(
@@ -183,14 +212,22 @@ async def export_timetable(coordinator, data) -> None:
     # the database edition too: the runs are read from it, and a refresh
     # adopts the zip first and builds the database after, so a file
     # written in between listed the old edition's runs until the next day
-    export_key = f"{today}:{edition}:{getattr(coordinator, '_pygtfs_edition', None)}"
-    if export_key == coordinator._timetable_export and present:
+    export_key = (today, edition, getattr(coordinator, "_pygtfs_edition", None))
+    previous = coordinator._timetable_export
+    if export_key == previous and present:
         # written already: named again, the refresh built a fresh _data
         coordinator._data["timetable_file"] = name
         return
     if coordinator._timetable_task is not None and not coordinator._timetable_task.done():
         # one writing at a time: the one under way names the file itself
         return
+    if previous is None:
+        # every entry writes it at every start: not news
+        _LOGGER.debug("Writing the timetable %s, the first since the start", name)
+    else:
+        _LOGGER.info("Writing the timetable %s: %s", name,
+                     "there is no file" if not present else
+                     _what_changed(previous, export_key, _TIMETABLE_KEY_PARTS))
     coordinator._timetable_task = coordinator.hass.async_create_background_task(
         _write_timetable(coordinator, coordinator._data, name, today, zip_path, export_key),
         f"gtfs2 timetable {name}")

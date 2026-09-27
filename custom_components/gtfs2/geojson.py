@@ -249,6 +249,9 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
     """
     with schedule.engine.connect() as conn:
         stop_rows = conn.execute(text(sql_stops), {"trip_id": trip_id}).fetchall()
+        # only to tell the log when the database is another edition
+        db_shape = conn.execute(text("SELECT shape_id FROM trips WHERE trip_id = :trip_id"),
+                                {"trip_id": trip_id}).fetchone()
         boards, alights = _line_ways(conn, route_id, direction)
     if not stop_rows:
         _LOGGER.debug("No stops found for trip: %s", trip_id)
@@ -257,6 +260,14 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
     # the shape is the trip's, named by the zip the points come from and
     # not by the database, which may be another edition (see trip_shape_id)
     shape_id = trip_shape_id(zip_path, trip_id)
+    db_shape = db_shape[0] if db_shape and db_shape[0] else None
+    if db_shape and db_shape != shape_id:
+        # the window between the zip's adoption and the database's build,
+        # or a build that failed: the file is written again once the
+        # database follows (see exports._drawn_trip)
+        _LOGGER.info("Route %s direction %s, trip %s: the database names shape %s and the zip %s, "
+                     "two editions of the feed; the zip's is drawn",
+                     route_id, direction, trip_id, db_shape, shape_id or "none")
     shape = read_shape(zip_path, shape_id) if shape_id else None
     features = []
     if shape and len(shape) >= 2:

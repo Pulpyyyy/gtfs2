@@ -125,13 +125,15 @@ def test_a_new_zip_or_another_trip_writes_it_in_the_background(tmp_path, monkeyp
     assert written == [TRIP] and len(started) == 1
 
 
-def test_a_rebuilt_database_writes_it_again_for_the_same_trip_and_zip(tmp_path, monkeypatch):
+def test_a_rebuilt_database_writes_it_again_for_the_same_trip_and_zip(tmp_path, monkeypatch, caplog):
     _files(tmp_path, db_newer=True)
-    written, started = _run(tmp_path, monkeypatch)
+    with caplog.at_level("INFO"):
+        written, started = _run(tmp_path, monkeypatch)
     assert written == [TRIP] and len(started) == 1
+    assert any("older than the zip or the database" in r.getMessage() for r in caplog.records)
 
 
-def test_a_database_swapped_under_a_running_entry_writes_it_again(tmp_path, monkeypatch):
+def test_a_database_swapped_under_a_running_entry_writes_it_again(tmp_path, monkeypatch, caplog):
     # the same entry, the same trip, the same zip: only the database
     # edition moved, and the key it wrote under says so
     zip_path, file, db_path = _files(tmp_path)
@@ -173,7 +175,11 @@ def test_a_database_swapped_under_a_running_entry_writes_it_again(tmp_path, monk
         await refresh("2:2:2")
         assert written == [TRIP]
 
-    asyncio.run(main())
+    with caplog.at_level("INFO"):
+        asyncio.run(main())
+    # one line, the one that says why
+    told = [r.getMessage() for r in caplog.records if "Writing the route file" in r.getMessage()]
+    assert len(told) == 1 and told[0].endswith("the database changed")
 
 
 def test_the_trip_drawn_is_picked_once_per_database(tmp_path, monkeypatch):
