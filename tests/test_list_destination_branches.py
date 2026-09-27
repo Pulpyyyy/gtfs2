@@ -87,6 +87,40 @@ def test_a_side_is_finished_before_the_other_way_starts(tmp_path):
         schedule.engine.dispose()
 
 
+def test_a_branch_waiting_for_another_is_finished_through_it(tmp_path):
+    # O -> P -> T -> U (three trips), O -> C -> D -> T -> U (one), and
+    # O -> X -> Y (two), a branch of its own. After P, T waits for D: the
+    # branch that joins P's at T comes next, then the other, rather than
+    # the busier X cutting in between P and T (Rome 404 from Fabriano)
+    stops = {"O": (45.0, 1.0), "P": (45.1, 1.1), "C": (45.1, 1.3), "D": (45.2, 1.3),
+             "T": (45.3, 1.2), "U": (45.4, 1.2), "X": (44.9, 0.9), "Y": (44.8, 0.8)}
+    rides = [("P1", "OPTU"), ("P2", "OPTU"), ("P3", "OPTU"), ("C1", "OCDTU"),
+             ("X1", "OXY"), ("X2", "OXY")]
+    feed = {
+        "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,UTC\n",
+        "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\n" + "".join(
+            f"{s},{s} stop,{lat},{lon}\n" for s, (lat, lon) in stops.items()),
+        "routes.txt": "route_id,agency_id,route_short_name,route_long_name,route_type\nR,A,1,One,3\n",
+        "trips.txt": "route_id,service_id,trip_id,direction_id\n" + "".join(
+            f"R,S,{t},0\n" for t, _ride in rides),
+        "stop_times.txt": HEAD + "".join(_calls(t, list(ride)) for t, ride in rides),
+        "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                         "start_date,end_date\nS,1,1,1,1,1,1,1,20260901,20261231\n"),
+    }
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zout:
+        for name, body in feed.items():
+            zout.writestr(name, body)
+    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
+    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
+    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    try:
+        found = gtfs_helper.get_destination_stop_list(schedule, "R", None, "O")
+        assert [str(s).split(":")[0] for s in found] == ["P", "C", "D", "T", "U", "X", "Y"]
+    finally:
+        schedule.engine.dispose()
+
+
 @pytest.mark.parametrize(("x_trips", "y_trips", "listed"), [
     (3, 1, ["X1", "X2", "Y1", "Y2"]),
     (1, 3, ["Y1", "Y2", "X1", "X2"]),

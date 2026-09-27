@@ -1642,6 +1642,24 @@ def _groups_of(before):
     return group
 
 
+def _onward_of(before):
+    """{place: the place and every place some ride reaches after it}."""
+    after = {p: set() for p in before}
+    for p, earlier in before.items():
+        for q in earlier:
+            after.setdefault(q, set()).add(p)
+    onward = {}
+    for start in before:
+        seen, todo = {start}, [start]
+        while todo:
+            for q in after.get(todo.pop(), ()):
+                if q not in seen:
+                    seen.add(q)
+                    todo.append(q)
+        onward[start] = seen
+    return onward
+
+
 def _close_group(root, stack, on_stack, group):
     """Take a finished group off _groups_of's stack, named after its root."""
     while True:
@@ -1785,7 +1803,8 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     # the terminus (TEC B0026 listed Noduwez after Jodoigne; the 48-feed
     # sweep). Without such a cycle every place is a group of its own
     group = _groups_of(before)
-    order, placed, rank = [], set(), {}
+    onward = _onward_of(before)
+    order, placed, rank, joined = [], set(), {}, {}
     while len(order) < len(reach):
         blocked = {group[p] for p in reach if p not in placed
                    for q in before[p] if q not in placed and group[q] != group[p]}
@@ -1797,10 +1816,17 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
         # side of the line starts. Taking the busiest free place instead
         # left a side's last pole, the other quay of a terminus, after the
         # whole other way (TAO 40 listed Chèques Postaux quai C after the
-        # Gare d'Orléans end; the 48-feed sweep)
+        # Gare d'Orléans end; the 48-feed sweep). Next, a branch that goes on
+        # to where the latest one is headed: a branch waiting for another to
+        # join it is finished through that one, not left for a third (Rome
+        # 404 from Fabriano listed Fabriano/Pergola, then the Urbania branch,
+        # then Corridonia, which joins Pergola's at Casale S. Basilio)
         p = min(pool, key=lambda q: (-max((rank[x] for x in before[q] if x in rank), default=-1),
+                                     -max((joined.get(x, -1) for x in onward[q]), default=-1),
                                      -weight[q], reach[q], position.get(q, 0)))
         rank[p] = len(order)
+        for x in onward[p]:
+            joined[x] = rank[p]
         order.append(p)
         placed.add(p)
     kept = [by_place[p] for p in order if p in by_place and p in alightable]
