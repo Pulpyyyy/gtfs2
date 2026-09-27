@@ -281,9 +281,8 @@ def feed_info_unreadable(zip_path):
     ends the import on strptime(None): the feed never loads. The import
     then leaves feed_info.txt out, as the clean_feed_info option always
     could. No query reads that table from the database; the Timetable
-    sensor reads it from the zip, which the whole-feed import strips in
-    place, so there it loses the publisher and the version, as the option
-    always made it.
+    sensor reads it from the zip, which the import never writes into, so
+    the publisher and the version stay shown.
     """
     try:
         with zipfile.ZipFile(zip_path) as zin:

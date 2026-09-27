@@ -241,10 +241,11 @@ def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
     source holds every line. The route by route refresh took the lines to
     keep from the database being replaced, and a line the new edition
     brought never came in, at any refresh. Here the new edition decides:
-    all its lines go through the filter, which keeps the zip on disk
-    untouched where the unfiltered import strips it of its shapes, and the
-    import is the new database itself, no copy between two. Swapped in the
-    same way as the route by route one.
+    all its lines go through the filter, which leaves out only the calendars
+    no trip uses (measured on SNCF and Zou: the same stops, trips and stop
+    times as the zip read whole, and no slower), and the import is the new
+    database itself, no copy between two. Swapped in the same way as the
+    route by route one.
     """
     routes = sorted({row["route_id"] for row in read_zip_routes(zip_path)})
     if not routes:
