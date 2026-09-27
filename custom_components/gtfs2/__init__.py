@@ -12,7 +12,7 @@ from homeassistant.helpers import entity_registry as er
 
 from datetime import timedelta
 
-from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_FILE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
+from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, DEFAULT_PATH_GEOJSON, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_FILE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
 import voluptuous as vol
 from .gtfs_helper import (update_gtfs_local_stops, get_route_departures, get_route_arrivals,
@@ -567,21 +567,13 @@ def setup(hass, config):
 async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
     """Handle options update.
 
-    Each coordinator gets back the pace it was built with. Every one of
-    them used to be set to a minute, the local stops one included, whose
-    own interval is 15 minutes by default: a click on the realtime switch,
-    which rewrites the entries' options through the mirror, was enough to
-    have a local stops sensor walk every stop around a person every minute
-    until the next restart.
+    Every coordinator runs every minute: the journey one reads its static
+    refresh_interval inside the update, and the local stops one its
+    local_stop_refresh_interval, taking out the departures gone in between
+    without walking the stops around a person again.
     """
     coordinator = entry.runtime_data
-    if isinstance(coordinator, GTFSLocalStopUpdateCoordinator):
-        coordinator.update_interval = timedelta(minutes=entry.options.get(
-            "local_stop_refresh_interval", DEFAULT_LOCAL_STOP_REFRESH_INTERVAL))
-    else:
-        # a minute is the journey coordinator's own pace: its static
-        # refresh_interval is read inside the update, not here
-        coordinator.update_interval = timedelta(minutes=1)
+    coordinator.update_interval = timedelta(minutes=1)
     # the options just changed, an offset or an interval: the answer the old
     # ones gave was served until the next static refresh. Dropping its stamp
     # has the next update read the timetable again, and it runs now

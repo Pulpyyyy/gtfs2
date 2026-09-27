@@ -1,7 +1,9 @@
 """What a local stops sensor's refresh decides, one branch at a time.
 
-GTFSLocalStopUpdateCoordinator._async_update_data runs at the entry's own
-pace, 15 minutes unless its options say otherwise. It opens the source's
+GTFSLocalStopUpdateCoordinator._async_update_data runs every minute and
+reads the stops at the entry's own pace, 15 minutes unless its options say
+otherwise; in between it only takes out the departures gone, and its
+sensors hear of a minute only when one has. It opens the source's
 schedule, lists nothing and says so once when there is none, carries the
 last answer over while the database is being written, and hands
 get_local_stops_next_departures the realtime settings of the source: the
@@ -28,6 +30,7 @@ import types
 from unittest.mock import patch
 
 import pytest
+from freezegun import freeze_time
 
 import ha_stub
 
@@ -42,8 +45,21 @@ ENTRY = {
     "device_tracker_id": "person.me",
 }
 
+UTC = datetime.timezone.utc
+NOW = datetime.datetime(2026, 9, 27, 10, 0, tzinfo=UTC)
 SCHEDULE = types.SimpleNamespace(session=None)
 DEPARTURES = [{"stop_id": "S1", "departure": []}]
+
+
+def later(minutes):
+    return NOW + datetime.timedelta(minutes=minutes)
+
+
+def leaving(minutes, realtime=None, delay="-"):
+    """One departure of the list, as the reading writes it."""
+    return {"trip_id": f"T{minutes}", "departure_datetime": later(minutes),
+            "departure_realtime_datetime": later(realtime) if realtime is not None else "-",
+            "delay_realtime": delay}
 
 
 class _Hass:
@@ -85,8 +101,10 @@ class Refresh:
             "get_gtfs": SCHEDULE,
             "check_extracting": False,
             "rt_window_gate": None,
+            "departures": DEPARTURES,
         }
         self.failing = False
+        self.runs = 0
 
     def _stand_in(self, name):
         def stand_in(*args):
@@ -106,10 +124,14 @@ class Refresh:
         })
         if self.failing:
             raise RuntimeError("the stops could not be read")
-        return list(DEPARTURES)
+        return [dict(stop, departure=list(stop["departure"])) for stop in self.answers["departures"]]
 
-    def run(self):
-        """One refresh, its answer kept as Home Assistant would."""
+    def run(self, at=None):
+        """One refresh at a moment, its answer kept as Home Assistant
+        would: by default a pace apart from the last one, so each reads."""
+        if at is None:
+            at = later(16 * self.runs)
+        self.runs += 1
         stand_ins = {
             "get_gtfs": self._stand_in("get_gtfs"),
             "check_extracting": self._stand_in("check_extracting"),
@@ -118,6 +140,7 @@ class Refresh:
             "get_local_stops_next_departures": self._listing,
         }
         with contextlib.ExitStack() as stack:
+            stack.enter_context(freeze_time(at))
             for name, stand_in in stand_ins.items():
                 stack.enter_context(patch.object(coordinator_mod, name, stand_in))
             result = asyncio.run(self.coordinator._async_update_data())
@@ -127,11 +150,23 @@ class Refresh:
 
 # --- the pace and the settings -----------------------------------------------
 
-def test_the_pace_is_the_entry_s_own(tmp_path):
-    assert Refresh(tmp_path).coordinator.update_interval == datetime.timedelta(
-        minutes=const.DEFAULT_LOCAL_STOP_REFRESH_INTERVAL)
+def test_it_runs_every_minute_and_its_sensors_hear_of_changes_only(tmp_path):
+    coordinator = Refresh(tmp_path).coordinator
+    assert coordinator.update_interval == datetime.timedelta(minutes=1)
+    assert coordinator.always_update is False
+
+
+def test_the_stops_are_read_at_the_entry_s_pace(tmp_path):
+    refresh = Refresh(tmp_path)
+    refresh.run(NOW)
+    refresh.run(later(const.DEFAULT_LOCAL_STOP_REFRESH_INTERVAL - 1))
+    assert len(refresh.calls["get_local_stops_next_departures"]) == 1
+    refresh.run(later(const.DEFAULT_LOCAL_STOP_REFRESH_INTERVAL))
+    assert len(refresh.calls["get_local_stops_next_departures"]) == 2
     paced = Refresh(tmp_path, options={"local_stop_refresh_interval": 5})
-    assert paced.coordinator.update_interval == datetime.timedelta(minutes=5)
+    paced.run(NOW)
+    paced.run(later(5))
+    assert len(paced.calls["get_local_stops_next_departures"]) == 2
 
 
 def test_a_refresh_lists_the_stops_with_the_entry_s_settings(tmp_path):
@@ -251,3 +286,57 @@ def test_outside_the_service_window_no_feed_is_read(tmp_path):
     assert result["local_stops_next_departures"] == DEPARTURES
     # asked about the url the listing would have fetched
     assert refresh.calls["rt_window_gate"][0][3] == "http://rt.test/trips"
+
+
+# --- between two readings: the departures gone go -------------------------------
+
+def test_a_departure_gone_goes_within_the_minute_without_reading(tmp_path):
+    refresh = Refresh(tmp_path)
+    refresh.answers["departures"] = [{"stop_id": "S1", "departure": [leaving(1), leaving(10)]}]
+    refresh.run(NOW)
+    result = refresh.run(later(2))
+    assert [d["trip_id"] for d in result["local_stops_next_departures"][0]["departure"]] == ["T10"]
+    assert len(refresh.calls["get_local_stops_next_departures"]) == 1
+    # everything else the sensors show is the reading's
+    assert result["gtfs_updated_at"] == NOW.isoformat()
+
+
+def test_a_minute_with_nothing_gone_is_the_same_answer(tmp_path):
+    # the same data: the coordinator tells its sensors nothing, and they
+    # write no line of history
+    refresh = Refresh(tmp_path)
+    refresh.answers["departures"] = [{"stop_id": "S1", "departure": [leaving(10)]}]
+    first = refresh.run(NOW)
+    assert refresh.run(later(2)) is first
+
+
+def test_a_late_departure_stays_until_the_feed_s_time(tmp_path):
+    refresh = Refresh(tmp_path)
+    refresh.answers["departures"] = [{"stop_id": "S1", "departure": [
+        leaving(1, realtime=5), leaving(2, delay=240), leaving(20)]}]
+    refresh.run(NOW)
+    kept = refresh.run(later(4))["local_stops_next_departures"][0]["departure"]
+    assert [d["trip_id"] for d in kept] == ["T1", "T2", "T20"]
+    # T1 leaves at 5 by the feed, T2 at 6 by its delay of 4 minutes
+    kept = refresh.run(later(5))["local_stops_next_departures"][0]["departure"]
+    assert [d["trip_id"] for d in kept] == ["T2", "T20"]
+    kept = refresh.run(later(6))["local_stops_next_departures"][0]["departure"]
+    assert [d["trip_id"] for d in kept] == ["T20"]
+
+
+def test_the_walk_to_the_stop_counts(tmp_path):
+    # an offset of 3 minutes: a departure 4 minutes away is gone for a
+    # rider 2 minutes later, as the reading would have said
+    refresh = Refresh(tmp_path, options={"offset": 3})
+    refresh.answers["departures"] = [{"stop_id": "S1", "departure": [leaving(6), leaving(20)]}]
+    refresh.run(NOW)
+    kept = refresh.run(later(4))["local_stops_next_departures"][0]["departure"]
+    assert [d["trip_id"] for d in kept] == ["T20"]
+
+
+def test_a_database_swapped_in_is_read_at_once(tmp_path):
+    refresh = Refresh(tmp_path)
+    refresh.run(NOW)
+    refresh.answers["get_gtfs"] = types.SimpleNamespace(session=None)
+    refresh.run(later(1))
+    assert len(refresh.calls["get_local_stops_next_departures"]) == 2

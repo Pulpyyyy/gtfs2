@@ -268,6 +268,8 @@ class _DataUpdateCoordinator:
         self.logger = logger
         self.name = name
         self.update_interval = update_interval
+        # False: the listeners hear of an update only when its data changed
+        self.always_update = kwargs.get("always_update", True)
         self.data = None
 
 

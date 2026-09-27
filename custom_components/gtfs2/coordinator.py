@@ -34,7 +34,7 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures
+from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures, drop_gone_local_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck
 from .rt_source import rt_feed_config, rt_headers, with_query_key
@@ -461,21 +461,52 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
     config_entry: ConfigEntry
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Initialize the coordinator."""
+        """Initialize the coordinator.
+
+        It runs every minute and reads the stops around the tracker at the
+        entry's own pace, 15 minutes by default: in between it only takes
+        out the departures gone. Its sensors hear of a minute only when
+        one has gone (always_update False): the state they write carries
+        the time, and a line of history a minute per stop was for nothing.
+        """
         super().__init__(
             hass=hass,
             logger=_LOGGER,
             name=entry.entry_id,
-            update_interval=timedelta(minutes=entry.options.get("local_stop_refresh_interval", DEFAULT_LOCAL_STOP_REFRESH_INTERVAL)),
+            update_interval=timedelta(minutes=1),
+            always_update=False,
         )
         self.config_entry = entry
         self.hass = hass
-        
+
         self._pygtfs = ""
         self._data: dict[str, str] = {}
 
+    def _read_lately(self, previous_data, options) -> bool:
+        """Whether the stops were read from this very database within the
+        entry's pace, and nothing is being written."""
+        if not previous_data.get("gtfs_updated_at") or previous_data.get("extracting"):
+            return False
+        if previous_data.get("schedule") is not self._pygtfs:
+            # a database swapped in or reopened: read it at once
+            return False
+        pace = timedelta(minutes=options.get("local_stop_refresh_interval", DEFAULT_LOCAL_STOP_REFRESH_INTERVAL))
+        read = datetime.datetime.fromisoformat(previous_data["gtfs_updated_at"])
+        return read + pace > dt_util.utcnow() + timedelta(seconds=1)
+
+    def _without_gone(self, previous_data):
+        """The last answer without the departures gone since; the very
+        same answer when none has, so the sensors are not updated."""
+        listed = previous_data.get("local_stops_next_departures") or []
+        left = drop_gone_local_departures(
+            listed, dt_util.now() + timedelta(minutes=previous_data.get("offset", 0)))
+        if left is listed:
+            return self.data
+        _LOGGER.debug("Local stops of %s: departures gone taken out", previous_data.get("name"))
+        return {**previous_data, "local_stops_next_departures": left}
+
     async def _async_update_data(self) -> dict[str, str]:
-        """Get the latest data from GTFS and GTFS relatime, depending refresh interval"""      
+        """Get the latest data from GTFS and GTFS relatime, depending refresh interval"""
         data = self.config_entry.data
         options = self.config_entry.options
         previous_data = {} if self.data is None else self.data.copy()
@@ -483,6 +514,9 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
 
         # the same schedule as long as the database is the same one
         self._pygtfs = await schedule_for(self, data)
+
+        if self._read_lately(previous_data, options):
+            return self._without_gone(previous_data)
 
         self._data = {
             "schedule": self._pygtfs,

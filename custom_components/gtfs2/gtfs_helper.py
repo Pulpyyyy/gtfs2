@@ -2331,6 +2331,37 @@ def get_local_stop_list(hass, schedule, data):
     return rowcount
         
 
+def local_departure_leaves(scheduled, realtime, delay):
+    """When a local stop departure leaves: the time the realtime feed gives
+    (realtime, else the timetable's), and never before the timetable's
+    plus the delay the feed announces. delay is seconds, or "-" when the
+    feed gives none."""
+    leaves = realtime if isinstance(realtime, datetime.datetime) else scheduled
+    if isinstance(delay, int) and delay:
+        leaves = max(leaves, scheduled + datetime.timedelta(seconds=delay))
+    return leaves
+
+
+def drop_gone_local_departures(stops, now):
+    """The local stops list without the departures gone by now (an aware
+    datetime, the entry's offset included), by the rule the reading
+    itself applies (local_departure_leaves); the list as it is when none
+    has gone.
+
+    The list is read again at the entry's own pace, 15 minutes by default,
+    and a departure gone stayed on it until then: the coordinator takes
+    them out each minute in between, without reading anything.
+    """
+    kept, gone = [], False
+    for stop in stops:
+        left = [d for d in stop["departure"]
+                if local_departure_leaves(d["departure_datetime"], d["departure_realtime_datetime"],
+                                          d["delay_realtime"]) > now]
+        gone = gone or len(left) != len(stop["departure"])
+        kept.append({**stop, "departure": left})
+    return kept if gone else stops
+
+
 def _build_local_stop_element(self, row, base_datetime,
                               timezone_agency, timezone_stop, now_tz,
                               apply_now_filter, feed_entities=None):
@@ -2400,17 +2431,11 @@ def _build_local_stop_element(self, row, base_datetime,
         depart_time_corrected_time = dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_agency)
     #_LOGGER.debug("Departure time corrected based on realtime-time: %s", depart_time_corrected_time)
 
-    if delay_rt != "-" and delay_rt != 0:
-        depart_time_corrected_delay = (dt_util.parse_datetime(base_datetime) + datetime.timedelta(seconds=delay_rt)).replace(tzinfo=timezone_agency)
-    else:
+    if delay_rt == 0:
         delay_rt = "-"
-        depart_time_corrected_delay = dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_agency)
-    #_LOGGER.debug("Departure time corrected based on realtime-delay: %s", depart_time_corrected_delay)
-
-    if depart_time_corrected_delay > depart_time_corrected_time:
-        depart_time_corrected = depart_time_corrected_delay
-    else:
-        depart_time_corrected = depart_time_corrected_time
+    depart_time_corrected = local_departure_leaves(
+        dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_agency),
+        depart_time_corrected_time, delay_rt)
     #_LOGGER.debug("Departure time corrected: %s", depart_time_corrected)
 
     if apply_now_filter and not (depart_time_corrected > now_tz):

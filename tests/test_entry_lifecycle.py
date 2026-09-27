@@ -83,14 +83,17 @@ def test_a_train_entry_leaves_the_files_another_train_entry_may_ride(tmp_path, m
     assert sorted(p.name for p in folder.iterdir()) == sorted(_line_files("K4", "0"))
 
 
-def test_an_options_change_gives_each_coordinator_its_pace():
+def test_an_options_change_keeps_each_coordinator_on_the_minute():
+    # the local stops one too: it reads the stops at its own
+    # local_stop_refresh_interval inside the update, and only takes the
+    # departures gone out in between (test_departure_local_stops_refresh)
     async def refresh():
         return None
 
     for cls, options, minutes in (
             (coordinator_mod.GTFSUpdateCoordinator, {}, 1),
-            (coordinator_mod.GTFSLocalStopUpdateCoordinator, {}, 15),
-            (coordinator_mod.GTFSLocalStopUpdateCoordinator, {"local_stop_refresh_interval": 5}, 5)):
+            (coordinator_mod.GTFSLocalStopUpdateCoordinator, {}, 1),
+            (coordinator_mod.GTFSLocalStopUpdateCoordinator, {"local_stop_refresh_interval": 5}, 1)):
         coordinator = object.__new__(cls)
         coordinator.data = {"gtfs_updated_at": "then"}
         coordinator.async_request_refresh = refresh
