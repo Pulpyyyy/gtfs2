@@ -13,23 +13,17 @@ import logging
 
 import voluptuous as vol
 
-from homeassistant import config_entries
-from homeassistant import data_entry_flow
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
 from .const import (
-    CONF_ADD_RETURN,
     CONF_DESTINATION,
     CONF_DIRECTION,
     CONF_FILE,
     CONF_NAME,
     CONF_ORIGIN,
     CONF_ROUTE,
-    DOMAIN,
-    TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
-from .geojson import name_in_use
 from .notifications import _async_text
 from .stations import get_line_code, get_station_modes, get_train_destination_list, has_train_trip_between
 
@@ -129,7 +123,6 @@ class TrainScreens:
 
     async def async_step_sensor_train(self, user_input: dict | None = None) -> FlowResult:
         """Name the train sensor, suggested from the line and both stations."""
-        errors: dict[str, str] = {}
         origin = self._user_inputs.get(CONF_ORIGIN, "")
         destination = self._user_inputs.get(CONF_DESTINATION, "")
         # the outward keeps the line picked in the flow; the return may run
@@ -155,61 +148,5 @@ class TrainScreens:
                 CONF_DESTINATION: origin,
                 CONF_NAME: self._return_name,
             } if exists else {}
-
-        def _show(errors, previous=None):
-            previous = previous or {}
-            return self.async_show_form(
-                step_id="sensor_train",
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(
-                            CONF_NAME, default=previous.get(CONF_NAME, suggested)
-                        ): str,
-                        **({vol.Optional(
-                            CONF_ADD_RETURN, default=False
-                        ): selector.BooleanSelector()} if self._return_trip else {}),
-                    },
-                ),
-                description_placeholders={
-                    **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                    "trip": trip,
-                    "return_trip": self._return_name or "",
-                },
-                errors=errors,
-            )
-
-        if user_input is None:
-            return _show(errors)
-        # only used to branch, it must not end up in the entry
-        add_return = user_input.pop(CONF_ADD_RETURN, False)
-        # a name already taken would create an entry the sensor platform then
-        # drops as a duplicate unique_id: say so here instead
-        taken = {e.data.get(CONF_NAME) for e in self.hass.config_entries.async_entries(DOMAIN)}
-        if name_in_use(user_input[CONF_NAME], taken):
-            errors["base"] = "name_taken"
-            return _show(errors, user_input)
-        # the return's own name, checked before anything is created, as the
-        # bus flow does: a taken one was dropped with a warning in the log
-        return_name = (self._return_trip or {}).get(CONF_NAME)
-        if add_return and name_in_use(return_name, taken | {user_input[CONF_NAME]}):
-            errors["base"] = "return_name_taken"
-            return _show(errors, user_input)
-        self._user_inputs.update(user_input)
-        # async_create_entry ends the flow, so the sensor is created through a
-        # second flow, like the bus sensor. That leaves this one alive to offer
-        # what comes next, another journey on the same line among it.
-        result = await self.hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": config_entries.SOURCE_IMPORT},
-            data=dict(self._user_inputs),
-        )
-        if result.get("type") != data_entry_flow.FlowResultType.CREATE_ENTRY:
-            _LOGGER.error("The sensor was not created: %s", result.get("reason"))
-            errors["base"] = "not_created"
-            return _show(errors, user_input)
-        self._created_name = user_input[CONF_NAME]
-        # the return only once the journey itself exists: made first, a
-        # refused journey left its return behind on its own
-        if add_return:
-            await self._create_return_trip()
-        return await self.async_step_finished()
+        return await self._name_and_create("sensor_train", user_input, suggested, trip,
+                                           add_return=False)

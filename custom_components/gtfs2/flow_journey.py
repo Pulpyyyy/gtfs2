@@ -118,7 +118,6 @@ class JourneyScreens:
 
     async def async_step_sensor(self, user_input: dict | None = None) -> FlowResult:
         """Name the sensor, now that both stops are known."""
-        errors: dict[str, str] = {}
         origin = self._user_inputs.get(CONF_ORIGIN, "")
         destination = self._user_inputs.get(CONF_DESTINATION, "")
         line = self._route_label
@@ -135,18 +134,25 @@ class JourneyScreens:
         suggested = " ".join(filter(None, (self._user_inputs.get(CONF_FILE), line, trip)))
         if self._return_trip is None:
             await self._find_return_trip(origin, destination)
+        return await self._name_and_create("sensor", user_input, suggested, trip, add_return=True)
+
+    async def _name_and_create(self, step_id, user_input, suggested, trip, add_return):
+        """The naming screen of a journey, bus or train: the name, and the
+        way back when there is one (ticked by default when add_return), then
+        the sensor created and the closing screen."""
+        errors: dict[str, str] = {}
 
         def _show(errors, previous=None):
             previous = previous or {}
             return self.async_show_form(
-                step_id="sensor",
+                step_id=step_id,
                 data_schema=vol.Schema(
                     {
                         vol.Required(
                             CONF_NAME, default=previous.get(CONF_NAME, suggested)
                         ): str,
                         **({vol.Optional(
-                            CONF_ADD_RETURN, default=True
+                            CONF_ADD_RETURN, default=add_return
                         ): selector.BooleanSelector()} if self._return_trip else {}),
                     },
                 ),
@@ -163,15 +169,6 @@ class JourneyScreens:
 
         # only used to branch, it must not end up in the entry
         add_return = user_input.pop(CONF_ADD_RETURN, False)
-        self._user_inputs.update(user_input)
-        _LOGGER.debug(f"UserInputs Sensor: {self._user_inputs}")
-        # the arrival was offered from the trips that ride it from the
-        # departure, so the journey exists; whether a bus is due right now is
-        # the coordinator's business: a sensor created in the evening, or on
-        # a day the line does not run, is still valid
-        # async_create_entry ends the flow, so the sensor is created through a
-        # second flow, the same way the return journey already is. That leaves
-        # this one alive to offer what comes next.
         # a name already taken would create an entry the sensor platform then
         # drops as a duplicate unique_id: say so here instead
         taken = {e.data.get(CONF_NAME) for e in self.hass.config_entries.async_entries(DOMAIN)}
@@ -186,9 +183,18 @@ class JourneyScreens:
         if add_return and name_in_use(return_name, taken | {user_input[CONF_NAME]}):
             errors["base"] = "return_name_taken"
             return _show(errors, user_input)
-        # the second flow can still refuse - a unique_id taken between the check
-        # above and here, or an import step that aborts - and announcing a
-        # sensor that was never created would send the user looking for it
+        self._user_inputs.update(user_input)
+        _LOGGER.debug(f"UserInputs Sensor: {self._user_inputs}")
+        # the arrival was offered from the trips that ride it from the
+        # departure, so the journey exists; whether a bus is due right now is
+        # the coordinator's business: a sensor created in the evening, or on
+        # a day the line does not run, is still valid
+        # async_create_entry ends the flow, so the sensor is created through a
+        # second flow, the same way the return journey already is. That leaves
+        # this one alive to offer what comes next.
+        # The second flow can still refuse - a unique_id taken between the
+        # check above and here, or an import step that aborts - and announcing
+        # a sensor that was never created would send the user looking for it
         result = await self.hass.config_entries.flow.async_init(
             DOMAIN,
             context={"source": config_entries.SOURCE_IMPORT},
