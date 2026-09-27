@@ -121,6 +121,40 @@ def test_a_branch_waiting_for_another_is_finished_through_it(tmp_path):
         schedule.engine.dispose()
 
 
+def test_the_branch_that_joins_comes_before_one_off_a_place_listed(tmp_path):
+    # O -> A -> B -> T -> U (three trips), O -> A -> C (one), and O -> E ->
+    # F -> T -> U (one). After B, T waits for F: E, which goes on to T,
+    # comes before C, though C hangs off A, a place listed already; C
+    # listed first cut B's side in two (GtfsDe 22884 from Zingster Str.,
+    # Zagreb 14 from Zapruđe)
+    stops = {"O": (45.0, 1.0), "A": (45.1, 1.1), "B": (45.2, 1.2), "T": (45.3, 1.3),
+             "U": (45.4, 1.4), "C": (45.2, 1.0), "E": (45.0, 1.2), "F": (45.1, 1.3)}
+    rides = [("B1", "OABTU"), ("B2", "OABTU"), ("B3", "OABTU"), ("C1", "OAC"), ("E1", "OEFTU")]
+    feed = {
+        "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,UTC\n",
+        "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\n" + "".join(
+            f"{s},{s} stop,{lat},{lon}\n" for s, (lat, lon) in stops.items()),
+        "routes.txt": "route_id,agency_id,route_short_name,route_long_name,route_type\nR,A,1,One,3\n",
+        "trips.txt": "route_id,service_id,trip_id,direction_id\n" + "".join(
+            f"R,S,{t},0\n" for t, _ride in rides),
+        "stop_times.txt": HEAD + "".join(_calls(t, list(ride)) for t, ride in rides),
+        "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                         "start_date,end_date\nS,1,1,1,1,1,1,1,20260901,20261231\n"),
+    }
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zout:
+        for name, body in feed.items():
+            zout.writestr(name, body)
+    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
+    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
+    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    try:
+        found = gtfs_helper.get_destination_stop_list(schedule, "R", None, "O")
+        assert [str(s).split(":")[0] for s in found] == ["A", "B", "E", "F", "T", "U", "C"]
+    finally:
+        schedule.engine.dispose()
+
+
 @pytest.mark.parametrize(("x_trips", "y_trips", "listed"), [
     (3, 1, ["X1", "X2", "Y1", "Y2"]),
     (1, 3, ["Y1", "Y2", "X1", "X2"]),

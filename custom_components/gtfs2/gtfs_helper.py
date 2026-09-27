@@ -1811,18 +1811,20 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
         ready = [p for p in reach if p not in placed and group[p] not in blocked]
         # nothing free: a loop's rotations order each other round
         pool = ready or [p for p in reach if p not in placed]
-        # what hangs off the latest place listed comes first: the branch in
-        # progress, then what branches off it further back, before another
-        # side of the line starts. Taking the busiest free place instead
-        # left a side's last pole, the other quay of a terminus, after the
-        # whole other way (TAO 40 listed Chèques Postaux quai C after the
-        # Gare d'Orléans end; the 48-feed sweep). Next, a branch that goes on
-        # to where the latest one is headed: a branch waiting for another to
-        # join it is finished through that one, not left for a third (Rome
-        # 404 from Fabriano listed Fabriano/Pergola, then the Urbania branch,
-        # then Corridonia, which joins Pergola's at Casale S. Basilio)
-        p = min(pool, key=lambda q: (-max((rank[x] for x in before[q] if x in rank), default=-1),
-                                     -max((joined.get(x, -1) for x in onward[q]), default=-1),
+        # what goes on to where the latest place listed is headed comes
+        # first: the branch in progress, a branch that joins it, then what
+        # branches off it further back, before another side of the line
+        # starts. Taking the busiest free place instead left a side's last
+        # pole, the other quay of a terminus, after the whole other way (TAO
+        # 40 listed Chèques Postaux quai C after the Gare d'Orléans end; the
+        # 48-feed sweep); and a branch waiting for another to join it was
+        # left for a third (Rome 404 from Fabriano listed Fabriano/Pergola,
+        # then the Urbania branch, then Corridonia, which joins Pergola's at
+        # Casale S. Basilio). Next, what hangs off the latest place listed:
+        # ahead of the branch that joins, it cut the side in progress in
+        # two (GtfsDe 22884, Zagreb 14)
+        p = min(pool, key=lambda q: (-max((joined.get(x, -1) for x in onward[q]), default=-1),
+                                     -max((rank[x] for x in before[q] if x in rank), default=-1),
                                      -weight[q], reach[q], position.get(q, 0)))
         rank[p] = len(order)
         for x in onward[p]:
