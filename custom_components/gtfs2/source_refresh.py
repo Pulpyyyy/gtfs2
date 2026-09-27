@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
 import logging
 import os
 from datetime import timedelta
@@ -63,7 +62,7 @@ from .freshness import (
     probe_source,
 )
 from .source_zip import refresh_datasource
-from .freshness import source_meta
+from .freshness import read_meta, source_meta, write_meta
 from .notifications import _async_notify, async_notify_refresh
 from .rt_source import journey_entries, source_readers, static_feed_config
 
@@ -222,25 +221,14 @@ def installed_meta(hass: HomeAssistant, file) -> dict:
     the zip they just fetched, so zip and database start out as the same
     version.
     """
-    try:
-        with open(_installed_meta_path(hass, file), encoding="utf-8") as meta_file:
-            meta = json.load(meta_file)
-        if isinstance(meta, dict):
-            return meta
-    except (OSError, ValueError):
-        pass
-    return source_meta(_zip_path(hass, file))
+    return read_meta(_installed_meta_path(hass, file)) or source_meta(_zip_path(hass, file))
 
 
 def _record_installed(hass: HomeAssistant, file) -> None:
     """After a successful rebuild, the database is what the zip is."""
     meta = dict(source_meta(_zip_path(hass, file)))
     meta["built_at"] = dt_util.utcnow().isoformat()
-    try:
-        with open(_installed_meta_path(hass, file), "w", encoding="utf-8") as out:
-            json.dump(meta, out, indent=1)
-    except OSError as ex:
-        _LOGGER.warning("Could not record the rebuild of %s: %s", file, ex)
+    write_meta(_installed_meta_path(hass, file), meta, "rebuild", file)
 
 
 def _carry_validators(hass: HomeAssistant, file) -> None:
@@ -252,22 +240,13 @@ def _carry_validators(hass: HomeAssistant, file) -> None:
     would differ from the zip's and read as a rebuild pending.
     """
     path = _installed_meta_path(hass, file)
-    try:
-        with open(path, encoding="utf-8") as meta_file:
-            meta = json.load(meta_file)
-    except (OSError, ValueError):
-        # no record of its own: the database is read off the zip's sidecar
-        return
+    # no record of its own: the database is read off the zip's sidecar
+    meta = read_meta(path)
     kept = source_meta(_zip_path(hass, file))
-    if (not isinstance(meta, dict) or not kept.get("sha256")
-            or meta.get("sha256") != kept["sha256"]):
+    if not meta or not kept.get("sha256") or meta.get("sha256") != kept["sha256"]:
         return
     meta.update({"etag": kept.get("etag"), "last_modified": kept.get("last_modified")})
-    try:
-        with open(path, "w", encoding="utf-8") as out:
-            json.dump(meta, out, indent=1)
-    except OSError as ex:
-        _LOGGER.warning("Could not record the validators of %s: %s", file, ex)
+    write_meta(path, meta, "validators", file)
 
 
 def rebuild_pending(hass: HomeAssistant, file) -> bool:

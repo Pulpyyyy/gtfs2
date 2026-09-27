@@ -208,11 +208,7 @@ def _record_validators(response, zip_path, meta):
              "last_modified": response.headers.get("Last-Modified")}
     if all(meta.get(key) == value for key, value in fresh.items()):
         return
-    try:
-        with open(source_meta_path(zip_path), "w", encoding="utf-8") as out:
-            json.dump({**meta, **fresh}, out, indent=1)
-    except OSError as ex:
-        _LOGGER.warning("Could not record the validators of %s: %s", zip_path, ex)
+    write_meta(source_meta_path(zip_path), {**meta, **fresh}, "validators", zip_path)
 
 
 def note_checked(zip_path):
@@ -227,11 +223,8 @@ def note_checked(zip_path):
     meta = source_meta(zip_path)
     if not meta:
         return
-    try:
-        with open(source_meta_path(zip_path), "w", encoding="utf-8") as out:
-            json.dump({**meta, "checked_at": dt_util.utcnow().isoformat()}, out, indent=1)
-    except OSError as ex:
-        _LOGGER.warning("Could not record the check of %s: %s", zip_path, ex)
+    write_meta(source_meta_path(zip_path),
+               {**meta, "checked_at": dt_util.utcnow().isoformat()}, "check", zip_path)
 
 
 def file_digest(path):
@@ -246,19 +239,34 @@ def source_meta_path(zip_path):
     return zip_path + ".meta.json"
 
 
-def source_meta(zip_path):
-    """What the sidecar remembers of the last successful download, or {}.
+def read_meta(path):
+    """The record a sidecar holds, or {}.
 
-    The sidecar is a cache of derived facts, never primary data: deleting
+    A sidecar is a cache of derived facts, never primary data: deleting
     it costs at most one refresh that could have been skipped, so a missing
     or unreadable file is an empty answer, not an error.
     """
     try:
-        with open(source_meta_path(zip_path), encoding="utf-8") as meta_file:
+        with open(path, encoding="utf-8") as meta_file:
             meta = json.load(meta_file)
         return meta if isinstance(meta, dict) else {}
     except (OSError, ValueError):
         return {}
+
+
+def write_meta(path, meta, what, name):
+    """Write a sidecar; one that cannot be written is said, as the record
+    of what (the download, the check...) of name, not raised."""
+    try:
+        with open(path, "w", encoding="utf-8") as out:
+            json.dump(meta, out, indent=1)
+    except OSError as ex:
+        _LOGGER.warning("Could not record the %s of %s: %s", what, name, ex)
+
+
+def source_meta(zip_path):
+    """What the sidecar remembers of the last successful download, or {}."""
+    return read_meta(source_meta_path(zip_path))
 
 
 # a download bigger than this is no feed anyone meant to serve: the
@@ -384,8 +392,4 @@ def adopt_zip(response, staged, zip_path):
         "size": size,
         "downloaded_at": dt_util.utcnow().isoformat(),
     }
-    try:
-        with open(source_meta_path(zip_path), "w", encoding="utf-8") as out:
-            json.dump(meta, out, indent=1)
-    except OSError as ex:
-        _LOGGER.warning("Could not record the download of %s: %s", zip_path, ex)
+    write_meta(source_meta_path(zip_path), meta, "download", zip_path)
