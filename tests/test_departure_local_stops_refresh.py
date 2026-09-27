@@ -1,0 +1,253 @@
+"""What a local stops sensor's refresh decides, one branch at a time.
+
+GTFSLocalStopUpdateCoordinator._async_update_data runs at the entry's own
+pace, 15 minutes unless its options say otherwise. It opens the source's
+schedule, lists nothing and says so once when there is none, carries the
+last answer over while the database is being written, and hands
+get_local_stops_next_departures the realtime settings of the source: the
+trip updates only, the key where it travels, and no feed at all when the
+service window is shut. test_stop_combined checks what the listing
+returns on captured cases; here each of those decisions is driven on its
+own.
+
+get_local_stops_next_departures, check_extracting, check_datasource_index,
+get_gtfs and rt_window_gate are replaced by stand-ins that note their call
+and answer what the test says. The coordinator, schedule_for and the
+realtime settings readers (rt_feed_config, with_query_key, rt_headers) run
+as they are.
+"""
+from __future__ import annotations
+
+import asyncio
+from collections import defaultdict
+import contextlib
+import datetime
+import logging
+import sys
+import types
+from unittest.mock import patch
+
+import pytest
+
+import ha_stub
+
+ha_stub.install()
+
+coordinator_mod = ha_stub.load("coordinator")
+const = sys.modules["gtfs2_under_test.const"]
+
+ENTRY = {
+    "name": "Around me",
+    "file": "town",
+    "device_tracker_id": "person.me",
+}
+
+SCHEDULE = types.SimpleNamespace(session=None)
+DEPARTURES = [{"stop_id": "S1", "departure": []}]
+
+
+class _Hass:
+    """What the refresh asks of Home Assistant: the config folder (a
+    scratch one), the executor (run in place) and the config entries,
+    none of them a datasource: the sensor's own options hold its realtime."""
+
+    def __init__(self, root) -> None:
+        self.config = types.SimpleNamespace(path=lambda *parts: str(root.joinpath(*parts)))
+        self.config_entries = types.SimpleNamespace(async_entries=lambda domain=None: [])
+
+    async def async_add_executor_job(self, fn, *args):
+        return fn(*args)
+
+
+class _Entry:
+    def __init__(self, options=None) -> None:
+        self.entry_id = "local"
+        self.data = dict(ENTRY)
+        self.options = dict(options or {})
+
+
+class Refresh:
+    """One local stops coordinator, and the stand-ins its refresh calls.
+
+    Each stand-in notes its call in `calls`, by name; `answers` holds what
+    they answer. The listing notes what the coordinator held when it ran:
+    `seen` keeps its realtime settings.
+    """
+
+    def __init__(self, tmp_path, options=None) -> None:
+        (tmp_path / "gtfs2").mkdir(exist_ok=True)
+        self.hass = _Hass(tmp_path)
+        self.entry = _Entry(options)
+        self.coordinator = coordinator_mod.GTFSLocalStopUpdateCoordinator(self.hass, self.entry)
+        self.calls = defaultdict(list)
+        self.seen = []
+        self.answers = {
+            "get_gtfs": SCHEDULE,
+            "check_extracting": False,
+            "rt_window_gate": None,
+        }
+        self.failing = False
+
+    def _stand_in(self, name):
+        def stand_in(*args):
+            self.calls[name].append(args)
+            return self.answers.get(name)
+        return stand_in
+
+    def _listing(self, coordinator):
+        self.calls["get_local_stops_next_departures"].append(coordinator)
+        self.seen.append({
+            "realtime": coordinator._realtime,
+            "trip_update_url": getattr(coordinator, "_trip_update_url", None),
+            "vehicle_position_url": getattr(coordinator, "_vehicle_position_url", None),
+            "alerts_url": getattr(coordinator, "_alerts_url", None),
+            "headers": getattr(coordinator, "_headers", None),
+            "group": getattr(coordinator, "_rt_group", None),
+        })
+        if self.failing:
+            raise RuntimeError("the stops could not be read")
+        return list(DEPARTURES)
+
+    def run(self):
+        """One refresh, its answer kept as Home Assistant would."""
+        stand_ins = {
+            "get_gtfs": self._stand_in("get_gtfs"),
+            "check_extracting": self._stand_in("check_extracting"),
+            "check_datasource_index": self._stand_in("check_datasource_index"),
+            "rt_window_gate": self._stand_in("rt_window_gate"),
+            "get_local_stops_next_departures": self._listing,
+        }
+        with contextlib.ExitStack() as stack:
+            for name, stand_in in stand_ins.items():
+                stack.enter_context(patch.object(coordinator_mod, name, stand_in))
+            result = asyncio.run(self.coordinator._async_update_data())
+        self.coordinator.data = result
+        return result
+
+
+# --- the pace and the settings -----------------------------------------------
+
+def test_the_pace_is_the_entry_s_own(tmp_path):
+    assert Refresh(tmp_path).coordinator.update_interval == datetime.timedelta(
+        minutes=const.DEFAULT_LOCAL_STOP_REFRESH_INTERVAL)
+    paced = Refresh(tmp_path, options={"local_stop_refresh_interval": 5})
+    assert paced.coordinator.update_interval == datetime.timedelta(minutes=5)
+
+
+def test_a_refresh_lists_the_stops_with_the_entry_s_settings(tmp_path):
+    refresh = Refresh(tmp_path, options={"offset": 3, "radius": 500})
+    result = refresh.run()
+    assert result["local_stops_next_departures"] == DEPARTURES
+    assert result["schedule"] is SCHEDULE
+    assert (result["offset"], result["radius"]) == (3, 500)
+    assert result["timerange"] == const.DEFAULT_LOCAL_STOP_TIMERANGE
+    assert result["device_tracker_id"] == "person.me"
+    assert result["extracting"] is False
+    assert len(refresh.calls["check_datasource_index"]) == 1
+    # no realtime on this entry: the listing reads no feed, and the
+    # window is not even looked at
+    assert refresh.seen == [{**refresh.seen[0], "realtime": False}]
+    assert refresh.calls["rt_window_gate"] == []
+
+
+# --- no database, or one being written ----------------------------------------
+
+def test_no_database_lists_nothing_and_says_so_once(tmp_path, caplog):
+    refresh = Refresh(tmp_path)
+    refresh.answers["get_gtfs"] = "not_built"
+    with caplog.at_level(logging.WARNING):
+        first = refresh.run()
+        refresh.run()
+    assert first["local_stops_next_departures"] == []
+    assert refresh.calls["get_local_stops_next_departures"] == []
+    assert refresh.calls["check_datasource_index"] == []
+    said = [r for r in caplog.records if "no usable schedule" in r.getMessage()]
+    assert len(said) == 1 and "not_built" in said[0].getMessage()
+
+
+def test_a_database_back_then_gone_again_is_said_again(tmp_path, caplog):
+    refresh = Refresh(tmp_path)
+    refresh.answers["get_gtfs"] = "not_built"
+    with caplog.at_level(logging.WARNING):
+        refresh.run()
+        refresh.answers["get_gtfs"] = SCHEDULE
+        assert refresh.run()["local_stops_next_departures"] == DEPARTURES
+        refresh.answers["get_gtfs"] = "not_built"
+        refresh.run()
+    assert len([r for r in caplog.records if "no usable schedule" in r.getMessage()]) == 2
+
+
+def test_a_database_being_written_keeps_the_last_answer(tmp_path):
+    refresh = Refresh(tmp_path)
+    refresh.run()
+    refresh.answers["check_extracting"] = True
+    result = refresh.run()
+    assert result["extracting"] is True
+    assert result["local_stops_next_departures"] == DEPARTURES
+    # the listing is not run against a database in the middle of a write
+    assert len(refresh.calls["get_local_stops_next_departures"]) == 1
+
+
+def test_a_listing_that_fails_fails_the_refresh(tmp_path):
+    refresh = Refresh(tmp_path)
+    refresh.failing = True
+    with pytest.raises(coordinator_mod.UpdateFailed):
+        refresh.run()
+
+
+# --- the realtime feeds the listing reads --------------------------------------
+
+REALTIME = {
+    "real_time": True,
+    "trip_update_url": "http://rt.test/trips",
+    "vehicle_position_url": "http://rt.test/vehicles",
+    "alerts_url": "http://rt.test/alerts",
+}
+
+
+def test_realtime_reads_the_trip_updates_by_trip_and_no_vehicle(tmp_path):
+    refresh = Refresh(tmp_path, options=REALTIME)
+    refresh.run()
+    seen = refresh.seen[0]
+    assert seen["realtime"] is True
+    assert seen["trip_update_url"] == "http://rt.test/trips"
+    assert seen["group"] == "trip"
+    # a local stops sensor owns no route to draw: the vehicle feed is not
+    # read, nor any route's map file written
+    assert seen["vehicle_position_url"] is None
+    assert seen["headers"] == {}
+
+
+def test_a_key_in_the_query_joins_the_trip_updates_url(tmp_path):
+    refresh = Refresh(tmp_path, options={
+        **REALTIME, "api_key": "k+1", "api_key_name": "token", "api_key_location": "query_string"})
+    refresh.run()
+    assert refresh.seen[0]["trip_update_url"] == "http://rt.test/trips?token=k%2B1"
+    assert refresh.seen[0]["headers"] == {}
+
+
+def test_a_key_in_a_header_goes_in_the_headers(tmp_path):
+    refresh = Refresh(tmp_path, options={
+        **REALTIME, "api_key": "k1", "api_key_name": "x-key", "api_key_location": "header"})
+    refresh.run()
+    assert refresh.seen[0]["trip_update_url"] == "http://rt.test/trips"
+    assert refresh.seen[0]["headers"] == {"x-key": "k1"}
+
+
+def test_a_source_without_trip_updates_reads_no_feed(tmp_path):
+    # alerts or vehicles alone say nothing of the departures around a stop:
+    # reading them would download a feed that is not there
+    refresh = Refresh(tmp_path, options={**REALTIME, "trip_update_url": None})
+    refresh.run()
+    assert refresh.seen[0]["realtime"] is False
+    assert refresh.calls["rt_window_gate"] == []
+
+
+def test_outside_the_service_window_no_feed_is_read(tmp_path):
+    refresh = Refresh(tmp_path, options=REALTIME)
+    refresh.answers["rt_window_gate"] = "no service before 05:00"
+    result = refresh.run()
+    assert refresh.seen[0]["realtime"] is False
+    assert result["local_stops_next_departures"] == DEPARTURES
+    # asked about the url the listing would have fetched
+    assert refresh.calls["rt_window_gate"][0][3] == "http://rt.test/trips"
