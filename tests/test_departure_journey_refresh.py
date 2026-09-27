@@ -181,7 +181,9 @@ class Refresh:
         coordinator._feed_entities = ["trip update"]
         coordinator._rt_cancelled = dict(self.answers["cancelled"])
         departure_time = NOW.replace(tzinfo=UTC) + datetime.timedelta(minutes=22)
-        return {const.ATTR_NEXT_RT: [departure_time]}
+        # the trip behind it: the one shown, unless the test says another
+        trip = self.answers.get("rt_trip") or (self.answers["get_next_departure"] or {}).get("trip_id")
+        return {const.ATTR_NEXT_RT: [departure_time], const.ATTR_NEXT_RT_TRIPS: [trip]}
 
     def _patches(self):
         stand_ins = {
@@ -327,6 +329,20 @@ def test_a_departure_gone_but_late_on_the_feed_is_kept(tmp_path):
     result = refresh.run(later(5))
     assert refresh.count("get_next_departure") == 1
     assert result["next_departure"]["trip_id"] == "T1"
+
+
+def test_a_departure_gone_is_read_again_though_another_trip_is_coming(tmp_path):
+    # on a frequent line the feed always has a trip coming: the next one
+    # says nothing of the departure shown (IDFM metro 4 kept 09:17:56 on
+    # the board at 09:27)
+    refresh = Refresh(tmp_path, options=REALTIME)
+    refresh.answers["get_next_departure"] = departure(minutes=3)
+    refresh.answers["rt_trip"] = "T2"
+    refresh.run()
+    refresh.answers["get_next_departure"] = departure("T2", minutes=12)
+    result = refresh.run(later(5))
+    assert refresh.count("get_next_departure") == 2
+    assert result["next_departure"]["trip_id"] == "T2"
 
 
 def test_a_failed_reading_fails_the_update(tmp_path):

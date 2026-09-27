@@ -30,12 +30,13 @@ from .const import (
     DEFAULT_VEHICLE_MAX_AGE,
     CONF_ALERTS_URL,
     ATTR_NEXT_RT,
+    ATTR_NEXT_RT_TRIPS,
     ICON,
     ICONS
 )    
 from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
-from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck
+from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
 from .refresh_steps import drop_struck_trips, next_service_date_for
@@ -98,15 +99,20 @@ def shown_departure_left(previous, now) -> bool:
     The departures are read again at the static refresh interval, 15
     minutes by default, and until then the sensor kept its state on a bus
     already gone. A departure whose time is past is read again at once,
-    unless the realtime still has one coming: a late bus stays on the
-    board as long as the feed says it has not left.
+    unless the realtime still has that trip coming: a late bus stays on the
+    board as long as the feed says it has not left. Another trip coming is
+    no reason: on a frequent line the feed always has one, and IDFM metro
+    4 kept a 09:17:56 departure on the board at 09:27.
     """
-    shown = (previous.get("next_departure") or {}).get("departure_time")
+    departure = previous.get("next_departure") or {}
+    shown = departure.get("departure_time")
     if not (hasattr(shown, "tzinfo") and shown.tzinfo is not None) or shown > now:
         return False
-    coming = (previous.get("next_departure_realtime_attr") or {}).get(ATTR_NEXT_RT) or []
+    realtime = previous.get("next_departure_realtime_attr") or {}
+    coming = zip(realtime.get(ATTR_NEXT_RT) or [], realtime.get(ATTR_NEXT_RT_TRIPS) or [])
     return not any(hasattr(moment, "tzinfo") and moment.tzinfo is not None and moment > now
-                   for moment in coming)
+                   and _names_trip(departure.get("trip_id"), trip)
+                   for moment, trip in coming)
 
 
 class GTFSUpdateCoordinator(DataUpdateCoordinator):
