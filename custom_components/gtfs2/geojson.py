@@ -850,8 +850,8 @@ def write_timetable_file(hass, data, today, zip_path):
     out of listed runs. The card reads the sensor first, realtime and all,
     and this file past it. Written from the same query as the sensor, so
     both agree on the calendar, the places and the runs after midnight;
-    rewritten when the service day or the zip changes (see the
-    coordinator), not on every refresh.
+    rewritten when the service day, the zip or the database changes (see
+    the coordinator), not on every refresh.
 
     today is the local service date as YYYY-MM-DD. Returns the file name.
     """

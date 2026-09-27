@@ -129,3 +129,60 @@ def test_the_refresh_does_not_wait_for_the_timetable(tmp_path, monkeypatch):
         assert updates and updates[-1]["timetable_file"] == "timetable_metro_4.json"
 
     asyncio.run(run())
+
+
+def test_a_rebuilt_database_writes_the_timetable_again(tmp_path, monkeypatch):
+    """Same day, same zip, a new database: the runs are read from it.
+
+    A refresh adopts the zip first and builds the database after (IDFM
+    2026-09-27: 12:40, then 13:13). A timetable written in between listed
+    the old edition's runs, and nothing wrote it again before the next day.
+    """
+    import asyncio
+    import types
+
+    import sys
+
+    coordinator_mod = ha_stub.load("coordinator")
+    exports_mod = sys.modules[coordinator_mod.__name__.rsplit(".", 1)[0] + ".exports"]
+    written = []
+    monkeypatch.setattr(exports_mod, "write_timetable_file",
+                        lambda hass, data, today, zip_path: written.append(data["name"]))
+    (tmp_path / "gtfs2").mkdir()
+    (tmp_path / "gtfs2" / "feed.zip").write_bytes(b"zip")
+
+    async def run():
+        async def executor(fn, *args):
+            return fn(*args)
+
+        def background(coro, name):
+            return asyncio.get_running_loop().create_task(coro)
+
+        me = object.__new__(coordinator_mod.GTFSUpdateCoordinator)
+        me.hass = types.SimpleNamespace(
+            config=types.SimpleNamespace(path=lambda *parts: str(tmp_path.joinpath(*parts))),
+            async_add_executor_job=executor, async_create_background_task=background)
+        me._timetable_export = None
+        me._timetable_task = None
+        me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "feed", "name": "Métro 4"}
+        me.async_update_listeners = lambda: None
+        timetable = tmp_path / "www" / "gtfs2" / "timetable_metro_4.json"
+
+        async def refresh(edition):
+            me._pygtfs_edition = edition
+            await exports_mod.export_timetable(me, {"name": "Métro 4"})
+            if me._timetable_task is not None:
+                await me._timetable_task
+            # the writer is stubbed: the file it would leave behind
+            timetable.parent.mkdir(parents=True, exist_ok=True)
+            timetable.write_text("{}")
+
+        await refresh("1:1:1")
+        await refresh("1:1:1")
+        assert written == ["Métro 4"]
+        await refresh("2:2:2")
+        assert written == ["Métro 4", "Métro 4"]
+        await refresh("2:2:2")
+        assert written == ["Métro 4", "Métro 4"]
+
+    asyncio.run(run())

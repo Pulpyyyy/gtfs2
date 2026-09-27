@@ -157,10 +157,10 @@ async def export_timetable(coordinator, data) -> None:
     """Write the timetable file: every departure of the entry over the
     service day under way and the two after it (see write_timetable_file).
 
-    It changes with the service day and with the zip, and with nothing
-    else: rewritten on the first static refresh of a new day, when the
-    zip is replaced, and when the file is gone, never on the refreshes
-    in between. The attribute is set once the file is written, unlike
+    It changes with the service day, the zip and the database, and with
+    nothing else: rewritten on the first static refresh of a new day, when
+    the zip or the database is replaced, and when the file is gone, never
+    on the refreshes in between. The attribute is set once the file is written, unlike
     the leg file's: a card reads the sensor first and this file only
     past it, and one that is not there is better not named at all.
 
@@ -180,7 +180,10 @@ async def export_timetable(coordinator, data) -> None:
     file = os.path.join(coordinator.hass.config.path(DEFAULT_PATH_GEOJSON), name)
     zip_path = os.path.join(coordinator.hass.config.path(coordinator._data["gtfs_dir"]), str(coordinator._data["file"]) + ".zip")
     edition, present = await coordinator.hass.async_add_executor_job(_route_export_state, zip_path, file)
-    export_key = f"{today}:{edition}"
+    # the database edition too: the runs are read from it, and a refresh
+    # adopts the zip first and builds the database after, so a file
+    # written in between listed the old edition's runs until the next day
+    export_key = f"{today}:{edition}:{getattr(coordinator, '_pygtfs_edition', None)}"
     if export_key == coordinator._timetable_export and present:
         # written already: named again, the refresh built a fresh _data
         coordinator._data["timetable_file"] = name
