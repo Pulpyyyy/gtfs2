@@ -202,28 +202,6 @@ def _note_publication(key, published):
     _FEED_PUBLISHED[key] = (published, beat)
 
 
-def _feed_published(content):
-    """A protobuf feed's header.timestamp, None for json or when it gives
-    none. Read off the header alone, which a FeedMessage writes first
-    (field 1), rather than off the whole feed."""
-    try:
-        if content[:1] != b"\x0a":
-            return None
-        size, shift, start = 0, 0, 1
-        while True:
-            byte = content[start]
-            start += 1
-            size |= (byte & 0x7F) << shift
-            shift += 7
-            if not byte & 0x80:
-                break
-        header = gtfs_realtime_pb2.FeedHeader()  # type: ignore
-        header.ParseFromString(content[start:start + size])
-        return int(header.timestamp) or None
-    except Exception:  # pylint: disable=broad-except
-        return None
-
-
 def _forget_old_feeds(current):
     """Drop the feeds nothing has asked for in a while.
 
@@ -325,9 +303,10 @@ def _json_feed_entities(url, label, content):
 
 
 def _protobuf_feed_entities(url, label, content):
-    """The entities of a protobuf feed, the trip updates and the vehicles
-    as dicts, the alerts as messages; None, the failure said, when it is
-    not one."""
+    """(the entities of a protobuf feed, the trip updates and the vehicles
+    as dicts, the alerts as messages; when its header says it was
+    published, None when it does not). (None, None), the failure said,
+    when it is not one."""
     # Imported here and not at module level: the class lives in protobuf,
     # which arrives with gtfs-realtime-bindings, and the synthetic suite
     # stubs those bindings out.
@@ -344,12 +323,12 @@ def _protobuf_feed_entities(url, label, content):
             message = gtfs_realtime_pb2.FeedMessage()  # type: ignore
             message.ParseFromString(content)
             _say_recovered(url, label)
-            return message.entity
+            return message.entity, int(message.header.timestamp) or None
     except DecodeError:
         _say_failure(url, "Trying to update %s, and got a 200 whose body is neither json nor GTFS-RT protobuf", label)
-        return None
+        return None, None
     _say_recovered(url, label)
-    return feed.get('entity')
+    return feed.get('entity'), int((feed.get("header") or {}).get("timestamp") or 0) or None
 
 
 def _fetch_gtfs_feed_entities(url: str, headers, label: str):
@@ -368,7 +347,7 @@ def _fetch_feed(url: str, headers, label: str):
     # megabytes of binary, then parsed the result twice, for nothing
     if content.lstrip()[:1] in (b"{", b"["):
         return _json_feed_entities(url, label, content), None
-    return _protobuf_feed_entities(url, label, content), _feed_published(content)
+    return _protobuf_feed_entities(url, label, content)
 
 
 def get_next_services(self):
@@ -1286,6 +1265,8 @@ def convert_gtfs_realtime_positions_to_json(gtfs_realtime_data):
     feed.ParseFromString(gtfs_realtime_data)
 
     json_data = {
+        # when the feed was published, for the feed cache
+        "header": {"timestamp": feed.header.timestamp},
         "entity": []
     }
     for ent in feed.entity:

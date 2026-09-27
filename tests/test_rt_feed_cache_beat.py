@@ -119,8 +119,16 @@ def test_a_reading_that_missed_a_publication_does_not_stretch_the_beat(host):
     assert host.downloads == [1000, 1060, 1180, 1251]
 
 
-def test_the_timestamp_is_read_off_the_header_alone():
-    assert gtfs_rt_helper._feed_published(_feed(1790509440)) == 1790509440
-    assert gtfs_rt_helper._feed_published(_feed(0)) is None
-    assert gtfs_rt_helper._feed_published(b'{"header": {"timestamp": 5}}') is None
-    assert gtfs_rt_helper._feed_published(b"\x0a\xff") is None
+def _published(monkeypatch, body, label="trip_data"):
+    monkeypatch.setattr(gtfs_rt_helper, "_feed_body", lambda url, headers, label: body)
+    return gtfs_rt_helper._fetch_feed(URL, {}, label)[1]
+
+
+def test_the_timestamp_is_read_off_the_header(monkeypatch):
+    assert _published(monkeypatch, _feed(1790509440)) == 1790509440
+    assert _published(monkeypatch, _feed(1790509440), "vehicle_positions") == 1790509440
+    assert _published(monkeypatch, _feed(1790509440), "alerts") == 1790509440
+    assert _published(monkeypatch, _feed(0)) is None
+    assert _published(monkeypatch, b'{"header": {"timestamp": 5}}') is None
+    # a body cut short is no feed: no timestamp either
+    assert _published(monkeypatch, b"\x0a\xff") is None
