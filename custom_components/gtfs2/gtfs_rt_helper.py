@@ -631,22 +631,22 @@ def _follows_trip(self, group, route_id, direction_id, trip_id, entity_id):
             or trip_id in (getattr(self, "_trip_list", None) or ()))
 
 
-def _stop_time_and_delay(stop, trip_id, scheduled):
-    ''' When the vehicle leaves the stop, and its delay '''
-    # the later of the two 'time' attributes is the one to announce
-    # e.g. at a terminus/layover where the vehicle stands several
-    # minutes at its bay
-    # a json feed may give one of the two only, and
-    # writes its int64 times as strings
+def stop_update_clock(stop):
+    ''' (time, delay) of a stop update: the departure's when it says
+    anything, the arrival's otherwise; 0 for what it leaves out '''
+    # a train that arrives late and makes up time while it stands at
+    # the stop leaves with the departure's delay, not the arrival's.
+    # A json feed writes its int64 times as strings
     arrival = stop.get("arrival") or {}
     departure = stop.get("departure") or {}
-    stop_time = max(int(arrival.get("time") or 0),
-                    int(departure.get("time") or 0))
+    told = departure if (departure.get("time") or departure.get("delay")) else arrival
+    return (int(departure.get("time") or arrival.get("time") or 0),
+            int(told.get("delay") or 0))
 
-    if int(departure.get("delay") or 0) >= int(arrival.get("delay") or 0):
-        delay = int(departure.get("delay") or 0)
-    else:
-        delay = int(arrival.get("delay") or 0)
+
+def _stop_time_and_delay(stop, trip_id, scheduled):
+    ''' When the vehicle leaves the stop, and its delay '''
+    stop_time, delay = stop_update_clock(stop)
 
     if not stop_time and delay and scheduled.get(trip_id):
         # the feed gives the delay and no time: read as
