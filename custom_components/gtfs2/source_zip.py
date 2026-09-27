@@ -19,16 +19,12 @@ import zipfile
 import pygtfs
 import requests
 
-from .const import (CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME,
-                    CONF_INNER_ZIP)
+from .const import CONF_INNER_ZIP
 from .direction_repair import repair_trip_directions
-from .freshness import adopt_zip, stage_zip
+from .freshness import adopt_zip, open_source, source_request, stage_zip
 from .gtfs_db import (import_routes, optimise_datasource, real_path, remove_files, routes_in,
                       swap_in)
-from .key_mask import fetch
-from .rt_source import with_query_key
-from .zip_peek import (extract_member, inner_zips, inner_zips_in_file,
-                       open_member)
+from .zip_peek import extract_member, inner_zips, inner_zips_in_file
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
 from .gtfs_helper import IMPORT_IGNORED, drop_import_indexes
@@ -112,36 +108,6 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
     return ok
 
 
-def _source_request(data):
-    """The url and headers a source's zip is fetched with, api key included."""
-    url = data["url"]
-    headers = {"User-Agent": "home-assistant-gtfs2"}
-    key = data.get(CONF_API_KEY)
-    url = with_query_key(url, data)
-    if key and data.get(CONF_API_KEY_LOCATION) == "header":
-        headers[(data.get(CONF_API_KEY_NAME) or "api_key")] = key
-    return url, headers
-
-
-def _open_source(data, url, headers):
-    """The response whose body is this source's feed.
-
-    The url's own body, or the member of it the source was built from: one
-    call that both the first download and every refresh go through, so a
-    source that named a network keeps getting that network. A host that
-    stops answering ranges falls back to the whole envelope, which
-    member_out_of then thins down to the same member.
-    """
-    inner = data.get(CONF_INNER_ZIP)
-    if inner:
-        member = open_member(url, headers, inner)
-        if member is not None:
-            return member
-        _LOGGER.info("Fetching the whole envelope to take %s out of it", inner)
-    return fetch("get", url, headers=headers, allow_redirects=True, timeout=15,
-                 stream=True)
-
-
 def _offer_or_take(data, zip_path):
     """Handle a zip on disk that holds zips: offer its networks, or take one.
 
@@ -218,7 +184,7 @@ def ensure_source_zip(hass, path, data):
         # of zips holds one network per member, and the user picks which
         # before a byte of the wrong one is downloaded
         if not data.get(CONF_INNER_ZIP):
-            inner = inner_zips(*_source_request(data))
+            inner = inner_zips(*source_request(data))
             if inner:
                 data["inner_zips"] = inner
                 return "zip_holds_zips"
@@ -336,8 +302,8 @@ def _fetch_zip(data, zip_path, envelope_ok=False):
     a copy of this of its own, and left one when a download broke off.
     """
     try:
-        url, headers = _source_request(data)
-        r = _open_source(data, url, headers)
+        url, headers = source_request(data)
+        r = open_source(data, url, headers)
         r.raise_for_status()
         staged = stage_zip(r, zip_path, data.get(CONF_INNER_ZIP), envelope_ok=envelope_ok)
         if staged is None:

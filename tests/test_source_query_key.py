@@ -43,5 +43,6 @@ def test_missing_name_falls_back_on_the_default():
 def test_static_requests_use_it():
     data = {**IN_QUERY, "url": "https://h/feed?format=zip", "api_key": "a+b"}
     expected = "https://h/feed?format=zip&apikey=a%2Bb"
-    assert source_zip._source_request(data)[0] == expected
-    assert freshness._request_parts(data)[0] == expected
+    # the download, the refresh and the check all ask through this one
+    assert freshness.source_request(data)[0] == expected
+    assert source_zip.source_request is freshness.source_request

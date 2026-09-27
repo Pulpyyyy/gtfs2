@@ -43,8 +43,8 @@ PROBE_UNKNOWN = "unknown"
 PROBE_ERROR = "error"
 
 
-def _request_parts(data):
-    """The url and headers a source is asked with, api key included."""
+def source_request(data):
+    """The url and headers a source's feed is asked with, api key included."""
     url = data["url"]
     headers = {"User-Agent": "home-assistant-gtfs2"}
     key = data.get(CONF_API_KEY)
@@ -90,7 +90,7 @@ def probe_source(data, zip_path):
         result = PROBE_UNKNOWN if meta.get("sha256") else PROBE_CHANGED
         return {"result": result, "etag": None, "last_modified": None}
 
-    url, headers = _request_parts(data)
+    url, headers = source_request(data)
     headers.update(conditions)
     try:
         response = fetch("head", url, headers=headers, allow_redirects=True,
@@ -129,6 +129,25 @@ def probe_source_freshness(data, zip_path):
     return probe_source(data, zip_path)["result"]
 
 
+def open_source(data, url, headers):
+    """The response whose body is this source's feed.
+
+    The url's own body, or the member of it the source was built from: one
+    call that the first download, every refresh and every check go through,
+    so a source that named a network keeps getting that network, asked by
+    its byte range. A host that stops answering ranges falls back to the
+    whole envelope, which member_out_of then thins down to the same member.
+    """
+    inner = data.get(CONF_INNER_ZIP)
+    if inner:
+        member = open_member(url, headers, inner)
+        if member is not None:
+            return member
+        _LOGGER.info("Fetching the whole envelope to take %s out of it", inner)
+    return fetch("get", url, headers=headers, allow_redirects=True, timeout=30,
+                 stream=True)
+
+
 def fetch_if_new(data, zip_path, adopt=True):
     """Download the feed and keep it only when it really is new.
 
@@ -148,14 +167,10 @@ def fetch_if_new(data, zip_path, adopt=True):
     source that only notifies keeps the zip its database was built from,
     so a line added from the zip meanwhile comes from the same edition.
     """
-    url, headers = _request_parts(data)
+    url, headers = source_request(data)
     inner = data.get(CONF_INNER_ZIP)
     try:
-        # a source built from one network of an envelope asks for that
-        # network again, by its byte range, not for the envelope
-        response = (inner and open_member(url, headers, inner)) or fetch(
-            "get", url, headers=headers, allow_redirects=True,
-            timeout=30, stream=True)
+        response = open_source(data, url, headers)
         response.raise_for_status()
     except Exception as ex:  # pylint: disable=broad-except
         # a host that does not answer, at every check it fails: one line
