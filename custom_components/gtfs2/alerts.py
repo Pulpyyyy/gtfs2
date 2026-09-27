@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 
 import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text as sql_text
@@ -550,20 +551,93 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
     the trip updates are (_same_route): a feed that qualifies its ids
     named the line and was read as another one.
     """
+    return _scope_of([_entity_fields(x) for x in alert.informed_entity],
+                     origin_ids, destination_ids, route_id, trip_id,
+                     journey_ids, trip_ids, route_facts, direction)
+
+
+def _scope_of(entities, origin_ids, destination_ids, route_id, trip_id=None,
+              journey_ids=None, trip_ids=(), route_facts=(None, None), direction=None):
+    """_alert_scope over the fields of an alert's informed entities, read
+    once for the feed (_prepared)."""
     journey_ids = journey_ids or set()
     direction = str(direction) if str(direction) in ("0", "1") else None
     hits = {"origin": False, "destination": False, "route": False,
             "trip": False, "journey": False, "trips": [], "stops": []}
     followed = [str(t) for t in [trip_id, *trip_ids] if t]
     journey_stops = set(origin_ids) | set(destination_ids) | set(journey_ids)
-    for x in alert.informed_entity:
-        fields = _entity_fields(x)
+    for fields in entities:
         if _about_something_else(fields, route_id, route_facts, direction):
             continue
         if fields[2] and _read_trip_entity(fields, hits, trip_id, followed, journey_stops):
             continue
         _read_stop_entity(fields, hits, origin_ids, destination_ids, journey_ids)
     return hits
+
+
+# Every sensor of a source is handed the same alert feed while the feed
+# cache holds it, and each one walked every informed entity of it through
+# protobuf again, every minute: 60 ms a sensor on SNCF's 548 alerts and
+# 10,404 entities. The fields are now read once per feed, with indexes a
+# sensor picks its candidates from. Kept for the last few feeds, each
+# with the feed itself so its id is not reused while it is here
+_PREPARED: dict[int, tuple] = {}
+_PREPARED_GUARD = threading.Lock()
+_PREPARED_KEEP = 8
+
+
+def _prepared(feed_entities):
+    """(alerts, by_trip, by_stop, by_route, wide) of a feed: each alert
+    with the fields of its informed entities (_entity_fields), in the
+    feed's order, and which of them an entity names by trip, by stop, by
+    line with no stop, or by nothing narrower than an operator or a kind
+    of line."""
+    with _PREPARED_GUARD:
+        found = _PREPARED.get(id(feed_entities))
+    if found is not None and found[0] is feed_entities:
+        return found[1]
+    alerts, by_trip, by_stop, by_route, wide = [], {}, {}, {}, set()
+    for entity in feed_entities:
+        if not entity.HasField("alert"):
+            continue
+        n = len(alerts)
+        fields = [_entity_fields(x) for x in entity.alert.informed_entity]
+        alerts.append((entity.alert, fields))
+        for e_stop, e_route, e_trip, e_agency, e_type, _direction in fields:
+            if e_trip:
+                by_trip.setdefault(e_trip, set()).add(n)
+            if e_stop is not None:
+                by_stop.setdefault(e_stop, set()).add(n)
+            elif e_route is not None:
+                by_route.setdefault(e_route, set()).add(n)
+            elif e_agency is not None or e_type is not None:
+                wide.add(n)
+    prepared = (alerts, by_trip, by_stop, by_route, wide)
+    with _PREPARED_GUARD:
+        while len(_PREPARED) >= _PREPARED_KEEP:
+            _PREPARED.pop(next(iter(_PREPARED)))
+        _PREPARED[id(feed_entities)] = (feed_entities, prepared)
+    return prepared
+
+
+def _candidates(prepared, followed, stops, route_id):
+    """The alerts of a prepared feed that can say anything of a journey, in
+    the feed's order: every other one names none of its trips (by
+    _same_trip, the id or the id an alert cuts before its agency), none of
+    its stops, not its line, and nothing as wide as an operator."""
+    from .gtfs_rt_helper import _same_route  # it imports this module
+    _alerts, by_trip, by_stop, by_route, wide = prepared
+    found = set(wide)
+    for trip in followed:
+        for cut in range(1, len(trip) + 1):
+            if cut == len(trip) or trip[cut].isdigit():
+                found.update(by_trip.get(trip[:cut], ()))
+    for stop in stops:
+        found.update(by_stop.get(stop, ()))
+    for route, named in by_route.items():
+        if _same_route(route_id, route):
+            found.update(named)
+    return sorted(found)
 
 
 def _board_trips(coordinator):
@@ -684,16 +758,16 @@ def journey_alerts(coordinator, feed_entities):
     now_ts, until_ts = _ride_span(data)
     origin_alerts = []
     destination_alerts = []
-    for entity in feed_entities:
-        if not entity.HasField("alert"):
-            continue
-        alert = entity.alert
+    prepared = _prepared(feed_entities)
+    followed = [t for t in [head, *listed] if t]
+    for n in _candidates(prepared, followed, origin_ids | destination_ids | journey_ids, route_id):
+        alert, fields = prepared[0][n]
         if _alert_when(alert, now_ts, until_ts) == "over":
             # it applied to a day gone by; the feed drops it later
             continue
-        hits = _alert_scope(alert, origin_ids, destination_ids,
-                            route_id, head, journey_ids, listed,
-                            route_facts, getattr(coordinator, "_direction", None))
+        hits = _scope_of(fields, origin_ids, destination_ids,
+                         route_id, head, journey_ids, listed,
+                         route_facts, getattr(coordinator, "_direction", None))
         if not any(hits.values()):
             continue
         item = _alert_item(alert, hits, data, language, head)
