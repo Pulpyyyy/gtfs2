@@ -96,6 +96,18 @@ FEED_FAIL_TTL = 15
 # was read from, so a rotating query key, a source removed or a feed url
 # edited left its last answer in memory for the life of the process
 FEED_CACHE_KEEP = 600
+# A feed says when it was published (header.timestamp), and most publish
+# on a steady beat: IDFM's 7.3 MB gateway once a minute, 2 to 10 s past
+# it (measured 2026-09-27). The coordinators tick once a minute each but
+# at the second they were set up, so a 30 s cache let two downloads a
+# minute through, one of them the same bytes again. A feed whose beat is
+# known is kept until its next publication is due, plus the lag it
+# shows, and never longer than FEED_CACHE_MAX_AGE; one without a
+# timestamp keeps the 30 s. {key: (published, beat)}, epoch seconds.
+_FEED_PUBLISHED: dict[tuple[str, str, str], tuple[int, int | None]] = {}
+FEED_PUBLISH_LAG = 10
+FEED_CACHE_MAX_AGE = 75
+FEED_BEAT_MAX = 300
 
 RT_USER_AGENT = "GTFS2-HomeAssistant/1.0 (+https://github.com/vingerha/gtfs2)"
 
@@ -133,11 +145,9 @@ def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
 
     with lock:
         cached = _FEED_CACHE.get(key)
-        if cached is not None:
-            age = time.time() - cached[0]
-            if age < FEED_CACHE_TTL:
-                _LOGGER.debug("GTFS RT cache hit for %s (%s), age %.1fs", label, url, age)
-                return cached[1]
+        if cached is not None and _still_current(key, cached[0]):
+            _LOGGER.debug("GTFS RT cache hit for %s (%s), age %.1fs", label, url, time.time() - cached[0])
+            return cached[1]
 
         failed = _FEED_FAILED.get(key)
         if failed is not None and time.time() - failed < FEED_FAIL_TTL:
@@ -148,16 +158,70 @@ def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
                           label, url, time.time() - failed)
             return None
 
-        entities = _fetch_gtfs_feed_entities(url, headers, label)
+        entities, published = _fetch_feed(url, headers, label)
         # a failed fetch returns None: it is not kept as data, only as the
         # memory of a failure, so the next caller gets a real attempt once
         # the short wait is over rather than a stale answer
         if entities is not None:
+            _note_publication(key, published)
             _FEED_CACHE[key] = (time.time(), entities)
             _FEED_FAILED.pop(key, None)
         else:
             _FEED_FAILED[key] = time.time()
         return entities
+
+
+def _still_current(key, fetched):
+    """Whether a feed read at `fetched` is still the latest one: younger
+    than FEED_CACHE_TTL, or, its beat known, its next publication not due
+    yet (_FEED_PUBLISHED)."""
+    age = time.time() - fetched
+    if age < FEED_CACHE_TTL:
+        return True
+    published, beat = _FEED_PUBLISHED.get(key, (None, None))
+    if not published or not beat or age >= FEED_CACHE_MAX_AGE:
+        return False
+    return time.time() < published + beat + FEED_PUBLISH_LAG
+
+
+def _note_publication(key, published):
+    """Keep a feed's publication time and learn its beat: the shortest gap
+    seen between two publications, so a reading that missed one does not
+    stretch it."""
+    if not published:
+        _FEED_PUBLISHED.pop(key, None)
+        return
+    last, beat = _FEED_PUBLISHED.get(key, (None, None))
+    if last and published > last:
+        gap = published - last
+        beat = min(beat, gap) if beat else gap
+        beat = beat if beat <= FEED_BEAT_MAX else None
+    elif last and published < last:
+        # a feed going back in time: start again
+        beat = None
+    _FEED_PUBLISHED[key] = (published, beat)
+
+
+def _feed_published(content):
+    """A protobuf feed's header.timestamp, None for json or when it gives
+    none. Read off the header alone, which a FeedMessage writes first
+    (field 1), rather than off the whole feed."""
+    try:
+        if content[:1] != b"\x0a":
+            return None
+        size, shift, start = 0, 0, 1
+        while True:
+            byte = content[start]
+            start += 1
+            size |= (byte & 0x7F) << shift
+            shift += 7
+            if not byte & 0x80:
+                break
+        header = gtfs_realtime_pb2.FeedHeader()  # type: ignore
+        header.ParseFromString(content[start:start + size])
+        return int(header.timestamp) or None
+    except Exception:  # pylint: disable=broad-except
+        return None
 
 
 def _forget_old_feeds(current):
@@ -172,6 +236,7 @@ def _forget_old_feeds(current):
             del _FEED_CACHE[key]
             _FEED_CACHE_LOCKS.pop(key, None)
             _FEED_FAILED.pop(key, None)
+            _FEED_PUBLISHED.pop(key, None)
             _LOGGER.debug("Forgot the feed nothing reads any more: %s", key[2])
     for key, when in list(_FEED_FAILED.items()):
         if key != current and when < old:
@@ -288,16 +353,22 @@ def _protobuf_feed_entities(url, label, content):
 
 
 def _fetch_gtfs_feed_entities(url: str, headers, label: str):
+    return _fetch_feed(url, headers, label)[0]
+
+
+def _fetch_feed(url: str, headers, label: str):
+    """(the entities of a feed, when it says it was published), (None,
+    None) when it could not be read."""
     _LOGGER.debug(f"GTFS RT get_feed_entities for url: {url} , headers: {headers}, label: {label}")
     content = _feed_body(url, headers, label)
     if content is None:
-        return None
+        return None, None
     # json or protobuf: a json body opens with a brace or a bracket. Asking
     # response.text of a protobuf first ran the charset detection over
     # megabytes of binary, then parsed the result twice, for nothing
     if content.lstrip()[:1] in (b"{", b"["):
-        return _json_feed_entities(url, label, content)
-    return _protobuf_feed_entities(url, label, content)
+        return _json_feed_entities(url, label, content), None
+    return _protobuf_feed_entities(url, label, content), _feed_published(content)
 
 
 def get_next_services(self):
