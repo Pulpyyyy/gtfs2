@@ -31,7 +31,7 @@ import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH
-from .gtfs_helper import gtfs_seconds
+from .gtfs_helper import agency_zone, gtfs_seconds
 from .gtfs_rt_helper import cached_feed_has_future_stop
 from .rt_source import source_readers
 
@@ -172,18 +172,8 @@ def _feed_zone(hass, file, schedule):
     """
     key = (file, _edition_of(hass, file))
     if key not in _ZONES:
-        name = None
-        try:
-            with schedule.engine.connect() as conn:
-                row = conn.execute(text(
-                    "select agency_timezone from agency "
-                    "where agency_timezone is not null and agency_timezone <> '' "
-                    "limit 1")).fetchone()
-            name = row[0] if row else None
-        except Exception:  # pylint: disable=broad-except
-            name = None
-        _ZONES[key] = dt_util.get_time_zone(name) if name else None
-        _LOGGER.debug("Realtime window of %s reads the clocks of %s", file, name or "this server")
+        _ZONES[key] = agency_zone(schedule)
+        _LOGGER.debug("Realtime window of %s reads the clocks of %s", file, _ZONES[key] or "this server")
     return _ZONES[key]
 
 

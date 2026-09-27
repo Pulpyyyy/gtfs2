@@ -257,18 +257,10 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     return str(result)[:10] if result else None
 
 
-def _feed_now(schedule, route=None):
-    """This moment as the feed writes its clocks: in its agency's zone.
-
-    The query lays the stored clocks on service days and compares them
-    with now, and a clock is the local time where the network runs.
-    SQLite's own 'now', 'localtime' is the zone of the process, often UTC
-    in a container, and Home Assistant's is where the user lives: either
-    way a network in another zone, or a process left on UTC, dropped or
-    kept the wrong hours of departures. The route's agency first, the
-    feed's first agency otherwise, Home Assistant's zone when the feed
-    names none. Naive, as the query's own datetimes are.
-    """
+def agency_zone(schedule, route=None):
+    """The time zone the feed writes its clocks in: the route's agency's,
+    else the first agency that names one; None when the feed names none or
+    cannot be read."""
     name = None
     try:
         with schedule.engine.connect() as conn:
@@ -286,7 +278,22 @@ def _feed_now(schedule, route=None):
             name = row[0] if row else None
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.debug("Could not read the agency's zone, using Home Assistant's: %s", ex)
-    zone = dt_util.get_time_zone(name) if name else None
+    return dt_util.get_time_zone(name) if name else None
+
+
+def _feed_now(schedule, route=None):
+    """This moment as the feed writes its clocks: in its agency's zone.
+
+    The query lays the stored clocks on service days and compares them
+    with now, and a clock is the local time where the network runs.
+    SQLite's own 'now', 'localtime' is the zone of the process, often UTC
+    in a container, and Home Assistant's is where the user lives: either
+    way a network in another zone, or a process left on UTC, dropped or
+    kept the wrong hours of departures. The route's agency first, the
+    feed's first agency otherwise, Home Assistant's zone when the feed
+    names none. Naive, as the query's own datetimes are.
+    """
+    zone = agency_zone(schedule, route)
     moment = dt_util.now()
     if zone is not None:
         moment = moment.astimezone(zone)

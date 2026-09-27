@@ -28,8 +28,8 @@ import homeassistant.util.dt as dt_util
 from .const import DEFAULT_PATH_GEOJSON
 from .feed_window import last_service_day
 from .gtfs_helper import (
-    _call_type, _fetch_departure_rows, _line_ways, departure_query_args, get_next_service_date,
-    gtfs_seconds, shown_ends,
+    _call_type, _fetch_departure_rows, _line_ways, agency_zone, departure_query_args,
+    get_next_service_date, gtfs_seconds, shown_ends,
 )
 from .gtfs_rt_helper import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, safe_file_part, stop_relationship, stop_update_clock,
@@ -431,19 +431,10 @@ def owns_leg_file(path, name) -> bool:
 def _leg_timezone(schedule, route_id, departure, hass):
     """The zone the line's clocks are written in: the agency's, as the
     departure query reads it, else the origin stop's, else Home Assistant's."""
-    name = None
-    try:
-        with schedule.engine.connect() as conn:
-            row = conn.execute(text(
-                "SELECT agency.agency_timezone FROM routes "
-                "JOIN agency ON agency.agency_id = routes.agency_id "
-                "WHERE routes.route_id = :route"), {"route": route_id}).fetchone()
-            if not row or not row[0]:
-                row = conn.execute(text("SELECT agency_timezone FROM agency LIMIT 1")).fetchone()
-            name = row[0] if row else None
-    except Exception:  # pylint: disable=broad-except
-        name = None
-    name = name or departure.get("origin_stop_timezone") or hass.config.time_zone
+    zone = agency_zone(schedule, route_id)
+    if zone is not None:
+        return zone
+    name = departure.get("origin_stop_timezone") or hass.config.time_zone
     return dt_util.get_time_zone(name) or datetime.timezone.utc
 
 
