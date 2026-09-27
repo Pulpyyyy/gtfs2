@@ -655,6 +655,11 @@ def _stop_time_and_delay(stop, trip_id, scheduled):
         stop_time = scheduled[trip_id] + delay
         _LOGGER.debug("Trip %s carries a delay and no time: %s + %ss",
                       trip_id, scheduled[trip_id], delay)
+    elif stop_time and not delay and scheduled.get(trip_id):
+        # a time and no delay, or a zero one: IDFM's gateway writes 0 for
+        # a metro two minutes late, TAO and Palm Bus leave it out. The
+        # delay is the gap to the timetable, as the leg file reads it
+        delay = stop_time - scheduled[trip_id]
     return stop_time, delay
 
 
