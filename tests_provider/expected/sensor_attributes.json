@@ -102,13 +102,7 @@
         "origin_stop_alerts",
         "skipped_trips_realtime"
       ],
-      "unrecorded, never written here": [
-        "Cancelled Trips RT",
-        "Next Services RT",
-        "Next Services RT Delays",
-        "Next Services RT Trips",
-        "Skipped Trips RT"
-      ]
+      "unrecorded, never written here": []
     },
     "GTFSLocalStopSensor": {
       "recorded": [
