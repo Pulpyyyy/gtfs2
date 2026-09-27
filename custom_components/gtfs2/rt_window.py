@@ -30,10 +30,10 @@ from datetime import datetime, time, timedelta
 import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text
 
-from .const import CONF_DEVICE_TRACKER_ID, CONF_ROUTE, DEFAULT_PATH
+from .const import DEFAULT_PATH
 from .gtfs_helper import gtfs_seconds
 from .gtfs_rt_helper import cached_feed_has_future_stop
-from .rt_source import journey_entries
+from .rt_source import source_readers
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -201,24 +201,6 @@ def _window_for(hass, file, schedule, day):
             midnight + timedelta(seconds=envelope[1]) + TRAIL)
 
 
-def _followed_routes(hass, file):
-    """The route ids of the source's journey sensors.
-
-    Train entries store the marker "train" instead of a route id and local
-    stop entries none at all: a source carrying only those yields an empty
-    set, and the activity check then listens to the whole feed rather than
-    going deaf.
-    """
-    routes = set()
-    for entry in journey_entries(hass, file):
-        if entry.data.get(CONF_DEVICE_TRACKER_ID):
-            continue
-        route = (entry.data.get(CONF_ROUTE) or "").split(": ")[0]
-        if route and route != "train":
-            routes.add(route)
-    return routes
-
-
 def window_state(file):
     """What the gate last decided for a source, for the diagnostic entity."""
     return _STATE.get(file)
@@ -282,8 +264,11 @@ def _gate(hass, file, schedule, trip_update_url, now=None):
     if last_close is not None:
         cap = last_close + OVERTIME_CAP
         if now_local <= cap:
+            # the lines the source's sensors name; a source read only by
+            # train or local stops sensors names none, and the check then
+            # listens to the whole feed rather than going deaf
             if trip_update_url and cached_feed_has_future_stop(
-                    file, trip_update_url, _followed_routes(hass, file),
+                    file, trip_update_url, source_readers(hass, file)[0],
                     now_aware.timestamp()):
                 until = min(now_local + EXTEND, cap)
                 state.update(extended_until=until.isoformat(),
