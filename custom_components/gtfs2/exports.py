@@ -128,8 +128,8 @@ async def export_route_shape(coordinator, data) -> None:
     # it ran on every refresh of every entry: the pick only changes with
     # the stops asked and the database, so it is kept until one of them does
     pick = (route_id, direction, origin_id, destination_id,
-            getattr(coordinator, "_pygtfs_edition", None))
-    if pick[-1] is not None and pick == getattr(coordinator, "_representative_pick", None):
+            coordinator._pygtfs_edition)
+    if pick[-1] is not None and pick == coordinator._representative_pick:
         trip_id = coordinator._representative_trip
     else:
         try:
@@ -168,8 +168,6 @@ async def export_route_shape(coordinator, data) -> None:
         return
     _LOGGER.info("Writing the route file %s for trip %s: %s", os.path.basename(file),
                  trip_id, _route_write_reason(present, previous, drawn, export_key))
-    coordinator._route_id = route_id
-    coordinator._direction = direction
     coordinator._route_task = coordinator.hass.async_create_background_task(
         _write_route(coordinator, coordinator._data, route_id, direction, trip_id, export_key),
         f"gtfs2 route {route_id} {direction}")
@@ -214,7 +212,7 @@ async def export_timetable(coordinator, data) -> None:
     # the database edition too: the runs are read from it, and a refresh
     # adopts the zip first and builds the database after, so a file
     # written in between listed the old edition's runs until the next day
-    export_key = (today, edition, getattr(coordinator, "_pygtfs_edition", None))
+    export_key = (today, edition, coordinator._pygtfs_edition)
     previous = coordinator._timetable_export
     if export_key == previous and present:
         # written already: named again, the refresh built a fresh _data

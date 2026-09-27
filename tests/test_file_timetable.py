@@ -114,6 +114,7 @@ def test_the_refresh_does_not_wait_for_the_timetable(tmp_path, monkeypatch):
         me.hass = hass
         me._timetable_export = None
         me._timetable_task = None
+        me._pygtfs_edition = None
         me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "feed", "name": "Métro 4"}
         me.async_update_listeners = lambda: updates.append(dict(me._data))
         data = {"name": "Métro 4"}
@@ -164,6 +165,7 @@ def test_a_rebuilt_database_writes_the_timetable_again(tmp_path, monkeypatch, ca
             async_add_executor_job=executor, async_create_background_task=background)
         me._timetable_export = None
         me._timetable_task = None
+        me._pygtfs_edition = None
         me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "feed", "name": "Métro 4"}
         me.async_update_listeners = lambda: None
         timetable = tmp_path / "www" / "gtfs2" / "timetable_metro_4.json"

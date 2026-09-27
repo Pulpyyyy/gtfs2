@@ -97,6 +97,8 @@ def _run(tmp_path, monkeypatch):
             async_add_executor_job=executor, async_create_background_task=background)
         me._route_export_trip = None
         me._route_task = None
+        me._pygtfs_edition = None
+        me._representative_pick = me._representative_trip = None
         me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "IDFM",
                     "next_departure": {"route_id": ROUTE, "trip_direction_id": DIRECTION}}
         await exports_mod.export_route_shape(me, {"route": ROUTE, "direction": DIRECTION,
@@ -153,6 +155,8 @@ def test_a_database_swapped_under_a_running_entry_writes_it_again(tmp_path, monk
             async_create_background_task=lambda coro, name: asyncio.get_running_loop().create_task(coro))
         me._route_export_trip = None
         me._route_task = None
+        me._pygtfs_edition = None
+        me._representative_pick = me._representative_trip = None
         me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "IDFM",
                     "next_departure": {"route_id": ROUTE, "trip_direction_id": DIRECTION}}
 
@@ -204,6 +208,8 @@ def test_the_trip_drawn_is_picked_once_per_database(tmp_path, monkeypatch):
             async_create_background_task=lambda coro, name: asyncio.get_running_loop().create_task(coro))
         me._route_export_trip = None
         me._route_task = None
+        me._pygtfs_edition = None
+        me._representative_pick = me._representative_trip = None
         me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "IDFM",
                     "next_departure": {"route_id": ROUTE, "trip_direction_id": DIRECTION}}
         await run(me, "1:1:1")

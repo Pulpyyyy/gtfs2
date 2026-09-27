@@ -85,7 +85,7 @@ async def schedule_for(coordinator, data):
     hass = coordinator.hass
     edition = await hass.async_add_executor_job(_database_edition, hass, data["file"])
     current = coordinator._pygtfs
-    if (edition is not None and edition == getattr(coordinator, "_pygtfs_edition", None)
+    if (edition is not None and edition == coordinator._pygtfs_edition
             and hasattr(current, "session")):
         return current
     await hass.async_add_executor_job(close_schedule, current)
@@ -135,7 +135,13 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self.hass = hass
 
         self._pygtfs = ""
+        # what the database file was when the schedule was opened (see schedule_for)
+        self._pygtfs_edition = None
         self._data: dict[str, str] = {}
+        # the trip picked to draw the route, and what it was picked for (see
+        # export_route_shape): picked again when the stops or the database change
+        self._representative_pick = None
+        self._representative_trip = None
         # the trip whose stops are already exported, so the geojson is
         # rewritten when the journey changes and not on every refresh
         self._route_export_trip = None
