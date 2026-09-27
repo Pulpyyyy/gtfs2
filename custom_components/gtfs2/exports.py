@@ -40,14 +40,23 @@ def _route_export_state(zip_path, file):
     return edition, os.path.exists(file)
 
 
-def _drawn_trip(zip_path, file):
+def _drawn_trip(zip_path, file, db_path):
     """The trip a route file already draws, when it is at least as new as
-    the zip it was drawn from; None when there is no such file, when the
-    zip was replaced since, or when the file cannot be read. What spares a
-    restart the reading of the line's shape again: on IDFM shapes.txt is
-    131 MB to scan for one line, and eight entries did it at once."""
+    the zip and the database it was drawn from; None when there is no such
+    file, when either was replaced since, or when the file cannot be read.
+    What spares a restart the reading of the line's shape again: on IDFM
+    shapes.txt is 131 MB to scan for one line, and eight entries did it at
+    once.
+
+    The database counts as much as the zip: the trip's stops and its
+    shape_id come from it. A refresh adopts the zip first and builds the
+    database after, half an hour on IDFM, and a file written in between
+    named a shape of the old edition and took its points from the new one,
+    where IDFM had given that number to another line: metro 6 drawn along
+    metro 9 on 2026-09-27, with the stops in their right place."""
     try:
-        if os.path.getmtime(file) < os.path.getmtime(zip_path):
+        written = os.path.getmtime(file)
+        if written < os.path.getmtime(zip_path) or written < os.path.getmtime(db_path):
             return None
         with open(file, encoding="utf-8") as handle:
             return (json.load(handle).get("properties") or {}).get("trip_id")
@@ -63,14 +72,15 @@ async def export_route_shape(coordinator, data) -> None:
     off entirely, still gets its line drawn on a map card. Nor does it owe
     anything to there being a departure today: the line drawn is the
     fullest trip that calls at the sensor's stops, the same at night and
-    on a Sunday. Rewritten only when that trip changes or the zip is
-    replaced, that is when the feed does, which is what makes it cheap
-    enough to sit on every static refresh. The zip counts because the
-    line's polyline is read from it (see write_route_file): a new
+    on a Sunday. Rewritten only when that trip changes or the zip or the
+    database is replaced, that is when the feed does, which is what makes
+    it cheap enough to sit on every static refresh. The zip counts because
+    the line's polyline is read from it (see write_route_file): a new
     edition that ships shapes.txt where the last did not, or moves a
-    shape, must reach the map even when the trip drawn keeps its id.
+    shape, must reach the map even when the trip drawn keeps its id. The
+    database counts because the stops and the shape_id are read from it.
 
-    A file already there, newer than the zip and drawing the same trip,
+    A file already there, newer than the zip and the database and drawing the same trip,
     is kept: a restart knows nothing of what the last run wrote, and
     read the shape again for every entry. When it has to be written, it
     is written in the background: the sensor waits for this refresh, and
@@ -108,16 +118,19 @@ async def export_route_shape(coordinator, data) -> None:
         coordinator._representative_pick, coordinator._representative_trip = pick, trip_id
     if not trip_id:
         return
-    # rewritten when the trip changes, when the zip does, and when the
-    # file is gone: a folder cleaned by hand must not leave the map
-    # without its line until the next restart
+    # rewritten when the trip changes, when the zip or the database does,
+    # and when the file is gone: a folder cleaned by hand must not leave
+    # the map without its line until the next restart
     file = os.path.join(coordinator.hass.config.path(DEFAULT_PATH_GEOJSON), route_geojson_name(route_id, direction))
-    zip_path = os.path.join(coordinator.hass.config.path(coordinator._data["gtfs_dir"]), str(coordinator._data["file"]) + ".zip")
+    source = os.path.join(coordinator.hass.config.path(coordinator._data["gtfs_dir"]), str(coordinator._data["file"]))
+    zip_path, db_path = source + ".zip", source + ".sqlite"
     edition, present = await coordinator.hass.async_add_executor_job(_route_export_state, zip_path, file)
-    export_key = f"{route_id}_{direction}:{trip_id}:{edition}"
+    # the database edition too: a rebuild that keeps the trip id and the
+    # zip still changes the shape_id the file names (see _drawn_trip)
+    export_key = f"{route_id}_{direction}:{trip_id}:{edition}:{pick[-1]}"
     if export_key == coordinator._route_export_trip and present:
         return
-    if present and await coordinator.hass.async_add_executor_job(_drawn_trip, zip_path, file) == trip_id:
+    if present and await coordinator.hass.async_add_executor_job(_drawn_trip, zip_path, file, db_path) == trip_id:
         # written by an earlier run, and still the line of this zip
         coordinator._route_export_trip = export_key
         return

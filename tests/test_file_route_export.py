@@ -5,6 +5,8 @@ the zip. On IDFM shapes.txt is 131 MB to scan for one line, and at every
 restart every entry read it again: the coordinator knew nothing of the file
 the last run left. A file newer than the zip, drawing the trip picked, is
 now kept, and a file that has to be written is written off the refresh.
+Newer than the database too: a file written between the zip's adoption and
+the database's rebuild drew metro 6 along metro 9 on IDFM.
 """
 from __future__ import annotations
 
@@ -23,37 +25,53 @@ exports_mod = sys.modules["gtfs2_under_test.exports"]
 ROUTE, DIRECTION, TRIP = "IDFM:C01374", "1", "T4-29"
 
 
-def _files(tmp_path, trip=TRIP, file_newer=True):
-    """A zip and, unless trip is None, the route file drawing trip."""
+def _files(tmp_path, trip=TRIP, file_newer=True, db_newer=False):
+    """A zip, its database and, unless trip is None, the route file
+    drawing trip. db_newer: the database was rebuilt after the file was
+    written, the zip was not."""
     zip_path = tmp_path / "gtfs2" / "IDFM.zip"
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     zip_path.write_bytes(b"zip")
+    db_path = tmp_path / "gtfs2" / "IDFM.sqlite"
+    db_path.write_bytes(b"db")
+    zip_time = os.path.getmtime(zip_path)
+    os.utime(db_path, (zip_time,) * 2)
     file = tmp_path / "www" / "gtfs2" / exports_mod.route_geojson_name(ROUTE, DIRECTION)
     if trip is not None:
         file.parent.mkdir(parents=True, exist_ok=True)
         file.write_text(json.dumps({"type": "FeatureCollection", "properties": {"trip_id": trip}}))
-        zip_time = os.path.getmtime(zip_path)
         os.utime(file, (zip_time + (10 if file_newer else -10),) * 2)
-    return str(zip_path), str(file)
+    if db_newer:
+        os.utime(db_path, (zip_time + 20,) * 2)
+    return str(zip_path), str(file), str(db_path)
 
 
 def test_the_trip_a_route_file_draws(tmp_path):
-    zip_path, file = _files(tmp_path)
-    assert exports_mod._drawn_trip(zip_path, file) == TRIP
+    zip_path, file, db_path = _files(tmp_path)
+    assert exports_mod._drawn_trip(zip_path, file, db_path) == TRIP
 
 
 def test_a_route_file_older_than_its_zip_draws_nothing_worth_keeping(tmp_path):
-    zip_path, file = _files(tmp_path, file_newer=False)
-    assert exports_mod._drawn_trip(zip_path, file) is None
+    zip_path, file, db_path = _files(tmp_path, file_newer=False)
+    assert exports_mod._drawn_trip(zip_path, file, db_path) is None
+
+
+def test_a_route_file_older_than_its_database_draws_nothing_worth_keeping(tmp_path):
+    # the IDFM case of 2026-09-27: the zip adopted at 12:40, the file
+    # written then from the old database, the database rebuilt at 13:13.
+    # The trip kept its id, the zip did not move, and the file named a
+    # shape_id the new edition gives to another line
+    zip_path, file, db_path = _files(tmp_path, db_newer=True)
+    assert exports_mod._drawn_trip(zip_path, file, db_path) is None
 
 
 def test_no_route_file_or_an_unreadable_one(tmp_path):
-    zip_path, file = _files(tmp_path, trip=None)
-    assert exports_mod._drawn_trip(zip_path, file) is None
-    zip_path, file = _files(tmp_path)
+    zip_path, file, db_path = _files(tmp_path, trip=None)
+    assert exports_mod._drawn_trip(zip_path, file, db_path) is None
+    zip_path, file, db_path = _files(tmp_path)
     with open(file, "w") as handle:
         handle.write("not json")
-    assert exports_mod._drawn_trip(zip_path, file) is None
+    assert exports_mod._drawn_trip(zip_path, file, db_path) is None
 
 
 def _run(tmp_path, monkeypatch):
@@ -105,6 +123,57 @@ def test_a_new_zip_or_another_trip_writes_it_in_the_background(tmp_path, monkeyp
     _files(tmp_path, trip="an older trip")
     written, started = _run(tmp_path, monkeypatch)
     assert written == [TRIP] and len(started) == 1
+
+
+def test_a_rebuilt_database_writes_it_again_for_the_same_trip_and_zip(tmp_path, monkeypatch):
+    _files(tmp_path, db_newer=True)
+    written, started = _run(tmp_path, monkeypatch)
+    assert written == [TRIP] and len(started) == 1
+
+
+def test_a_database_swapped_under_a_running_entry_writes_it_again(tmp_path, monkeypatch):
+    # the same entry, the same trip, the same zip: only the database
+    # edition moved, and the key it wrote under says so
+    zip_path, file, db_path = _files(tmp_path)
+    written = []
+    monkeypatch.setattr(exports_mod, "get_representative_trip", lambda *args: TRIP)
+    monkeypatch.setattr(exports_mod, "write_route_file",
+                        lambda hass, data, route_id, direction, trip_id: written.append(trip_id))
+
+    async def main():
+        async def executor(fn, *args):
+            return fn(*args)
+
+        me = object.__new__(coordinator_mod.GTFSUpdateCoordinator)
+        me.hass = types.SimpleNamespace(
+            config=types.SimpleNamespace(path=lambda *parts: str(tmp_path.joinpath(*parts))),
+            async_add_executor_job=executor,
+            async_create_background_task=lambda coro, name: asyncio.get_running_loop().create_task(coro))
+        me._route_export_trip = None
+        me._route_task = None
+        me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "IDFM",
+                    "next_departure": {"route_id": ROUTE, "trip_direction_id": DIRECTION}}
+
+        async def refresh(edition):
+            me._pygtfs_edition = edition
+            await exports_mod.export_route_shape(me, {"route": ROUTE, "direction": DIRECTION,
+                                                      "origin": "A: a", "destination": "B: b"})
+            if me._route_task is not None:
+                await me._route_task
+
+        # the file on disk is newer than both: kept, under the old edition
+        await refresh("1:1:1")
+        assert written == []
+        await refresh("1:1:1")
+        assert written == []
+        # the rebuild swaps a new database in, newer than the file
+        os.utime(db_path, (os.path.getmtime(file) + 10,) * 2)
+        await refresh("2:2:2")
+        assert written == [TRIP]
+        await refresh("2:2:2")
+        assert written == [TRIP]
+
+    asyncio.run(main())
 
 
 def test_the_trip_drawn_is_picked_once_per_database(tmp_path, monkeypatch):
