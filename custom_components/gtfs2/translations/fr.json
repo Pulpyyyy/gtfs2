@@ -122,15 +122,6 @@
         "title": "La ligne {route} n'a pas d'horaires chargés",
         "description": "Les horaires de cette ligne ont été supprimés pour gagner de la place. Les rétablir demande de décompresser le fichier réseau, ce qui prend quelques minutes.\n\nVos autres capteurs continuent de fonctionner pendant l'opération, et aucune autre ligne ne revient.\n\n[documentation]({docu_new_route})"
       },
-      "direction": {
-        "data": {
-          "direction": "Sens"
-        },
-        "data_description": {
-          "direction": "Un capteur suit un seul sens. Vous pourrez en créer un second pour le retour."
-        },
-        "description": "Dans quel sens le capteur doit-il suivre cette ligne ?\n\n[documentation]({docu_new_route})"
-      },
       "stops": {
         "data": {
           "origin": "Arrêt de départ"

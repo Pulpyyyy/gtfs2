@@ -122,15 +122,6 @@
         "title": "Für Linie {route} sind keine Fahrpläne geladen",
         "description": "Die Fahrpläne dieser Linie wurden entfernt, um Platz zu sparen. Sie zurückzuholen erfordert das Entpacken der Netzdatei, was einige Minuten dauert.\n\nIhre anderen Sensoren laufen währenddessen weiter, und keine andere Linie kommt zurück.\n\n[Dokumentation]({docu_new_route})"
       },
-      "direction": {
-        "data": {
-          "direction": "Richtung"
-        },
-        "data_description": {
-          "direction": "Ein Sensor folgt einer Richtung. Für die Gegenrichtung können Sie einen zweiten Sensor anlegen."
-        },
-        "description": "In welche Richtung soll der Sensor dieser Linie folgen?\n\n[Dokumentation]({docu_new_route})"
-      },
       "stops": {
         "data": {
           "origin": "Starthaltestelle"

@@ -122,15 +122,6 @@
         "title": "A linha {route} não tem horários carregados",
         "description": "Os horários desta linha foram removidos para poupar espaço. Repô-los exige descompactar o ficheiro de rede, o que demora alguns minutos.\n\nOs seus outros sensores continuam a funcionar entretanto, e nenhuma outra linha regressa.\n\n[documentação]({docu_new_route})"
       },
-      "direction": {
-        "data": {
-          "direction": "Sentido"
-        },
-        "data_description": {
-          "direction": "Um sensor segue um único sentido. Pode criar um segundo sensor para o regresso."
-        },
-        "description": "Em que sentido deve o sensor seguir esta linha?\n\n[documentação]({docu_new_route})"
-      },
       "stops": {
         "data": {
           "origin": "Paragem de partida"

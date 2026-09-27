@@ -76,12 +76,10 @@ class JourneyScreens:
 
     def _journey_placeholders(self, **extra):
         """The line picked so far, recalled at the top of the screens that
-        pick the stops. No direction is picked any more; the key stays for a
-        translation that still reads it."""
+        pick the stops."""
         return {
             **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             "route": self._route_shown or self._route_label or str(self._user_inputs.get(CONF_ROUTE, "")),
-            "direction": self._direction_label or str(self._user_inputs.get(CONF_DIRECTION) or ""),
             **extra,
         }
 
@@ -100,7 +98,6 @@ class JourneyScreens:
         feeds rarely have usable stop ids, so they are matched on station
         names instead of picked from a list.
         """
-        self._direction_label = ""
         if self._user_inputs.get(CONF_ROUTE_TYPE) == "2":
             self._user_inputs[CONF_DIRECTION] = "0"
             self._keep_line()
@@ -117,7 +114,6 @@ class JourneyScreens:
             "inputs": dict(self._user_inputs),
             "route_label": self._route_label,
             "route_shown": self._route_shown,
-            "direction_label": self._direction_label,
         }
 
     async def async_step_sensor(self, user_input: dict | None = None) -> FlowResult:
@@ -245,7 +241,6 @@ class JourneyScreens:
         self._user_inputs[CONF_DIRECTION] = None
         self._route_label = self._line["route_label"]
         self._route_shown = self._line.get("route_shown", "")
-        self._direction_label = self._line["direction_label"]
         if self._user_inputs.get(CONF_ROUTE_TYPE) == "2":
             return await self.async_step_stops_train()
         return await self.async_step_stops()

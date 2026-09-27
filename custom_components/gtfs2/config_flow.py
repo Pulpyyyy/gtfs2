@@ -122,10 +122,6 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         self._route_label: str = ""
         # the networks an envelope of zips offers, while one is being picked
         self._inner_zips: list = []
-        # the directions as the direction screen offered them, and the one
-        # picked, recalled on the screens that follow
-        self._direction_labels: dict = {}
-        self._direction_label: str = ""
         # the line as the route screen showed it, recalled on the stop screens
         self._route_shown: str = ""
         # how big the database has grown, shown while it is being built
@@ -768,7 +764,6 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self._pygtfs = ""
-        self._data: dict[str, str] = {}
         self._user_inputs: dict = {}
 
     @callback

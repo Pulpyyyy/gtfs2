@@ -458,23 +458,6 @@ class SourceScreens:
         _LOGGER.debug(f"UserInputs Source zip: {self._user_inputs}")
         return await self.async_step_source_rt()
 
-    def _ensure_datasource_entry(self):
-        """Give the source picked in this flow its datasource entry.
-
-        Scheduled, not awaited: the entry is bookkeeping this flow should
-        neither wait on nor fail over, and the creation aborts on its
-        unique_id when the entry already exists.
-        """
-        inputs = self._user_inputs
-        self.hass.async_create_background_task(
-            async_ensure_datasource_entry(
-                self.hass, inputs.get(CONF_FILE),
-                url=inputs.get(CONF_URL) or "na",
-                extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip",
-                api=inputs, inner_zip=inputs.get(CONF_INNER_ZIP)),
-            name=f"gtfs2 datasource entry {inputs.get(CONF_FILE)}",
-        )
-
     async def _fresh_source(self):
         """Whether the source picked in this flow has no database yet.
 

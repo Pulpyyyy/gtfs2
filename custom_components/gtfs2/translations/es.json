@@ -122,15 +122,6 @@
         "title": "La línea {route} no tiene horarios cargados",
         "description": "Los horarios de esta línea se eliminaron para ahorrar espacio. Recuperarlos requiere descomprimir el archivo de red, lo que tarda unos minutos.\n\nSus demás sensores siguen funcionando mientras tanto, y no vuelve ninguna otra línea.\n\n[documentación]({docu_new_route})"
       },
-      "direction": {
-        "data": {
-          "direction": "Sentido"
-        },
-        "data_description": {
-          "direction": "Un sensor sigue un solo sentido. Puede crear un segundo sensor para la vuelta."
-        },
-        "description": "¿En qué sentido debe seguir el sensor esta línea?\n\n[documentación]({docu_new_route})"
-      },
       "stops": {
         "data": {
           "origin": "Parada de salida"
