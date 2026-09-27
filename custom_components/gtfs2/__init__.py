@@ -198,6 +198,38 @@ def _known_sources(hass: HomeAssistant):
             if e.data.get("file")}
 
 
+def _service_targets(hass, data):
+    """The known sources a service call names, sorted, every known one when
+    it names none; and the names it gave that are no known source."""
+    wanted = _wanted_files(hass, data.get("file"))
+    known = _known_sources(hass)
+    if not wanted:
+        return sorted(known), []
+    unknown = sorted(set(wanted) - known)
+    if unknown:
+        _LOGGER.error("Unknown datasource(s): %s", ", ".join(unknown))
+    return sorted(set(wanted) & known), unknown
+
+
+async def _rewrite_source(hass, gtfs_dir, filename, dry_run, work, *args):
+    """(what work returned, None), or (None, "refresh_running") when a
+    refresh holds the source.
+
+    A dry run only counts, nothing is written. Otherwise the work runs on a
+    copy swapped in, so the sensors keep reading meanwhile, and under the
+    source's lock: a refresh rebuilding the source would swap its own file
+    in, and the work done on the one it replaces would be lost with it.
+    """
+    if dry_run:
+        return await hass.async_add_executor_job(work, gtfs_dir, filename, *args, True), None
+    lock = source_lock(hass, filename)
+    if lock.locked():
+        return None, "refresh_running"
+    async with lock:
+        return await hass.async_add_executor_job(
+            on_a_copy, gtfs_dir, filename, work, *args, False), None
+
+
 async def async_prune_datasources(hass: HomeAssistant, data):
     """Prune the picked datasources, or every one, down to the routes in use.
 
@@ -207,21 +239,9 @@ async def async_prune_datasources(hass: HomeAssistant, data):
     """
     dry_run = data.get("dry_run", False)
     gtfs_dir = hass.config.path(DEFAULT_PATH)
-    wanted = _wanted_files(hass, data.get("file"))
-    known = _known_sources(hass)
-    unknown = []
-    if wanted:
-        unknown = sorted(set(wanted) - known)
-        if unknown:
-            _LOGGER.error("Unknown datasource(s): %s", ", ".join(unknown))
-        targets = set(wanted) & known
-        if not targets:
-            return {"pruned": [], "skipped": [], "unknown": unknown}
-    else:
-        targets = known
-
+    targets, unknown = _service_targets(hass, data)
     pruned, skipped = [], []
-    for filename in sorted(targets):
+    for filename in targets:
         routes, unrestricted = _routes_in_use(hass, filename)
         if unrestricted:
             _LOGGER.warning(
@@ -233,21 +253,11 @@ async def async_prune_datasources(hass: HomeAssistant, data):
             # no sensor reads it: pruning would empty the datasource
             skipped.append({"file": filename, "reason": "no_sensor_reads_it"})
             continue
-        if dry_run:
-            # counting only, nothing is written
-            stats = await hass.async_add_executor_job(
-                prune_gtfs_datasource, gtfs_dir, filename, routes, True)
-        else:
-            lock = source_lock(hass, filename)
-            if lock.locked():
-                # a refresh is rebuilding this source and will swap its file
-                # in: pruning the one being replaced would be lost with it
-                skipped.append({"file": filename, "reason": "refresh_running"})
-                continue
-            # on a copy swapped in, so the sensors keep reading meanwhile
-            async with lock:
-                stats = await hass.async_add_executor_job(
-                    on_a_copy, gtfs_dir, filename, prune_gtfs_datasource, routes, False)
+        stats, busy = await _rewrite_source(hass, gtfs_dir, filename, dry_run,
+                                            prune_gtfs_datasource, routes)
+        if busy:
+            skipped.append({"file": filename, "reason": busy})
+            continue
         if stats:
             pruned.append(stats)
     result = {"pruned": pruned, "skipped": skipped}
@@ -264,35 +274,14 @@ async def async_intern_datasources(hass: HomeAssistant, data):
     """
     dry_run = data.get("dry_run", False)
     gtfs_dir = hass.config.path(DEFAULT_PATH)
-    wanted = _wanted_files(hass, data.get("file"))
-    known = _known_sources(hass)
-    unknown = []
-    if wanted:
-        unknown = sorted(set(wanted) - known)
-        if unknown:
-            _LOGGER.error("Unknown datasource(s): %s", ", ".join(unknown))
-        targets = set(wanted) & known
-        if not targets:
-            return {"interned": [], "unknown": unknown}
-    else:
-        targets = known
-
+    targets, unknown = _service_targets(hass, data)
     interned, skipped = [], []
-    for filename in sorted(targets):
-        if dry_run:
-            # counting only, nothing is written
-            stats = await hass.async_add_executor_job(
-                intern_gtfs_datasource, gtfs_dir, filename, True)
-        else:
-            lock = source_lock(hass, filename)
-            if lock.locked():
-                # same as pruning: the file being interned is about to be
-                # replaced by the refresh, so the work would go with it
-                skipped.append({"file": filename, "reason": "refresh_running"})
-                continue
-            async with lock:
-                stats = await hass.async_add_executor_job(
-                    on_a_copy, gtfs_dir, filename, intern_gtfs_datasource, False)
+    for filename in targets:
+        stats, busy = await _rewrite_source(hass, gtfs_dir, filename, dry_run,
+                                            intern_gtfs_datasource)
+        if busy:
+            skipped.append({"file": filename, "reason": busy})
+            continue
         if stats:
             interned.append(stats)
     result = {"interned": interned}
