@@ -18,6 +18,7 @@ import os
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
+from .gtfs_db import feed_zip, real_path
 from .gtfs_helper import shown_ends
 from .geojson import (
     write_route_file, write_leg_file, write_timetable_file, route_geojson_name,
@@ -145,8 +146,9 @@ async def export_route_shape(coordinator, data) -> None:
     # and when the file is gone: a folder cleaned by hand must not leave
     # the map without its line until the next restart
     file = os.path.join(coordinator.hass.config.path(DEFAULT_PATH_GEOJSON), route_geojson_name(route_id, direction))
-    source = os.path.join(coordinator.hass.config.path(coordinator._data["gtfs_dir"]), str(coordinator._data["file"]))
-    zip_path, db_path = source + ".zip", source + ".sqlite"
+    gtfs_dir = coordinator.hass.config.path(coordinator._data["gtfs_dir"])
+    source = str(coordinator._data["file"])
+    zip_path, db_path = feed_zip(gtfs_dir, source), real_path(gtfs_dir, source)
     edition, present = await coordinator.hass.async_add_executor_job(_route_export_state, zip_path, file)
     # the database edition too: a rebuild that keeps the trip id and the
     # zip still changes the shape_id the file names (see _drawn_trip)
@@ -207,7 +209,7 @@ async def export_timetable(coordinator, data) -> None:
     name = timetable_name(data["name"])
     today = (dt_util.now() + timedelta(minutes=coordinator._data.get("offset", 0) or 0)).strftime("%Y-%m-%d")
     file = os.path.join(coordinator.hass.config.path(DEFAULT_PATH_GEOJSON), name)
-    zip_path = os.path.join(coordinator.hass.config.path(coordinator._data["gtfs_dir"]), str(coordinator._data["file"]) + ".zip")
+    zip_path = feed_zip(coordinator.hass.config.path(coordinator._data["gtfs_dir"]), str(coordinator._data["file"]))
     edition, present = await coordinator.hass.async_add_executor_job(_route_export_state, zip_path, file)
     # the database edition too: the runs are read from it, and a refresh
     # adopts the zip first and builds the database after, so a file

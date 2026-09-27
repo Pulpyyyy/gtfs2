@@ -33,7 +33,7 @@ def _check(monkeypatch, built):
     monkeypatch.setattr(source_refresh, "probe_source", probe)
     # the record of a look, kept for the catch-up, when there is one
     monkeypatch.setattr(source_refresh, "note_checked", lambda zip_path: None, raising=False)
-    monkeypatch.setattr(source_refresh, "_zip_path", lambda hass, file: "src.zip")
+    monkeypatch.setattr(source_refresh, "source_zip_path", lambda hass, file: "src.zip")
     monkeypatch.setattr(source_refresh, "async_dispatcher_send", lambda *a: None)
 
     async def job(fn, *args):

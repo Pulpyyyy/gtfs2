@@ -22,8 +22,8 @@ import requests
 from .const import CONF_INNER_ZIP
 from .direction_repair import repair_trip_directions
 from .freshness import adopt_zip, open_source, source_request, stage_zip
-from .gtfs_db import (import_routes, optimise_datasource, real_path, remove_files, routes_in,
-                      swap_in)
+from .gtfs_db import (feed_zip, import_routes, optimise_datasource, real_path, remove_files,
+                      routes_in, staging_name, swap_in)
 from .zip_peek import extract_member, inner_zips, inner_zips_in_file
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
@@ -174,7 +174,7 @@ def ensure_source_zip(hass, path, data):
     gtfs_dir = hass.config.path(path)
     os.makedirs(gtfs_dir, exist_ok=True)
     filename = data["file"]
-    zip_path = os.path.join(gtfs_dir, filename + ".zip")
+    zip_path = feed_zip(gtfs_dir, filename)
     if data["extract_from"] == "zip":
         if not os.path.exists(zip_path):
             return "no_zip_file"
@@ -208,7 +208,7 @@ def open_datasource(gtfs_dir, filename):
 
     Returns the schedule, or None when the file is not there.
     """
-    sqlite_file = os.path.join(gtfs_dir, filename + ".sqlite")
+    sqlite_file = real_path(gtfs_dir, filename)
     if not os.path.exists(sqlite_file):
         _LOGGER.error("No datasource to open: %s", sqlite_file)
         return None
@@ -253,7 +253,7 @@ def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
                       "the current data stays", filename)
         return False
     real = real_path(gtfs_dir, filename)
-    staging = filename + ".refresh"
+    staging = staging_name(filename)
     new_real = real_path(gtfs_dir, staging)
     if not _stale_staging_gone(new_real, filename):
         return False
@@ -336,7 +336,7 @@ def _refresh_route_by_route(gtfs_dir, filename, zip_name, routes, data):
     # the new real database is built under its own datasource name, so every
     # existing helper works on it unchanged and nothing it does can touch the
     # file the sensors are reading
-    staging = filename + ".refresh"
+    staging = staging_name(filename)
     new_real = real_path(gtfs_dir, staging)
 
     def _build(scratch_file):

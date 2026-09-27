@@ -69,7 +69,7 @@ from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 from .rt_source import has_rt_feed, source_device
 from .rt_window import window_state
 from .feed_window import read_feed_window, timetable_state
-from .source_refresh import SIGNAL_SOURCE_REFRESH, _zip_path
+from .source_refresh import SIGNAL_SOURCE_REFRESH, source_zip_path
 from .departure_attributes import (
     alert_details, map_files, next_departure_lists, next_service_info, realtime_trips,
 )
@@ -204,7 +204,7 @@ class GTFSDatasourceTimetableSensor(SensorEntity):
     async def async_load_window(self) -> None:
         """Read the zip; a file, so never on the loop."""
         self._window = await self.hass.async_add_executor_job(
-            read_feed_window, _zip_path(self.hass, self._file)) or {}
+            read_feed_window, source_zip_path(self.hass, self._file)) or {}
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()

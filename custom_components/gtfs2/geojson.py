@@ -27,6 +27,7 @@ import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
 from .feed_window import last_service_day
+from .gtfs_db import feed_zip
 from .gtfs_helper import (
     _call_type, _fetch_departure_rows, _line_ways, agency_zone, departure_query_args,
     get_next_service_date, gtfs_seconds, shown_ends,
@@ -256,7 +257,7 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
     if not stop_rows:
         _LOGGER.debug("No stops found for trip: %s", trip_id)
         return
-    zip_path = os.path.join(hass.config.path(data["gtfs_dir"]), str(data["file"]) + ".zip")
+    zip_path = feed_zip(hass.config.path(data["gtfs_dir"]), str(data["file"]))
     # the shape is the trip's, named by the zip the points come from and
     # not by the database, which may be another edition (see trip_shape_id)
     shape_id = trip_shape_id(zip_path, trip_id)

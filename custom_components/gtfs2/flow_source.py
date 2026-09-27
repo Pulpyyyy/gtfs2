@@ -48,7 +48,7 @@ from .const import (
 )
 from .flow_reload import _database_size
 from .freshness import source_meta
-from .gtfs_db import real_path
+from .gtfs_db import feed_zip, real_path
 from .gtfs_helper import check_extracting, get_zipfiles
 from .key_mask import KEY_MASK, note_key
 from .rt_source import async_ensure_datasource_entry, datasource_entry
@@ -200,7 +200,7 @@ class SourceScreens:
         entry = datasource_entry(self.hass, name)
         if entry is not None:
             return (entry.data.get(CONF_URL) or "na") != url
-        zip_path = os.path.join(self.hass.config.path(DEFAULT_PATH), name + ".zip")
+        zip_path = feed_zip(self.hass.config.path(DEFAULT_PATH), name)
         if not await self.hass.async_add_executor_job(os.path.exists, zip_path):
             return False
         # a zip and no entry yet: a download from this very url, left when

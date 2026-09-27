@@ -74,6 +74,16 @@ def real_path(gtfs_dir, filename):
     return os.path.join(gtfs_dir, filename + ".sqlite")
 
 
+def feed_zip(gtfs_dir, filename):
+    """The feed a source was built from, kept beside its database."""
+    return os.path.join(gtfs_dir, filename + ".zip")
+
+
+def staging_name(filename):
+    """The name a rebuilt database takes until it is swapped in."""
+    return filename + ".refresh"
+
+
 def scratch_path(gtfs_dir, filename):
     """The database an import builds, and which does not outlive it."""
     return os.path.join(gtfs_dir, filename + IMPORT_SUFFIX + ".sqlite")
@@ -450,7 +460,7 @@ def on_a_copy(gtfs_dir, filename, work, *args, done=bool):
     the swap failed.
     """
     real = real_path(gtfs_dir, filename)
-    staging = filename + ".refresh"
+    staging = staging_name(filename)
     copy = real_path(gtfs_dir, staging)
     for leftover in (copy, copy + "-journal"):
         if os.path.exists(leftover):
@@ -525,7 +535,7 @@ def prune_gtfs_datasource(gtfs_dir, filename, keep_routes, dry_run=False):
     a valid pygtfs database and routes remains complete for the config flow
     selector.
     """
-    sqlite_file = os.path.join(gtfs_dir, filename + ".sqlite")
+    sqlite_file = real_path(gtfs_dir, filename)
     if not os.path.exists(sqlite_file):
         _LOGGER.error("Cannot prune, no such datasource: %s", sqlite_file)
         return None
@@ -755,7 +765,7 @@ def intern_gtfs_datasource(gtfs_dir, filename, dry_run=False):
         stops first and building a temporary index. pygtfs does not analyze
         either, so the natural state is the fast one.
     """
-    sqlite_file = os.path.join(gtfs_dir, filename + ".sqlite")
+    sqlite_file = real_path(gtfs_dir, filename)
     if not os.path.exists(sqlite_file):
         _LOGGER.error("Cannot intern, no such datasource: %s", sqlite_file)
         return None

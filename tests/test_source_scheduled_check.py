@@ -77,7 +77,7 @@ def _stub(monkeypatch, calls, *, probe, fetched=None, pending=False, rebuilt=Tru
                         lambda data, zip_path: calls.append(("probe",)) or probe)
     monkeypatch.setattr(source_refresh, "note_checked",
                         lambda zip_path: calls.append(("noted",)))
-    monkeypatch.setattr(source_refresh, "_zip_path", lambda hass, file: "src.zip")
+    monkeypatch.setattr(source_refresh, "source_zip_path", lambda hass, file: "src.zip")
     monkeypatch.setattr(source_refresh, "fetch_if_new", fetch_if_new)
     monkeypatch.setattr(source_refresh, "source_meta", lambda zip_path: meta or {})
     monkeypatch.setattr(source_refresh, "_carry_validators",

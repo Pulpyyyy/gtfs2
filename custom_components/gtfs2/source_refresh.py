@@ -115,7 +115,7 @@ def last_look(hass: HomeAssistant, file):
     survives a restart, then the download itself. Reads a file: for the
     executor.
     """
-    meta = source_meta(_zip_path(hass, file))
+    meta = source_meta(source_zip_path(hass, file))
     last = (probe_state(hass, file).get("checked_at") or meta.get("checked_at")
             or meta.get("downloaded_at"))
     return dt_util.parse_datetime(last) if last else None
@@ -205,7 +205,7 @@ def next_check_at(hass: HomeAssistant, entry: ConfigEntry,
     return None
 
 
-def _zip_path(hass: HomeAssistant, file) -> str:
+def source_zip_path(hass: HomeAssistant, file) -> str:
     return os.path.join(hass.config.path(DEFAULT_PATH), file + ".zip")
 
 
@@ -221,12 +221,12 @@ def installed_meta(hass: HomeAssistant, file) -> dict:
     the zip they just fetched, so zip and database start out as the same
     version.
     """
-    return read_meta(_installed_meta_path(hass, file)) or source_meta(_zip_path(hass, file))
+    return read_meta(_installed_meta_path(hass, file)) or source_meta(source_zip_path(hass, file))
 
 
 def _record_installed(hass: HomeAssistant, file) -> None:
     """After a successful rebuild, the database is what the zip is."""
-    meta = dict(source_meta(_zip_path(hass, file)))
+    meta = dict(source_meta(source_zip_path(hass, file)))
     meta["built_at"] = dt_util.utcnow().isoformat()
     write_meta(_installed_meta_path(hass, file), meta, "rebuild", file)
 
@@ -242,7 +242,7 @@ def _carry_validators(hass: HomeAssistant, file) -> None:
     path = _installed_meta_path(hass, file)
     # no record of its own: the database is read off the zip's sidecar
     meta = read_meta(path)
-    kept = source_meta(_zip_path(hass, file))
+    kept = source_meta(source_zip_path(hass, file))
     if not meta or not kept.get("sha256") or meta.get("sha256") != kept["sha256"]:
         return
     meta.update({"etag": kept.get("etag"), "last_modified": kept.get("last_modified")})
@@ -258,7 +258,7 @@ def rebuild_pending(hass: HomeAssistant, file) -> bool:
     answers "unchanged", and the source would never be built again. The
     two files say it instead, and the retry needs no download.
     """
-    kept = source_meta(_zip_path(hass, file))
+    kept = source_meta(source_zip_path(hass, file))
     if not kept:
         return False
     return version_label(installed_meta(hass, file)) != version_label(kept)
@@ -473,7 +473,7 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
             and await _async_build_kept_zip(hass, entry, file)):
         return
     data = refresh_data_for(hass, entry)
-    zip_path = _zip_path(hass, file)
+    zip_path = source_zip_path(hass, file)
     if not await _async_look_due(hass, entry, file):
         return
     probe = await _async_probe(hass, file, data, zip_path)

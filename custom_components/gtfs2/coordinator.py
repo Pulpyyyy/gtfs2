@@ -36,6 +36,7 @@ from .const import (
     ICON,
     ICONS
 )    
+from .gtfs_db import real_path
 from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures, drop_gone_local_departures, shown_ends
 from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck
@@ -65,7 +66,7 @@ def _database_edition(hass, file):
     a schedule opened on the old one goes on reading it.
     """
     try:
-        stat = os.stat(os.path.join(hass.config.path(DEFAULT_PATH), file + ".sqlite"))
+        stat = os.stat(real_path(hass.config.path(DEFAULT_PATH), file))
     except (OSError, TypeError):
         return None
     return f"{stat.st_ino}:{int(stat.st_mtime)}:{stat.st_size}"

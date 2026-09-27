@@ -41,7 +41,7 @@ from .source_refresh import (
     source_lock,
     source_meta,
     version_label,
-    _zip_path,
+    source_zip_path,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -102,8 +102,8 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         """Re-read the sidecars; they are files, so never on the loop."""
         def _read():
             return (installed_meta(self.hass, self._file),
-                    source_meta(_zip_path(self.hass, self._file)),
-                    read_feed_window(_zip_path(self.hass, self._file)))
+                    source_meta(source_zip_path(self.hass, self._file)),
+                    read_feed_window(source_zip_path(self.hass, self._file)))
         self._installed_meta, self._zip_meta, self._window = (
             await self.hass.async_add_executor_job(_read))
         self._installed = version_label(self._installed_meta)

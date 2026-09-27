@@ -19,6 +19,7 @@ from datetime import date
 
 from sqlalchemy.sql import text
 
+from .gtfs_db import feed_zip
 from .gtfs_filter import _member, read_zip_agencies, read_zip_routes, table_reader
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ def get_routes_in_zip(gtfs_dir, filename):
     Returns an empty set when the zip is gone or unreadable, which the caller
     treats as "cannot tell", not as "no routes".
     """
-    path = os.path.join(gtfs_dir, filename + ".zip")
+    path = feed_zip(gtfs_dir, filename)
     if not os.path.exists(path):
         _LOGGER.debug("No source zip beside datasource %s", filename)
         return set()
@@ -54,7 +55,7 @@ def get_agencies_in_zip(gtfs_dir, filename):
     only thing there is to read, and nothing may start importing before the
     lines are chosen.
     """
-    rows = read_zip_agencies(os.path.join(gtfs_dir, filename + ".zip"))
+    rows = read_zip_agencies(feed_zip(gtfs_dir, filename))
     rows.sort(key=lambda row: str(row.get("agency_name")))
     return [f"{row.get('agency_id') or '0'}: {row['agency_name']}"
             for row in rows]
@@ -69,7 +70,7 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
     screen that imports one. agency narrows to one agency_id; "0" and None
     mean the whole feed.
     """
-    zip_path = os.path.join(gtfs_dir, filename + ".zip")
+    zip_path = feed_zip(gtfs_dir, filename)
     rows = read_zip_routes(zip_path)
     if agency and agency != "0":
         rows = [row for row in rows if (row.get("agency_id") or "0") == agency]
@@ -118,7 +119,7 @@ def set_lines_apart(options, agencies, schedule, gtfs_dir, filename, route_ids):
 
 def get_route_labels_from_zip(gtfs_dir, filename, route_ids):
     """get_route_labels when there is no database to ask: names from the zip."""
-    rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    rows = read_zip_routes(feed_zip(gtfs_dir, filename))
     wanted = set(route_ids)
     ends = headsign_ends(gtfs_dir, filename, [
         row["route_id"] for row in rows if row["route_id"] in wanted
@@ -140,7 +141,7 @@ def routes_in_zip_for_agency(gtfs_dir, filename, route_ids, agency=None):
     """
     if not agency or agency == "0":
         return route_ids
-    rows = read_zip_routes(os.path.join(gtfs_dir, filename + ".zip"))
+    rows = read_zip_routes(feed_zip(gtfs_dir, filename))
     owned = {row["route_id"] for row in rows
              if (row.get("agency_id") or "0") == agency}
     return [r for r in route_ids if r in owned]
@@ -439,7 +440,7 @@ def headsign_ends(gtfs_dir, filename, route_ids):
 
 def _from_trips(gtfs_dir, filename):
     """The pair _read_trips builds, read once per edition of the zip."""
-    zip_path = os.path.join(gtfs_dir, filename + ".zip") if gtfs_dir else None
+    zip_path = feed_zip(gtfs_dir, filename) if gtfs_dir else None
     if not zip_path or not os.path.exists(zip_path):
         return {}, {}
     stat = os.stat(zip_path)
@@ -570,7 +571,7 @@ def look_alike_ends(schedule, gtfs_dir, filename, route_ids):
     else:
         ends = headsign_ends(gtfs_dir, filename, route_ids)
     missing = {r for r in route_ids if r not in ends}
-    zip_path = os.path.join(gtfs_dir, filename + ".zip") if gtfs_dir else None
+    zip_path = feed_zip(gtfs_dir, filename) if gtfs_dir else None
     if not missing or not zip_path or not os.path.exists(zip_path):
         return ends
     size = _stop_times_size(zip_path)

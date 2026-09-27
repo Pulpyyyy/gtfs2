@@ -28,7 +28,7 @@ from .const import (
     DEFAULT_PATH,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
-from .gtfs_db import import_routes, on_a_copy, optimise_datasource, real_path, routes_in
+from .gtfs_db import import_routes, on_a_copy, optimise_datasource, real_path, routes_in, scratch_path
 from .gtfs_helper import check_datasource_index
 from .notifications import async_notify_import
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
@@ -62,7 +62,7 @@ def _scratch_size(gtfs_dir, filename):
     Only the scratch file: the real datasource is not being written during an
     import, so reporting its size would show a figure that never moves.
     """
-    path = os.path.join(gtfs_dir, filename + ".import.sqlite")
+    path = scratch_path(gtfs_dir, filename)
     try:
         return f"{os.path.getsize(path) / 1048576:.0f} MB"
     except OSError:

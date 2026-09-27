@@ -32,7 +32,7 @@ def test_the_download_holds_the_lock(monkeypatch):
                         lambda data, zip_path: {"result": source_refresh.PROBE_UNKNOWN})
     monkeypatch.setattr(source_refresh, "note_checked", lambda zip_path: None, raising=False)
     monkeypatch.setattr(source_refresh, "_carry_validators", lambda hass, file: None, raising=False)
-    monkeypatch.setattr(source_refresh, "_zip_path", lambda hass, file: "src.zip")
+    monkeypatch.setattr(source_refresh, "source_zip_path", lambda hass, file: "src.zip")
     monkeypatch.setattr(source_refresh, "fetch_if_new", fetch_if_new)
     monkeypatch.setattr(source_refresh, "async_dispatcher_send", lambda *a: None)
     entry = types.SimpleNamespace(
