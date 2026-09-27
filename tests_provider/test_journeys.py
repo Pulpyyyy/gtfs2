@@ -724,14 +724,24 @@ def branches_interleaved(offered, rides):
     order, or nothing. Two rides run side by side where each goes its own
     way between the same two common places (or from the start, or to the
     end): those two runs are listed one then the other, never cut into each
-    other. A stop one ride skips on a stretch they share is no branch."""
+    other. A stop one ride skips on a stretch they share is no branch, nor
+    is one a third ride calls at on its way to the other branch: Maryland
+    RTA 501 leaves Knoll Dr by Lightning View Rd for the Mall in Columbia
+    and for Arundel Mills alike, and one Mall run skips it."""
     position = {s: i for i, s in enumerate(offered)}
+    reached = [set(ride) for ride in rides]
+
+    def own_of(places, others):
+        return {s for s in places
+                if not any(s in ride and ride & others for ride in reached)}
+
     for i, one in enumerate(rides):
         for other in rides[i + 1:]:
             common = set(one) & set(other)
             mine, theirs = _detours(one, common), _detours(other, common)
             for key in mine.keys() & theirs.keys():
-                own = {**{s: 0 for s in mine[key]}, **{s: 1 for s in theirs[key]}}
+                own = {**{s: 0 for s in own_of(mine[key], theirs[key])},
+                       **{s: 1 for s in own_of(theirs[key], mine[key])}}
                 labels = [own[s] for s in offered if s in own]
                 if sum(1 for a, b in zip(labels, labels[1:]) if a != b) > 1:
                     return sorted(own, key=position.get)
