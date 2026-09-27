@@ -21,6 +21,7 @@ from urllib.parse import quote
 import homeassistant.util.dt as dt_util
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 from .const import (
     DOMAIN,
@@ -86,6 +87,18 @@ def datasource_unique_id(file) -> str:
     Home Assistant refused whichever came second.
     """
     return f"gtfs2-source-{file}"
+
+
+def source_device(file) -> DeviceInfo:
+    """The device a source's own entities share (realtime, timetable,
+    switch, button, update), so the source reads as one."""
+    return DeviceInfo(
+        name=f"GTFS - {file}",
+        entry_type=DeviceEntryType.SERVICE,
+        identifiers={(DOMAIN, f"GTFS datasource - {file}")},
+        manufacturer="GTFS",
+        model=file,
+    )
 
 
 def datasource_entry(hass: HomeAssistant, file) -> ConfigEntry | None:

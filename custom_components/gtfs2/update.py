@@ -17,13 +17,11 @@ from homeassistant.components.update import UpdateEntity, UpdateEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
-    DOMAIN,
     CONF_FILE,
     CONF_KIND,
     CONF_STATIC_REFRESH_MODE,
@@ -32,6 +30,7 @@ from .const import (
 )
 from .feed_window import read_feed_window
 from .key_mask import hide_keys
+from .rt_source import source_device
 from .source_refresh import (
     SIGNAL_SOURCE_REFRESH,
     async_refresh_source,
@@ -97,13 +96,7 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         self._attr_title = f"GTFS static feed - {self._file}"
         # same device as the realtime diagnostic and switch, so the source
         # reads as one
-        self._attr_device_info = DeviceInfo(
-            name=f"GTFS - {self._file}",
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, f"GTFS datasource - {self._file}")},
-            manufacturer="GTFS",
-            model=self._file,
-        )
+        self._attr_device_info = source_device(self._file)
 
     async def async_load_versions(self) -> None:
         """Re-read the sidecars; they are files, so never on the loop."""

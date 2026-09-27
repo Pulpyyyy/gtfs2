@@ -66,7 +66,7 @@ from .const import (
     CONF_RT_ENABLED,
 )
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
-from .rt_source import has_rt_feed
+from .rt_source import has_rt_feed, source_device
 from .rt_window import window_state
 from .feed_window import read_feed_window, timetable_state
 from .source_refresh import SIGNAL_SOURCE_REFRESH, _zip_path
@@ -149,13 +149,7 @@ class GTFSDatasourceRTSensor(SensorEntity):
         self._entry = entry
         self._file = entry.data.get(CONF_FILE)
         self._attr_unique_id = f"gtfs2_datasource_rt_{self._file}"
-        self._attr_device_info = DeviceInfo(
-            name=f"GTFS - {self._file}",
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, f"GTFS datasource - {self._file}")},
-            manufacturer="GTFS",
-            model=self._file,
-        )
+        self._attr_device_info = source_device(self._file)
 
     @property
     def native_value(self):
@@ -205,13 +199,7 @@ class GTFSDatasourceTimetableSensor(SensorEntity):
         self._file = entry.data.get(CONF_FILE)
         self._window = {}
         self._attr_unique_id = f"gtfs2_datasource_timetable_{self._file}"
-        self._attr_device_info = DeviceInfo(
-            name=f"GTFS - {self._file}",
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, f"GTFS datasource - {self._file}")},
-            manufacturer="GTFS",
-            model=self._file,
-        )
+        self._attr_device_info = source_device(self._file)
 
     async def async_load_window(self) -> None:
         """Read the zip; a file, so never on the loop."""

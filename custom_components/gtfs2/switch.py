@@ -5,16 +5,15 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
-    DOMAIN,
     CONF_KIND,
     ENTRY_KIND_DATASOURCE,
     CONF_FILE,
     CONF_RT_ENABLED,
 )
+from .rt_source import source_device
 
 
 async def async_setup_entry(
@@ -50,13 +49,7 @@ class GTFSDatasourceRTSwitch(SwitchEntity):
         self._file = entry.data.get(CONF_FILE)
         self._attr_unique_id = f"gtfs2_datasource_rt_enabled_{self._file}"
         # same device as the realtime diagnostic, so the source reads as one
-        self._attr_device_info = DeviceInfo(
-            name=f"GTFS - {self._file}",
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, f"GTFS datasource - {self._file}")},
-            manufacturer="GTFS",
-            model=self._file,
-        )
+        self._attr_device_info = source_device(self._file)
 
     @property
     def is_on(self) -> bool:

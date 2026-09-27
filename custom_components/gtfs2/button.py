@@ -6,15 +6,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
-    DOMAIN,
     CONF_KIND,
     ENTRY_KIND_DATASOURCE,
     CONF_FILE,
 )
+from .rt_source import source_device
 from .source_refresh import async_refresh_source, rebuild_pending, source_lock
 
 
@@ -52,13 +51,7 @@ class GTFSSourceRefreshButton(ButtonEntity):
         self._attr_unique_id = f"gtfs2_source_refresh_{self._file}"
         # same device as the update entity and the switch, so the source
         # reads as one
-        self._attr_device_info = DeviceInfo(
-            name=f"GTFS - {self._file}",
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, f"GTFS datasource - {self._file}")},
-            manufacturer="GTFS",
-            model=self._file,
-        )
+        self._attr_device_info = source_device(self._file)
 
     async def async_press(self) -> None:
         if source_lock(self.hass, self._file).locked():
