@@ -2,6 +2,5 @@
   "__init__.py setup": 13,
   "flow_source.py async_step_source_url": 12,
   "gtfs_helper.py get_pair_direction": 12,
-  "gtfs_helper.py get_route_list": 11,
   "rt_source.py async_mirror_rt_to_entries": 12
 }

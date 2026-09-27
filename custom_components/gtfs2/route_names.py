@@ -87,14 +87,30 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
                              ends.get(row["route_id"]), row["route_id"])
         options.append(
             f"{row.get('route_type') or '99'}##{row['route_id']}##{label}##pruned")
-    options = _set_apart(options, [names.get(str(row.get("agency_id") or ""), only) for row in rows])
-    options = _set_apart_by_ends(options, look_alike_ends(None, gtfs_dir, filename, _look_alikes(options)))
-    # and what still reads the same is the same line published once per
-    # period of validity: the dead ones go, the rest say which period.
-    # Asked only when some line is still ambiguous, so a feed that names
-    # its lines properly never pays for the dates of any of them
+    return set_lines_apart(
+        options, [names.get(str(row.get("agency_id") or ""), only) for row in rows],
+        None, gtfs_dir, filename, [row["route_id"] for row in rows])
+
+
+def set_lines_apart(options, agencies, schedule, gtfs_dir, filename, route_ids):
+    """The line options, told apart where they read the same, in the order a
+    line number is read; agencies holds each option's agency name, schedule
+    is None when there is no database yet.
+
+    Lines of two operators under one number get the agency's name; lines one
+    operator publishes under one name get their two ends; what still reads
+    the same is the same line published once per period of validity: the
+    dead ones go, the rest say which period. The periods are asked only when
+    some line is still ambiguous, so a feed that names its lines properly
+    never pays for the dates of any of them. Sorted on what the user reads:
+    a cast on route_id is 0 for every id that is not a number, which is most
+    of them outside a small network.
+    """
+    options = _set_apart(options, agencies)
+    options = _set_apart_by_ends(
+        options, look_alike_ends(schedule, gtfs_dir, filename, _look_alikes(options)))
     if _look_alikes(options):
-        spans = route_spans(gtfs_dir, filename, [row["route_id"] for row in rows])
+        spans = route_spans(gtfs_dir, filename, route_ids)
         options = _leave_out_expired(options, spans)
         options = _set_apart_by_span(options, spans)
     return sorted(options, key=lambda value: _natural(value.split("##")[2]))

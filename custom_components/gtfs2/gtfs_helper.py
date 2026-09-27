@@ -36,9 +36,7 @@ CONF_API_KEY_LOCATION,
 from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, get_gtfs_feed_entities,
                              struck_trips, on_service_day)
 from .gtfs_rt_helper import safe_file_part  # noqa: F401  a provider test reads it here
-from .route_names import (get_routes_in_zip, _adds_to, _leave_out_expired, _look_alikes,
-                          _natural, _route_label, _set_apart, _set_apart_by_ends,
-                          _set_apart_by_span, look_alike_ends, route_ends, route_spans)
+from .route_names import get_routes_in_zip, _adds_to, _route_label, route_ends, set_lines_apart
 from .feed_window import last_service_day
 
 _LOGGER = logging.getLogger(__name__)
@@ -939,22 +937,8 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
         else:
             val = f"{route_type}##{route_id}##{shown}"
         routes.append(val)
-    # sorted on what the user reads, and read the way a line number is: the
-    # cast on route_id this used to order by is 0 for every id that is not a
-    # number, which is most of them outside a small network
-    # lines of two operators under one number get the agency's name
-    routes = _set_apart(routes, [x[4] for x in routes_list])
-    # and routes one operator publishes under one name get their two ends
-    routes = _set_apart_by_ends(
-        routes, look_alike_ends(schedule, gtfs_dir, data["file"], _look_alikes(routes)))
-    # and the same line published once per period of validity, which the
-    # zip dates even for a line whose timetable was never imported. Only
-    # when something still reads the same, like the ends above
-    if _look_alikes(routes):
-        spans = route_spans(gtfs_dir, data["file"], [str(x[1]) for x in routes_list])
-        routes = _leave_out_expired(routes, spans)
-        routes = _set_apart_by_span(routes, spans)
-    routes.sort(key=lambda value: _natural(value.split("##")[2]))
+    routes = set_lines_apart(routes, [x[4] for x in routes_list], schedule, gtfs_dir,
+                             data["file"], [str(x[1]) for x in routes_list])
     _LOGGER.debug(f"routes: {routes}")
     return routes
 
