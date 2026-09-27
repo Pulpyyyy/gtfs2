@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import datetime
+import json
 import sqlite3
 import re
 import logging
 import statistics
 import os
+import threading
 import pygtfs
 from sqlalchemy.sql import text
 
@@ -362,11 +364,9 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
         _LOGGER.debug("Setting up Route for start/end : %s / %s ", start_station_id, end_station_id)
 
     window_where = "AND vd.date BETWEEN :window_first AND :window_last" if window else ""
-    ## QUERY candidate_trips and cal_expand are used to construct a list of valida_dates, i.e a list where services run
-    ## valid_dates is then used in the main query
-    sql_query = f"""
-       WITH RECURSIVE
-          candidate_trips AS MATERIALIZED (
+    # the trips that ride from one end to the other, whatever the time: read
+    # once for a database and a pair, then handed to the query (_candidate_pairs)
+    candidates_sql = f"""
             SELECT trip.trip_id, trip.service_id,
                    CAST(julianday(date(origin_stop_time.departure_time)) - julianday('1970-01-01') AS INTEGER) AS day_offset,
                    origin_stop_time.stop_id AS origin_stop_id,
@@ -392,7 +392,12 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
               AND origin_stop_time.departure_time IS NOT NULL
               AND destination_stop_time.arrival_time IS NOT NULL
               AND destination_stop_time.departure_time IS NOT NULL
-          ),
+    """  # noqa: S608
+    ## QUERY candidate_trips and cal_expand are used to construct a list of valida_dates, i.e a list where services run
+    ## valid_dates is then used in the main query
+    sql_query = f"""
+       WITH RECURSIVE
+          candidate_trips AS MATERIALIZED ({_CANDIDATES_FED}),
           -- the service days read start as far back as the latest departure
           -- of these trips asks for: a call at 48:10 leaves two days after
           -- its service day, at least yesterday
@@ -501,11 +506,52 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
     }
     _LOGGER.debug("SQL statement:\n%s", sql_query)
     _LOGGER.debug("SQL parameters:\n%s", query_params)
+    query_params["candidates"] = _candidate_pairs(schedule, candidates_sql, query_params)
 
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql_query), query_params).fetchall()
 
     return [row_cursor._asdict() for row_cursor in rows], start_station_id
+
+
+# the columns of a candidate trip, in the order _candidate_pairs keeps them
+_CANDIDATE_COLUMNS = ("trip_id", "service_id", "day_offset", "origin_stop_id",
+                      "destination_stop_id", "origin_stop_sequence", "destination_stop_sequence")
+_CANDIDATES_FED = "SELECT " + ", ".join(
+    f"json_extract(value, '$[{n}]') AS {column}" for n, column in enumerate(_CANDIDATE_COLUMNS)
+) + " FROM json_each(:candidates)"
+# {(schedule id, query, parameters): (schedule, candidates as json)}, the
+# latest last; the schedule is kept so its id is not reused while here
+_CANDIDATES: dict[tuple, tuple] = {}
+_CANDIDATES_GUARD = threading.Lock()
+_CANDIDATES_KEEP = 64
+
+
+def _candidate_pairs(schedule, candidates_sql, params):
+    """The trips riding from one end of a departure query to the other, as
+    json for json_each, read once for a schedule and a pair.
+
+    They do not depend on the time, and reading them was most of each
+    reading of the timetable: 2 of 2.8 s on TAO tram A, every quarter of
+    an hour and each time the departure shown left. The schedule is the
+    same object as long as its database is the same one (schedule_for),
+    so a new edition is read afresh.
+    """
+    names = sorted(set(re.findall(r":(\w+)", candidates_sql)))
+    key = (id(schedule), candidates_sql, tuple((n, params.get(n)) for n in names))
+    with _CANDIDATES_GUARD:
+        found = _CANDIDATES.pop(key, None)
+        if found is not None and found[0] is schedule:
+            _CANDIDATES[key] = found
+            return found[1]
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(candidates_sql), {n: params.get(n) for n in names}).fetchall()
+    fed = json.dumps([list(row) for row in rows])
+    with _CANDIDATES_GUARD:
+        while len(_CANDIDATES) >= _CANDIDATES_KEEP:
+            _CANDIDATES.pop(next(iter(_CANDIDATES)))
+        _CANDIDATES[key] = (schedule, fed)
+    return fed
 
 
 def _row_instant(value, zone):
