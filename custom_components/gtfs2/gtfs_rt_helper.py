@@ -330,7 +330,7 @@ def _protobuf_feed_entities(url, label, content):
     not one."""
     # Imported here and not at module level: the class lives in protobuf,
     # which arrives with gtfs-realtime-bindings, and the synthetic suite
-    # stubs those bindings out while replacing _fetch_gtfs_feed_entities.
+    # stubs those bindings out.
     from google.protobuf.message import DecodeError
     _LOGGER.debug("GTFS RT data is not providing format json")
     # a maintenance or error page served with a 200 lands here and is not
@@ -727,27 +727,18 @@ def _read_stop_updates(self, entity, trip_id, direction_id, start_date, departur
 
 
 def _sort_departure_slots(departure_times):
-    ''' Sort by time, carrying each delay with its own departure '''
-    # sorting the two lists independently, or only one of them, breaks the
-    # pairing again
+    ''' Sort by time, carrying each delay and trip with its own departure '''
+    # the three lists are appended together (_read_stop_updates): sorting
+    # them apart breaks the pairing
     for route in departure_times:
         for direction in departure_times[route]:
             for stop in departure_times[route][direction]:
                 slot = departure_times[route][direction][stop]
-                trips = slot.get("trips") or []
-                if len(slot["delays"]) == len(slot["departures"]) == len(trips):
-                    paired = sorted(zip(slot["departures"], slot["delays"], trips),
-                                    key=lambda p: p[0])
-                    slot["departures"] = [p[0] for p in paired]
-                    slot["delays"] = [p[1] for p in paired]
-                    slot["trips"] = [p[2] for p in paired]
-                elif len(slot["delays"]) == len(slot["departures"]):
-                    paired = sorted(zip(slot["departures"], slot["delays"]),
-                                    key=lambda p: p[0])
-                    slot["departures"] = [p[0] for p in paired]
-                    slot["delays"] = [p[1] for p in paired]
-                else:
-                    slot["departures"].sort()
+                paired = sorted(zip(slot["departures"], slot["delays"], slot["trips"]),
+                                key=lambda p: p[0])
+                slot["departures"] = [p[0] for p in paired]
+                slot["delays"] = [p[1] for p in paired]
+                slot["trips"] = [p[2] for p in paired]
 
 
 def get_rt_route_trip_statuses(self, feed_entities=None):
