@@ -65,7 +65,7 @@ from .freshness import (
 from .source_zip import refresh_datasource
 from .freshness import source_meta
 from .notifications import _async_notify, async_notify_refresh
-from .rt_source import journey_entries, static_feed_config
+from .rt_source import journey_entries, source_readers, static_feed_config
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -326,31 +326,6 @@ def refresh_data_for(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     return data
 
 
-def _lines_read(hass: HomeAssistant, file) -> list[str]:
-    """The route_ids the source's sensors name: lines a refresh must keep.
-
-    Train and local stop entries name no line, they read across the whole
-    feed, where lines come and go as a matter of course.
-    """
-    return sorted({
-        entry.data["route"].split(": ")[0]
-        for entry in journey_entries(hass, file)
-        if entry.data.get("route") and entry.data["route"] != "train"
-        and not entry.data.get("device_tracker_id")
-    })
-
-
-def _reads_whole_feed(hass: HomeAssistant, file) -> bool:
-    """Whether a sensor of the source reads it whole: a train or local stops
-    entry, or one naming no line, matches across every line of the feed,
-    so a refresh has to bring every line of the new edition in."""
-    return any(
-        entry.data.get("device_tracker_id")
-        or entry.data.get("route") in (None, "", "train")
-        for entry in journey_entries(hass, file)
-    )
-
-
 async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
     """One rebuild of a source from an assembled data dict, serialised per
     source, recorded, and told to its entities. The three triggers meet
@@ -359,9 +334,11 @@ async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
     if lock.locked():
         _LOGGER.info("A refresh of %s is already running", file)
         return False
-    # read here, on the loop: the entries are not for the executor to walk
-    data = {**data, "read_routes": _lines_read(hass, file),
-            "whole_feed": _reads_whole_feed(hass, file)}
+    # read here, on the loop: the entries are not for the executor to walk.
+    # The lines the sensors name are the ones a refresh must keep; a sensor
+    # reading the source whole has every line of the new edition brought in
+    read_routes, whole_feed = source_readers(hass, file)
+    data = {**data, "read_routes": sorted(read_routes), "whole_feed": whole_feed}
     async with lock:
         # told at the start too, so the update entity shows the rebuild
         # running whichever of the three triggers started it

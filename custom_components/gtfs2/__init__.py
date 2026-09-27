@@ -23,6 +23,7 @@ from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource, r
 from .gtfs_rt_helper import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
 from .rt_source import (
+    source_readers,
     async_bootstrap_datasource_entries,
     async_ensure_datasource_entry,
     async_mirror_rt_to_entries,
@@ -119,44 +120,6 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
 
     return True
 
-def _routes_in_use(hass: HomeAssistant, filename: str, exclude=None):
-    """Collect the route_ids configured against a datasource.
-
-    Returns (routes, unrestricted). A datasource is unrestricted when at least
-    one entry queries it without a route: local stop entries walk every route
-    around a position, so their datasource must keep the full feed.
-
-    exclude leaves one entry_id out of the count: whether or not an entry
-    still lists while its removal hook runs, it must not count as a reader.
-    """
-    routes: set[str] = set()
-    unrestricted = False
-    for entry in hass.config_entries.async_entries(DOMAIN):
-        if entry.entry_id == exclude:
-            continue
-        if entry.data.get("file") != filename:
-            continue
-        # the datasource entry names the file but reads nothing from it, and
-        # counting it as a reader would make every source look unrestricted
-        if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
-            continue
-        if entry.data.get("device_tracker_id"):
-            unrestricted = True
-            continue
-        route = entry.data.get("route")
-        if route == "train":
-            # a train sensor stores this marker, not a route_id: it matches
-            # city pairs across the whole feed, so its datasource must stay
-            # whole, exactly like a local stops entry
-            unrestricted = True
-            continue
-        if route:
-            routes.add(route.split(": ")[0])
-        else:
-            unrestricted = True
-    return routes, unrestricted
-
-
 def _wanted_files(hass: HomeAssistant, raw):
     """The datasource names a service call designates.
 
@@ -242,7 +205,7 @@ async def async_prune_datasources(hass: HomeAssistant, data):
     targets, unknown = _service_targets(hass, data)
     pruned, skipped = [], []
     for filename in targets:
-        routes, unrestricted = _routes_in_use(hass, filename)
+        routes, unrestricted = source_readers(hass, filename)
         if unrestricted:
             _LOGGER.warning(
                 "Skipping datasource %s: a train or local stops sensor reads "
@@ -384,7 +347,7 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
     route = (entry.data.get("route") or "").split(": ")[0]
     if not filename or not route or entry.data.get("device_tracker_id"):
         return
-    routes, unrestricted = _routes_in_use(hass, filename, exclude=entry.entry_id)
+    routes, unrestricted = source_readers(hass, filename, exclude=entry.entry_id)
     if unrestricted or route in routes:
         # the line is still read (a return sensor, often), or the datasource
         # must stay whole for a local stops entry

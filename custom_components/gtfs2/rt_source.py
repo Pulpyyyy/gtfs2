@@ -126,6 +126,27 @@ def journey_entries(hass: HomeAssistant, file) -> list[ConfigEntry]:
     ]
 
 
+def source_readers(hass: HomeAssistant, file, exclude=None) -> tuple[set[str], bool]:
+    """(the route_ids the source's sensors name, whether one reads it whole).
+
+    A train sensor ("train" is its marker, not a route_id), a local stops
+    sensor and one naming no line match across the whole feed: their source
+    has to keep every line. exclude leaves one entry_id out: whether or not
+    an entry still lists while its removal hook runs, it is no reader.
+    """
+    routes: set[str] = set()
+    whole = False
+    for entry in journey_entries(hass, file):
+        if exclude is not None and entry.entry_id == exclude:
+            continue
+        route = entry.data.get("route")
+        if entry.data.get("device_tracker_id") or route in (None, "", "train"):
+            whole = True
+        else:
+            routes.add(route.split(": ")[0])
+    return routes, whole
+
+
 def rt_feed_config(hass: HomeAssistant, entry: ConfigEntry):
     """The realtime config an entry runs with, and whether realtime is on.
 

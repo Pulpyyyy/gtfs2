@@ -24,17 +24,15 @@ from .const import (
     CONF_AGENCY,
     CONF_ALSO_RELOAD,
     CONF_FILE,
-    CONF_KIND,
     CONF_ROUTE,
     DEFAULT_PATH,
-    DOMAIN,
-    ENTRY_KIND_DATASOURCE,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
 from .gtfs_db import import_routes, on_a_copy, optimise_datasource, real_path, routes_in
 from .gtfs_helper import check_datasource_index
 from .notifications import async_notify_import
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
+from .rt_source import source_readers
 from .source_refresh import source_lock
 from .source_zip import build_scratch_database, open_datasource
 
@@ -289,10 +287,7 @@ class ReloadScreens:
         filename = self._user_inputs.get(CONF_FILE, "")
         # only the routes some entry actually reads: anything else in the file
         # is weight nothing queries
-        keep = {e.data["route"].split(": ")[0]
-                for e in self.hass.config_entries.async_entries(DOMAIN)
-                if e.data.get("file") == filename and e.data.get("route")
-                and not e.data.get("device_tracker_id")}
+        keep, unrestricted = source_readers(self.hass, filename)
         # the entries created by this flow are made through separate flows, so
         # they are not guaranteed to be registered yet. Without this, the line
         # just added could be pruned away moments after being imported.
@@ -304,16 +299,6 @@ class ReloadScreens:
         # sensors come in the next flows, and dropping them here would undo
         # an import the user asked for minutes ago
         keep.update(self._import_routes)
-        unrestricted = any(
-            e.data.get("device_tracker_id") or not e.data.get("route")
-            # "train" is a marker, not a route_id: a train sensor matches
-            # city pairs across the whole feed, so nothing may be dropped
-            or e.data.get("route") == "train"
-            for e in self.hass.config_entries.async_entries(DOMAIN)
-            if e.data.get("file") == filename
-            # the datasource entry reads nothing: it must not make its own
-            # source look unrestricted
-            and e.data.get(CONF_KIND) != ENTRY_KIND_DATASOURCE)
 
         if user_input is None:
             size = await self.hass.async_add_executor_job(
