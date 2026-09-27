@@ -136,7 +136,7 @@ def station_names_in(prefix, names):
 
 def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3",
                           horizon=NEXT_SERVICE_HORIZON_DAYS, line=None,
-                          origin_names=None, dest_names=None, route=None,
+                          origin_names=None, destination_names=None, route=None,
                           direction=None):
     """Return the first date on or after from_date that this trip runs, or None.
 
@@ -154,7 +154,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     within horizon: a route can legitimately have no trips left at all.
 
     For a train, origin_id and dest_id are station names; origin_names and
-    dest_names, when given, are every station the entry ticked at each end,
+    destination_names, when given, are every station the entry ticked at each end,
     and line holds the answer to the line the flow picked, as the departures
     are held to it.
 
@@ -174,7 +174,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     if route_type == "2":
         # trains match on the exact stop_name, like get_next_departure does
         origin_in, params = station_names_in("origin", origin_names or [origin_id])
-        dest_in, dest_params = station_names_in("dest", dest_names or [dest_id])
+        dest_in, dest_params = station_names_in("dest", destination_names or [dest_id])
         params.update(dest_params)
         origin_where = ("o.stop_id in (select stop_id from stops "
                         f"where stop_name in {origin_in})")
@@ -2804,12 +2804,9 @@ def _route_departure_from(data, first_day, at="origin_depart_dt"):
     """The entry's first departure on the service day first_day or after,
     as a UTC instant, or None when the calendar has none in its horizon;
     with at="dest_arrival_dt", that ride's arrival."""
-    args = departure_query_args(data)
     day = get_next_service_date(
         data["schedule"], data["origin"].split(": ")[0], data["destination"].split(": ")[0],
-        first_day, data["route_type"], line=args["line"],
-        origin_names=data.get("origin_stations"), dest_names=data.get("destination_stations"),
-        route=args["route"], direction=args["direction"])
+        first_day, data["route_type"], **departure_query_args(data))
     if not day:
         return None
     # the rows come in time order: the first is the one

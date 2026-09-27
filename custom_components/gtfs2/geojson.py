@@ -878,9 +878,7 @@ def write_timetable_file(hass, data, today, zip_path):
     after = (first + datetime.timedelta(days=TIMETABLE_DAYS)).isoformat()
     day = get_next_service_date(
         schedule, data["origin"].split(": ")[0], data["destination"].split(": ")[0], after,
-        data["route_type"], line=args["line"],
-        origin_names=data.get("origin_stations"), dest_names=data.get("destination_stations"),
-        route=args["route"], direction=args["direction"])
+        data["route_type"], **args)
     if day:
         later, _origin = _fetch_departure_rows(
             data["route_type"], data["origin"], data["destination"], schedule,

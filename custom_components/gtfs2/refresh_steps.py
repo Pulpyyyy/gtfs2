@@ -16,7 +16,7 @@ import logging
 import homeassistant.util.dt as dt_util
 
 from .const import ATTR_RT_CANCELLED, ATTR_RT_SKIPPED
-from .gtfs_helper import drop_departure_trips, get_next_service_date
+from .gtfs_helper import departure_query_args, drop_departure_trips, get_next_service_date
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,13 +40,8 @@ async def next_service_date_for(hass, schedule, data, offset):
             (dt_util.now() + timedelta(
                 minutes=offset or 0)).strftime("%Y-%m-%d"),
             data["route_type"],
-            line=data.get("line"),
-            origin_names=data.get("origin_stations"),
-            dest_names=data.get("destination_stations"),
-            # the line and, at a loop's terminus, the way round the
-            # departures themselves are held to
-            route=(data.get("route") or "").split(": ")[0] or None,
-            direction=data.get("loop_direction"),
+            # what the departures themselves are asked with
+            **departure_query_args(data),
         ))
     except Exception as ex:  # pylint: disable=broad-except
         # only enriches an attribute: never fail the update over it

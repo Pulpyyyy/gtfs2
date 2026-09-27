@@ -1867,7 +1867,7 @@ def check_train_stations(check, fx, route_id, direction):
                            lambda: get_next_service_date(
                                schedule, origins[0], destinations[0], day, "2",
                                line=short_name, origin_names=origins,
-                               dest_names=destinations))
+                               destination_names=destinations))
                 earliest = min((d for d in dates if d), default=None)
                 check.note(date == earliest,
                            f"{where}: next service {date}, the stations alone "
