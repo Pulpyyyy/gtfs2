@@ -338,18 +338,6 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                 get_agencies_in_zip, self.hass.config.path(DEFAULT_PATH),
                 self._user_inputs[CONF_FILE])
         else:
-            if self._pygtfs and hasattr(self._pygtfs, 'session'):
-                try:
-                    self._pygtfs.session.close()
-                    self._pygtfs.engine.dispose()
-                except Exception:
-                    pass
-            self._pygtfs = await self.hass.async_add_executor_job(
-                get_gtfs,
-                self.hass,
-                DEFAULT_PATH,
-                self._user_inputs,
-            )
             check_data = await self._check_data(self._user_inputs)
             if check_data :
                 # nothing to re-type on this step: the problem is the datasource picked
@@ -419,25 +407,6 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                     self._user_inputs.update(user_input or {})
                     return await self.async_step_extracting()
                 return await self._back_to_source(check_data)
-
-            if self._pygtfs and hasattr(self._pygtfs, 'session'):
-                try:
-                    self._pygtfs.session.close()
-                    self._pygtfs.engine.dispose()
-                except Exception:
-                    pass
-            self._pygtfs = await self.hass.async_add_executor_job(
-                get_gtfs,
-                self.hass,
-                DEFAULT_PATH,
-                self._user_inputs,
-            )
-            # a datasource imported before the indexes existed never crosses the
-            # import path again, so make sure of them here: costs a handful of
-            # sqlite_master lookups when they are already in place
-            await self.hass.async_add_executor_job(
-                check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH,
-                self._user_inputs[CONF_FILE])
         if user_input is None:
             gtfs_dir = self.hass.config.path(DEFAULT_PATH)
             if fresh:
@@ -683,18 +652,13 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
 
 
     async def _check_data(self, data):
-        if self._pygtfs and hasattr(self._pygtfs, 'session'):
-            try:
-                self._pygtfs.session.close()
-                self._pygtfs.engine.dispose()
-            except Exception:
-                pass
-        self._pygtfs = await self.hass.async_add_executor_job(
-            get_gtfs, self.hass, DEFAULT_PATH, data
-        )
+        await _reopen_schedule(self, data)
         _LOGGER.debug("Checkdata pygtfs: %s with data: %s", self._pygtfs, data)
         if self._pygtfs in ['no_data_file', 'no_zip_file', 'not_built', 'extracting'] :
             return self._pygtfs
+        # a datasource imported before the indexes existed never crosses the
+        # import path again, so make sure of them here: costs a handful of
+        # sqlite_master lookups when they are already in place
         await self.hass.async_add_executor_job(
                     check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH, data["file"]
                 )   
@@ -712,12 +676,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             if schedule in ("no_data_file", "no_zip_file", "not_built", "extracting"):
                 return schedule
             return "generic_failure"
-        if self._pygtfs and hasattr(self._pygtfs, 'session'):
-            try:
-                self._pygtfs.session.close()
-                self._pygtfs.engine.dispose()
-            except Exception:
-                pass
+        close_schedule(self._pygtfs)
         self._pygtfs = schedule
         self._data = {
             "schedule": self._pygtfs,
@@ -866,17 +825,18 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
                 self._user_inputs, {}, previous=self.config_entry.options))
 
 
-async def _check_stop_list(self, data):
-    _LOGGER.debug("Checkstops option with data: %s", data)
-    if self._pygtfs and hasattr(self._pygtfs, 'session'):
-        try:
-            self._pygtfs.session.close()
-            self._pygtfs.engine.dispose()
-        except Exception:
-            pass    
+async def _reopen_schedule(self, data):
+    """Let go of the schedule the flow holds and open the source's afresh:
+    a refresh or an import may have put another file under its name."""
+    close_schedule(self._pygtfs)
     self._pygtfs = await self.hass.async_add_executor_job(
         get_gtfs, self.hass, DEFAULT_PATH, data
     )
+
+
+async def _check_stop_list(self, data):
+    _LOGGER.debug("Checkstops option with data: %s", data)
+    await _reopen_schedule(self, data)
     if isinstance(self._pygtfs, str):
         # no database to count in, or one being written: the options are
         # kept as they are, the count is what the sensor meets next time.
