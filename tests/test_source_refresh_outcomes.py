@@ -137,13 +137,18 @@ def test_a_deleted_database_gets_back_the_lines_its_sensors_read(tmp_path):
     assert _no_leftovers(gtfs_dir)
 
 
-def test_a_deleted_database_read_whole_comes_back_whole(tmp_path):
+def test_a_deleted_database_read_whole_comes_back_whole(tmp_path, caplog):
     # a train or local stops sensor beside the line sensor reads every line
     gtfs_dir = _built(tmp_path)
     _edition(gtfs_dir / "src.zip", **TWO_LINES)
     (gtfs_dir / "src.sqlite").unlink()
-    assert _refresh(gtfs_dir, read_routes=["B1"], whole_feed=True) == {"B1": None, "B2": None}
+    with caplog.at_level(logging.INFO):
+        assert _refresh(gtfs_dir, read_routes=["B1"], whole_feed=True) == {"B1": None, "B2": None}
     assert _routes(gtfs_dir / "src.sqlite") == ["B1", "B2"]
+    # the log says why: a source with train entries was said to follow no
+    # route (Zou, field test of 98c023a)
+    said = " ".join(r.getMessage() for r in caplog.records)
+    assert "is read whole by a train" in said and "follows no route" not in said
 
 
 def test_a_deleted_database_with_no_sensor_comes_back_whole(tmp_path):

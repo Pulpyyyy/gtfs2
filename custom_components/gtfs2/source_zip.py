@@ -466,7 +466,13 @@ def refresh_datasource(hass, path, data):
         _LOGGER.info("Datasource %s holds no line, building the %s its sensors read",
                      filename, len(routes))
     whole = data.get("whole_feed") or not routes
-    if not routes:
+    if data.get("whole_feed"):
+        # the reason it is built whole, whatever the database held: a
+        # source with train entries was said to follow no route (Zou,
+        # field test of 98c023a)
+        _LOGGER.info("Datasource %s is read whole by a train, local stops or "
+                     "line-less sensor, building it whole", filename)
+    elif not routes:
         _LOGGER.info("Datasource %s follows no route yet, building it whole",
                      filename)
 
