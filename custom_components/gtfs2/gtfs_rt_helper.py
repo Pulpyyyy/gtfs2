@@ -777,7 +777,6 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
 
     _sort_departure_slots(departure_times)
 
-    self.info = departure_times
     _LOGGER.debug("Departure times Route Trip: %s", departure_times)
     return departure_times
 

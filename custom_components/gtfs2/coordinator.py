@@ -353,7 +353,6 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         if not self._data.get("next_departure"):
             _LOGGER.debug("GTFS RT: no scheduled departure left, realtime runs on config-entry fallbacks")
         self._get_next_service = {}
-        """Initialize the info object."""
         self._route_delimiter = None
         self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
         self._vehicle_position_url = with_query_key(rt_cfg.get(CONF_VEHICLE_POSITION_URL), rt_cfg)
@@ -361,7 +360,6 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._alerts_url = with_query_key(rt_cfg.get(CONF_ALERTS_URL), rt_cfg)
         self._headers = rt_headers(rt_cfg)
         self._icon = ICONS.get(int(self._data["route_type"]), ICON)
-        self.info = {}
         self._destination_id = data["destination"].split(": ")[0]
         self._follow_departure(data)
         self._relative = False
