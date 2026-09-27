@@ -43,7 +43,7 @@ from .const import (
 
     TIME_STR_FORMAT
 )
-from .alerts import journey_alerts
+from .alerts import _same_route, journey_alerts
 from .key_mask import fetch
 from .rt_source import with_query_key
 
@@ -518,28 +518,6 @@ def _names_trip(watched, seen):
             return True
         start = seen.find(watched, start + 1)
     return False
-
-
-def _same_route(configured, seen):
-    """Whether a realtime route_id designates the configured route.
-
-    Some feeds qualify their ids, so an exact match alone is too strict and a
-    plain substring test was used instead. That test makes "Line:1" swallow
-    "Line:11", and "Line:4" swallow 40, 41, 43 and 45: the sensor then reports
-    departures of a line the user never asked for.
-
-    A qualified id still has to end on the configured one, at a separator, so
-    a longer number cannot pass for a shorter one.
-    """
-    configured, seen = str(configured or ""), str(seen or "")
-    if not configured or not seen:
-        return False
-    if configured == seen:
-        return True
-    if not seen.endswith(configured):
-        return False
-    # the character before must be a separator, never a digit or a letter
-    return not seen[-len(configured) - 1].isalnum()
 
 
 def _feed_route_id(self, trip):

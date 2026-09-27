@@ -186,6 +186,28 @@ def _rank_alerts(items, ride=None):
 _STOP_ALIASES = {}
 
 
+def _same_route(configured, seen):
+    """Whether a realtime route_id designates the configured route.
+
+    Some feeds qualify their ids, so an exact match alone is too strict and a
+    plain substring test was used instead. That test makes "Line:1" swallow
+    "Line:11", and "Line:4" swallow 40, 41, 43 and 45: the sensor then reports
+    departures of a line the user never asked for.
+
+    A qualified id still has to end on the configured one, at a separator, so
+    a longer number cannot pass for a shorter one.
+    """
+    configured, seen = str(configured or ""), str(seen or "")
+    if not configured or not seen:
+        return False
+    if configured == seen:
+        return True
+    if not seen.endswith(configured):
+        return False
+    # the character before must be a separator, never a digit or a letter
+    return not seen[-len(configured) - 1].isalnum()
+
+
 def _same_trip(named, trip_id):
     """Whether an alert trip selector names the trip being watched.
 
@@ -461,7 +483,6 @@ def _about_something_else(fields, route_id, route_facts, direction):
     """Whether an entity names another line, operator, kind of line or way
     than the journey's. An unknown fact of the journey judges nothing; the
     line is compared the way the trip updates are (_same_route)."""
-    from .gtfs_rt_helper import _same_route  # it imports this module
     _stop, e_route, _trip, e_agency, e_type, e_direction = fields
     route_agency, route_type = route_facts
     return ((e_route is not None and not _same_route(route_id, e_route))  # another line
@@ -625,7 +646,6 @@ def _candidates(prepared, followed, stops, route_id):
     the feed's order: every other one names none of its trips (by
     _same_trip, the id or the id an alert cuts before its agency), none of
     its stops, not its line, and nothing as wide as an operator."""
-    from .gtfs_rt_helper import _same_route  # it imports this module
     _alerts, by_trip, by_stop, by_route, wide = prepared
     found = set(wide)
     for trip in followed:
