@@ -20,9 +20,6 @@ from .const import (
     ATTR_DAY,
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
-    ATTR_NEXT_RT_TRIPS,
-    ATTR_RT_CANCELLED,
-    ATTR_RT_SKIPPED,
     ATTR_DROP_OFF_DESTINATION,
     ATTR_DROP_OFF_ORIGIN,
     ATTR_FIRST,
@@ -274,9 +271,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         "next_departures_destination_arrival_times", "next_departures_origin_stop_id",
         "next_departures_route_types", "next_departures_realtime",
         "next_delays_realtime", "origin_stop_alerts", "destination_stop_alerts",
-        ATTR_NEXT_RT, ATTR_NEXT_RT_DELAYS, ATTR_NEXT_RT_TRIPS,
-        ATTR_RT_CANCELLED, ATTR_RT_SKIPPED, ATTR_INFO, ATTR_INFO_RT,
-        # the same three lists, under the names realtime_trips writes them
+        ATTR_INFO, ATTR_INFO_RT,
         "next_departures_realtime_trips", "cancelled_trips_realtime",
         "skipped_trips_realtime",
         ATTR_RT_UPDATED_AT, "gtfs_updated_at",
@@ -398,14 +393,12 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
             # the future. Nothing to describe, and nothing to query
             return self._show_nothing("Datasource %s has no usable schedule (%s), nothing to show for %s",
                                       self.coordinator.data.get("file"), self._pygtfs or "empty", self._name)
-        self.extracting = self.coordinator.data.get("extracting", False)
         self.origin = self.coordinator.data["origin"].split(": ")[0]
         self.destination = self.coordinator.data["destination"].split(": ")[0]
         self._offset = self.coordinator.data["offset"]
         self._departure = self.coordinator.data.get("next_departure",None)
         self._departure_rt = self.coordinator.data.get("next_departure_realtime_attr",None)
         self._route_type = self.coordinator.data["route_type"]
-        self._available = False
         self._attr_device_class = SensorDeviceClass.TIMESTAMP
         # The stops, the trip, the route and its agency, as the coordinator
         # read them in the executor (departure_records): this runs on the
@@ -417,14 +410,13 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._trip = records.get("trip")
         self._route = records.get("route")
         self._agency = records.get("agency")
-        if not self.extracting and self._route_type != "2":
+        if self._route_type != "2":
             if not self._origin:
                 return self._show_nothing("Origin stop ID %s not found", self.origin)
             if not self._destination:
                 return self._show_nothing("Destination stop ID %s not found", self.destination)
         else:
-            # a train names its ends by station, and while extracting there
-            # is nothing to read: the entry's own names stand
+            # a train names its ends by station: the entry's own names stand
             self._origin = self._origin or self.origin
             self._destination = self._destination or self.destination
         # the sensor has something to say again: a later problem is news
@@ -635,12 +627,6 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
                 key = f"{prefix} {key}"
             key = slugify(key)
             self._attributes[key] = val
-
-    def remove_keys(self, prefix: str) -> None:
-        """Remove attributes whose key starts with prefix."""
-        self._attributes = {
-            k: v for k, v in self._attributes.items() if not k.startswith(prefix)
-        }
 
 
 class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
