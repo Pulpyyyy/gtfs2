@@ -357,18 +357,24 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._headers = rt_headers(rt_cfg)
         self._icon = ICONS.get(int(self._data["route_type"]), ICON)
         self.info = {}
-        self._route_id = self._data["next_departure"].get("route_id", None)
+        self._destination_id = data["destination"].split(": ")[0]
+        self._follow_departure(data)
+        self._relative = False
+
+    def _follow_departure(self, data) -> None:
+        """Point the realtime readers at the departure shown: its route,
+        stop, trip and direction, the entry's own where it names none."""
+        departure = self._data.get("next_departure") or {}
+        self._route_id = departure.get("route_id", None)
         if self._route_id == None:
             _LOGGER.debug("GTFS RT: no route_id in sensor data, using route_id from config_entry")
             self._route_id = data["route"].split(": ")[0]
-        self._stop_id = self._data["next_departure"].get("origin_stop_id", data["origin"]).split(": ")[0]
-        self._stop_sequence = self._data["next_departure"].get("origin_stop_sequence", None)
-        self._destination_id = data["destination"].split(": ")[0]
-        self._trip_id = self._data.get('next_departure', {}).get('trip_id', None) or "no_trip_information"
-        self._trip_short_name = self._data.get('next_departure', {}).get('trip_short_name', None)
-        self._direction = str(self._data.get('next_departure', {}).get('trip_direction_id', data["direction"]))
-        self._trip_list = self._data["next_departure"].get("next_departures_trip_id", [])[:10]
-        self._relative = False
+        self._stop_id = departure.get("origin_stop_id", data["origin"]).split(": ")[0]
+        self._stop_sequence = departure.get("origin_stop_sequence", None)
+        self._trip_id = departure.get('trip_id', None) or "no_trip_information"
+        self._trip_short_name = departure.get('trip_short_name', None)
+        self._direction = str(departure.get('trip_direction_id', data["direction"]))
+        self._trip_list = departure.get("next_departures_trip_id", [])[:10]
 
     async def _read_realtime(self, data, rt_cfg, run_static) -> bool:
         """Read the alerts, then the trip updates; False when the trip

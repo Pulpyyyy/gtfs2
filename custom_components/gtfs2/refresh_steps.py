@@ -74,13 +74,7 @@ async def drop_struck_trips(coordinator, data, run_static):
         _LOGGER.debug("GTFS RT: the feed struck %s out of the listed trips, reading the departures again", sorted(listed & set(struck)))
         coordinator._data["next_departure"] = await coordinator.hass.async_add_executor_job(
             drop_departure_trips, coordinator.hass, coordinator._data, struck)
-        departure = coordinator._data["next_departure"] or {}
-        coordinator._stop_id = departure.get("origin_stop_id", data["origin"]).split(": ")[0]
-        coordinator._stop_sequence = departure.get("origin_stop_sequence", None)
-        coordinator._trip_id = departure.get("trip_id", None) or "no_trip_information"
-        coordinator._trip_short_name = departure.get("trip_short_name", None)
-        coordinator._direction = str(departure.get("trip_direction_id", data["direction"]))
-        coordinator._trip_list = departure.get("next_departures_trip_id", [])[:10]
+        coordinator._follow_departure(data)
         coordinator._get_next_service = await coordinator.hass.async_add_executor_job(get_next_services, coordinator)
         coordinator._remember_struck()
         coordinator._data["next_departure_realtime_attr"] = coordinator._get_next_service
