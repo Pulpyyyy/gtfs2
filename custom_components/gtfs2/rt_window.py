@@ -31,7 +31,7 @@ import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH
-from .gtfs_helper import agency_zone, gtfs_seconds
+from .gtfs_helper import _runs_on, agency_zone, gtfs_seconds
 from .gtfs_rt_helper import cached_feed_has_future_stop
 from .rt_source import source_readers
 
@@ -60,15 +60,11 @@ _STATE: dict[str, dict] = {}
 # weekday flags over a validity window, calendar_dates explicit additions and
 # removals, and feeds use either (TAO publishes everything through
 # calendar_dates).
-_ACTIVE_TRIPS_SQL = """
+_ACTIVE_TRIPS_SQL = f"""
     with active as (
         select service_id from calendar
         where start_date <= date(:d) and end_date >= date(:d)
-          and (case cast(strftime('%w', date(:d)) as int)
-                 when 0 then sunday   when 1 then monday
-                 when 2 then tuesday  when 3 then wednesday
-                 when 4 then thursday when 5 then friday
-                 else saturday end) = 1
+          and {_runs_on("date(:d)")}
           and not exists (
               select 1 from calendar_dates cx
               where cx.service_id = calendar.service_id

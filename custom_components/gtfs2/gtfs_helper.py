@@ -224,11 +224,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
             select 1 from serving s
             inner join calendar cal on cal.service_id = s.service_id
             where cal.start_date <= dates.d and cal.end_date >= dates.d
-              and (case cast(strftime('%w', dates.d) as int)
-                     when 0 then cal.sunday   when 1 then cal.monday
-                     when 2 then cal.tuesday  when 3 then cal.wednesday
-                     when 4 then cal.thursday when 5 then cal.friday
-                     else cal.saturday end) = 1
+              and {_runs_on("dates.d", "cal")}
               and not exists (
                   select 1 from calendar_dates cx
                   where cx.service_id = s.service_id
@@ -375,7 +371,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
     # once for a database and a pair, then handed to the query (_candidate_pairs)
     candidates_sql = f"""
             SELECT trip.trip_id, trip.service_id,
-                   CAST(julianday(date(origin_stop_time.departure_time)) - julianday('1970-01-01') AS INTEGER) AS day_offset,
+                   {_day_offset("origin_stop_time.departure_time")} AS day_offset,
                    origin_stop_time.stop_id AS origin_stop_id,
                    destination_stop_time.stop_id AS destination_stop_id,
                    origin_stop_time.stop_sequence AS origin_stop_sequence,
@@ -427,15 +423,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
           valid_dates AS MATERIALIZED (
             SELECT service_id, d AS date
             FROM cal_expand
-            WHERE (
-                (CAST(strftime('%w', d) AS INTEGER) = 0 AND sunday    = 1) OR
-                (CAST(strftime('%w', d) AS INTEGER) = 1 AND monday    = 1) OR
-                (CAST(strftime('%w', d) AS INTEGER) = 2 AND tuesday   = 1) OR
-                (CAST(strftime('%w', d) AS INTEGER) = 3 AND wednesday = 1) OR
-                (CAST(strftime('%w', d) AS INTEGER) = 4 AND thursday  = 1) OR
-                (CAST(strftime('%w', d) AS INTEGER) = 5 AND friday    = 1) OR
-                (CAST(strftime('%w', d) AS INTEGER) = 6 AND saturday  = 1)
-            )
+            WHERE {_runs_on("d")}
             AND NOT EXISTS (
               SELECT 1 FROM calendar_dates cd
               WHERE cd.service_id = cal_expand.service_id
@@ -455,9 +443,9 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
                start_station.stop_timezone as origin_stop_timezone,
                agency.agency_timezone as agency_timezone,
                time(origin_stop_time.arrival_time) AS origin_arrival_time,
-               datetime(vd.date || ' ' || time(origin_stop_time.arrival_time),'+' || CAST(julianday(date(origin_stop_time.arrival_time)) - julianday('1970-01-01') AS INTEGER) || ' days') AS origin_arrival_dt,
+               {_on_service_day("vd.date", "origin_stop_time.arrival_time")} AS origin_arrival_dt,
                time(origin_stop_time.departure_time) AS origin_depart_time,
-			   datetime(vd.date || ' ' || time(origin_stop_time.departure_time),'+' || CAST(julianday(date(origin_stop_time.departure_time)) - julianday('1970-01-01') AS INTEGER) || ' days') AS origin_depart_dt,
+			   {_on_service_day("vd.date", "origin_stop_time.departure_time")} AS origin_depart_dt,
                vd.date AS origin_depart_date,
                origin_stop_time.drop_off_type AS origin_drop_off_type,
                origin_stop_time.pickup_type AS origin_pickup_type,
@@ -469,9 +457,9 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
                end_station.stop_name as dest_stop_name,
                end_station.stop_timezone as dest_stop_timezone,
                time(destination_stop_time.arrival_time) AS dest_arrival_time,
-               datetime(vd.date || ' ' || time(destination_stop_time.arrival_time),'+' || CAST(julianday(date(destination_stop_time.arrival_time)) - julianday('1970-01-01') AS INTEGER) || ' days') AS dest_arrival_dt,
+               {_on_service_day("vd.date", "destination_stop_time.arrival_time")} AS dest_arrival_dt,
                time(destination_stop_time.departure_time) AS dest_depart_time,
-               datetime(vd.date || ' ' || time(destination_stop_time.departure_time),'+' || CAST(julianday(date(destination_stop_time.departure_time)) - julianday('1970-01-01') AS INTEGER) || ' days') AS dest_depart_dt,
+               {_on_service_day("vd.date", "destination_stop_time.departure_time")} AS dest_depart_dt,
                destination_stop_time.drop_off_type AS dest_drop_off_type,
                destination_stop_time.pickup_type AS dest_pickup_type,
                destination_stop_time.shape_dist_traveled AS dest_dist_traveled,
@@ -487,12 +475,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
         INNER JOIN routes route ON route.route_id = trip.route_id
         INNER JOIN agency agency ON route.agency_id = agency.agency_id
         INNER JOIN valid_dates vd ON vd.service_id = trip.service_id
-        WHERE datetime(
-                vd.date || ' ' || time(origin_stop_time.departure_time),
-                -- the whole day offset, as in the SELECT: a call past 48:00
-                -- is two days on, not one
-                '+' || CAST(julianday(date(origin_stop_time.departure_time)) - julianday('1970-01-01') AS INTEGER) || ' days'
-              ) >= datetime(:now)
+        WHERE {_on_service_day("vd.date", "origin_stop_time.departure_time")} >= datetime(:now)
           {window_where}
         ORDER BY vd.date, origin_stop_time.departure_time
         LIMIT {int(limit)};
@@ -1059,6 +1042,32 @@ _STOP_GROUP = _place_group("origin")
 # departure, or as a place to get off, sends the rider to a bus that will
 # not open its door. The value is cast, pygtfs stores it as a number but a
 # feed's blank is a NULL, and the db of a test may hold text.
+def _day_offset(time_column):
+    """SQL: the whole days a stored stop time lies past its service day.
+
+    Stop times are stored on 1970-01-01, and a time past midnight on the
+    days after: a call at 25:10 is one day on, one past 48:00 two days on.
+    """
+    return f"CAST(julianday(date({time_column})) - julianday('1970-01-01') AS INTEGER)"
+
+
+def _on_service_day(day, time_column):
+    """SQL: a stored stop time laid on its service day, the days it lies
+    past midnight included (see _day_offset)."""
+    return (f"datetime({day} || ' ' || time({time_column}), "
+            f"'+' || {_day_offset(time_column)} || ' days')")
+
+
+def _runs_on(day, calendar=""):
+    """SQL: the calendar row runs on the weekday of this date."""
+    cal = f"{calendar}." if calendar else ""
+    return (f"(case cast(strftime('%w', {day}) as int)"
+            f" when 0 then {cal}sunday when 1 then {cal}monday"
+            f" when 2 then {cal}tuesday when 3 then {cal}wednesday"
+            f" when 4 then {cal}thursday when 5 then {cal}friday"
+            f" else {cal}saturday end) = 1")
+
+
 def _boards(alias):
     """SQL: the rider can get on at this stop_times row."""
     return f"coalesce(cast({alias}.pickup_type as integer), 0) <> 1"
@@ -2551,7 +2560,7 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
           -- least yesterday, to tomorrow
           candidate_dates(date) AS (
             SELECT date(:now_offset, '-' || max(1, (
-                SELECT coalesce(max(CAST(julianday(date(departure_time_raw)) - julianday('1970-01-01') AS INTEGER)), 0)
+                SELECT coalesce(max({_day_offset("departure_time_raw")}), 0)
                 FROM candidate_stops)) || ' days')
             UNION ALL
             SELECT date(date, '+1 day') FROM candidate_dates
@@ -2563,15 +2572,7 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
             CROSS JOIN candidate_dates cd
             WHERE cal.service_id IN (SELECT service_id FROM candidate_stops)
               AND cd.date BETWEEN cal.start_date AND cal.end_date
-              AND (
-                (CAST(strftime('%w', cd.date) AS INTEGER) = 0 AND cal.sunday    = 1) OR
-                (CAST(strftime('%w', cd.date) AS INTEGER) = 1 AND cal.monday   = 1) OR
-                (CAST(strftime('%w', cd.date) AS INTEGER) = 2 AND cal.tuesday  = 1) OR
-                (CAST(strftime('%w', cd.date) AS INTEGER) = 3 AND cal.wednesday = 1) OR
-                (CAST(strftime('%w', cd.date) AS INTEGER) = 4 AND cal.thursday = 1) OR
-                (CAST(strftime('%w', cd.date) AS INTEGER) = 5 AND cal.friday   = 1) OR
-                (CAST(strftime('%w', cd.date) AS INTEGER) = 6 AND cal.saturday = 1)
-              )
+              AND {_runs_on("cd.date", "cal")}
               AND NOT EXISTS (
                 SELECT 1 FROM calendar_dates ex
                 WHERE ex.service_id = cal.service_id AND ex.date = cd.date AND ex.exception_type = 2
@@ -2585,18 +2586,12 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
           )
         SELECT cs.stop_id, cs.stop_name, cs.latitude, cs.longitude, cs.stop_timezone, cs.agency_timezone,
                cs.trip_id, cs.trip_headsign, cs.direction_id, cs.trip_short_name,
-               datetime(
-                 vd.date || ' ' || time(cs.departure_time_raw),
-                 '+' || CAST(julianday(date(cs.departure_time_raw)) - julianday('1970-01-01') AS INTEGER) || ' days'
-               ) AS departure_dt,
+               {_on_service_day("vd.date", "cs.departure_time_raw")} AS departure_dt,
                cs.stop_sequence, cs.route_long_name, cs.route_short_name, cs.route_type,
                cs.route_id
         FROM candidate_stops cs
         INNER JOIN valid_dates vd ON vd.service_id = cs.service_id
-        WHERE datetime(
-                vd.date || ' ' || time(cs.departure_time_raw),
-                '+' || CAST(julianday(date(cs.departure_time_raw)) - julianday('1970-01-01') AS INTEGER) || ' days'
-              ) BETWEEN datetime(:now_offset, :timerange_history) AND datetime(:now_offset, :timerange)
+        WHERE {_on_service_day("vd.date", "cs.departure_time_raw")} BETWEEN datetime(:now_offset, :timerange_history) AND datetime(:now_offset, :timerange)
         ORDER BY cs.stop_id, vd.date, cs.departure_time_raw;
     """  # noqa: S608        
     
