@@ -14,6 +14,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 import homeassistant.util.dt as dt_util
 
 from .const import (
+    CONF_DESTINATION_STATIONS,
+    CONF_ORIGIN_STATIONS,
     DEFAULT_PATH,
     DEFAULT_REFRESH_INTERVAL, 
     DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
@@ -229,7 +231,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             "destination": data["destination"],
             # a train entry's every station at each end, only on the entries
             # that ticked them: the others keep the shape they always had
-            **{key: data[key] for key in ("origin_stations", "destination_stations")
+            **{key: data[key] for key in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS)
                if data.get(key)},
             "offset": options["offset"] if "offset" in options else 0,
             "gtfs_dir": DEFAULT_PATH,

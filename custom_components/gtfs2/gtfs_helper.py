@@ -18,6 +18,8 @@ from homeassistant.helpers import entity_registry as er
 
 from .const import (
     CONF_API_KEY,
+    CONF_DESTINATION_STATIONS,
+    CONF_ORIGIN_STATIONS,
 CONF_API_KEY_LOCATION,
     CONF_API_KEY_NAME,
     CONF_ACCEPT_HEADER_PB,
@@ -2882,7 +2884,7 @@ async def _route_times(hass, data, at):
             "schedule": _pygtfs,
             "origin": cf_data["origin"],
             "destination": cf_data["destination"],
-            **{key: cf_data[key] for key in ("origin_stations", "destination_stations")
+            **{key: cf_data[key] for key in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS)
                if cf_data.get(key)},
             "offset": cf_options["offset"] if "offset" in cf_options else 0,
             "gtfs_dir": DEFAULT_PATH,
