@@ -24,6 +24,45 @@ import zipfile
 _LOGGER = logging.getLogger(__name__)
 
 
+def trip_shape_id(zip_path, trip_id):
+    """The shape_id the zip's own trips.txt gives a trip.
+
+    The number and the points have to come from one edition. A shape_id is
+    the publisher's to reuse: IDFM renumbers its shapes at every export, and
+    shp_1_162 was a metro 6 shape on 2026-09-19 and a metro 9 one on
+    2026-09-27. The database is built from the zip, but not at the same
+    moment: a refresh adopts the zip first and builds after, and a shape_id
+    read from the database then points into the wrong edition.
+
+    None when the zip has no trips.txt, or no row for that trip (an edition
+    whose trip ids moved on), or names no shape for it.
+    """
+    if not trip_id or not zip_path:
+        return None
+    trip_id = str(trip_id)
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            if "trips.txt" not in zin.namelist():
+                return None
+            with zin.open("trips.txt") as raw:
+                reader = csv.reader(io.TextIOWrapper(raw, encoding="utf-8-sig", newline=""))
+                header = next(reader, None)
+                if header is None:
+                    return None
+                columns = {name.strip(): index for index, name in enumerate(header)}
+                if "trip_id" not in columns or "shape_id" not in columns:
+                    return None
+                c_trip, c_shape = columns["trip_id"], columns["shape_id"]
+                width = max(c_trip, c_shape) + 1
+                for row in reader:
+                    if len(row) >= width and row[c_trip] == trip_id:
+                        # trip_id is the table's key: the first row is the one
+                        return row[c_shape].strip() or None
+    except (OSError, zipfile.BadZipFile, UnicodeDecodeError, csv.Error) as ex:
+        _LOGGER.warning("Could not read the shape of trip %s from %s: %s", trip_id, zip_path, ex)
+    return None
+
+
 def read_shape(zip_path, shape_id):
     """The points of one shape, as [lon, lat] pairs in shape_pt_sequence
     order, geojson's way round.

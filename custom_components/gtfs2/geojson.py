@@ -35,7 +35,7 @@ from .gtfs_rt_helper import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, safe_file_part, stop_relationship, stop_update_clock,
     trip_relationship, write_json_file,
 )
-from .gtfs_shape import read_shape
+from .gtfs_shape import read_shape, trip_shape_id
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -215,7 +215,7 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
     each with an id and a title the way the geojson integration expects,
     plus the trip_id; what describes the whole line sits on the
     FeatureCollection. When the zip beside the database still holds
-    shapes.txt and the trip names a shape, its polyline comes first as a
+    shapes.txt and its trips.txt names a shape for the trip, its polyline comes first as a
     LineString, in the trip's travel direction, so a map card draws the
     street or the track rather than a straight line between stops: on the
     tram A of Orleans the stops sit within 26 m of it. The polyline is read
@@ -249,16 +249,14 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
     """
     with schedule.engine.connect() as conn:
         stop_rows = conn.execute(text(sql_stops), {"trip_id": trip_id}).fetchall()
-        # the shape is the trip's, and trips keep their shape_id even though
-        # the shapes themselves are never imported
-        shape_row = conn.execute(text("SELECT shape_id FROM trips WHERE trip_id = :trip_id"),
-                                 {"trip_id": trip_id}).fetchone()
         boards, alights = _line_ways(conn, route_id, direction)
     if not stop_rows:
         _LOGGER.debug("No stops found for trip: %s", trip_id)
         return
-    shape_id = shape_row[0] if shape_row and shape_row[0] else None
     zip_path = os.path.join(hass.config.path(data["gtfs_dir"]), str(data["file"]) + ".zip")
+    # the shape is the trip's, named by the zip the points come from and
+    # not by the database, which may be another edition (see trip_shape_id)
+    shape_id = trip_shape_id(zip_path, trip_id)
     shape = read_shape(zip_path, shape_id) if shape_id else None
     features = []
     if shape and len(shape) >= 2:
