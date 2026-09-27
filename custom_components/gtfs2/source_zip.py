@@ -23,7 +23,8 @@ from .const import (CONF_API_KEY, CONF_API_KEY_LOCATION, CONF_API_KEY_NAME,
                     CONF_INNER_ZIP)
 from .direction_repair import repair_trip_directions
 from .freshness import adopt_zip, stage_zip
-from .gtfs_db import import_routes, optimise_datasource, real_path, routes_in, swap_in
+from .gtfs_db import (import_routes, optimise_datasource, real_path, remove_files, routes_in,
+                      swap_in)
 from .key_mask import fetch
 from .rt_source import with_query_key
 from .zip_peek import (extract_member, inner_zips, inner_zips_in_file,
@@ -267,20 +268,6 @@ def _stale_staging_gone(new_real, filename):
     return True
 
 
-def _remove_staging(new_real):
-    """Remove the new database a refresh built, and its journal, if still there.
-
-    Swapped in, the file is gone already; refused or failed, it goes here, so
-    the next refresh starts from nothing it left behind.
-    """
-    for leftover in (new_real, new_real + "-journal"):
-        if os.path.exists(leftover):
-            try:
-                os.remove(leftover)
-            except OSError as ex:
-                _LOGGER.warning("Could not remove %s: %s", leftover, ex)
-
-
 def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
     """Rebuild a source some sensor reads whole: every line of the new edition.
 
@@ -328,7 +315,9 @@ def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
         if not swap_in(new_real, real):
             return False
     finally:
-        _remove_staging(new_real)
+        # swapped in, the file is gone already; refused or failed, it goes
+        # here, so the next refresh starts from nothing it left behind
+        remove_files(new_real, new_real + "-journal")
     _LOGGER.info("Refreshed datasource %s from its source, whole: %s lines",
                  filename, len(loaded))
     # the same answer as the route by route refresh, for refresh_source
@@ -415,7 +404,7 @@ def _refresh_route_by_route(gtfs_dir, filename, zip_name, routes, data):
         if not swap_in(new_real, real):
             return False
     finally:
-        _remove_staging(new_real)
+        remove_files(new_real, new_real + "-journal")
     _LOGGER.info("Refreshed datasource %s from its source: %s stop_times "
                  "per route", filename, added)
     return added

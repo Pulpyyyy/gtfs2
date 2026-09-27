@@ -122,6 +122,18 @@ def create_real_from(scratch_file, real_file):
     return True
 
 
+def remove_files(*paths):
+    """Remove each of these files that exists; one that cannot go is said,
+    not raised."""
+    for path in paths:
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                _LOGGER.debug("Removed %s", path)
+            except OSError as ex:
+                _LOGGER.warning("Could not remove %s: %s", path, ex)
+
+
 def _drop_side_files(real_file):
     """Remove what SQLite may have left beside a file just swapped out.
 
@@ -131,14 +143,7 @@ def _drop_side_files(real_file):
     exclusive lock is what makes this safe to do: no live transaction can be
     holding one.
     """
-    for suffix in ("-journal", "-wal", "-shm"):
-        side = real_file + suffix
-        if os.path.exists(side):
-            try:
-                os.remove(side)
-                _LOGGER.debug("Removed %s left beside the swapped file", side)
-            except OSError as ex:
-                _LOGGER.warning("Could not remove %s: %s", side, ex)
+    remove_files(real_file + "-journal", real_file + "-wal", real_file + "-shm")
 
 
 def swap_in(new_file, real_file, timeout=SWAP_TIMEOUT):
@@ -364,20 +369,10 @@ def import_routes(gtfs_dir, filename, route_ids, build_scratch):
             # nothing came into the file this import created: left with its
             # schema only, it read as a datasource that follows no line,
             # which the flows then sent down the legacy extract
-            _discard_real(real)
+            remove_files(real, real + "-journal")
         return added
     finally:
         discard_scratch(gtfs_dir, filename)
-
-
-def _discard_real(real):
-    """Delete a real database nothing was copied into, and its journal."""
-    for path in (real, real + "-journal"):
-        if os.path.exists(path):
-            try:
-                os.remove(path)
-            except OSError as ex:
-                _LOGGER.warning("Could not remove %s: %s", path, ex)
 
 
 def _index_scratch(scratch_file):
@@ -408,13 +403,7 @@ def discard_scratch(gtfs_dir, filename):
     untouched either way, which is the whole point of importing elsewhere.
     """
     base = scratch_path(gtfs_dir, filename)
-    for path in (base, base + "-journal", base + "-wal", base + "-shm"):
-        if os.path.exists(path):
-            try:
-                os.remove(path)
-                _LOGGER.debug("Removed scratch file: %s", path)
-            except OSError as ex:
-                _LOGGER.warning("Could not remove %s: %s", path, ex)
+    remove_files(base, base + "-journal", base + "-wal", base + "-shm")
 
 
 # Tables carrying a trip_id that must follow trips when pruning, with the
@@ -483,12 +472,7 @@ def on_a_copy(gtfs_dir, filename, work, *args, done=bool):
         _LOGGER.exception("Could not rewrite %s on a copy: %s", filename, ex)
         return None
     finally:
-        for leftover in (copy, copy + "-journal"):
-            if os.path.exists(leftover):
-                try:
-                    os.remove(leftover)
-                except OSError as ex:
-                    _LOGGER.warning("Could not remove %s: %s", leftover, ex)
+        remove_files(copy, copy + "-journal")
     # the stats name the file they were made on: the staging copy
     for stats in (result, *(result.values() if isinstance(result, dict) else ())):
         if isinstance(stats, dict) and stats.get("file") == staging:
