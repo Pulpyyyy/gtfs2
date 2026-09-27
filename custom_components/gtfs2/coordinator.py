@@ -36,7 +36,7 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures, drop_gone_local_departures
+from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, get_local_stops_next_departures, drop_gone_local_departures, shown_ends
 from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck
 from .rt_source import rt_feed_config, rt_headers, with_query_key
@@ -326,12 +326,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 # nothing will refresh the positions until the window
                 # opens again, so the map is told rather than left on
                 # the last vehicles seen
-                departure = self._data.get("next_departure") or {}
+                route_id, direction, _origin, _destination = shown_ends(
+                    data, self._data.get("next_departure") or {})
                 await self.hass.async_add_executor_job(
-                    clear_vehicle_file, self.hass,
-                    str(departure.get("route_id")
-                        or (data.get("route") or "").split(": ")[0]),
-                    str(departure.get("trip_direction_id", data.get("direction"))))
+                    clear_vehicle_file, self.hass, route_id, direction)
         return rt_paused
 
     def _realtime_targets(self, data, rt_cfg) -> None:
@@ -365,15 +363,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         """Point the realtime readers at the departure shown: its route,
         stop, trip and direction, the entry's own where it names none."""
         departure = self._data.get("next_departure") or {}
-        self._route_id = departure.get("route_id", None)
-        if self._route_id == None:
-            _LOGGER.debug("GTFS RT: no route_id in sensor data, using route_id from config_entry")
-            self._route_id = data["route"].split(": ")[0]
-        self._stop_id = departure.get("origin_stop_id", data["origin"]).split(": ")[0]
+        self._route_id, self._direction, self._stop_id, _destination = shown_ends(data, departure)
         self._stop_sequence = departure.get("origin_stop_sequence", None)
         self._trip_id = departure.get('trip_id', None) or "no_trip_information"
         self._trip_short_name = departure.get('trip_short_name', None)
-        self._direction = str(departure.get('trip_direction_id', data["direction"]))
         self._trip_list = departure.get("next_departures_trip_id", [])[:10]
 
     async def _read_realtime(self, data, rt_cfg, run_static) -> bool:

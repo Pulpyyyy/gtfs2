@@ -18,6 +18,7 @@ import os
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
+from .gtfs_helper import shown_ends
 from .geojson import (
     write_route_file, write_leg_file, write_timetable_file, route_geojson_name,
     leg_geojson_name, timetable_name, get_representative_trip,
@@ -76,9 +77,8 @@ async def export_route_shape(coordinator, data) -> None:
     a large shapes.txt held the sensor platform past Home Assistant's
     minute at startup.
     """
-    departure = coordinator._data.get("next_departure") or {}
-    route_id = departure.get("route_id", None) or (data.get("route") or "").split(": ")[0]
-    direction = str(departure.get("trip_direction_id", data.get("direction")))
+    route_id, direction, origin_id, destination_id = shown_ends(
+        data, coordinator._data.get("next_departure") or {})
     # the file is named from the route and the direction, both known even
     # once the last departure of the day is behind us: the attribute stays
     # put so a card keeps its route through the evening, and it is named
@@ -90,8 +90,6 @@ async def export_route_shape(coordinator, data) -> None:
     # the trip drawn has to be one the sensor rides, or a card places its
     # stops where nothing it lists calls: the stops of the next
     # departure, the entry's once the last one of the day is gone
-    origin_id = departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0]
-    destination_id = departure.get("destination_stop_id") or (data.get("destination") or "").split(": ")[0]
     # picking it reads every trip of the line, 0.3 s for Orleans line A, and
     # it ran on every refresh of every entry: the pick only changes with
     # the stops asked and the database, so it is kept until one of them does
@@ -206,9 +204,8 @@ async def export_leg(coordinator, data, feed_entities) -> None:
     attribute is set before the write, so a card can name the file even
     when the first write fails.
     """
-    departure = coordinator._data.get("next_departure") or {}
-    route_id = str(departure.get("route_id") or (data.get("route") or "").split(": ")[0])
-    direction = str(departure.get("trip_direction_id", data.get("direction")))
+    route_id, direction, _origin, _destination = shown_ends(
+        data, coordinator._data.get("next_departure") or {})
     coordinator._data["leg_geojson_file"] = leg_geojson_name(route_id, direction, data["name"])
     try:
         await coordinator.hass.async_add_executor_job(write_leg_file, coordinator.hass, coordinator._data, feed_entities)

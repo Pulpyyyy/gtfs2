@@ -774,6 +774,20 @@ def departure_query_args(_data):
     }
 
 
+def shown_ends(data, departure):
+    """(route_id, direction, origin stop id, destination stop id) of the
+    departure shown, the entry's own where the departure names none: once
+    the last departure of the day is gone, the entry still says which line,
+    way and stops the sensor follows."""
+    return (
+        str(departure.get("route_id") or (data.get("route") or "").split(": ")[0]),
+        # a direction of 0 is a real one: only a missing key falls back
+        str(departure.get("trip_direction_id", data.get("direction"))),
+        str(departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0]),
+        str(departure.get("destination_stop_id") or (data.get("destination") or "").split(": ")[0]),
+    )
+
+
 def get_next_departure(hass, _data):
     """Get next departures from data."""
     _LOGGER.debug("Get next departure with data: %s", _data)

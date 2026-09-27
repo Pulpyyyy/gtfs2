@@ -29,7 +29,7 @@ from .const import DEFAULT_PATH_GEOJSON
 from .feed_window import last_service_day
 from .gtfs_helper import (
     _call_type, _fetch_departure_rows, _line_ways, departure_query_args, get_next_service_date,
-    gtfs_seconds,
+    gtfs_seconds, shown_ends,
 )
 from .gtfs_rt_helper import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, safe_file_part, stop_relationship, stop_update_clock,
@@ -234,11 +234,9 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
     if not trip_id:
         # a trip the sensor rides: its stops come from the next departure,
         # from the entry once the last one of the day is gone
-        departure = data.get("next_departure") or {}
-        trip_id = get_representative_trip(
-            schedule, route_id, direction,
-            departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0],
-            departure.get("destination_stop_id") or (data.get("destination") or "").split(": ")[0])
+        _route, _direction, origin_id, destination_id = shown_ends(
+            data, data.get("next_departure") or {})
+        trip_id = get_representative_trip(schedule, route_id, direction, origin_id, destination_id)
     if not trip_id:
         return
     sql_stops = """
@@ -700,9 +698,7 @@ def write_leg_file(hass, data, feed_entities=None):
     name = data.get("name") or ""
     departure = data.get("next_departure") or {}
     trip_id, trip_ids, leaves = _listed_trips(departure)
-    route_id = str(departure.get("route_id") or (data.get("route") or "").split(": ")[0])
-    direction = str(departure.get("trip_direction_id", data.get("direction")))
-    origin_id = str(departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0])
+    route_id, direction, origin_id, _destination = shown_ends(data, departure)
     stops_by_trip, origin_parent = _read_trip_calls(schedule, trip_ids, origin_id)
     zone = _leg_timezone(schedule, route_id, departure, hass)
 
