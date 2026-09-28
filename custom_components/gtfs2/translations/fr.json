@@ -587,14 +587,6 @@
     "import_failed": "Les lignes n'ont pas pu être rétablies dans {file}.\n\nRien n'a été modifié. Paramètres > Appareils et services > GTFS2 > Ajouter une entrée pour réessayer.",
     "import_partial_title": "GTFS : {file} mise à jour en partie",
     "import_partial": "Rétabli dans {file} : {lines}.\n\nNon rétabli : **{missing}**. L'import s'est arrêté à la première ligne en échec ; le journal dit pourquoi. Paramètres > Appareils et services > GTFS2 > Ajouter une entrée, puis **Ajouter un trajet entre deux arrêts** sur l'une de ces lignes pour réessayer.",
-    "line_orphaned_title": "GTFS : {file} garde une ligne que personne ne lit",
-    "line_orphaned": "Le dernier capteur lisant la ligne **{line}** a été supprimé, mais son horaire est toujours dans {file}.\n\nLe service gtfs2.prune_datasource supprime les lignes qu'aucun capteur ne lit ; appelez-le d'abord avec dry_run pour voir ce qui partirait. Garder la ligne ne coûte que de l'espace disque, et un nouveau capteur sur cette ligne la réutilisera.",
-    "lines_missing_title": "GTFS : {file} n'a pas été mis à jour",
-    "lines_missing": "La nouvelle version de {file} ne contient plus aucun trajet pour **{lines}**. L'horaire actuel reste en place et les capteurs continuent de l'utiliser.\n\nSi l'opérateur a renuméroté la ligne, recréez son capteur sur la nouvelle ligne ; si la ligne n'existe plus, supprimez son capteur. La mise à jour suivante passera alors. Si toutes les lignes sont citées, c'est sans doute le fichier lui-même qui est défectueux.",
-    "refresh_failed_title": "GTFS : {file} n'a pas été mis à jour",
-    "refresh_failed": "La mise à jour de {file} n'a pas abouti. L'horaire actuel reste en place et les capteurs continuent de l'utiliser.\n\nLe journal en donne la raison. La prochaine vérification réessaiera.",
-    "source_update_available_title": "GTFS : {file} a une nouvelle version",
-    "source_update_available": "La source a publié un nouveau fichier horaire ({version}).\n\nInstallez-le depuis l'entité de mise à jour **Static feed** de {file}, ou laissez faire votre automatisation. Les données actuelles continuent de servir jusqu'à la bascule, qui se fait d'un coup.",
     "line_mode_tram": "tram",
     "line_mode_metro": "métro",
     "line_mode_train": "train",
@@ -607,5 +599,42 @@
     "line_mode_trolleybus": "trolleybus",
     "line_mode_monorail": "monorail",
     "agency_all": "Tous les exploitants"
+  },
+  "issues": {
+    "refresh_failed": {
+      "title": "GTFS : {file} n'a pas été mis à jour",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "GTFS : {file} n'a pas été mis à jour",
+            "description": "La mise à jour de {file} n'a pas abouti. L'horaire actuel reste en place et les capteurs continuent de l'utiliser.\n\nLe journal en donne la raison. La prochaine vérification réessaiera.\n\nValidez pour relancer la mise à jour maintenant."
+          }
+        },
+        "abort": {
+          "source_gone": "Cette source n'existe plus."
+        }
+      }
+    },
+    "lines_missing": {
+      "title": "GTFS : {file} n'a pas été mis à jour",
+      "description": "La nouvelle version de {file} ne contient plus aucun trajet pour **{lines}**. L'horaire actuel reste en place et les capteurs continuent de l'utiliser.\n\nSi l'opérateur a renuméroté la ligne, recréez son capteur sur la nouvelle ligne ; si la ligne n'existe plus, supprimez son capteur. La mise à jour suivante passera alors. Si toutes les lignes sont citées, c'est sans doute le fichier lui-même qui est défectueux."
+    },
+    "line_orphaned": {
+      "title": "GTFS : {file} garde une ligne que personne ne lit",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "GTFS : {file} garde une ligne que personne ne lit",
+            "description": "Le dernier capteur lisant la ligne **{line}** a été supprimé, mais son horaire est toujours dans {file}.\n\nValidez pour retirer l'horaire de cette ligne de {file} ; les autres lignes restent. La garder ne coûte que de l'espace disque, et un nouveau capteur sur cette ligne la réutilisera."
+          }
+        },
+        "abort": {
+          "whole_feed_in_use": "Un capteur de train ou d'arrêts locaux lit cette source en entier : rien n'est retiré.",
+          "line_read_again": "Un capteur lit de nouveau cette ligne : elle reste.",
+          "refresh_running": "La source est en cours de mise à jour : réessayez une fois qu'elle est terminée.",
+          "last_line": "C'est la dernière ligne de la source : supprimez plutôt la source."
+        }
+      }
+    }
   }
 }

@@ -587,14 +587,6 @@
     "import_failed": "No se han podido restaurar las líneas en {file}.\n\nNo se ha modificado nada. Ajustes > Dispositivos y servicios > GTFS2 > Añadir entrada para volver a intentarlo.",
     "import_partial_title": "GTFS: {file} actualizada parcialmente",
     "import_partial": "Restaurado en {file}: {lines}.\n\nNo restaurado: **{missing}**. La importación se detuvo en la primera línea que falló; el registro indica el motivo. Ajustes > Dispositivos y servicios > GTFS2 > Añadir entrada, luego **Añadir un trayecto entre dos paradas** en una de esas líneas para volver a intentarlo.",
-    "line_orphaned_title": "GTFS: {file} conserva una línea que nadie lee",
-    "line_orphaned": "El último sensor que leía la línea **{line}** fue eliminado, pero su horario sigue en {file}.\n\nEl servicio gtfs2.prune_datasource elimina las líneas que ningún sensor lee; llámelo primero con dry_run para ver qué se iría. Conservar la línea solo cuesta espacio en disco, y un nuevo sensor en esa línea la reutilizará.",
-    "lines_missing_title": "GTFS: {file} no se ha actualizado",
-    "lines_missing": "La nueva versión de {file} ya no contiene ningún viaje para **{lines}**. El horario actual se mantiene y los sensores siguen usándolo.\n\nSi el operador ha renumerado la línea, vuelva a crear su sensor en la nueva línea; si la línea ya no existe, elimine su sensor. La siguiente actualización pasará entonces. Si aparecen todas las líneas, probablemente el propio archivo está dañado.",
-    "refresh_failed_title": "GTFS: {file} no se ha actualizado",
-    "refresh_failed": "La actualización de {file} no se ha completado. El horario actual se mantiene y los sensores siguen usándolo.\n\nEl registro indica el motivo. La próxima comprobación lo volverá a intentar.",
-    "source_update_available_title": "GTFS: {file} tiene una nueva versión",
-    "source_update_available": "La fuente publicó un nuevo feed de horarios ({version}).\n\nInstálelo desde la entidad de actualización **Feed estático** de {file}, o deje que lo haga su automatización. Los datos actuales siguen sirviendo hasta que la instalación los sustituya, de una sola vez.",
     "line_mode_tram": "tranvía",
     "line_mode_metro": "metro",
     "line_mode_train": "tren",
@@ -607,5 +599,42 @@
     "line_mode_trolleybus": "trolebús",
     "line_mode_monorail": "monorraíl",
     "agency_all": "Todos los operadores"
+  },
+  "issues": {
+    "refresh_failed": {
+      "title": "GTFS: {file} no se ha actualizado",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "GTFS: {file} no se ha actualizado",
+            "description": "La actualización de {file} no se ha completado. El horario actual se mantiene y los sensores siguen usándolo.\n\nEl registro indica el motivo. La próxima comprobación lo volverá a intentar.\n\nConfirme para volver a intentar la actualización ahora."
+          }
+        },
+        "abort": {
+          "source_gone": "Esta fuente ya no existe."
+        }
+      }
+    },
+    "lines_missing": {
+      "title": "GTFS: {file} no se ha actualizado",
+      "description": "La nueva versión de {file} ya no contiene ningún viaje para **{lines}**. El horario actual se mantiene y los sensores siguen usándolo.\n\nSi el operador ha renumerado la línea, vuelva a crear su sensor en la nueva línea; si la línea ya no existe, elimine su sensor. La siguiente actualización pasará entonces. Si aparecen todas las líneas, probablemente el propio archivo está dañado."
+    },
+    "line_orphaned": {
+      "title": "GTFS: {file} conserva una línea que nadie lee",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "GTFS: {file} conserva una línea que nadie lee",
+            "description": "El último sensor que leía la línea **{line}** fue eliminado, pero su horario sigue en {file}.\n\nConfirme para quitar el horario de esta línea de {file}; las demás líneas se conservan. Conservarla solo cuesta espacio en disco, y un nuevo sensor en esa línea la reutilizará."
+          }
+        },
+        "abort": {
+          "whole_feed_in_use": "Un sensor de tren o de paradas cercanas lee esta fuente entera: no se quita nada.",
+          "line_read_again": "Un sensor vuelve a leer esta línea: se conserva.",
+          "refresh_running": "La fuente se está actualizando: vuelva a intentarlo cuando termine.",
+          "last_line": "Es la última línea de la fuente: elimine la fuente en su lugar."
+        }
+      }
+    }
   }
 }

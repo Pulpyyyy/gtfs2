@@ -1,11 +1,12 @@
 """What one scheduled look at a source does, per mode and per answer.
 
 async_check_source is the only caller that turns the host's answers into
-a rebuild or a notification by itself, at night, with nobody watching.
-Each path is pinned here: the modes and sources that never look, the
-slow cadences that skip a night, a probe that could not ask, a feed the
-download proved unchanged or new, and what notify mode tells the user,
-once per version.
+a rebuild or a word to the user by itself, at night, with nobody
+watching. Each path is pinned here: the modes and sources that never
+look, the slow cadences that skip a night, a probe that could not ask, a
+feed the download proved unchanged or new, and what notify mode tells:
+an event for the automations, once per version, named as the host said
+(the update entity shows it; the notification it also raised is gone).
 """
 from __future__ import annotations
 
@@ -67,9 +68,6 @@ def _stub(monkeypatch, calls, *, probe, fetched=None, pending=False, rebuilt=Tru
         calls.append(("fetch", adopt))
         return fetched
 
-    async def notify(hass, key, notification_id, **values):
-        calls.append(("notify", key, notification_id, values))
-
     monkeypatch.setattr(source_refresh, "rebuild_pending", lambda hass, file: pending)
     monkeypatch.setattr(source_refresh, "async_refresh_source", rebuild)
     monkeypatch.setattr(source_refresh, "refresh_data_for", lambda hass, entry: {"file": "src"})
@@ -87,7 +85,6 @@ def _stub(monkeypatch, calls, *, probe, fetched=None, pending=False, rebuilt=Tru
                         lambda hass, file: {"last_modified": "OLD"})
     monkeypatch.setattr(source_refresh, "async_dispatcher_send",
                         lambda hass, signal: calls.append(("told",)))
-    monkeypatch.setattr(source_refresh, "_async_notify", notify)
 
 
 def _check(hass, entry, lock_first=False):
@@ -231,12 +228,10 @@ def test_notify_asks_without_adopting_and_says_so_once(monkeypatch):
     assert state["result"] == CHANGED and state["latest"] == sha[:12]
     assert ("event", source_refresh.EVENT_SOURCE_UPDATE_AVAILABLE,
             {"file": "src", "installed": "OLD", "latest": sha[:12]}) in calls
-    assert ("notify", "source_update_available", "gtfs2_source_update_src",
-            {"file": "src", "version": sha[:12]}) in calls
-    # the same version at the next check: one notification, not two
+    # the same version at the next check: one event, not two
     calls.clear()
     _check(hass, _entry(NOTIFY))
-    assert not any(call[0] in ("event", "notify") for call in calls)
+    assert not any(call[0] == "event" for call in calls)
 
 
 def test_notify_names_a_new_edition_by_what_the_host_said(monkeypatch):
@@ -245,8 +240,8 @@ def test_notify_names_a_new_edition_by_what_the_host_said(monkeypatch):
           fetched="f" * 64)
     state = _check(_hass(calls), _entry(NOTIFY))
     assert state["latest"] == "PROBED"
-    assert ("notify", "source_update_available", "gtfs2_source_update_src",
-            {"file": "src", "version": "PROBED"}) in calls
+    assert ("event", source_refresh.EVENT_SOURCE_UPDATE_AVAILABLE,
+            {"file": "src", "installed": "OLD", "latest": "PROBED"}) in calls
 
 
 def test_notify_with_nothing_to_name_it_by(monkeypatch):
@@ -255,5 +250,5 @@ def test_notify_with_nothing_to_name_it_by(monkeypatch):
     calls = []
     _stub(monkeypatch, calls, probe=_probe(CHANGED), fetched=None)
     _check(_hass(calls), _entry(NOTIFY))
-    assert ("notify", "source_update_available", "gtfs2_source_update_src",
-            {"file": "src", "version": "new version"}) in calls
+    assert ("event", source_refresh.EVENT_SOURCE_UPDATE_AVAILABLE,
+            {"file": "src", "installed": "OLD", "latest": "new version"}) in calls

@@ -14,7 +14,7 @@ import voluptuous as vol
 from .gtfs_helper import get_datasources
 from .departure_services import get_route_departures, get_route_arrivals, get_trip_stops
 from .local_stops import update_gtfs_local_stops
-from .notifications import async_notify_line_orphaned
+from .notifications import async_notify_line_orphaned, clear_line_orphaned
 from .exports import remove_entry_geojson
 from .datasource_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
 from .gtfs_db import real_path, routes_in
@@ -158,6 +158,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # the entry's own, on the entry: hass.data[DOMAIN] is the store the
     # sources share, their locks, checks and flags
     entry.runtime_data = coordinator
+    # a sensor on a line said to be read by nobody: it is read again
+    clear_line_orphaned(hass, entry.data.get(CONF_FILE), id_of(entry.data.get("route")))
 
     entry.async_on_unload(entry.add_update_listener(update_listener))
       
@@ -203,8 +205,8 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
     There is no flow where a line is removed: it happens here, when its last
     sensor is deleted. Nothing is pruned on its own - the timetable may be
     wanted again tomorrow - but silence would leave dead weight nobody knows
-    about. So a notification names the line and the service that drops it,
-    and the choice stays with the user.
+    about. So a repairs issue names the line, and its fix drops it when the
+    user asks: the choice stays with them.
     """
     filename = entry.data.get("file")
     route = id_of(entry.data.get("route"))
@@ -223,7 +225,7 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
         # either way there is nothing worth saying
         return
     label = (entry.data.get("route") or "").split(": ", 1)[-1]
-    await async_notify_line_orphaned(hass, filename, label or route)
+    await async_notify_line_orphaned(hass, filename, route, label or route)
      
 
 _KEY_LOCATIONS = vol.In(["not_applicable", "header", "query_string"])

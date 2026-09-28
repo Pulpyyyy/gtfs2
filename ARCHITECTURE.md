@@ -211,6 +211,7 @@ button.py          refresh button of a source
 switch.py          realtime switch of a datasource
 datasource_services.py  the prune and intern services
 departure_services.py   the departures, arrivals and trip stops services
+repairs.py         the fixes Settings > Repairs offers for gtfs2's issues
 ```
 
 - Services are registered once, in `setup()`, not per entry. Each declares
@@ -606,9 +607,9 @@ Chosen per source on the datasource entry (`source_refresh.py`):
 off      nothing runs by itself; the button, the update entity and the
          update service still refresh on demand
 notify   one conditional request per check; on a new edition the update
-         entity turns "update available", a notification is raised once per
-         version, and the event gtfs2_source_update_available fires, so an
-         automation can install in a window that suits the install
+         entity turns "update available" and, once per version, the event
+         gtfs2_source_update_available fires, so an automation can install
+         in a window that suits the install
 auto     same check, and the rebuild runs at the first check that finds a
          change
 ```
@@ -754,22 +755,24 @@ matches no trip, and the `"train"` marker, which needs every route kept.
 
 ## Failure and recovery
 
-What each failure leaves, and who is told.
+What each failure leaves, and who is told. A failure that lasts is a
+repairs issue in Settings > Repairs, which goes away with its cause; the
+report of an import the user started is a notification.
 
 | Failure | Data after | User is told | Retry |
 |---|---|---|---|
-| Download fails or is not a zip | Old zip and database untouched; `.zip.new` removed | Refresh failed notification | Next check |
-| Import of the scratch fails | Old database untouched | Refresh failed notification | Next check |
+| Download fails or is not a zip | Old zip and database untouched; `.zip.new` removed | Refresh failed issue, its fix retries now | Next check |
+| Import of the scratch fails | Old database untouched | Refresh failed issue, its fix retries now | Next check |
 | Adding lines stops at line *k* | Lines before *k* are in; *k* and after are not | The partial import notification names the lines that came in and the ones that did not; a flow still open says the same on its departure screen | User re-picks |
-| Refresh: a line fails to copy | Swap refused, old database stays | Refresh failed notification | Next check |
-| Refresh: a line a sensor reads has no trip in the new edition | Swap refused, old database stays, on the route by route and the whole-feed path alike | Lines missing notification, naming them | Next check; see below |
+| Refresh: a line fails to copy | Swap refused, old database stays | Refresh failed issue, its fix retries now | Next check |
+| Refresh: a line a sensor reads has no trip in the new edition | Swap refused, old database stays, on the route by route and the whole-feed path alike | Lines missing issue, naming them | Next check; see below |
 | Refresh: every line is empty | Swap refused, the file is taken as broken | Lines missing, every line named | Next check |
 | Refresh: a line nobody reads has no trip | That line is dropped, the swap goes through | Nothing | — |
-| Swap cannot take the exclusive lock within 30 s | Old database stays, staging removed | Refresh failed notification | Next check |
-| Rebuild fails after the zip was adopted | Zip ahead of database (`rebuild_pending`) | Refresh failed notification | Next auto check rebuilds from the kept zip first; refused again, it goes on to ask the host for a newer edition |
+| Swap cannot take the exclusive lock within 30 s | Old database stays, staging removed | Refresh failed issue, its fix retries now | Next check |
+| Rebuild fails after the zip was adopted | Zip ahead of database (`rebuild_pending`) | Refresh failed issue, its fix retries now | Next auto check rebuilds from the kept zip first; refused again, it goes on to ask the host for a newer edition |
 | Optimise screen: the copy or its swap fails | Old database stays | The screen says it failed (`generic_failure`), not "space freed" | User runs it again |
-| Envelope source: the network picked is gone from a new edition | Old zip and database untouched: the envelope alone is refused as no feed | Refresh failed notification | Next check, until the publisher brings the network back |
-| Refresh succeeds | New edition | Earlier failure notification dismissed | — |
+| Envelope source: the network picked is gone from a new edition | Old zip and database untouched: the envelope alone is refused as no feed | Refresh failed issue, its fix retries now | Next check, until the publisher brings the network back |
+| Refresh succeeds | New edition | Earlier failure issue cleared | — |
 
 **Why `rebuild_pending` exists.** The zip is adopted before the build. If the
 build fails, the host asked with the zip's own validators answers
@@ -782,7 +785,7 @@ the source moving again.
 
 **A line retired for good.** When the operator really removes a line a
 sensor reads, the refresh is refused at every check and the source stays on
-an edition that will run out. The notification names the line; the user
+an edition that will run out. The issue names the line; the user
 removes or re-targets its sensor, after which the line is no longer read
 and the refresh goes through. `feed_window.py` and the diagnostic sensor
 say how long the kept timetable is still good for.
@@ -860,6 +863,10 @@ so a card never reads half a file. Removing a datasource removes its
 its own leg and timetable files, and the route and vehicle files of its
 line once no other entry needs them; for a train entry, the lines are read
 back from the database: the trips between its two stations (0be7d37).
+When the removed entry was the last to read its line, the line's timetable
+stays in the source (a prune never runs by itself) and a repairs issue
+names it; its fix drops that line alone, and a sensor reading the line
+again clears it.
 
 An entry's own files are named after the entry, folded to a file name:
 accents dropped, case and punctuation folded, "Orléans" reads `orleans`.
@@ -1043,9 +1050,6 @@ the rule it breaks can be checked by a test.
    contract lists the imports of gaps 1 and 2 as allowed; an exception no
    import needs any more fails the check, so the list can only shrink to
    none.
-4. **Notifications for actionable failures** (refresh failed, lines
-   missing) are persistent notifications; Home Assistant's Repairs issues
-   would let the user act on them and would clear with the cause.
 
 ## Known defects
 

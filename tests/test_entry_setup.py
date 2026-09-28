@@ -193,8 +193,8 @@ def test_removing_a_journey_clears_its_files_then_names_its_line(monkeypatch):
 def _orphans(monkeypatch, loaded):
     said, looked = [], []
 
-    async def notify(hass, filename, line):
-        said.append((filename, line))
+    async def notify(hass, filename, route, line):
+        said.append((filename, route, line))
 
     def routes_in(path):
         looked.append(path)
@@ -211,13 +211,13 @@ def test_the_last_sensor_of_a_line_names_it(monkeypatch):
     hass = _Hass([gone, _Entry("j2", file="tao", route="R2: Line 2"),
                   _Entry("d1", file="tao", kind="datasource")])
     asyncio.run(integration._notify_orphaned_line(hass, gone))
-    assert said == [("tao", "Line 1")]
+    assert said == [("tao", "R1", "Line 1")]
     assert looked == [integration.real_path("/config/" + integration.DEFAULT_PATH, "tao")]
     # a bare route_id names the line by its id
     said.clear()
     bare = _Entry("j3", file="tao", route="R2")
     asyncio.run(integration._notify_orphaned_line(_Hass([bare]), bare))
-    assert said == [("tao", "R2")]
+    assert said == [("tao", "R2", "R2")]
 
 
 def test_a_line_still_read_or_already_gone_is_not_named(monkeypatch):

@@ -568,6 +568,45 @@ class _FlowHandler:
         """Called by the manager once the flow is over, however it ended."""
 
 
+class _RepairsFlow(_FlowHandler):
+    """repairs.RepairsFlow: the fix of one issue, which the repairs page
+    runs with the issue's id and data set on it."""
+
+    issue_id = None
+    data = None
+
+
+class _ConfirmRepairFlow(_RepairsFlow):
+    """repairs.ConfirmRepairFlow: a fix that only asks to confirm."""
+
+    async def async_step_init(self, user_input=None):
+        return await self.async_step_confirm()
+
+    async def async_step_confirm(self, user_input=None):
+        if user_input is not None:
+            return self.async_create_entry(data={})
+        return self.async_show_form(step_id="confirm")
+
+
+class _IssueSeverity(enum.StrEnum):
+    CRITICAL = "critical"
+    ERROR = "error"
+    WARNING = "warning"
+
+
+# the issues raised, as the issue registry keeps them: (domain, issue_id)
+# to the keywords the issue was created with. A test clears it first.
+ISSUES: dict = {}
+
+
+def _create_issue(hass, domain, issue_id, **kwargs):
+    ISSUES[(domain, issue_id)] = kwargs
+
+
+def _delete_issue(hass, domain, issue_id):
+    ISSUES.pop((domain, issue_id), None)
+
+
 class _Handlers(dict):
     """config_entries.HANDLERS: the flow class of each domain."""
 
@@ -889,6 +928,8 @@ def install() -> None:
             DeviceInfo=dict,
             async_get=_Unreached("device_registry.async_get"))
     _module("homeassistant.helpers.entity_platform", AddEntitiesCallback=object)
+    _module("homeassistant.helpers.issue_registry", IssueSeverity=_IssueSeverity,
+            async_create_issue=_create_issue, async_delete_issue=_delete_issue)
     _module("homeassistant.helpers.restore_state", RestoreEntity=type("RestoreEntity", (), {}))
     _module("homeassistant.helpers.event",
             async_call_later=_Unreached("async_call_later"),
@@ -900,6 +941,8 @@ def install() -> None:
             UpdateEntity=_EntityShell, UpdateEntityFeature=_UpdateEntityFeature)
     _module("homeassistant.components.button", ButtonEntity=_EntityShell)
     _module("homeassistant.components.switch", SwitchEntity=_EntityShell)
+    _module("homeassistant.components.repairs", RepairsFlow=_RepairsFlow,
+            ConfirmRepairFlow=_ConfirmRepairFlow)
     _module("homeassistant.components.persistent_notification",
             async_create=_Unreached("persistent_notification.async_create"),
         async_dismiss=_Unreached("persistent_notification.async_dismiss"),

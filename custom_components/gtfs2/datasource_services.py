@@ -15,7 +15,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN, DEFAULT_PATH, CONF_API_KEY, CONF_EXTRACT_FROM, CONF_URL
-from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource
+from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .key_mask import note_key
 from .rt_source import async_ensure_datasource_entry, datasource_entry, source_readers
 from .source_refresh import (
@@ -207,3 +207,26 @@ async def async_update_gtfs(hass: HomeAssistant, call_data):
             hass, file, url=data.get(CONF_URL) or "na",
             extract_from=data.get(CONF_EXTRACT_FROM) or "url", api=data)
     return ok
+
+
+async def async_prune_line(hass: HomeAssistant, filename, route):
+    """Drop one line's timetable from a datasource, every other line kept:
+    the fix of a line no sensor reads any more. None once done (or when
+    the line is already gone), else why it was not: a sensor reads the
+    source whole or this line again, a refresh holds the source, or it is
+    the source's last line, which is the source to remove instead."""
+    routes, unrestricted = source_readers(hass, filename)
+    if unrestricted:
+        return "whole_feed_in_use"
+    if route in routes:
+        return "line_read_again"
+    gtfs_dir = hass.config.path(DEFAULT_PATH)
+    present = await hass.async_add_executor_job(routes_in, real_path(gtfs_dir, filename))
+    if not present or route not in present:
+        return None
+    keep = set(present) - {route}
+    if not keep:
+        return "last_line"
+    _stats, busy = await _rewrite_source(hass, gtfs_dir, filename, False,
+                                         prune_gtfs_datasource, keep)
+    return busy

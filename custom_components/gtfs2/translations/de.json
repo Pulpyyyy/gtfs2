@@ -587,14 +587,6 @@
     "import_failed": "Die Linien konnten nicht in {file} wiederhergestellt werden.\n\nEs wurde nichts geändert. Einstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, um es erneut zu versuchen.",
     "import_partial_title": "GTFS: {file} teilweise aktualisiert",
     "import_partial": "In {file} wiederhergestellt: {lines}.\n\nNicht wiederhergestellt: **{missing}**. Der Import brach bei der ersten fehlgeschlagenen Linie ab; das Protokoll nennt den Grund. Einstellungen > Geräte & Dienste > GTFS2 > Eintrag hinzufügen, dann **Fahrt zwischen zwei Haltestellen hinzufügen** auf einer dieser Linien, um es erneut zu versuchen.",
-    "line_orphaned_title": "GTFS: {file} enthält eine Linie, die niemand liest",
-    "line_orphaned": "Der letzte Sensor der Linie **{line}** wurde entfernt, ihr Fahrplan liegt aber weiterhin in {file}.\n\nDer Dienst gtfs2.prune_datasource entfernt alle Linien, die kein Sensor liest; mit dry_run zeigt er zuerst, was wegfallen würde. Die Linie zu behalten kostet nur Speicherplatz, und ein neuer Sensor auf dieser Linie nutzt sie wieder.",
-    "lines_missing_title": "GTFS: {file} wurde nicht aktualisiert",
-    "lines_missing": "Die neue Version von {file} enthält keine Fahrt mehr für **{lines}**. Der aktuelle Fahrplan bleibt bestehen, und die Sensoren arbeiten weiter damit.\n\nHat der Betreiber die Linie umnummeriert, legen Sie ihren Sensor auf der neuen Linie neu an; gibt es die Linie nicht mehr, entfernen Sie ihren Sensor. Die nächste Aktualisierung geht dann durch. Werden alle Linien genannt, ist wahrscheinlich die Datei selbst fehlerhaft.",
-    "refresh_failed_title": "GTFS: {file} wurde nicht aktualisiert",
-    "refresh_failed": "Die Aktualisierung von {file} ist nicht durchgegangen. Der aktuelle Fahrplan bleibt bestehen, und die Sensoren arbeiten weiter damit.\n\nDas Protokoll nennt den Grund. Die nächste Prüfung versucht es erneut.",
-    "source_update_available_title": "GTFS: {file} hat eine neue Version",
-    "source_update_available": "Die Quelle hat einen neuen Fahrplan-Feed veröffentlicht ({version}).\n\nInstallieren Sie ihn über die Update-Entität **Statischer Feed** von {file}, oder lassen Sie es Ihre Automatisierung tun. Die aktuellen Daten liefern weiter, bis die Installation sie in einem Zug ersetzt.",
     "line_mode_tram": "Straßenbahn",
     "line_mode_metro": "U-Bahn",
     "line_mode_train": "Zug",
@@ -607,5 +599,42 @@
     "line_mode_trolleybus": "Oberleitungsbus",
     "line_mode_monorail": "Einschienenbahn",
     "agency_all": "Alle Betreiber"
+  },
+  "issues": {
+    "refresh_failed": {
+      "title": "GTFS: {file} wurde nicht aktualisiert",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "GTFS: {file} wurde nicht aktualisiert",
+            "description": "Die Aktualisierung von {file} ist nicht durchgegangen. Der aktuelle Fahrplan bleibt bestehen, und die Sensoren arbeiten weiter damit.\n\nDas Protokoll nennt den Grund. Die nächste Prüfung versucht es erneut.\n\nBestätigen Sie, um die Aktualisierung jetzt erneut zu starten."
+          }
+        },
+        "abort": {
+          "source_gone": "Diese Quelle existiert nicht mehr."
+        }
+      }
+    },
+    "lines_missing": {
+      "title": "GTFS: {file} wurde nicht aktualisiert",
+      "description": "Die neue Version von {file} enthält keine Fahrt mehr für **{lines}**. Der aktuelle Fahrplan bleibt bestehen, und die Sensoren arbeiten weiter damit.\n\nHat der Betreiber die Linie umnummeriert, legen Sie ihren Sensor auf der neuen Linie neu an; gibt es die Linie nicht mehr, entfernen Sie ihren Sensor. Die nächste Aktualisierung geht dann durch. Werden alle Linien genannt, ist wahrscheinlich die Datei selbst fehlerhaft."
+    },
+    "line_orphaned": {
+      "title": "GTFS: {file} enthält eine Linie, die niemand liest",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "GTFS: {file} enthält eine Linie, die niemand liest",
+            "description": "Der letzte Sensor der Linie **{line}** wurde entfernt, ihr Fahrplan liegt aber weiterhin in {file}.\n\nBestätigen Sie, um den Fahrplan dieser Linie aus {file} zu entfernen; die anderen Linien bleiben. Die Linie zu behalten kostet nur Speicherplatz, und ein neuer Sensor auf dieser Linie nutzt sie wieder."
+          }
+        },
+        "abort": {
+          "whole_feed_in_use": "Ein Zug- oder Umgebungssensor liest diese Quelle vollständig: es wird nichts entfernt.",
+          "line_read_again": "Ein Sensor liest diese Linie wieder: sie bleibt.",
+          "refresh_running": "Die Quelle wird gerade aktualisiert: versuchen Sie es danach erneut.",
+          "last_line": "Es ist die letzte Linie der Quelle: entfernen Sie stattdessen die Quelle."
+        }
+      }
+    }
   }
 }

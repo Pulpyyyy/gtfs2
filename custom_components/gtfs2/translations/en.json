@@ -587,14 +587,6 @@
     "import_failed": "The lines could not be brought back into {file}.\n\nNothing was changed. Settings > Devices & services > GTFS2 > Add entry to try again.",
     "import_partial_title": "GTFS: {file} partly updated",
     "import_partial": "Brought back into {file}: {lines}.\n\nNot brought back: **{missing}**. The import stopped at the first line that failed; the log says why. Settings > Devices & services > GTFS2 > Add entry, then **Add a journey between two stops** on one of these lines to try again.",
-    "line_orphaned_title": "GTFS: {file} keeps a line nobody reads",
-    "line_orphaned": "The last sensor reading line **{line}** was removed, but its timetable is still in {file}.\n\nThe service gtfs2.prune_datasource drops every line no sensor reads; call it with dry_run first to see what would go. Keeping the line only costs disk space, and adding a sensor on it uses it again.",
-    "lines_missing_title": "GTFS: {file} was not updated",
-    "lines_missing": "The new version of {file} no longer carries any trip for **{lines}**. The current timetable stays in place and the sensors keep running on it.\n\nIf the operator renumbered the line, recreate its sensor on the new line; if the line is gone, remove its sensor. The next update then goes through. If every line is listed, the file itself is probably broken.",
-    "refresh_failed_title": "GTFS: {file} was not updated",
-    "refresh_failed": "The update of {file} did not go through. The current timetable stays in place and the sensors keep running on it.\n\nThe log says why. The next check tries again.",
-    "source_update_available_title": "GTFS: {file} has a new version",
-    "source_update_available": "The source published a new timetable feed ({version}).\n\nInstall it from the **Static feed** update entity of {file}, or let your automation do it. The current data keeps serving until the install swaps it in, in one go.",
     "line_mode_tram": "tram",
     "line_mode_metro": "metro",
     "line_mode_train": "train",
@@ -607,5 +599,42 @@
     "line_mode_trolleybus": "trolleybus",
     "line_mode_monorail": "monorail",
     "agency_all": "All operators"
+  },
+  "issues": {
+    "refresh_failed": {
+      "title": "GTFS: {file} was not updated",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "GTFS: {file} was not updated",
+            "description": "The update of {file} did not go through. The current timetable stays in place and the sensors keep running on it.\n\nThe log says why. The next check tries again.\n\nSubmit to try the update now."
+          }
+        },
+        "abort": {
+          "source_gone": "This source no longer exists."
+        }
+      }
+    },
+    "lines_missing": {
+      "title": "GTFS: {file} was not updated",
+      "description": "The new version of {file} no longer carries any trip for **{lines}**. The current timetable stays in place and the sensors keep running on it.\n\nIf the operator renumbered the line, recreate its sensor on the new line; if the line is gone, remove its sensor. The next update then goes through. If every line is listed, the file itself is probably broken."
+    },
+    "line_orphaned": {
+      "title": "GTFS: {file} keeps a line nobody reads",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "GTFS: {file} keeps a line nobody reads",
+            "description": "The last sensor reading line **{line}** was removed, but its timetable is still in {file}.\n\nSubmit to drop the timetable of this line from {file}; the other lines stay. Keeping it only costs disk space, and adding a sensor on the line uses it again."
+          }
+        },
+        "abort": {
+          "whole_feed_in_use": "A train or local stops sensor reads this source whole: nothing is removed.",
+          "line_read_again": "A sensor reads this line again: it stays.",
+          "refresh_running": "The source is being updated right now: try again once it is done.",
+          "last_line": "It is the source's last line: remove the source instead."
+        }
+      }
+    }
   }
 }

@@ -1,16 +1,21 @@
 """What the integration tells the user outside a config flow.
 
-An import runs on after its flow window is closed, and an entry removal
-can leave a line's timetable without a sensor. Nobody is left in a flow to
-read the outcome, so it is raised as a persistent notification in the
-user's language: the strings live under "common" in strings.json. Called
-from the config flow, from __init__ (entry removal) and from source_refresh.
+An import runs on after its flow window is closed: nobody is left in a
+flow to read the outcome, so it is raised as a persistent notification in
+the user's language, its strings under "common" in strings.json. What
+lasts and can be acted on, a source that failed to update, an update
+refused because lines went missing, a line no sensor reads any more, is a
+repairs issue instead (strings under "issues"): it sits in Settings >
+Repairs, offers its fix where there is one (repairs.py), and goes away
+with its cause. Called from the config flow, from __init__ (entry setup
+and removal) and from source_refresh.
 """
 from __future__ import annotations
 
 import logging
 
 from homeassistant.components import persistent_notification
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.translation import async_get_translations
 
 from .const import DOMAIN
@@ -47,18 +52,32 @@ async def async_notify_import(hass, filename, routes, added):
                         file=filename, lines=lines)
 
 
-async def async_notify_line_orphaned(hass, filename, line):
+def line_orphaned_issue(filename, route):
+    return f"line_orphaned_{filename}_{route}"
+
+
+async def async_notify_line_orphaned(hass, filename, route, line):
     """Say that a line's last sensor is gone while its timetable remains.
 
     Raised by the entry removal hook. Deliberately not a prune: the user may
-    be reshuffling sensors and want the line right back, so the notification
-    names what is now dead weight and the service that drops it, and the
-    choice stays theirs. One notification per line: two sensors removed
-    one after the other used to leave only the second line named.
+    be reshuffling sensors and want the line right back, so the issue names
+    what is now dead weight, and its fix drops that line when the user asks
+    (repairs.py): the choice stays theirs. One issue per line: two sensors
+    removed one after the other used to leave only the second line named.
+    route is the line's id, line its label as the sensor named it.
     """
     _LOGGER.info("No sensor reads line %s of %s any more", line, filename)
-    await _async_notify(hass, "line_orphaned", f"gtfs2_prune_{filename}_{line}",
-                        file=filename, line=line)
+    ir.async_create_issue(
+        hass, DOMAIN, line_orphaned_issue(filename, route),
+        is_fixable=True, is_persistent=True, severity=ir.IssueSeverity.WARNING,
+        translation_key="line_orphaned",
+        translation_placeholders={"file": filename, "line": line},
+        data={"file": filename, "route": route, "line": line})
+
+
+def clear_line_orphaned(hass, filename, route):
+    """A sensor reads the line again: it is no dead weight any more."""
+    ir.async_delete_issue(hass, DOMAIN, line_orphaned_issue(filename, route))
 
 
 async def async_notify_lines_missing(hass, filename, routes):
@@ -66,28 +85,39 @@ async def async_notify_lines_missing(hass, filename, routes):
 
     The current timetable stays, so the sensors keep running on it; what
     is left to the user is telling a renumbered line from a retired one,
-    which no feed says. Under the refresh's own id, which a refresh that
-    goes through clears.
+    which no feed says, so the issue has no fix of its own. It replaces a
+    failure of another kind, and a refresh that goes through clears it.
     """
     lines = ", ".join(r.split(":")[-1] for r in routes)
-    await _async_notify(hass, "lines_missing", f"gtfs2_refresh_{filename}",
-                        file=filename, lines=lines)
+    ir.async_delete_issue(hass, DOMAIN, f"refresh_failed_{filename}")
+    ir.async_create_issue(
+        hass, DOMAIN, f"lines_missing_{filename}",
+        is_fixable=False, is_persistent=True, severity=ir.IssueSeverity.WARNING,
+        translation_key="lines_missing",
+        translation_placeholders={"file": filename, "lines": lines})
 
 
 async def async_notify_refresh(hass, filename, ok, lines_missing=None):
     """Say how a rebuild of a source ended, when it did not go through.
 
     A refresh started by the nightly check has nobody watching: failed, it
-    said nothing, and the source stayed on its old edition unnoticed. A
-    rebuild that goes through clears what an earlier one left.
+    said nothing, and the source stayed on its old edition unnoticed. The
+    failure is an issue whose fix tries again; a rebuild that goes through
+    clears what an earlier one left.
     """
     if ok:
-        persistent_notification.async_dismiss(hass, f"gtfs2_refresh_{filename}")
+        for kind in ("refresh_failed", "lines_missing"):
+            ir.async_delete_issue(hass, DOMAIN, f"{kind}_{filename}")
     elif lines_missing:
         await async_notify_lines_missing(hass, filename, lines_missing)
     else:
-        await _async_notify(hass, "refresh_failed", f"gtfs2_refresh_{filename}",
-                            file=filename)
+        ir.async_delete_issue(hass, DOMAIN, f"lines_missing_{filename}")
+        ir.async_create_issue(
+            hass, DOMAIN, f"refresh_failed_{filename}",
+            is_fixable=True, is_persistent=True, severity=ir.IssueSeverity.ERROR,
+            translation_key="refresh_failed",
+            translation_placeholders={"file": filename},
+            data={"file": filename})
 
 
 async def _async_notify(hass, key, notification_id, **values):

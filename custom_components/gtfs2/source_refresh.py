@@ -63,7 +63,7 @@ from .freshness import (
 )
 from .source_zip import refresh_datasource
 from .freshness import read_meta, source_meta, write_meta
-from .notifications import _async_notify, async_notify_refresh
+from .notifications import async_notify_refresh
 from .rt_source import journey_entries, source_readers, static_feed_config
 
 _LOGGER = logging.getLogger(__name__)
@@ -438,7 +438,7 @@ async def _async_take_download(hass: HomeAssistant, file, zip_path, probe,
 
 async def _async_offer_update(hass: HomeAssistant, file) -> None:
     """Tell a source in notify mode has a new version: an event for the
-    automations and a notification, once per version."""
+    automations, once per version; the update entity shows it."""
     state = probe_state(hass, file)
     latest = state.get("latest") or "new version"
     if state.get("notified_for") == latest:
@@ -453,9 +453,6 @@ async def _async_offer_update(hass: HomeAssistant, file) -> None:
         "installed": installed,
         "latest": latest,
     })
-    await _async_notify(hass, "source_update_available",
-                        f"gtfs2_source_update_{file}",
-                        file=file, version=latest)
 
 
 async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
