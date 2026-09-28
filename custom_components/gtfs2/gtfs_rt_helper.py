@@ -661,6 +661,32 @@ def _vehicle_feature(vehicle, route_id, seen, direction):
     return feature, (feature, str(trip_id), veh, crc, way)
 
 
+def _candidate_trips(feed_entities, board, route_id):
+    """The trips of the vehicles that may be this entry's: listed on its
+    board, or on its line."""
+    return [e["vehicle"]["trip"]["trip_id"] for e in feed_entities
+            if e["vehicle"]["trip"]["trip_id"]
+            and (str(e["vehicle"]["trip"]["trip_id"]) in board
+                 or _same_route(route_id, e["vehicle"]["trip"]["route_id"]))]
+
+
+def _title_vehicles(self, schedule, titles):
+    """Title each vehicle kept on the map."""
+    # each vehicle titled after where its own trip goes, read for all of
+    # them at once: the entry's destination was used, which is where the
+    # rider gets off, not where the vehicle goes, and two entries on the
+    # same line wrote the same file with titles of their own in turn
+    line = str((self._data.get("next_departure") or {}).get("route_short_name") or "").strip()
+    going = _trip_destinations(schedule, [trip for _e, trip, _v, _c, _d in titles])
+    icon = self._icon.split(':')[1]
+    for element, trip, veh, crc, direction in titles:
+        where = going.get(trip)
+        if line and where:
+            element["properties"]["title"] = line + " → " + where + " " + (veh or crc) + "_" + icon
+        else:
+            element["properties"]["title"] = str(self._route_id) + "(" + direction + ")" + crc + "_" + icon
+
+
 def get_rt_vehicle_positions(self):
     feed_entities = get_gtfs_feed_entities(
         url=self._vehicle_position_url,
@@ -692,11 +718,7 @@ def get_rt_vehicle_positions(self):
     now = time.time()
     schedule = (getattr(self, "_data", None) or {}).get("schedule")
     static_direction = _trip_directions(
-        schedule,
-        [e["vehicle"]["trip"]["trip_id"] for e in feed_entities
-         if e["vehicle"]["trip"]["trip_id"]
-         and (str(e["vehicle"]["trip"]["trip_id"]) in board
-              or _same_route(self._route_id, e["vehicle"]["trip"]["route_id"]))])
+        schedule, _candidate_trips(feed_entities, board, self._route_id))
     for entity in feed_entities:
         vehicle = entity["vehicle"]
         if not vehicle["trip"]["trip_id"] or _left_standing(vehicle, max_age, now):
@@ -714,19 +736,7 @@ def get_rt_vehicle_positions(self):
         geojson_body.append(feature)
         titles.append(title)
 
-    # each vehicle titled after where its own trip goes, read for all of
-    # them at once: the entry's destination was used, which is where the
-    # rider gets off, not where the vehicle goes, and two entries on the
-    # same line wrote the same file with titles of their own in turn
-    line = str((self._data.get("next_departure") or {}).get("route_short_name") or "").strip()
-    going = _trip_destinations(schedule, [trip for _e, trip, _v, _c, _d in titles])
-    icon = self._icon.split(':')[1]
-    for element, trip, veh, crc, direction in titles:
-        where = going.get(trip)
-        if line and where:
-            element["properties"]["title"] = line + " → " + where + " " + (veh or crc) + "_" + icon
-        else:
-            element["properties"]["title"] = str(self._route_id) + "(" + direction + ")" + crc + "_" + icon
+    _title_vehicles(self, schedule, titles)
 
     self.geojson = {"features": geojson_body, "type": "FeatureCollection"}
     _LOGGER.debug("Vehicle geojson: %s", json.dumps(self.geojson))
