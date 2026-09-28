@@ -1,10 +1,10 @@
 """A realtime feed that cannot be fetched leaves the local stops timetable.
 
-The local stops sensor downloads the trip updates first; when that
+The local stops sensor reads the trip updates first; when the download
 failed, every departure went with it and the sensor showed nothing for
 the cycle. The timetable now stands on its own, without delays, and the
-host is not asked again line by line. Reuses the captured cases of
-test_stop_combined.
+feed is asked once for the whole list, not line by line. Reuses the
+captured cases of test_stop_combined.
 """
 from __future__ import annotations
 
@@ -40,10 +40,11 @@ def test_a_failed_download_keeps_the_timetable():
             timetable = gtfs_helper._interpret_local_stop_rows(static, rows)
 
             failing = combined._LocalStopContext(hass, 0, "local_stop_name")
-            with patch.object(gtfs_helper, "get_gtfs_rt", return_value="error"), \
-                    patch.object(gtfs_helper, "get_gtfs_feed_entities",
-                                 side_effect=AssertionError("the host was asked again")):
+            # the feed cache answers None for a download that failed
+            with patch.object(gtfs_helper, "get_gtfs_feed_entities",
+                              return_value=None) as feed:
                 got = gtfs_helper._interpret_local_stop_rows(failing, rows)
+        assert feed.call_count == 1, case_id
         assert _departures(timetable), case_id
         assert isinstance(got, list), case_id
         assert _departures(got) == _departures(timetable), case_id

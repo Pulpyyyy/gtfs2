@@ -248,8 +248,8 @@ def _feed_body(url, headers, label):
     file:// url names; None, the failure said, when there are none."""
     try:
         if url.startswith("file://"):
-            # the feed the stops around a person downloaded to disk this
-            # cycle: read as a file, it needs no http round of its own
+            # a feed on disk, named by a file:// url: read as a file, it
+            # needs no http round of its own
             with open(url[len("file://"):], "rb") as local:
                 content = local.read()
             _LOGGER.debug("Successfully updated %s", label)

@@ -17,23 +17,18 @@ import homeassistant.util.dt as dt_util
 from homeassistant.helpers import entity_registry as er
 
 from .const import (
-    CONF_API_KEY,
     CONF_DESTINATION_STATIONS,
     CONF_ORIGIN_STATIONS,
-CONF_API_KEY_LOCATION,
-    CONF_API_KEY_NAME,
-    CONF_ACCEPT_HEADER_PB,
     DEFAULT_LOCAL_STOP_TIMERANGE,
     DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY,
     DEFAULT_LOCAL_STOP_RADIUS,
-    DEFAULT_PATH_RT,
     DEFAULT_PATH,
     ICON,
     ICONS,
     DOMAIN,
     TIME_STR_FORMAT
     )
-from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_rt, get_gtfs_feed_entities,
+from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_feed_entities,
                              struck_trips, on_service_day)
 from .gtfs_rt_helper import safe_file_part  # noqa: F401  a provider test reads it here
 from .route_names import get_routes_in_zip, _adds_to, _route_label, route_ends, set_lines_apart
@@ -2616,43 +2611,23 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
 
 
 def _local_stop_feed(self):
-    """The trip updates a local stops refresh lays on its departures,
-    downloaded to a local file and read once for all of them: None
-    without realtime, an empty list when the download failed."""
+    """The trip updates a local stops refresh lays on its departures, read
+    once for all of them from the source's feed, the download the source's
+    other sensors share: None without realtime, an empty list when the
+    feed could not be read."""
     if not self._realtime:
         return None
     self._rt_group = "trip"
-    rt_key = dict(getattr(self, "_rt_key", None) or {})
-    if rt_key.get(CONF_API_KEY_LOCATION) == "query_string":
-        # the coordinator already put this key in the url: handed on,
-        # get_gtfs_rt appended it a second time (?key=K&key=K)
-        rt_key.pop(CONF_API_KEY_LOCATION)
-    self._rt_data = {
-        "url": self._trip_update_url,
-        CONF_API_KEY : rt_key.get(CONF_API_KEY,None),
-        CONF_API_KEY_NAME : rt_key.get(CONF_API_KEY_NAME, None),
-        CONF_API_KEY_LOCATION : rt_key.get(CONF_API_KEY_LOCATION,None),
-        CONF_ACCEPT_HEADER_PB :rt_key.get(CONF_ACCEPT_HEADER_PB,None),
-        "file": self._data["name"] + "_localstop",
-        }
-    _LOGGER.debug("self rt_data: %s, self headers: %s, self data: %s", self._rt_data, self._headers, self._data)
-
-    if get_gtfs_rt(self.hass, DEFAULT_PATH_RT, self._rt_data) != "ok":
+    feed_entities = get_gtfs_feed_entities(
+        url=self._trip_update_url, headers=self._headers, label="trip_data",
+        owner=self._data["file"])
+    if feed_entities is None:
         # the timetable still stands: the departures are listed without
         # their delays this cycle, where they all went with the feed
         _LOGGER.warning("Could not download RT data from %s, listing the "
                         "timetable alone", self._trip_update_url)
-    else:
-        # use local file created as new url
-        self._trip_update_url = "file://" + DEFAULT_PATH_RT + "/" + self._data["name"] + "_localstop.rt"
-
-    if not self._trip_update_url.startswith("file://"):
-        # the download failed: an empty feed, so the lines below do not
-        # each go and ask the host again
         return []
-    return get_gtfs_feed_entities(
-        url=self._trip_update_url, headers=self._headers, label="trip_data"
-    ) or []
+    return feed_entities
 
 
 def _feed_by_trip(feed_entities):

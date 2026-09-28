@@ -21,11 +21,7 @@ from .const import (
     DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
     DEFAULT_LOCAL_STOP_TIMERANGE,
     DEFAULT_LOCAL_STOP_RADIUS,
-    DEFAULT_API_KEY_NAME,
-    CONF_API_KEY,
-    CONF_API_KEY_NAME,
     CONF_API_KEY_LOCATION,
-    CONF_ACCEPT_HEADER_PB,
     CONF_TRIP_UPDATE_URL,
     CONF_VEHICLE_POSITION_URL,
     CONF_VEHICLE_MAX_AGE,
@@ -579,16 +575,6 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
                 # get_local_stops_next_departures would otherwise try to
                 # download the missing feed and drop every departure with it
                 self._realtime = False
-            # what the key is and where it goes, for the download
-            # get_local_stops_next_departures runs; kept apart from the
-            # headers, which are sent to the host as they are and take
-            # nothing but strings
-            self._rt_key = {
-                CONF_API_KEY: rt_cfg.get(CONF_API_KEY),
-                CONF_API_KEY_NAME: rt_cfg.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME),
-                CONF_API_KEY_LOCATION: rt_cfg.get(CONF_API_KEY_LOCATION),
-                CONF_ACCEPT_HEADER_PB: rt_cfg.get(CONF_ACCEPT_HEADER_PB, False),
-            }
             if rt_cfg.get(CONF_API_KEY_LOCATION, None) == "header":
                 self._headers = rt_headers(rt_cfg)
                 

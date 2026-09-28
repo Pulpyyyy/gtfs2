@@ -15,14 +15,9 @@ Only the true I/O boundaries are replaced:
                                           `_interpret_local_stop_rows()`'s
                                           own output, computed from this
                                           case's rows and RT feed
-    get_gtfs_rt                       -- downloads the RT feed to a
-                                          local file; replaced with a
-                                          plain "ok" so the real code's
-                                          local-file-staging step
-                                          doesn't short-circuit
-    get_gtfs_feed_entities            -- reads/parses that file;
-                                          replaced with this case's
-                                          feed_entities
+    get_gtfs_feed_entities            -- downloads and parses the RT
+                                          feed; replaced with this
+                                          case's feed_entities
 
 Every line of `coordinator.py`, `_interpret_local_stop_rows`,
 `_build_local_stop_element`, and `get_rt_route_trip_statuses` (trip-mode
@@ -136,7 +131,7 @@ class _LocalStopContext:
 
     def __init__(self, hass, offset: int, name: str) -> None:
         self.hass = hass
-        self._data = {"offset": offset, "name": name}
+        self._data = {"offset": offset, "name": name, "file": "local_stop_source"}
         self._realtime = True
         self._rt_group = "trip"
         self._headers = {}
@@ -261,8 +256,7 @@ def test_stop_combined(case_id: str, case_dir: Path):
     with freeze_time(captured_at_utc.replace(tzinfo=None), tz_offset=0):
         ctx = _LocalStopContext(hass, entry.options["offset"], entry.data["name"])
 
-        with patch.object(gtfs_helper, "get_gtfs_rt", return_value="ok"), \
-             patch.object(gtfs_helper, "get_gtfs_feed_entities", return_value=feed_entities):
+        with patch.object(gtfs_helper, "get_gtfs_feed_entities", return_value=feed_entities):
             precomputed_local_stops = gtfs_helper._interpret_local_stop_rows(ctx, rows)
 
         coord = coordinator_mod.GTFSLocalStopUpdateCoordinator(hass, entry)

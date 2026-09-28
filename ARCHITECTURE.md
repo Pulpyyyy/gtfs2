@@ -489,7 +489,8 @@ stops          within a box of radius metres around it (200 by default),
                turned into degrees at 111,111 m each
 departures     from now minus timerange_history to now plus timerange
                (15 and 30 minutes by default), every line
-realtime       trip updates only, matched by trip; the vehicle feed is not
+realtime       trip updates only, matched by trip, from the download the
+               source's other sensors share; the vehicle feed is not
                read, since the entry speaks for no line
 ```
 

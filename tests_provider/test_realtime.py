@@ -276,7 +276,6 @@ def test_the_leg_file_says_what_is_struck(record_property, sncf, entities, tmp_p
 def test_a_cancelled_trip_is_not_a_local_departure(record_property, sncf, entities, monkeypatch):
     check = Check()
     cancelled = _trip_id(entities, "OCESA86017F5111")
-    monkeypatch.setattr(gtfs_helper, "get_gtfs_rt", lambda *_args, **_kw: "ok")
     monkeypatch.setattr(gtfs_helper, "get_gtfs_feed_entities", lambda **_kw: entities)
     listed = {}
     for realtime in (False, True):
