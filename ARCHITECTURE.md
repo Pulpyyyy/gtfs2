@@ -242,7 +242,7 @@ import can outlive its flow window; its outcome is then told through
 
 ```
 alerts.py                what a service alert means for one sensor
-departure_attributes.py  the attribute groups the fork adds to a sensor
+departure_attributes.py  the departure sensor's attributes, group by group
 refresh_steps.py         next service date, trips struck by the realtime
 route_names.py           line labels, lines a feed declares
 stations.py              train entries: stations instead of stops
@@ -1020,13 +1020,11 @@ the rule it breaks can be checked by a test.
    `leg.py` and `rt_window.py` import `gtfs_rt_helper`; `source_zip.py`
    imports `gtfs_db`, `gtfs_filter` and `direction_repair`; `config_flow.py`
    imports `close_schedule` from `coordinator.py`.
-3. **`sensor.py` still builds much of the attributes itself**
-   (`_update_attrs`).
-4. **The dependency rule holds only with exceptions.** The import-linter
+3. **The dependency rule holds only with exceptions.** The import-linter
    contract lists the imports of gaps 1 and 2 as allowed; an exception no
    import needs any more fails the check, so the list can only shrink to
    none.
-5. **Notifications for actionable failures** (refresh failed, lines
+4. **Notifications for actionable failures** (refresh failed, lines
    missing) are persistent notifications; Home Assistant's Repairs issues
    would let the user act on them and would clear with the cause.
 

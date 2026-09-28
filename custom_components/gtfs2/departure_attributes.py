@@ -1,29 +1,76 @@
-"""The attributes this fork adds to the departure sensor.
+"""The attributes of the departure sensor, by group.
 
 GTFSDepartureSensor._update_attrs builds the sensor's attributes; each
-function here fills one group of the fork's own into that dict, and removes
-it when there is nothing to say: when the line next runs (next_service_info),
-the map files a card draws from (map_files), the lists that go with the next
-departures (next_departure_lists), the alert stack and its kind
-(alert_details) and the trips behind the realtime departures
-(realtime_trips). Every function takes the attributes dict and the values it
-reads, nothing of the entity itself.
+function here fills one group into that dict. Upstream's: the departure's
+times (departure_times), the agency and the two ends
+(station_attributes), the line and the trip (route_and_trip_attributes),
+the calls at both ends (stop_time_attributes), the next departures
+(next_departure_attributes) and the realtime (realtime_attributes). The
+fork's own, removed when there is nothing to say: when the line next runs
+(next_service_info), the map files a card draws from (map_files), the
+lists that go with the next departures (next_departure_lists), the alert
+stack and its kind (alert_details) and the trips behind the realtime
+departures (realtime_trips). Every function takes the attributes dict and
+the values it reads, nothing of the entity itself.
 """
 from __future__ import annotations
 
 from datetime import date, timedelta
+import logging
+from typing import Any
 
+from homeassistant.util import slugify
 import homeassistant.util.dt as dt_util
 
 from .const import (
+    ATTR_ARRIVAL,
+    ATTR_BICYCLE,
+    ATTR_DAY,
+    ATTR_DROP_OFF_DESTINATION,
+    ATTR_DROP_OFF_ORIGIN,
+    ATTR_FIRST,
     ATTR_INFO,
+    ATTR_INFO_RT,
+    ATTR_LAST,
+    ATTR_LOCATION_DESTINATION,
+    ATTR_LOCATION_ORIGIN,
+    ATTR_NEXT_RT,
+    ATTR_NEXT_RT_DELAYS,
     ATTR_NEXT_RT_TRIPS,
     ATTR_NEXT_SERVICE_DATE,
     ATTR_NEXT_SERVICE_IN_DAYS,
+    ATTR_PICKUP_DESTINATION,
+    ATTR_PICKUP_ORIGIN,
+    ATTR_ROUTE_TYPE,
     ATTR_RT_CANCELLED,
     ATTR_RT_SKIPPED,
+    ATTR_RT_UPDATED_AT,
+    ATTR_TIMEPOINT_DESTINATION,
+    ATTR_TIMEPOINT_ORIGIN,
+    ATTR_TIMEZONE_DESTINATION,
+    ATTR_TIMEZONE_ORIGIN,
+    ATTR_WHEELCHAIR,
+    ATTR_WHEELCHAIR_DESTINATION,
+    ATTR_WHEELCHAIR_ORIGIN,
+    BICYCLE_ALLOWED_DEFAULT,
+    BICYCLE_ALLOWED_OPTIONS,
+    DROP_OFF_TYPE_DEFAULT,
+    DROP_OFF_TYPE_OPTIONS,
+    LOCATION_TYPE_DEFAULT,
+    LOCATION_TYPE_OPTIONS,
+    PICKUP_TYPE_DEFAULT,
+    PICKUP_TYPE_OPTIONS,
+    ROUTE_TYPE_OPTIONS,
+    TIMEPOINT_DEFAULT,
+    TIMEPOINT_OPTIONS,
     TIME_STR_FORMAT,
+    WHEELCHAIR_ACCESS_DEFAULT,
+    WHEELCHAIR_ACCESS_OPTIONS,
+    WHEELCHAIR_BOARDING_DEFAULT,
+    WHEELCHAIR_BOARDING_OPTIONS,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def departure_records(schedule, data):
@@ -238,3 +285,159 @@ def realtime_trips(attributes, departure_rt):
                       (ATTR_RT_SKIPPED, "skipped_trips_realtime")):
         if key in departure_rt:
             attributes[attr] = departure_rt[key]
+
+
+def departure_times(attributes, departure):
+    """When the departure arrives, how long it rides, and whether it is
+    the day's first or last."""
+    if not departure:
+        return
+    attributes[ATTR_ARRIVAL] = dt_util.as_utc(
+        departure.get("arrival_time")
+    ).isoformat()
+    # theoretical journey time in minutes, arrival minus departure
+    attributes["duration"] = departure.get("duration")
+    attributes[ATTR_DAY] = departure["day"]
+    for key in (ATTR_FIRST, ATTR_LAST):
+        if departure[key] is not None:
+            attributes[key] = departure[key]
+
+
+def station_attributes(attributes, departure, agency, origin, destination, route_type):
+    """The agency and the two ends, as the feed describes them."""
+    if agency:
+        append_keys(attributes, dict_for_table(agency), "Agency")
+    if route_type == "2":
+        # a train names its ends by station, not by stop record: what
+        # the departure itself says of them
+        attributes["origin_station_stop_name"] = departure.get("origin_stop_name", None)
+        attributes["origin_station_stop_id"] = departure.get("origin_stop_id", None)
+        attributes["origin_station_stop_sequence"] = departure.get("origin_stop_sequence", None)
+        attributes["destination_station_stop_name"] = departure.get("destination_stop_name", None)
+        attributes["destination_station_stop_id"] = departure.get("destination_stop_id", None)
+        return
+    _end_attributes(attributes, origin, "Origin Station",
+                         ATTR_LOCATION_ORIGIN, ATTR_WHEELCHAIR_ORIGIN)
+    _end_attributes(attributes, destination, "Destination Station",
+                         ATTR_LOCATION_DESTINATION, ATTR_WHEELCHAIR_DESTINATION)
+
+
+def _end_attributes(attributes, stop, prefix, location_key, wheelchair_key):
+    """One end's stop record, its kind of place and its access."""
+    if not stop:
+        return
+    append_keys(attributes, dict_for_table(stop), prefix)
+    attributes[location_key] = LOCATION_TYPE_OPTIONS.get(
+        stop.location_type, LOCATION_TYPE_DEFAULT
+    )
+    attributes[wheelchair_key] = WHEELCHAIR_BOARDING_OPTIONS.get(
+        stop.wheelchair_boarding, WHEELCHAIR_BOARDING_DEFAULT
+    )
+
+
+def route_and_trip_attributes(attributes, route, trip):
+    """The line and the trip the departure rides."""
+    if route:
+        append_keys(attributes, dict_for_table(route), "Route")
+        attributes[ATTR_ROUTE_TYPE] = ROUTE_TYPE_OPTIONS[
+            route.route_type
+        ]
+    if trip:
+        append_keys(attributes, dict_for_table(trip), "Trip")
+        attributes[ATTR_BICYCLE] = BICYCLE_ALLOWED_OPTIONS.get(
+            trip.bikes_allowed, BICYCLE_ALLOWED_DEFAULT
+        )
+        attributes[ATTR_WHEELCHAIR] = WHEELCHAIR_ACCESS_OPTIONS.get(
+            trip.wheelchair_accessible, WHEELCHAIR_ACCESS_DEFAULT
+        )
+
+
+def stop_time_attributes(attributes, departure):
+    """The trip's call at each end: how a rider gets on and off there,
+    whether the time is exact, and the zone it is written in."""
+    if not departure:
+        return
+    for end, drop_off, pickup, timepoint, zone in (
+            ("origin", ATTR_DROP_OFF_ORIGIN, ATTR_PICKUP_ORIGIN,
+             ATTR_TIMEPOINT_ORIGIN, ATTR_TIMEZONE_ORIGIN),
+            ("destination", ATTR_DROP_OFF_DESTINATION, ATTR_PICKUP_DESTINATION,
+             ATTR_TIMEPOINT_DESTINATION, ATTR_TIMEZONE_DESTINATION)):
+        stop_time = departure[f"{end}_stop_time"]
+        append_keys(attributes, stop_time, f"{end}_stop")
+        attributes[drop_off] = DROP_OFF_TYPE_OPTIONS.get(
+            stop_time["Drop Off Type"], DROP_OFF_TYPE_DEFAULT
+        )
+        attributes[pickup] = PICKUP_TYPE_OPTIONS.get(
+            stop_time["Pickup Type"], PICKUP_TYPE_DEFAULT
+        )
+        attributes[timepoint] = TIMEPOINT_OPTIONS.get(
+            stop_time["Timepoint"], TIMEPOINT_DEFAULT
+        )
+        attributes[zone] = departure.get(f"{end}_stop_timezone", None)
+
+
+# the lists a departure carries, by the attribute that shows them, ten
+# departures at most
+_NEXT_DEPARTURE_LISTS = (
+    ("next_departures", "next_departures"),
+    ("next_departures_lines", "next_departures_lines"),
+    ("next_departures_headsign", "next_departures_headsign"),
+    ("next_departures_trips", "next_departures_trip_id"),
+    ("next_departures_destination_arrival_times", "next_departures_destination_arrival_times"),
+)
+
+
+def next_departure_attributes(attributes, departure, next_departures):
+    for attribute, key in _NEXT_DEPARTURE_LISTS:
+        attributes[attribute] = (
+            departure[key][:10] if next_departures else [])
+
+
+def realtime_attributes(attributes, departure_rt):
+    """What the realtime feed says of the next departures, or that it
+    said nothing."""
+    if not departure_rt:
+        _LOGGER.debug("No next departure realtime attributes")
+        attributes[ATTR_INFO_RT] = "No realtime information"
+        return
+    _LOGGER.debug("next dep realtime attr: %s", departure_rt)
+    # Add next departure realtime to the right level, only if populated
+    if "gtfs_rt_updated_at" not in departure_rt:
+        return
+    attributes["gtfs_rt_updated_at"] = departure_rt[ATTR_RT_UPDATED_AT]
+    if departure_rt.get(ATTR_NEXT_RT, None):
+        attributes["next_departure_realtime"] = departure_rt[ATTR_NEXT_RT][0]
+        attributes["next_departures_realtime"] = departure_rt[ATTR_NEXT_RT]
+    else:
+        attributes["next_departure_realtime"] = '-'
+        attributes["next_departures_realtime"] = '-'
+    if departure_rt.get(ATTR_NEXT_RT_DELAYS, None):
+        attributes["next_delay_realtime"] = departure_rt[ATTR_NEXT_RT_DELAYS][0]
+        attributes["next_delays_realtime"] = departure_rt[ATTR_NEXT_RT_DELAYS]
+    else:
+        attributes["next_delay_realtime"] = '-'
+        attributes["next_delays_realtime"] = '-'
+    realtime_trips(attributes, departure_rt)
+
+
+def dict_for_table(resource: Any) -> dict:
+    """Return a dictionary for the SQLAlchemy resource given."""
+    _dict = {}
+    for column in resource.__table__.columns:
+        value = getattr(resource, column.name)
+        # a column the feed left empty stays None, which append_keys
+        # leaves out: made text, it came out as an attribute "None"
+        _dict[column.name] = None if value is None else str(value)
+    return _dict
+
+
+def append_keys(attributes, resource: dict, prefix: str | None = None) -> None:
+    """Properly format key val pairs to append to attributes."""
+    for attr, val in resource.items():
+        if val == "" or val is None or attr == "feed_id":
+            continue
+        key = attr
+        if prefix and not key.startswith(prefix):
+            key = f"{prefix} {key}"
+        key = slugify(key)
+        attributes[key] = val
