@@ -44,12 +44,8 @@ from .const import (
     CONF_MAX_LOCAL_STOPS,
 )
 
-from .gtfs_helper import (
-    get_gtfs,
-    get_datasources,
-    remove_datasource,
-    check_datasource_index,
-)
+from .gtfs_helper import get_gtfs, check_datasource_index
+from .gtfs_db import get_datasources, remove_datasource
 from .route_names import get_agency_list, get_route_count, get_route_list
 from .local_stops import get_local_stop_list
 from .places import get_destination_stop_list, get_pair_direction, get_stop_list, get_towards

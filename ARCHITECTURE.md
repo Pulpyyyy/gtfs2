@@ -257,7 +257,7 @@ attributes dict and what it reads, "nothing of the entity" (3f01c10).
 ### 4. Data management layer
 
 ```
-gtfs_db.py            everything that opens a database file directly
+gtfs_db.py            everything that opens a database file directly, the sources on disk
 gtfs_filter.py        cut a zip down to chosen routes before any import
 direction_repair.py   repair trip direction_id after import
 gtfs_shape.py         read one shape out of the zip (shapes.txt is never imported)
@@ -1019,9 +1019,9 @@ the rule it breaks can be checked by a test.
 1. **`gtfs_helper.py` sits outside the layers and every layer imports it.**
    The fork took the file over (2026-09-28): the stops around a person
    (`local_stops.py`), the places of a line (`places.py`) and the timetable
-   services (`departure_services.py`) left it, moved unchanged, and the
-   flow's line and agency lists went to `route_names.py`. It still holds
-   six families:
+   services (`departure_services.py`) left it, moved unchanged; the flow's
+   line and agency lists went to `route_names.py`, the sources on disk to
+   `gtfs_db.py`. It still holds five families:
 
    ```
    departure queries    _fetch_departure_rows, get_next_departure,
@@ -1032,16 +1032,16 @@ the rule it breaks can be checked by a test.
    trains               departure_route_type, entry_stations,
                         train_entry_routes, station_names_in, RAIL_*
    opening a database   get_gtfs
-   sources on disk      get_datasources, get_zipfiles, remove_datasource,
-                        check_extracting
-   indexes              check_datasource_index, drop_import_indexes
+   extracting, indexes  check_extracting, check_datasource_index,
+                        drop_import_indexes
    ```
 
-   Closing the gap means giving each family a layer: the sources on disk
-   and the indexes to `gtfs_db.py`; the queries, with their SQL pieces,
-   `get_gtfs` and the train helpers they read, to the data layer. The
-   train helpers cannot go to `stations.py` on their own: the queries read
-   them and `stations.py` reads the queries' SQL pieces, a loop.
+   Closing the gap means moving them together to the data layer. None
+   goes alone: `get_gtfs` reads check_extracting, which the index check
+   reads too, and `rt_window.py` (gap 2) reaches `gtfs_db.py` through
+   `gtfs_helper`, which the contract forbids; the train helpers cannot go
+   to `stations.py` on their own, the queries read them and `stations.py`
+   reads the queries' SQL pieces, a loop.
 2. **Lower layers import upper ones:** `source_zip.py` and `rt_window.py`
    import `gtfs_helper`; `geojson.py`,
    `leg.py` and `rt_window.py` import `gtfs_rt_helper`; `source_zip.py`

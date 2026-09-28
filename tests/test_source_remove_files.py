@@ -12,7 +12,7 @@ from pathlib import Path
 
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+gtfs_db = ha_stub.load("gtfs_db")
 
 FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "boarding" / "static.zip"
 
@@ -40,13 +40,13 @@ def _lay_out(root):
 
 def test_remove_takes_every_file_of_the_source(tmp_path):
     gtfs_dir = _lay_out(tmp_path)
-    assert gtfs_helper.remove_datasource(_hass(tmp_path), "gtfs2", "src", True) == "removed"
+    assert gtfs_db.remove_datasource(_hass(tmp_path), "gtfs2", "src", True) == "removed"
     assert sorted(p.name for p in gtfs_dir.iterdir()) == ["src2.sqlite", "src2.zip"]
 
 
 def test_remove_without_database_keeps_it(tmp_path):
     gtfs_dir = _lay_out(tmp_path)
-    gtfs_helper.remove_datasource(_hass(tmp_path), "gtfs2", "src", False)
+    gtfs_db.remove_datasource(_hass(tmp_path), "gtfs2", "src", False)
     left = {p.name for p in gtfs_dir.iterdir()} - {"src2.sqlite", "src2.zip"}
     # the database and its own side files stay; the journal goes, as it
     # always has

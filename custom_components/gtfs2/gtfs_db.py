@@ -7,14 +7,15 @@ hand written queries and 18 raw writes, none of them going through pygtfs. So
 that work already existed, scattered through gtfs_helper.py; this module gives
 it one home.
 
-Two things live here:
+Three things live here:
 
   the two database model    real_path / scratch_path / create_real_from /
                             copy_route / discard_scratch
   reshaping a datasource    prune_gtfs_datasource / intern_gtfs_datasource
+  the sources on disk       get_datasources / get_zipfiles / remove_datasource
 
 They belong together because they answer the same question - what is physically
-in the file - and because the first largely replaces the second: once imports
+in the file, and which files are there - and because the first largely replaces the second: once imports
 stop rebuilding the real database, prune is only needed to drop a line that is
 no longer followed.
 
@@ -873,3 +874,85 @@ def _column_type(cur, table, column):
         if row[1] == column:
             return row[2] or ""
     return ""
+
+
+# the databases a refresh or an import works in beside a source, never
+# sources of their own: <file>.refresh.sqlite, <file>.import.sqlite and the
+# filtered <file>.import.sqlite.zip
+_WORK_FILE_PARTS = (".refresh", ".import")
+
+
+def _list_gtfs_dir(gtfs_dir):
+    os.makedirs(gtfs_dir, exist_ok=True)
+    return os.listdir(gtfs_dir)
+
+
+async def get_datasources(hass, path) -> dict[str]:
+    """The datasources in the gtfs2 folder, by name.
+
+    The whole name before ".sqlite": cut at the first dot, a name holding
+    one came back short and named a source that does not exist, and the
+    working files of a refresh or an import only folded into their source
+    by the same accident.
+    """
+    _LOGGER.debug(f"Getting datasources for path: {path}")
+    gtfs_dir = hass.config.path(path)
+    files = await hass.async_add_executor_job(_list_gtfs_dir, gtfs_dir)
+    datasources = sorted(
+        file[:-len(".sqlite")] for file in files
+        if file.endswith(".sqlite")
+        and not file[:-len(".sqlite")].endswith(_WORK_FILE_PARTS))
+    _LOGGER.debug(f"Datasources in folder: {datasources}")
+    return datasources
+
+
+async def get_zipfiles(hass, path) -> list[str]:
+    """List the zip files sitting in the gtfs2 folder, without their extension.
+
+    get_datasources lists datasources that were already extracted (.sqlite);
+    this lists the archives still waiting to be extracted, so the user can pick
+    one instead of typing its name.
+    """
+    gtfs_dir = hass.config.path(path)
+    files = await hass.async_add_executor_job(_list_gtfs_dir, gtfs_dir)
+    zipfiles = sorted(
+        f[:-4] for f in files
+        if f.endswith(".zip") and not f.endswith("_temp.zip")
+        and not f.endswith("_temp_out.zip")
+        # the filtered copy an import leaves while it runs
+        and not f.endswith(".import.sqlite.zip")
+    )
+    _LOGGER.debug(f"Zip files in folder: {zipfiles}")
+    return zipfiles
+
+
+def remove_datasource(hass, path, filename, include_sqlite):
+    """Remove the files of a datasource."""
+    gtfs_dir = hass.config.path(path)
+    _LOGGER.info(f"Removing datasource: {os.path.join(gtfs_dir, filename)}.*")
+    if include_sqlite and os.path.exists(os.path.join(gtfs_dir, filename + ".sqlite")):
+        os.remove(os.path.join(gtfs_dir, filename + ".sqlite"))
+    if os.path.exists(os.path.join(gtfs_dir, filename + "_temp.zip")):     
+        os.remove(os.path.join(gtfs_dir, filename + "_temp.zip"))
+    if os.path.exists(os.path.join(gtfs_dir, filename + "_temp_out.zip")):        
+        os.remove(os.path.join(gtfs_dir, filename + "_temp_out.zip"))
+    if os.path.exists(os.path.join(gtfs_dir, filename + ".sqlite-journal")):        
+        os.remove(os.path.join(gtfs_dir, filename + ".sqlite-journal"))
+    if os.path.exists(os.path.join(gtfs_dir, filename + ".zip")):
+        os.remove(os.path.join(gtfs_dir, filename + ".zip"))
+    # the sidecar follows the zip it describes
+    if os.path.exists(os.path.join(gtfs_dir, filename + ".zip.meta.json")):
+        os.remove(os.path.join(gtfs_dir, filename + ".zip.meta.json"))
+    # what the fork keeps beside a source: the record of the installed
+    # edition, and what a download, a refresh or an import stopped half way
+    # leaves. Left behind, the record made a new source of the same name
+    # look already built from an edition it never had
+    # (.extracting: the marker of a legacy extract an older version left)
+    leftovers = [".zip.new", ".extracting", ".refresh.sqlite", ".refresh.sqlite-journal",
+                 ".import.sqlite", ".import.sqlite-journal", ".import.sqlite.zip"]
+    if include_sqlite:
+        leftovers += [".sqlite.meta.json", ".sqlite-wal", ".sqlite-shm"]
+    for suffix in leftovers:
+        if os.path.exists(os.path.join(gtfs_dir, filename + suffix)):
+            os.remove(os.path.join(gtfs_dir, filename + suffix))
+    return "removed"

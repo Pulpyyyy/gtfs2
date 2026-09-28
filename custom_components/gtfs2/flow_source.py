@@ -48,8 +48,8 @@ from .const import (
 )
 from .flow_reload import _database_size
 from .freshness import source_meta
-from .gtfs_db import feed_zip, real_path
-from .gtfs_helper import check_extracting, get_zipfiles
+from .gtfs_db import feed_zip, real_path, get_zipfiles
+from .gtfs_helper import check_extracting
 from .key_mask import KEY_MASK, note_key
 from .rt_source import async_ensure_datasource_entry, datasource_entry
 from .source_zip import ensure_source_zip
