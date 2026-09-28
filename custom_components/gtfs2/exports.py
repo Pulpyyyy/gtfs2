@@ -287,43 +287,56 @@ async def remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None:
     # by its entry part, the line part being the departure's, not the entry's
     leg_owner = entry.data.get("name")
     # the timetable is the entry's own too, named after it alone
-    own = [timetable_name(entry.data["name"])] if entry.data.get("name") else []
+    names = [timetable_name(entry.data["name"])] if entry.data.get("name") else []
     route = id_of(entry.data.get("route"))
-    direction = entry.data.get("direction")
     if route == "train":
-        # a train entry's departures ride whatever line serves its two
-        # stations, and each wrote its files under that line: read back
-        # which lines those are, the database is still there
-        routes = await hass.async_add_executor_job(
-            train_entry_routes, hass.config.path(DEFAULT_PATH), entry.data)
-        names = list(own)
-        for route_id in routes:
-            for d in ("0", "1", "None"):
-                still_used = any(
-                    e.entry_id != entry.entry_id
-                    and (id_of(e.data.get("route")) == route_id
-                         # another train entry on this source may ride it too
-                         or (e.data.get("route") == "train"
-                             and e.data.get("file") == entry.data.get("file")))
-                    for e in hass.config_entries.async_entries(DOMAIN))
-                if not still_used:
-                    names += [vehicle_positions_name(route_id, d), route_geojson_name(route_id, d)]
-        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, names)
-        return
-    if not route:
-        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, own)
-        return
+        names += await _train_line_files(hass, entry)
+    elif route:
+        names += _line_files(hass, entry, route)
+    # a disk walk: the glob and the removals run in the executor, never on the loop
+    await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, names)
+
+
+def _other_entries(hass, entry):
+    return [e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id]
+
+
+async def _train_line_files(hass, entry):
+    """The map files of the lines a train entry rode that no other entry
+    still reads."""
+    # a train entry's departures ride whatever line serves its two
+    # stations, and each wrote its files under that line: read back
+    # which lines those are, the database is still there
+    routes = await hass.async_add_executor_job(
+        train_entry_routes, hass.config.path(DEFAULT_PATH), entry.data)
+    others = _other_entries(hass, entry)
+    # another train entry on this source may ride any of them
+    train_beside = any(e.data.get("route") == "train" and e.data.get("file") == entry.data.get("file")
+                       for e in others)
+    names = []
+    for route_id in routes:
+        if train_beside or any(id_of(e.data.get("route")) == route_id for e in others):
+            continue
+        for d in ("0", "1", "None"):
+            names += [vehicle_positions_name(route_id, d), route_geojson_name(route_id, d)]
+    return names
+
+
+def _line_files(hass, entry, route):
+    """The map files of an entry's line that no other entry still reads in
+    that direction, those named before the ids were sanitised included."""
     # an entry set up without a direction wrote its files under the
     # direction of the departures it followed, either one, or under "none"
     # when the feed has no direction_id at all
+    direction = entry.data.get("direction")
     directions = [str(direction)] if direction is not None else ["0", "1", "None"]
-    names = list(own)
+    others = _other_entries(hass, entry)
+    names = []
     for d in directions:
         still_used = any(
-            e.entry_id != entry.entry_id
-            and id_of(e.data.get("route")) == route
+            id_of(e.data.get("route")) == route
             and (e.data.get("direction") is None or str(e.data.get("direction")) == d)
-            for e in hass.config_entries.async_entries(DOMAIN)
+            for e in others
         )
         if still_used:
             _LOGGER.debug("Keeping geojson for route %s direction %s, another entry uses it",
@@ -336,8 +349,7 @@ async def remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None:
         legacy = f"{route}_{d}"
         if os.path.basename(legacy) == legacy and ".." not in legacy:
             names += [legacy + ".json", legacy + "_route.json"]
-    # a disk walk: the glob and the removals run in the executor, never on the loop
-    await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, names)
+    return names
 
 
 def _remove_geojson_files(geojson_dir, leg_owner, names):
