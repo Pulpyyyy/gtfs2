@@ -210,6 +210,7 @@ update.py          update entity of a source
 button.py          refresh button of a source
 switch.py          realtime switch of a datasource
 datasource_services.py  the prune and intern services
+departure_services.py   the departures, arrivals and trip stops services
 ```
 
 - Services are registered once, in `setup()`, not per entry. Each declares
@@ -1013,8 +1014,7 @@ the rule it breaks can be checked by a test.
    place, against the refactor rule above: closing it means the fork taking
    the file over, a decision the rule has so far left open.
 2. **Lower layers import upper ones:** `source_zip.py` and `rt_window.py`
-   import `gtfs_helper`; `gtfs_helper` imports `route_names` and
-   `feed_window`; `geojson.py`, `leg.py` and `rt_window.py` import
+   import `gtfs_helper`; `gtfs_helper` imports `route_names`; `geojson.py`, `leg.py` and `rt_window.py` import
    `gtfs_rt_helper`; `source_zip.py` imports `gtfs_db`, `gtfs_filter` and `direction_repair`; `config_flow.py`
    imports `close_schedule` from `coordinator.py`.
 3. **`sensor.py` still builds much of the attributes itself**

@@ -10,7 +10,7 @@ import types
 
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departure_services = ha_stub.load("departure_services")
 
 
 def _run(coro):
@@ -24,7 +24,7 @@ def _run(coro):
 def test_a_source_or_local_stops_entry_lists_nothing(monkeypatch):
     opened = []
     schedule = types.SimpleNamespace(engine=types.SimpleNamespace(dispose=lambda: None))
-    monkeypatch.setattr(gtfs_helper, "get_gtfs", lambda *a, **k: opened.append(a) or schedule)
+    monkeypatch.setattr(departure_services, "get_gtfs", lambda *a, **k: opened.append(a) or schedule)
 
     async def job(fn, *args):
         return fn(*args)
@@ -35,6 +35,6 @@ def test_a_source_or_local_stops_entry_lists_nothing(monkeypatch):
         hass = types.SimpleNamespace(
             config_entries=types.SimpleNamespace(async_get_entry=lambda _id, e=entry: e),
             async_add_executor_job=job)
-        got = _run(gtfs_helper.get_route_departures(hass, {"config_entry": "e"}))
+        got = _run(departure_services.get_route_departures(hass, {"config_entry": "e"}))
         assert (got["today"], got["tomorrow"]) == ([], [])
     assert opened == []

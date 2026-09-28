@@ -27,7 +27,7 @@ import ha_stub
 ha_stub.install()
 import homeassistant.util.dt as dt_util  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departure_services = ha_stub.load("departure_services")
 
 ZONE = "Europe/Paris"
 TABLES = {
@@ -81,9 +81,9 @@ def _call(tmp_path, schedule, at, service="get_route_departures"):
         config_entries=types.SimpleNamespace(async_get_entry=lambda _id: entry),
         async_add_executor_job=job)
     dt_util.set_default_time_zone(dt_util.get_time_zone(ZONE))
-    with freeze_time(at), patch.object(gtfs_helper, "get_gtfs", return_value=schedule), \
+    with freeze_time(at), patch.object(departure_services, "get_gtfs", return_value=schedule), \
             patch.object(schedule.engine, "dispose", lambda: None):
-        coro = getattr(gtfs_helper, service)(hass, {"config_entry": "e"})
+        coro = getattr(departure_services, service)(hass, {"config_entry": "e"})
         try:
             coro.send(None)
         except StopIteration as done:
@@ -118,7 +118,7 @@ def test_next_and_until(tmp_path):
 
 def test_an_unknown_entry_says_nothing_is_known(tmp_path):
     hass = types.SimpleNamespace(config_entries=types.SimpleNamespace(async_get_entry=lambda _id: None))
-    coro = gtfs_helper.get_route_departures(hass, {"config_entry": "gone"})
+    coro = departure_services.get_route_departures(hass, {"config_entry": "gone"})
     try:
         coro.send(None)
     except StopIteration as done:

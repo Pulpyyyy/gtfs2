@@ -11,7 +11,8 @@ from datetime import timedelta
 from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_FILE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
 import voluptuous as vol
-from .gtfs_helper import get_route_departures, get_route_arrivals, get_trip_stops, get_datasources
+from .gtfs_helper import get_datasources
+from .departure_services import get_route_departures, get_route_arrivals, get_trip_stops
 from .local_stops import update_gtfs_local_stops
 from .notifications import async_notify_line_orphaned
 from .exports import remove_entry_geojson

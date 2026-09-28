@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departure_services = ha_stub.load("departure_services")
 
 
 def _schedule(tmp_path):
@@ -35,7 +35,7 @@ def _schedule(tmp_path):
 
 
 def test_from_the_origin_on(tmp_path):
-    got = gtfs_helper._trip_stops(_schedule(tmp_path), ["T1", "T2"], ["S1"])
+    got = departure_services._trip_stops(_schedule(tmp_path), ["T1", "T2"], ["S1"])
     assert got == {
         "T1": ["Centre - 08:05:00", "Place: Hotel de Ville - 08:10:00", "Lac - 08:20:00"],
         "T2": ["Centre - 09:05:00", "Place: Hotel de Ville - 09:10:00", "Lac - 09:20:00"],
@@ -43,13 +43,13 @@ def test_from_the_origin_on(tmp_path):
 
 
 def test_no_trip_no_query():
-    assert gtfs_helper._trip_stops(None, [], ["S1"]) == {}
+    assert departure_services._trip_stops(None, [], ["S1"]) == {}
 
 
 def test_an_unknown_entity_answers_nothing(monkeypatch):
     hass = types.SimpleNamespace(states=types.SimpleNamespace(get=lambda _e: None),
                                  config_entries=types.SimpleNamespace(async_get_entry=lambda _i: None))
     registry = types.SimpleNamespace(async_get=lambda _e: None)
-    monkeypatch.setattr(gtfs_helper.er, "async_get", lambda _hass: registry)
-    got = asyncio.run(gtfs_helper.get_trip_stops(hass, {"entity_id": "sensor.gone"}))
+    monkeypatch.setattr(departure_services.er, "async_get", lambda _hass: registry)
+    got = asyncio.run(departure_services.get_trip_stops(hass, {"entity_id": "sensor.gone"}))
     assert got["trip_stops"] == {} and got["entity"] == "sensor.gone"

@@ -61,6 +61,10 @@ try:
     local_stops = ha_stub.load("local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
     local_stops = gtfs_helper
+try:
+    departure_services = ha_stub.load("departure_services")
+except FileNotFoundError:  # a tree that answers the departures service in gtfs_helper
+    departure_services = gtfs_helper
 
 FIXTURES = Path(__file__).parent / "fixtures"
 PROMISES = ("route", "local_stop", "service")
@@ -362,9 +366,9 @@ def check_service(rider, schedule, names, zone_name, zone, call, label, now):
     want = _instant(_first_ride(rider, call, now))
     # the service opens the datasource itself and lets it go after; this
     # one is the fixture's, and its engine is kept for the next case
-    with patch.object(gtfs_helper, "get_gtfs", return_value=schedule), \
+    with patch.object(departure_services, "get_gtfs", return_value=schedule), \
             patch.object(schedule.engine, "dispose", lambda: None):
-        result = _drive(gtfs_helper.get_route_departures(hass, {"config_entry": "e"}))
+        result = _drive(departure_services.get_route_departures(hass, {"config_entry": "e"}))
     today = now.astimezone(zone).date()
     if want is None:
         return {"ok": True, "text": f"{label}: nothing to list", "asked": {}, "got": {}}
