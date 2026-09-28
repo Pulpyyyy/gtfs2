@@ -10,7 +10,7 @@ from __future__ import annotations
 import ha_stub
 
 leg_mod = ha_stub.load("leg")
-integration = ha_stub.load("__init__")
+exports_mod = ha_stub.load("exports")
 
 
 def test_a_name_that_ends_like_another_is_not_it():
@@ -28,5 +28,5 @@ def test_removing_an_entry_keeps_the_other_ones_leg(tmp_path):
     ours = tmp_path / leg_mod.leg_geojson_name("R", "1", "Centre")
     for path in (theirs, ours):
         path.write_text("{}")
-    integration._remove_geojson_files(str(tmp_path), "Centre", [])
+    exports_mod._remove_geojson_files(str(tmp_path), "Centre", [])
     assert [p.name for p in tmp_path.iterdir()] == [theirs.name]

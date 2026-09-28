@@ -173,7 +173,7 @@ def _removal_hooks(monkeypatch):
     async def orphaned(hass, entry):
         heard.append(("orphaned", entry.entry_id))
 
-    monkeypatch.setattr(integration, "_remove_entry_geojson", geojson)
+    monkeypatch.setattr(integration, "remove_entry_geojson", geojson)
     monkeypatch.setattr(integration, "_notify_orphaned_line", orphaned)
     return heard
 

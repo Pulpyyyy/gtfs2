@@ -16,6 +16,7 @@ import types
 import ha_stub
 
 integration = ha_stub.load("__init__")
+exports_mod = ha_stub.load("exports")
 switch = ha_stub.load("switch")
 coordinator_mod = ha_stub.load("coordinator")
 
@@ -44,8 +45,8 @@ def _files(root, names):
 
 
 def _line_files(route, direction):
-    return [integration.vehicle_positions_name(route, direction),
-            integration.route_geojson_name(route, direction)]
+    return [exports_mod.vehicle_positions_name(route, direction),
+            exports_mod.route_geojson_name(route, direction)]
 
 
 def test_a_bus_entry_takes_its_files_unless_another_reads_them(tmp_path):
@@ -53,12 +54,12 @@ def test_a_bus_entry_takes_its_files_unless_another_reads_them(tmp_path):
     other = _entry("e2", name="Work to home", route="R2: Line 2", direction="1")
     same_line = _entry("e3", name="Other stop", route="R2: Line 2", direction="1")
     folder = _files(tmp_path, _line_files("R1", "0") + _line_files("R2", "1")
-                    + [integration.timetable_name("Home to work")])
-    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [gone, other, same_line]), gone))
+                    + [exports_mod.timetable_name("Home to work")])
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [gone, other, same_line]), gone))
     left = sorted(p.name for p in folder.iterdir())
     assert left == sorted(_line_files("R2", "1"))
     # the second entry on R2 goes: the first still reads its files
-    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [other, same_line]), same_line))
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [other, same_line]), same_line))
     assert sorted(p.name for p in folder.iterdir()) == left
 
 
@@ -66,10 +67,10 @@ def test_a_train_entry_takes_the_files_of_the_lines_it_rode(tmp_path, monkeypatc
     train = _entry("t1", name="Paris to Lyon", route="train", file="sncf",
                    origin="Paris", destination="Lyon")
     bus = _entry("b1", name="Bus", route="K5: Car", direction="0", file="sncf")
-    monkeypatch.setattr(integration, "train_entry_routes", lambda gtfs_dir, data: ["K4", "K5"])
+    monkeypatch.setattr(exports_mod, "train_entry_routes", lambda gtfs_dir, data: ["K4", "K5"])
     folder = _files(tmp_path, _line_files("K4", "0") + _line_files("K4", "1")
                     + _line_files("K5", "0"))
-    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [train, bus]), train))
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [train, bus]), train))
     # K4 went with it, K5 stays for the bus entry that reads it
     assert sorted(p.name for p in folder.iterdir()) == sorted(_line_files("K5", "0"))
 
@@ -77,9 +78,9 @@ def test_a_train_entry_takes_the_files_of_the_lines_it_rode(tmp_path, monkeypatc
 def test_a_train_entry_leaves_the_files_another_train_entry_may_ride(tmp_path, monkeypatch):
     train = _entry("t1", name="Paris to Lyon", route="train", file="sncf")
     other = _entry("t2", name="Lyon to Paris", route="train", file="sncf")
-    monkeypatch.setattr(integration, "train_entry_routes", lambda gtfs_dir, data: ["K4"])
+    monkeypatch.setattr(exports_mod, "train_entry_routes", lambda gtfs_dir, data: ["K4"])
     folder = _files(tmp_path, _line_files("K4", "0"))
-    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [train, other]), train))
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [train, other]), train))
     assert sorted(p.name for p in folder.iterdir()) == sorted(_line_files("K4", "0"))
 
 
@@ -122,8 +123,8 @@ def test_an_options_change_before_any_answer_still_refreshes():
 def test_an_entry_on_no_line_takes_only_its_timetable(tmp_path):
     gone = _entry("l1", name="Around me", device_tracker_id="person.me")
     kept = _line_files("R1", "0")
-    folder = _files(tmp_path, kept + [integration.timetable_name("Around me")])
-    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [gone]), gone))
+    folder = _files(tmp_path, kept + [exports_mod.timetable_name("Around me")])
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [gone]), gone))
     assert sorted(p.name for p in folder.iterdir()) == sorted(kept)
 
 
@@ -134,13 +135,13 @@ def test_an_entry_with_no_direction_takes_either_one_and_the_old_names(tmp_path)
     other = _entry("e2", name="Bus back", route="R 1: Line 1", direction="1")
     folder = _files(tmp_path, _line_files("R 1", "0") + _line_files("R 1", "1")
                     + _line_files("R 1", "None") + ["R 1_0.json", "R 1_0_route.json"])
-    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [gone, other]), gone))
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [gone, other]), gone))
     # direction 1 stays for the entry that reads it
     assert sorted(p.name for p in folder.iterdir()) == sorted(_line_files("R 1", "1"))
     unsafe = _entry("e3", name="Odd", route="a/b")
     (folder / "a").mkdir()
     (folder / "a" / "b_0.json").write_text("{}")
-    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [unsafe]), unsafe))
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [unsafe]), unsafe))
     assert (folder / "a" / "b_0.json").exists()
 
 
@@ -150,7 +151,7 @@ def test_a_file_that_will_not_go_is_said_and_the_rest_goes(tmp_path, caplog):
     folder = _files(tmp_path, [route_file])
     # a directory under the file's name: os.remove refuses it
     (folder / positions).mkdir()
-    asyncio.run(integration._remove_entry_geojson(_Hass(tmp_path, [gone]), gone))
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [gone]), gone))
     assert [p.name for p in folder.iterdir()] == [positions]
     assert "Could not remove" in caplog.text
 

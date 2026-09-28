@@ -6,22 +6,26 @@ days (export_timetable); the leg file, the ride of the next departure timed
 stop by stop (export_leg). The writers themselves are in geojson.py, leg.py
 and timetable.py; what is here decides when a file is written again, and
 keeps the slow ones off the refresh. Called from GTFSUpdateCoordinator._async_update_data, the
-coordinator handed in keeps what was written last.
+coordinator handed in keeps what was written last. When an entry is
+removed, remove_entry_geojson takes its files away with it.
 """
 from __future__ import annotations
 
 from datetime import timedelta
+import glob
 import json
 import logging
 import os
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
-from .const import DEFAULT_PATH_GEOJSON
+from .const import DEFAULT_PATH, DEFAULT_PATH_GEOJSON, DOMAIN
 from .gtfs_db import feed_zip, real_path
-from .gtfs_helper import shown_ends
-from .geojson import write_route_file, route_geojson_name, get_representative_trip
-from .leg import write_leg_file, leg_geojson_name
+from .gtfs_helper import shown_ends, train_entry_routes
+from .geojson import write_route_file, route_geojson_name, get_representative_trip, vehicle_positions_name
+from .leg import write_leg_file, leg_geojson_name, leg_geojson_pattern, owns_leg_file
 from .timetable import write_timetable_file, timetable_name
 
 _LOGGER = logging.getLogger(__name__)
@@ -263,3 +267,93 @@ async def export_leg(coordinator, data, feed_entities) -> None:
         await coordinator.hass.async_add_executor_job(write_leg_file, coordinator.hass, coordinator._data, feed_entities)
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.exception("Error writing leg geojson: %s", ex)
+
+
+async def remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove the geojson files an entry leaves behind on disk.
+
+    Home Assistant clears the entity registry of a removed entry by itself,
+    right after this callback, but nothing knows about the files: the map
+    export writes www/gtfs2/<route>_<direction>.json and its _route.json
+    companion, and they would stay there for good.
+
+    Both are named after the route and the direction rather than the entry,
+    so two entries on the same line share them: only remove them when no
+    other entry still needs them.
+    """
+    # www/gtfs2, where the export writes them, not the datasource folder
+    geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
+    # the leg file is this entry's own, nobody else writes or reads it; found
+    # by its entry part, the line part being the departure's, not the entry's
+    leg_owner = entry.data.get("name")
+    # the timetable is the entry's own too, named after it alone
+    own = [timetable_name(entry.data["name"])] if entry.data.get("name") else []
+    route = (entry.data.get("route") or "").split(": ")[0]
+    direction = entry.data.get("direction")
+    if route == "train":
+        # a train entry's departures ride whatever line serves its two
+        # stations, and each wrote its files under that line: read back
+        # which lines those are, the database is still there
+        routes = await hass.async_add_executor_job(
+            train_entry_routes, hass.config.path(DEFAULT_PATH), entry.data)
+        names = list(own)
+        for route_id in routes:
+            for d in ("0", "1", "None"):
+                still_used = any(
+                    e.entry_id != entry.entry_id
+                    and ((e.data.get("route") or "").split(": ")[0] == route_id
+                         # another train entry on this source may ride it too
+                         or (e.data.get("route") == "train"
+                             and e.data.get("file") == entry.data.get("file")))
+                    for e in hass.config_entries.async_entries(DOMAIN))
+                if not still_used:
+                    names += [vehicle_positions_name(route_id, d), route_geojson_name(route_id, d)]
+        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, names)
+        return
+    if not route:
+        await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, own)
+        return
+    # an entry set up without a direction wrote its files under the
+    # direction of the departures it followed, either one, or under "none"
+    # when the feed has no direction_id at all
+    directions = [str(direction)] if direction is not None else ["0", "1", "None"]
+    names = list(own)
+    for d in directions:
+        still_used = any(
+            e.entry_id != entry.entry_id
+            and (e.data.get("route") or "").split(": ")[0] == route
+            and (e.data.get("direction") is None or str(e.data.get("direction")) == d)
+            for e in hass.config_entries.async_entries(DOMAIN)
+        )
+        if still_used:
+            _LOGGER.debug("Keeping geojson for route %s direction %s, another entry uses it",
+                          route, d)
+            continue
+        names += [vehicle_positions_name(route, d), route_geojson_name(route, d)]
+        # the files written before the ids were sanitised carry the raw name and
+        # nothing else would ever remove them; an id that is not a plain file name
+        # never wrote in this directory, so it is not looked for there
+        legacy = f"{route}_{d}"
+        if os.path.basename(legacy) == legacy and ".." not in legacy:
+            names += [legacy + ".json", legacy + "_route.json"]
+    # a disk walk: the glob and the removals run in the executor, never on the loop
+    await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, names)
+
+
+def _remove_geojson_files(geojson_dir, leg_owner, names):
+    """Delete the leg files of the entry named leg_owner and the named files
+    under geojson_dir, logging each removal. Blocking file work, made for
+    the executor."""
+    paths = [path for pattern in (leg_geojson_pattern(leg_owner) if leg_owner else ())
+             for path in glob.glob(os.path.join(geojson_dir, pattern))
+             # the glob can reach another entry's file, see owns_leg_file
+             if owns_leg_file(path, leg_owner)]
+    paths += [os.path.join(geojson_dir, name) for name in dict.fromkeys(names)]
+    for path in paths:
+        if not os.path.exists(path):
+            continue
+        try:
+            os.remove(path)
+            _LOGGER.info("Removed %s", path)
+        except OSError as ex:
+            _LOGGER.warning("Could not remove %s: %s", path, ex)
