@@ -403,25 +403,37 @@ async def async_mirror_rt_to_entries(hass: HomeAssistant, source_entry: ConfigEn
     # alerts-only source mirrors as off rather than erroring there every cycle
     active = bool(cfg.get(CONF_TRIP_UPDATE_URL)) and cfg.get(CONF_RT_ENABLED, True)
     for entry in journey_entries(hass, src.get(CONF_FILE)):
-        new_options = {**entry.options}
-        for key in RT_OPTION_KEYS:
-            if key in cfg:
-                new_options[key] = cfg[key]
-            else:
-                new_options.pop(key, None)
-        new_options[CONF_REAL_TIME] = active
+        new_options = _mirrored_options(entry.options, cfg, active)
         if new_options != dict(entry.options):
             hass.config_entries.async_update_entry(entry, options=new_options)
-        new_data = {**entry.data}
-        if src.get(CONF_URL) not in (None, "", "na"):
-            new_data[CONF_URL] = src[CONF_URL]
-        if CONF_API_KEY_LOCATION in src:
-            if src.get(CONF_API_KEY):
-                for key in STATIC_KEY_KEYS:
-                    new_data[key] = src[key]
-            elif entry.data.get(CONF_API_KEY):
-                for key in STATIC_KEY_KEYS:
-                    new_data.pop(key, None)
-                new_data[CONF_API_KEY_LOCATION] = DEFAULT_API_KEY_LOCATION
+        new_data = _mirrored_data(entry.data, src)
         if new_data != dict(entry.data):
             hass.config_entries.async_update_entry(entry, data=new_data)
+
+
+def _mirrored_options(options, cfg, active):
+    """A journey entry's options with the source's realtime feeds written over them."""
+    new_options = {**options}
+    for key in RT_OPTION_KEYS:
+        if key in cfg:
+            new_options[key] = cfg[key]
+        else:
+            new_options.pop(key, None)
+    new_options[CONF_REAL_TIME] = active
+    return new_options
+
+
+def _mirrored_data(data, src):
+    """A journey entry's data with the source's static address and key."""
+    new_data = {**data}
+    if src.get(CONF_URL) not in (None, "", "na"):
+        new_data[CONF_URL] = src[CONF_URL]
+    if CONF_API_KEY_LOCATION in src:
+        if src.get(CONF_API_KEY):
+            for key in STATIC_KEY_KEYS:
+                new_data[key] = src[key]
+        elif data.get(CONF_API_KEY):
+            for key in STATIC_KEY_KEYS:
+                new_data.pop(key, None)
+            new_data[CONF_API_KEY_LOCATION] = DEFAULT_API_KEY_LOCATION
+    return new_data
