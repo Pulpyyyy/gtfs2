@@ -185,6 +185,18 @@ def test_a_refresh_lists_the_stops_with_the_entry_s_settings(tmp_path):
     assert refresh.calls["rt_window_gate"] == []
 
 
+def test_the_schedule_is_kept_while_the_database_is_the_same(tmp_path):
+    # a database on disk: schedule_for compares its edition with the one
+    # the schedule was opened on. The local stops coordinator did not
+    # declare it, and its first refresh failed on every install
+    refresh = Refresh(tmp_path)
+    (tmp_path / "gtfs2" / "town.sqlite").write_bytes(b"db")
+    refresh.run()
+    refresh.run()
+    assert len(refresh.calls["get_gtfs"]) == 1
+    assert refresh.coordinator.data["local_stops_next_departures"] == DEPARTURES
+
+
 # --- no database, or one being written ----------------------------------------
 
 def test_no_database_lists_nothing_and_says_so_once(tmp_path, caplog):

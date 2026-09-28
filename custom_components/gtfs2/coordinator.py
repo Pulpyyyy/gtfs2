@@ -465,6 +465,8 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         self.hass = hass
 
         self._pygtfs = ""
+        # what the database file was when the schedule was opened (see schedule_for)
+        self._pygtfs_edition = None
         self._data: dict[str, str] = {}
 
     def _read_lately(self, previous_data, options) -> bool:
