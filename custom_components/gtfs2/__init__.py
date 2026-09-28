@@ -18,7 +18,9 @@ import voluptuous as vol
 from .gtfs_helper import (update_gtfs_local_stops, get_route_departures, get_route_arrivals,
                           get_trip_stops, train_entry_routes, get_datasources)
 from .notifications import async_notify_line_orphaned
-from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern, owns_leg_file, timetable_name
+from .geojson import route_geojson_name, vehicle_positions_name
+from .leg import leg_geojson_pattern, owns_leg_file
+from .timetable import timetable_name
 from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key

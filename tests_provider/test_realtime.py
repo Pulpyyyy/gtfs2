@@ -47,9 +47,9 @@ import fixture_db  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
 try:
-    geojson = ha_stub.load("geojson")
-except FileNotFoundError:  # a tree without the fork's map files
-    geojson = None
+    leg_mod = ha_stub.load("leg")
+except FileNotFoundError:  # a tree without the fork's leg file
+    leg_mod = None
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sncf"
@@ -235,7 +235,7 @@ def test_the_board_moves_on_without_the_struck_trip(record_property, sncf, entit
 
 def test_the_leg_file_says_what_is_struck(record_property, sncf, entities, tmp_path):
     check = Check()
-    legs = getattr(geojson, "write_leg_file", None)
+    legs = getattr(leg_mod, "write_leg_file", None)
     if not legs:
         check.not_here("write_leg_file", "the leg file's cancelled run and skipped call")
         _done(record_property, check, fixture="sncf", promise="leg_file")
@@ -255,7 +255,7 @@ def test_the_leg_file_says_what_is_struck(record_property, sncf, entities, tmp_p
                        "next_departures_trip_id": [trip_id],
                        "next_departures": [leaves.isoformat()]}})
         legs(me.hass, me._data, entities)
-        with open(tmp_path / "www" / "gtfs2" / geojson.leg_geojson_name(route_id, "1", "leg"),
+        with open(tmp_path / "www" / "gtfs2" / leg_mod.leg_geojson_name(route_id, "1", "leg"),
                   encoding="utf-8") as handle:
             leg = json.load(handle)
         run = leg["trips"][trip_id]

@@ -20,21 +20,21 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-geojson = ha_stub.load("geojson")
+leg_mod = ha_stub.load("leg")
 
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
 
 
 def test_the_leg_of_an_earlier_line_goes(tmp_path):
-    old = tmp_path / geojson.leg_geojson_name("R1", "0", "a")
-    none = tmp_path / geojson.leg_geojson_name("R3", "None", "a")
-    new = tmp_path / geojson.leg_geojson_name("R2", "1", "a")
-    other = tmp_path / geojson.leg_geojson_name("R1", "0", "x leg a")
+    old = tmp_path / leg_mod.leg_geojson_name("R1", "0", "a")
+    none = tmp_path / leg_mod.leg_geojson_name("R3", "None", "a")
+    new = tmp_path / leg_mod.leg_geojson_name("R2", "1", "a")
+    other = tmp_path / leg_mod.leg_geojson_name("R1", "0", "x leg a")
     # a name holding what reads as a direction: its file ends like a's
-    forged = tmp_path / geojson.leg_geojson_name("R1", "0", "tram 1 leg a")
+    forged = tmp_path / leg_mod.leg_geojson_name("R1", "0", "tram 1 leg a")
     for path in (old, none, new, other, forged):
         path.write_text("{}")
-    geojson._drop_other_legs(str(tmp_path), "a", str(new))
+    leg_mod._drop_other_legs(str(tmp_path), "a", str(new))
     assert sorted(p.name for p in tmp_path.iterdir()) == sorted([new.name, other.name, forged.name])
 
 
@@ -90,9 +90,9 @@ def _leg(tmp_path, departure, entities=None, name="leg"):
         path=lambda *parts: str(Path(tmp_path, *parts)), time_zone="Europe/Paris"))
     data = {"schedule": _schedule(tmp_path), "name": name, "route": "L1: x",
             "direction": "0", "next_departure": departure}
-    geojson.write_leg_file(hass, data, entities)
+    leg_mod.write_leg_file(hass, data, entities)
     direction = str(departure.get("trip_direction_id", "0"))
-    with open(tmp_path / "www" / "gtfs2" / geojson.leg_geojson_name("L1", direction, name),
+    with open(tmp_path / "www" / "gtfs2" / leg_mod.leg_geojson_name("L1", direction, name),
               encoding="utf-8") as handle:
         return json.load(handle)
 

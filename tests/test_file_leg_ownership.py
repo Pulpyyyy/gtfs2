@@ -9,23 +9,23 @@ from __future__ import annotations
 
 import ha_stub
 
-geojson = ha_stub.load("geojson")
+leg_mod = ha_stub.load("leg")
 integration = ha_stub.load("__init__")
 
 
 def test_a_name_that_ends_like_another_is_not_it():
-    theirs = geojson.leg_geojson_name("R", "0", "Tram 1 leg Centre")
-    ours = geojson.leg_geojson_name("R", "1", "Centre")
-    assert geojson.owns_leg_file(ours, "Centre")
-    assert not geojson.owns_leg_file(theirs, "Centre")
-    assert geojson.owns_leg_file(theirs, "Tram 1 leg Centre")
+    theirs = leg_mod.leg_geojson_name("R", "0", "Tram 1 leg Centre")
+    ours = leg_mod.leg_geojson_name("R", "1", "Centre")
+    assert leg_mod.owns_leg_file(ours, "Centre")
+    assert not leg_mod.owns_leg_file(theirs, "Centre")
+    assert leg_mod.owns_leg_file(theirs, "Tram 1 leg Centre")
     # a line id with underscores is still a line id
-    assert geojson.owns_leg_file(geojson.leg_geojson_name("FR:Line::A_B", "none", "Centre"), "Centre")
+    assert leg_mod.owns_leg_file(leg_mod.leg_geojson_name("FR:Line::A_B", "none", "Centre"), "Centre")
 
 
 def test_removing_an_entry_keeps_the_other_ones_leg(tmp_path):
-    theirs = tmp_path / geojson.leg_geojson_name("R", "0", "Tram 1 leg Centre")
-    ours = tmp_path / geojson.leg_geojson_name("R", "1", "Centre")
+    theirs = tmp_path / leg_mod.leg_geojson_name("R", "0", "Tram 1 leg Centre")
+    ours = tmp_path / leg_mod.leg_geojson_name("R", "1", "Centre")
     for path in (theirs, ours):
         path.write_text("{}")
     integration._remove_geojson_files(str(tmp_path), "Centre", [])

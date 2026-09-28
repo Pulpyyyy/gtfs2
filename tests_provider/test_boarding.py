@@ -68,6 +68,10 @@ try:
 except FileNotFoundError:  # a tree without the fork's map files
     geojson = None
 try:
+    leg_mod = ha_stub.load("leg")
+except FileNotFoundError:  # a tree without the fork's leg file
+    leg_mod = None
+try:
     stations = ha_stub.load("stations")
 except FileNotFoundError:  # a tree without the fork's train screens
     stations = None
@@ -134,7 +138,7 @@ def _train_data(schedule, origin, destination):
 def _reader(name):
     """The helper under test, or None where this tree has no such reader."""
     return (getattr(gtfs_helper, name, None) or getattr(geojson, name, None)
-            or getattr(stations, name, None))
+            or getattr(leg_mod, name, None) or getattr(stations, name, None))
 
 
 class Check:
@@ -307,7 +311,7 @@ def test_the_files_say_how_each_call_is_made(record_property, bus, tmp_path):
     legs = _reader("write_leg_file")
     if legs:
         legs(me.hass, me._data)
-        with open(tmp_path / "www" / "gtfs2" / geojson.leg_geojson_name(ROUTE, "0", "boarding"),
+        with open(tmp_path / "www" / "gtfs2" / leg_mod.leg_geojson_name(ROUTE, "0", "boarding"),
                   encoding="utf-8") as handle:
             leg = json.load(handle)
         stops = leg["trips"]["T1"]["stops"]

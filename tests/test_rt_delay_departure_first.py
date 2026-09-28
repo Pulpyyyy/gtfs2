@@ -17,7 +17,7 @@ from freezegun import freeze_time
 import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
-geojson = ha_stub.load("geojson")
+leg_mod = ha_stub.load("leg")
 
 UTC = datetime.timezone.utc
 NOW = datetime.datetime(2026, 9, 27, 11, 30, tzinfo=UTC)
@@ -50,7 +50,7 @@ def _sensor_delays(update):
 def _leg_delay(update):
     trips = {"T1": {"stops": {"S1": {"sequence": 3, "scheduled": SCHEDULED.isoformat()}}}}
     feed = [{"trip_update": {"trip": {"trip_id": "T1"}, "stop_time_update": [update]}}]
-    geojson._time_leg_trips(trips, {}, feed)
+    leg_mod._time_leg_trips(trips, {}, feed)
     return trips["T1"]["stops"]["S1"]["delay"]
 
 

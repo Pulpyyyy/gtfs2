@@ -3,9 +3,9 @@
 The route file, the line drawn from its fullest trip with its shape
 (export_route_shape); the timetable, every departure over the next service
 days (export_timetable); the leg file, the ride of the next departure timed
-stop by stop (export_leg). The writers themselves are in geojson.py; what is
-here decides when a file is written again, and keeps the slow ones off the
-refresh. Called from GTFSUpdateCoordinator._async_update_data, the
+stop by stop (export_leg). The writers themselves are in geojson.py, leg.py
+and timetable.py; what is here decides when a file is written again, and
+keeps the slow ones off the refresh. Called from GTFSUpdateCoordinator._async_update_data, the
 coordinator handed in keeps what was written last.
 """
 from __future__ import annotations
@@ -20,10 +20,9 @@ import homeassistant.util.dt as dt_util
 from .const import DEFAULT_PATH_GEOJSON
 from .gtfs_db import feed_zip, real_path
 from .gtfs_helper import shown_ends
-from .geojson import (
-    write_route_file, write_leg_file, write_timetable_file, route_geojson_name,
-    leg_geojson_name, timetable_name, get_representative_trip,
-)
+from .geojson import write_route_file, route_geojson_name, get_representative_trip
+from .leg import write_leg_file, leg_geojson_name
+from .timetable import write_timetable_file, timetable_name
 
 _LOGGER = logging.getLogger(__name__)
 

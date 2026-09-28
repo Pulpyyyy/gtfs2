@@ -257,7 +257,9 @@ gtfs_db.py            everything that opens a database file directly
 gtfs_filter.py        cut a zip down to chosen routes before any import
 direction_repair.py   repair trip direction_id after import
 gtfs_shape.py         read one shape out of the zip (shapes.txt is never imported)
-geojson.py            the files written under www/gtfs2 for a map card
+geojson.py            the files written under www/gtfs2 for a map card: names, route file
+leg.py                the leg file: the ride of the next departure, stop by stop
+timetable.py          the timetable file: every departure over three service days
 feed_window.py        how long the kept timetable is good for
 ```
 
@@ -1006,9 +1008,8 @@ the rule it breaks can be checked by a test.
    the file over, a decision the rule has so far left open.
 2. **Lower layers import upper ones:** `source_zip.py` and `rt_window.py`
    import `gtfs_helper`; `gtfs_helper` imports `route_names` and
-   `feed_window`; `geojson.py` and `rt_window.py` import `gtfs_rt_helper`;
-   `source_zip.py`
-   imports `gtfs_db`, `gtfs_filter` and `direction_repair`; `config_flow.py`
+   `feed_window`; `geojson.py`, `leg.py` and `rt_window.py` import
+   `gtfs_rt_helper`; `source_zip.py` imports `gtfs_db`, `gtfs_filter` and `direction_repair`; `config_flow.py`
    imports `close_schedule` from `coordinator.py`.
 3. **`sensor.py` still builds much of the attributes itself**
    (`_update_attrs`).
