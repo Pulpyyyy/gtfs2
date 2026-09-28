@@ -11,7 +11,7 @@ type = layers
 containers =
     custom_components.gtfs2
 layers =
-    coordinator : sensor : update : button : switch
+    coordinator : sensor : update : button : switch : datasource_services
     config_flow : flow_source : flow_reload : flow_journey : flow_train : flow_options
     alerts : departure_attributes : refresh_steps : route_names : stations : exports
     gtfs_db : gtfs_filter : direction_repair : gtfs_shape : geojson : leg : timetable : feed_window

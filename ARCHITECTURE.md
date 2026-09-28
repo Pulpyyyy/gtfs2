@@ -209,6 +209,7 @@ sensor.py          departure sensors
 update.py          update entity of a source
 button.py          refresh button of a source
 switch.py          realtime switch of a datasource
+datasource_services.py  the prune and intern services
 ```
 
 - Services are registered once, in `setup()`, not per entry. Each declares

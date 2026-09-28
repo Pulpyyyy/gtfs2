@@ -18,7 +18,7 @@ import types
 
 import ha_stub
 
-integration = ha_stub.load("__init__")
+services = ha_stub.load("datasource_services")
 source_refresh = ha_stub.load("source_refresh")
 
 
@@ -45,18 +45,18 @@ class _Hass:
 def _registries(monkeypatch, devices=None, entities=None):
     """The device and entity registries, as the ids a call may carry."""
     devices, entities = devices or {}, entities or {}
-    monkeypatch.setattr(integration, "dr", types.SimpleNamespace(
+    monkeypatch.setattr(services, "dr", types.SimpleNamespace(
         async_get=lambda hass: types.SimpleNamespace(async_get=devices.get)))
-    monkeypatch.setattr(integration, "er", types.SimpleNamespace(
+    monkeypatch.setattr(services, "er", types.SimpleNamespace(
         async_get=lambda hass: types.SimpleNamespace(async_get=entities.get)))
 
 
 def _prune(hass, **data):
-    return asyncio.run(integration.async_prune_datasources(hass, data))
+    return asyncio.run(services.async_prune_datasources(hass, data))
 
 
 def _intern(hass, **data):
-    return asyncio.run(integration.async_intern_datasources(hass, data))
+    return asyncio.run(services.async_intern_datasources(hass, data))
 
 
 def test_a_call_names_its_sources_every_way(monkeypatch):
@@ -69,14 +69,14 @@ def test_a_call_names_its_sources_every_way(monkeypatch):
                 entities={"sensor.car": types.SimpleNamespace(config_entry_id="j1"),
                           "sensor.orphan": types.SimpleNamespace(config_entry_id=None)})
     hass = _Hass(entries)
-    assert integration._wanted_files(hass, ["dev-tao", "sensor.car", "palm"]) == [
+    assert services._wanted_files(hass, ["dev-tao", "sensor.car", "palm"]) == [
         "tao", "sncf", "palm"]
     # one bare string, an empty one, nothing at all
-    assert integration._wanted_files(hass, "palm") == ["palm"]
-    assert integration._wanted_files(hass, "") == []
-    assert integration._wanted_files(hass, None) == []
+    assert services._wanted_files(hass, "palm") == ["palm"]
+    assert services._wanted_files(hass, "") == []
+    assert services._wanted_files(hass, None) == []
     # a device or entity that is not a source of ours reads as a plain name
-    assert integration._wanted_files(hass, ["dev-zone", "sensor.orphan"]) == [
+    assert services._wanted_files(hass, ["dev-zone", "sensor.orphan"]) == [
         "dev-zone", "sensor.orphan"]
 
 
@@ -98,8 +98,8 @@ def test_prune_keeps_the_lines_read_and_skips_what_it_must(monkeypatch):
         {"file": "zou", "reason": "whole_feed_in_use"}]}
     # on a copy swapped in, with the lines the sensors read
     [(fn, args)] = hass.jobs
-    assert fn is integration.on_a_copy
-    assert args[1:] == ("tao", integration.prune_gtfs_datasource, {"R1", "R2"}, False)
+    assert fn is services.on_a_copy
+    assert args[1:] == ("tao", services.prune_gtfs_datasource, {"R1", "R2"}, False)
 
 
 def test_a_dry_run_only_counts(monkeypatch):
@@ -108,8 +108,8 @@ def test_a_dry_run_only_counts(monkeypatch):
     assert _prune(hass, dry_run=True) == {"pruned": [{"file": "tao"}], "skipped": []}
     assert _intern(hass, dry_run=True) == {"interned": [{"file": "tao"}]}
     assert [(fn, args[1:]) for fn, args in hass.jobs] == [
-        (integration.prune_gtfs_datasource, ("tao", {"R1"}, True)),
-        (integration.intern_gtfs_datasource, ("tao", True))]
+        (services.prune_gtfs_datasource, ("tao", {"R1"}, True)),
+        (services.intern_gtfs_datasource, ("tao", True))]
 
 
 def test_an_unknown_name_is_reported_not_attempted(monkeypatch):
@@ -130,8 +130,8 @@ def test_nothing_runs_on_a_source_being_refreshed(monkeypatch):
     async def run():
         hass = _Hass([_entry("j1", file="tao", route="R1: Line 1")])
         async with source_refresh.source_lock(hass, "tao"):
-            pruned = await integration.async_prune_datasources(hass, {"file": "tao"})
-            interned = await integration.async_intern_datasources(hass, {})
+            pruned = await services.async_prune_datasources(hass, {"file": "tao"})
+            interned = await services.async_intern_datasources(hass, {})
         return hass, pruned, interned
 
     hass, pruned, interned = asyncio.run(run())

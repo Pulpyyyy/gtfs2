@@ -7,8 +7,6 @@ import os
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, SupportsResponse
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
 
 from datetime import timedelta
 
@@ -21,7 +19,8 @@ from .notifications import async_notify_line_orphaned
 from .geojson import route_geojson_name, vehicle_positions_name
 from .leg import leg_geojson_pattern, owns_leg_file
 from .timetable import timetable_name
-from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
+from .datasource_services import async_intern_datasources, async_prune_datasources
+from .gtfs_db import real_path, routes_in
 from .gtfs_rt_helper import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
 from .rt_source import (
@@ -39,7 +38,6 @@ from .source_refresh import (
     async_refresh_source,
     async_refresh_source_data,
     refresh_data_for,
-    source_lock,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -121,141 +119,6 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
     _LOGGER.warning("Migration to version %s successful", config_entry.version)
 
     return True
-
-def _wanted_files(hass: HomeAssistant, raw):
-    """The datasource names a service call designates.
-
-    The field is a device picker in the UI, so it usually carries the
-    sources' device ids; yaml calls and old automations keep passing plain
-    datasource names, or one bare string, and an entity id resolves too.
-    A mix of the three still works.
-    """
-    if isinstance(raw, str):
-        raw = [raw] if raw else []
-    devices = dr.async_get(hass)
-    entities = er.async_get(hass)
-    files = []
-    for item in raw or []:
-        entry_ids = []
-        if device := devices.async_get(item):
-            entry_ids = list(device.config_entries)
-        elif (entity := entities.async_get(item)) and entity.config_entry_id:
-            entry_ids = [entity.config_entry_id]
-        for entry_id in entry_ids:
-            entry = hass.config_entries.async_get_entry(entry_id)
-            if entry and entry.domain == DOMAIN and entry.data.get("file"):
-                files.append(entry.data["file"])
-                break
-        else:
-            # not a device nor an entity of ours: a plain datasource name
-            files.append(item)
-    return files
-
-
-def _known_sources(hass: HomeAssistant):
-    """Every datasource name the integration knows.
-
-    The datasource entries are the authoritative list - the bootstrap gives
-    one to every source on disk, sensors or not - and the journey entries
-    still count as a safety net for the short pre-bootstrap window.
-    """
-    return {e.data["file"] for e in hass.config_entries.async_entries(DOMAIN)
-            if e.data.get("file")}
-
-
-def _service_targets(hass, data):
-    """The known sources a service call names, sorted, every known one when
-    it names none; and the names it gave that are no known source."""
-    wanted = _wanted_files(hass, data.get("file"))
-    known = _known_sources(hass)
-    if not wanted:
-        return sorted(known), []
-    unknown = sorted(set(wanted) - known)
-    if unknown:
-        _LOGGER.error("Unknown datasource(s): %s", ", ".join(unknown))
-    return sorted(set(wanted) & known), unknown
-
-
-async def _rewrite_source(hass, gtfs_dir, filename, dry_run, work, *args):
-    """(what work returned, None), or (None, "refresh_running") when a
-    refresh holds the source.
-
-    A dry run only counts, nothing is written. Otherwise the work runs on a
-    copy swapped in, so the sensors keep reading meanwhile, and under the
-    source's lock: a refresh rebuilding the source would swap its own file
-    in, and the work done on the one it replaces would be lost with it.
-    """
-    if dry_run:
-        return await hass.async_add_executor_job(work, gtfs_dir, filename, *args, True), None
-    lock = source_lock(hass, filename)
-    if lock.locked():
-        return None, "refresh_running"
-    async with lock:
-        return await hass.async_add_executor_job(
-            on_a_copy, gtfs_dir, filename, work, *args, False), None
-
-
-async def async_prune_datasources(hass: HomeAssistant, data):
-    """Prune the picked datasources, or every one, down to the routes in use.
-
-    A source nothing reads, or one a train or local stops sensor needs whole,
-    is never attempted: it lands in the skipped list with its reason instead
-    of an error per source, so sweeping every known source stays quiet.
-    """
-    dry_run = data.get("dry_run", False)
-    gtfs_dir = hass.config.path(DEFAULT_PATH)
-    targets, unknown = _service_targets(hass, data)
-    pruned, skipped = [], []
-    for filename in targets:
-        routes, unrestricted = source_readers(hass, filename)
-        if unrestricted:
-            _LOGGER.warning(
-                "Skipping datasource %s: a train or local stops sensor reads "
-                "the whole feed, pruning would remove data it needs", filename)
-            skipped.append({"file": filename, "reason": "whole_feed_in_use"})
-            continue
-        if not routes:
-            # no sensor reads it: pruning would empty the datasource
-            skipped.append({"file": filename, "reason": "no_sensor_reads_it"})
-            continue
-        stats, busy = await _rewrite_source(hass, gtfs_dir, filename, dry_run,
-                                            prune_gtfs_datasource, routes)
-        if busy:
-            skipped.append({"file": filename, "reason": busy})
-            continue
-        if stats:
-            pruned.append(stats)
-    result = {"pruned": pruned, "skipped": skipped}
-    if unknown:
-        result["unknown"] = unknown
-    return result
-
-
-async def async_intern_datasources(hass: HomeAssistant, data):
-    """Intern the identifiers of the picked datasources, or every one.
-
-    Same field contract as async_prune_datasources; interning has no route
-    semantics, so every known source qualifies, sensors or not.
-    """
-    dry_run = data.get("dry_run", False)
-    gtfs_dir = hass.config.path(DEFAULT_PATH)
-    targets, unknown = _service_targets(hass, data)
-    interned, skipped = [], []
-    for filename in targets:
-        stats, busy = await _rewrite_source(hass, gtfs_dir, filename, dry_run,
-                                            intern_gtfs_datasource)
-        if busy:
-            skipped.append({"file": filename, "reason": busy})
-            continue
-        if stats:
-            interned.append(stats)
-    result = {"interned": interned}
-    if skipped:
-        result["skipped"] = skipped
-    if unknown:
-        result["unknown"] = unknown
-    return result
-
 
 async def _bootstrap_sources(hass: HomeAssistant) -> None:
     """Give every source on disk or in an entry its datasource entry."""
