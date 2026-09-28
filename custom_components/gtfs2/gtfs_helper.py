@@ -15,6 +15,9 @@ from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
 
 from .const import (
+    CONF_DESTINATION_STATIONS,
+    CONF_ORIGIN_STATIONS,
+    DEFAULT_PATH,
     TIME_STR_FORMAT
     )
 from .gtfs_rt_helper import on_service_day
@@ -730,6 +733,32 @@ def drop_departure_trips(hass, _data, struck):
     return _interpret_departure_rows(
         hass, kept, _data.get("departure_rows_origin"), now, now_local_tz,
         now_date_local_tz, now_time)
+
+
+def journey_data(schedule, data, options):
+    """The journey an entry asks the departure query for: its two ends, its
+    line and its source, from the entry's data and options. The sensor's
+    refresh and the departures service both start from it, so they answer
+    for the same journey."""
+    return {
+        "schedule": schedule,
+        "origin": data["origin"],
+        "destination": data["destination"],
+        # a train entry's every station at each end, only on the entries
+        # that ticked them: the others keep the shape they always had
+        **{key: data[key] for key in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS)
+           if data.get(key)},
+        "offset": options["offset"] if "offset" in options else 0,
+        "gtfs_dir": DEFAULT_PATH,
+        "name": data["name"],
+        "file": data["file"],
+        "route_type": data["route_type"],
+        "route": data["route"],
+        # kept only at a loop's terminus, absent everywhere else
+        "loop_direction": data.get("loop_direction"),
+        # a train entry's line code: its departures hold to that line
+        "line": data.get("line"),
+    }
 
 
 def departure_query_args(_data):

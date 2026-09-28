@@ -13,9 +13,9 @@ from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
 from homeassistant.helpers import entity_registry as er
 
-from .const import CONF_DESTINATION_STATIONS, CONF_ORIGIN_STATIONS, DEFAULT_PATH
+from .const import DEFAULT_PATH
 from .feed_window import last_service_day
-from .gtfs_helper import _fetch_departure_rows, departure_query_args, get_gtfs, get_next_service_date
+from .gtfs_helper import _fetch_departure_rows, departure_query_args, get_gtfs, get_next_service_date, journey_data
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -132,21 +132,7 @@ async def _route_times(hass, data, at):
 
     # what the sensor of this entry is asked with, line and ends included,
     # so the service answers for the same journey
-    _data = {
-            "schedule": _pygtfs,
-            "origin": cf_data["origin"],
-            "destination": cf_data["destination"],
-            **{key: cf_data[key] for key in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS)
-               if cf_data.get(key)},
-            "offset": cf_options["offset"] if "offset" in cf_options else 0,
-            "gtfs_dir": DEFAULT_PATH,
-            "name": cf_data["name"],
-            "file": cf_data["file"],
-            "route_type": cf_data["route_type"],
-            "route": cf_data["route"],
-            "loop_direction": cf_data.get("loop_direction"),
-            "line": cf_data.get("line"),
-        }
+    _data = journey_data(_pygtfs, cf_data, cf_options)
     day_after = (now + datetime.timedelta(days=2)).strftime(dt_util.DATE_STR_FORMAT)
     try:
         # one service day more than the two listed: the query costs about

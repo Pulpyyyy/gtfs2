@@ -14,8 +14,6 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 import homeassistant.util.dt as dt_util
 
 from .const import (
-    CONF_DESTINATION_STATIONS,
-    CONF_ORIGIN_STATIONS,
     DEFAULT_PATH,
     DEFAULT_REFRESH_INTERVAL, 
     DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
@@ -33,7 +31,7 @@ from .const import (
     ICONS
 )    
 from .gtfs_db import real_path
-from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, shown_ends
+from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, journey_data, shown_ends
 from .local_stops import get_local_stops_next_departures, drop_gone_local_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck
@@ -230,23 +228,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
     def _entry_data(self, data, options) -> dict:
         """What a refresh starts from: the entry's own fields, no departure yet."""
         return {
-            "schedule": self._pygtfs,
-            "origin": data["origin"],
-            "destination": data["destination"],
-            # a train entry's every station at each end, only on the entries
-            # that ticked them: the others keep the shape they always had
-            **{key: data[key] for key in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS)
-               if data.get(key)},
-            "offset": options["offset"] if "offset" in options else 0,
-            "gtfs_dir": DEFAULT_PATH,
-            "name": data["name"],
-            "file": data["file"],
-            "route_type": data["route_type"],
-            "route": data["route"],
-            # kept only at a loop's terminus, absent everywhere else
-            "loop_direction": data.get("loop_direction"),
-            # a train entry's line code: its departures hold to that line
-            "line": data.get("line"),
+            **journey_data(self._pygtfs, data, options),
             "extracting": False,
             "next_departure": {},
             "next_departure_realtime_attr": {},
