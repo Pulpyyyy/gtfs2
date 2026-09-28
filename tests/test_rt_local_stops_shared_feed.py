@@ -18,7 +18,8 @@ from google.transit import gtfs_realtime_pb2
 import ha_stub
 
 gtfs_helper = ha_stub.load("gtfs_helper")
-gtfs_rt_helper = sys.modules[gtfs_helper.get_gtfs_feed_entities.__module__]
+rt_feed = sys.modules[gtfs_helper.get_gtfs_feed_entities.__module__]
+gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
 
 URL = "http://rt.test/local-trips"
 SOURCE = "town"
@@ -45,8 +46,8 @@ def _local_stops():
 
 def _forget():
     key = (SOURCE, URL, "trip_data")
-    for store in (gtfs_rt_helper._FEED_CACHE, gtfs_rt_helper._FEED_FAILED,
-                  gtfs_rt_helper._FEED_PUBLISHED):
+    for store in (rt_feed._FEED_CACHE, rt_feed._FEED_FAILED,
+                  rt_feed._FEED_PUBLISHED):
         store.pop(key, None)
 
 
@@ -54,10 +55,10 @@ def test_local_stops_share_the_download_of_the_source(monkeypatch):
     _forget()
     stop_at = int(time.time()) + 600
     downloads = []
-    monkeypatch.setattr(gtfs_rt_helper, "_feed_body",
+    monkeypatch.setattr(rt_feed, "_feed_body",
                         lambda url, headers, label: downloads.append(url) or _feed(stop_at))
     # a line sensor of the source reads the feed, then the local stops
-    journey = gtfs_rt_helper.get_gtfs_feed_entities(URL, None, "trip_data", owner=SOURCE)
+    journey = rt_feed.get_gtfs_feed_entities(URL, None, "trip_data", owner=SOURCE)
     local = gtfs_helper._local_stop_feed(_local_stops())
     assert downloads == [URL]
     assert local == journey
@@ -68,7 +69,7 @@ def test_local_stops_share_the_download_of_the_source(monkeypatch):
 def test_the_realtime_window_sees_what_local_stops_read(monkeypatch):
     _forget()
     stop_at = int(time.time()) + 600
-    monkeypatch.setattr(gtfs_rt_helper, "_feed_body",
+    monkeypatch.setattr(rt_feed, "_feed_body",
                         lambda url, headers, label: _feed(stop_at))
     gtfs_helper._local_stop_feed(_local_stops())
     # no line named: a source read by local stops alone listens to the whole feed
@@ -78,13 +79,13 @@ def test_the_realtime_window_sees_what_local_stops_read(monkeypatch):
 
 def test_a_feed_that_cannot_be_read_leaves_an_empty_list(monkeypatch):
     _forget()
-    monkeypatch.setattr(gtfs_rt_helper, "_feed_body", lambda url, headers, label: None)
+    monkeypatch.setattr(rt_feed, "_feed_body", lambda url, headers, label: None)
     assert gtfs_helper._local_stop_feed(_local_stops()) == []
     _forget()
 
 
 def test_without_realtime_nothing_is_read(monkeypatch):
-    monkeypatch.setattr(gtfs_rt_helper, "_feed_body",
+    monkeypatch.setattr(rt_feed, "_feed_body",
                         lambda *args: (_ for _ in ()).throw(AssertionError("read")))
     context = _local_stops()
     context._realtime = False

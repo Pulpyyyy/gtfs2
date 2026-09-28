@@ -15,7 +15,7 @@ layers =
     config_flow : flow_source : flow_reload : flow_journey : flow_train : flow_options
     alerts : departure_attributes : refresh_steps : route_names : stations : exports
     gtfs_db : gtfs_filter : direction_repair : gtfs_shape : geojson : leg : timetable : feed_window
-    rt_source : source_zip : zip_peek : freshness : source_refresh : rt_window
+    rt_source : source_zip : zip_peek : freshness : source_refresh : rt_window : rt_feed
 ignore_imports =
     # gaps 1 and 2: gtfs_helper and gtfs_rt_helper, imported by every
     # layer, import layered modules in turn

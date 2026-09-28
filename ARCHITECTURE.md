@@ -277,6 +277,7 @@ zip_peek.py         read a remote zip's contents, take one member out of it
 freshness.py        ask the host whether the feed changed, without downloading
 source_refresh.py   automatic refresh of the static feeds, per source and mode
 rt_window.py        when the realtime feeds are worth reading
+rt_feed.py          a realtime feed read once per publication, decoded
 ```
 
 ## Glossary
@@ -511,6 +512,8 @@ refuses a first refresh once the entry is loaded (1fe6d7e).
 rt_source.py          urls and keys of the source's feeds
         ↓
 rt_window.py          rt_window_gate: is this a time the feeds are read?
+        ↓
+rt_feed.py            get_gtfs_feed_entities: one download per publication
         ↓
 gtfs_rt_helper.py     get_next_services, get_rt_alerts
         ↓                    ↓

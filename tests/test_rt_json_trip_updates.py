@@ -16,6 +16,7 @@ from freezegun import freeze_time
 import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_feed = ha_stub.load("rt_feed")
 
 NOW = datetime.datetime(2026, 9, 22, 8, 0, tzinfo=datetime.timezone.utc)
 IN_TEN = int((NOW + datetime.timedelta(minutes=10)).timestamp())
@@ -135,7 +136,7 @@ def test_the_converter_reads_the_trip_relationships_of_today_s_spec():
     # bindings 1.0.0 were generated: read through those, a deleted trip
     # came out SCHEDULED and stood on the board as a departure
     for number, name in ((3, "CANCELED"), (7, "DELETED"), (8, "NEW")):
-        entity = gtfs_rt_helper.convert_gtfs_realtime_to_json(_trip_feed(number))["entity"][0]
+        entity = rt_feed.convert_gtfs_realtime_to_json(_trip_feed(number))["entity"][0]
         assert entity["trip_update"]["trip"]["schedule_relationship"] == name
 
 

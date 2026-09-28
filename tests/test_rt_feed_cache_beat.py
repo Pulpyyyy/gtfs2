@@ -18,7 +18,7 @@ from google.transit import gtfs_realtime_pb2
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_feed = ha_stub.load("rt_feed")
 
 URL = "http://rt.test/trips"
 KEY = ("town", URL, "trip_data")
@@ -43,11 +43,11 @@ class Host:
         self.now = 1000.0
         self.published = 0
         self.downloads = []
-        monkeypatch.setattr(gtfs_rt_helper, "time", types.SimpleNamespace(
+        monkeypatch.setattr(rt_feed, "time", types.SimpleNamespace(
             time=lambda: self.now, sleep=lambda _s: None))
-        monkeypatch.setattr(gtfs_rt_helper, "_feed_body", self._body)
-        for store in (gtfs_rt_helper._FEED_CACHE, gtfs_rt_helper._FEED_FAILED,
-                      gtfs_rt_helper._FEED_PUBLISHED):
+        monkeypatch.setattr(rt_feed, "_feed_body", self._body)
+        for store in (rt_feed._FEED_CACHE, rt_feed._FEED_FAILED,
+                      rt_feed._FEED_PUBLISHED):
             store.pop(KEY, None)
 
     def _body(self, url, headers, label):
@@ -56,7 +56,7 @@ class Host:
 
     def read(self, at):
         self.now = at
-        return gtfs_rt_helper.get_gtfs_feed_entities(URL, None, "trip_data", owner="town")
+        return rt_feed.get_gtfs_feed_entities(URL, None, "trip_data", owner="town")
 
 
 @pytest.fixture
@@ -101,9 +101,9 @@ def test_never_kept_past_the_longest_age(host):
     host.read(1000)
     host.published = 1300
     host.read(1300)
-    host.read(1300 + gtfs_rt_helper.FEED_CACHE_MAX_AGE - 1)
-    host.read(1300 + gtfs_rt_helper.FEED_CACHE_MAX_AGE)
-    assert host.downloads == [1000, 1300, 1300 + gtfs_rt_helper.FEED_CACHE_MAX_AGE]
+    host.read(1300 + rt_feed.FEED_CACHE_MAX_AGE - 1)
+    host.read(1300 + rt_feed.FEED_CACHE_MAX_AGE)
+    assert host.downloads == [1000, 1300, 1300 + rt_feed.FEED_CACHE_MAX_AGE]
 
 
 def test_a_reading_that_missed_a_publication_does_not_stretch_the_beat(host):
@@ -120,8 +120,8 @@ def test_a_reading_that_missed_a_publication_does_not_stretch_the_beat(host):
 
 
 def _published(monkeypatch, body, label="trip_data"):
-    monkeypatch.setattr(gtfs_rt_helper, "_feed_body", lambda url, headers, label: body)
-    return gtfs_rt_helper._fetch_feed(URL, {}, label)[1]
+    monkeypatch.setattr(rt_feed, "_feed_body", lambda url, headers, label: body)
+    return rt_feed._fetch_feed(URL, {}, label)[1]
 
 
 def test_the_timestamp_is_read_off_the_header(monkeypatch):

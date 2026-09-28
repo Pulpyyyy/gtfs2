@@ -51,6 +51,10 @@ try:
 except FileNotFoundError:  # a tree without the fork's leg file
     leg_mod = None
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+try:
+    rt_feed = ha_stub.load("rt_feed")
+except FileNotFoundError:  # a tree that reads its feeds in gtfs_rt_helper
+    rt_feed = gtfs_rt_helper
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sncf"
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
@@ -74,7 +78,7 @@ def sncf():
 @pytest.fixture(scope="module")
 def entities():
     """The capture, through the converter the feed goes through."""
-    return gtfs_rt_helper.convert_gtfs_realtime_to_json(
+    return rt_feed.convert_gtfs_realtime_to_json(
         (FIXTURE / "trip_updates.pb").read_bytes())["entity"]
 
 
@@ -303,9 +307,9 @@ def test_a_feed_left_on_disk_is_read_as_its_download(record_property, tmp_path):
     check = Check()
     copy = tmp_path / "around_me_localstop.rt"
     copy.write_bytes((FIXTURE / "trip_updates.pb").read_bytes())
-    read = gtfs_rt_helper._fetch_gtfs_feed_entities(f"file://{copy}", {}, "trip_data")
-    sent = gtfs_rt_helper.convert_gtfs_realtime_to_json((FIXTURE / "trip_updates.pb").read_bytes())
+    read = rt_feed._fetch_gtfs_feed_entities(f"file://{copy}", {}, "trip_data")
+    sent = rt_feed.convert_gtfs_realtime_to_json((FIXTURE / "trip_updates.pb").read_bytes())
     check.same(read, sent["entity"], "the file reads as the download")
-    check.same(gtfs_rt_helper._fetch_gtfs_feed_entities(
+    check.same(rt_feed._fetch_gtfs_feed_entities(
         f"file://{tmp_path / 'gone.rt'}", {}, "trip_data"), None, "a file gone is no feed")
     _done(record_property, check, fixture="sncf", promise="local_file")

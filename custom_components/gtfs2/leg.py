@@ -18,9 +18,9 @@ import homeassistant.util.dt as dt_util
 from .const import DEFAULT_PATH_GEOJSON
 from .geojson import entry_file_part, write_json_if_changed
 from .gtfs_helper import _call_type, agency_zone, gtfs_seconds, shown_ends
-from .gtfs_rt_helper import (
-    CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, safe_file_part, stop_relationship, stop_update_clock,
-    trip_relationship,
+from .gtfs_rt_helper import safe_file_part, stop_update_clock
+from .rt_feed import (
+    CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, stop_relationship, trip_relationship,
 )
 
 _LOGGER = logging.getLogger(__name__)

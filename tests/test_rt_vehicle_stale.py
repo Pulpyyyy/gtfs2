@@ -21,6 +21,7 @@ from google.transit import gtfs_realtime_pb2
 import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_feed = ha_stub.load("rt_feed")
 
 NOW = datetime.datetime(2026, 9, 25, 19, 53, tzinfo=datetime.timezone.utc)
 FRESH = [2] * 7
@@ -64,7 +65,7 @@ def _on_the_map(monkeypatch, entities, **context):
 
 
 def _entities(ages, extra=()):
-    return gtfs_rt_helper.convert_gtfs_realtime_positions_to_json(_feed_bytes(ages, extra))["entity"]
+    return rt_feed.convert_gtfs_realtime_positions_to_json(_feed_bytes(ages, extra))["entity"]
 
 
 def test_the_vehicles_back_at_the_depot_leave_the_map(monkeypatch):

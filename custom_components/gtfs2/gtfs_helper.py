@@ -28,8 +28,8 @@ from .const import (
     DOMAIN,
     TIME_STR_FORMAT
     )
-from .gtfs_rt_helper import (get_rt_route_trip_statuses, get_gtfs_feed_entities,
-                             struck_trips, on_service_day)
+from .gtfs_rt_helper import get_rt_route_trip_statuses, struck_trips, on_service_day
+from .rt_feed import get_gtfs_feed_entities
 from .gtfs_rt_helper import safe_file_part  # noqa: F401  a provider test reads it here
 from .route_names import get_routes_in_zip, _adds_to, _route_label, route_ends, set_lines_apart
 from .feed_window import last_service_day
