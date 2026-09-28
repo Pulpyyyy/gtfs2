@@ -22,6 +22,7 @@ import ha_stub
 ha_stub.install()
 
 gtfs_helper = ha_stub.load("gtfs_helper")
+local_stops = ha_stub.load("local_stops")
 
 NEW_YORK = zoneinfo.ZoneInfo("America/New_York")
 LOS_ANGELES = zoneinfo.ZoneInfo("America/Los_Angeles")
@@ -39,7 +40,7 @@ ROW = {
 
 def _element(agency_clock, stop_zone):
     """The element for a departure at agency_clock, New York's wall clock."""
-    return gtfs_helper._build_local_stop_element(
+    return local_stops._build_local_stop_element(
         types.SimpleNamespace(_realtime=False, _icon="mdi:train"), ROW,
         agency_clock, NEW_YORK, stop_zone, NOW, True)
 

@@ -49,7 +49,7 @@ import homeassistant.util.dt as dt_util  # noqa: E402
 
 # Loaded on their own rather than through the package, whose __init__
 # pulls in the platforms and with them the rest of Home Assistant.
-gtfs_helper = ha_stub.load("gtfs_helper")
+local_stops = ha_stub.load("local_stops")
 coordinator_mod = ha_stub.load("coordinator")
 
 CASE_ROOT = Path(__file__).parent / "case_stop_combined"
@@ -256,8 +256,8 @@ def test_stop_combined(case_id: str, case_dir: Path):
     with freeze_time(captured_at_utc.replace(tzinfo=None), tz_offset=0):
         ctx = _LocalStopContext(hass, entry.options["offset"], entry.data["name"])
 
-        with patch.object(gtfs_helper, "get_gtfs_feed_entities", return_value=feed_entities):
-            precomputed_local_stops = gtfs_helper._interpret_local_stop_rows(ctx, rows)
+        with patch.object(local_stops, "get_gtfs_feed_entities", return_value=feed_entities):
+            precomputed_local_stops = local_stops._interpret_local_stop_rows(ctx, rows)
 
         coord = coordinator_mod.GTFSLocalStopUpdateCoordinator(hass, entry)
 

@@ -47,6 +47,10 @@ import fixture_db  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
 try:
+    local_stops = ha_stub.load("local_stops")
+except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
+    local_stops = gtfs_helper
+try:
     leg_mod = ha_stub.load("leg")
 except FileNotFoundError:  # a tree without the fork's leg file
     leg_mod = None
@@ -280,7 +284,7 @@ def test_the_leg_file_says_what_is_struck(record_property, sncf, entities, tmp_p
 def test_a_cancelled_trip_is_not_a_local_departure(record_property, sncf, entities, monkeypatch):
     check = Check()
     cancelled = _trip_id(entities, "OCESA86017F5111")
-    monkeypatch.setattr(gtfs_helper, "get_gtfs_feed_entities", lambda **_kw: entities)
+    monkeypatch.setattr(local_stops, "get_gtfs_feed_entities", lambda **_kw: entities)
     listed = {}
     for realtime in (False, True):
         me = types.SimpleNamespace(
@@ -291,7 +295,7 @@ def test_a_cancelled_trip_is_not_a_local_departure(record_property, sncf, entiti
                    "device_tracker_id": "person.rider", "radius": 100,
                    "timerange": 60, "timerange_history": 15, "name": "grasse"})
         with freeze_time(DAY.astimezone(UTC)):
-            listed[realtime] = [d["trip_id"] for entry in gtfs_helper.get_local_stops_next_departures(me) or []
+            listed[realtime] = [d["trip_id"] for entry in local_stops.get_local_stops_next_departures(me) or []
                                 for d in entry.get("departure", [])]
     check.note(cancelled in listed[False], "without realtime the timetable lists the 08:08",
                listed=listed[False])

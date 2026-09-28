@@ -80,6 +80,10 @@ import fixture_db  # noqa: E402
 sensor = ha_stub.load("sensor")
 const = ha_stub.load("const")
 gtfs_helper = ha_stub.load("gtfs_helper")
+try:
+    local_stops = ha_stub.load("local_stops")
+except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
+    local_stops = gtfs_helper
 departure_attributes = ha_stub.load("departure_attributes")
 refresh_steps = ha_stub.load("refresh_steps")
 rt_window = ha_stub.load("rt_window")
@@ -334,7 +338,7 @@ def _variants(bus):
                  "device_tracker_id": "person.rider", "extracting": False,
                  "gtfs_updated_at": dt_util.utcnow().isoformat()}
         me = types.SimpleNamespace(hass=_hass(where=(45.000, 5.000)), _realtime=False, _data=local)
-        local["local_stops_next_departures"] = gtfs_helper.get_local_stops_next_departures(me)
+        local["local_stops_next_departures"] = local_stops.get_local_stops_next_departures(me)
     gare = next(s for s in local["local_stops_next_departures"] if s["stop_id"] == "A")
     variants["local stop / Gare, the next hour"] = Variant(kind="local", now=EARLY, stop=gare, data=local)
     variants["local stop / Gare, source extracting"] = Variant(

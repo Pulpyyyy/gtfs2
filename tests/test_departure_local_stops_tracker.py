@@ -10,7 +10,7 @@ import types
 
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+local_stops = ha_stub.load("local_stops")
 
 
 def _hass(state):
@@ -22,19 +22,19 @@ UNPLACED = types.SimpleNamespace(attributes={})
 
 
 def test_position_of_a_tracker():
-    assert gtfs_helper._tracker_position(_hass(PLACED), "person.a") == (47.9, 1.9)
-    assert gtfs_helper._tracker_position(_hass(UNPLACED), "person.a") == (None, None)
-    assert gtfs_helper._tracker_position(_hass(None), "person.gone") == (None, None)
+    assert local_stops._tracker_position(_hass(PLACED), "person.a") == (47.9, 1.9)
+    assert local_stops._tracker_position(_hass(UNPLACED), "person.a") == (None, None)
+    assert local_stops._tracker_position(_hass(None), "person.gone") == (None, None)
 
 
 def test_no_stop_is_near_a_missing_tracker():
     # never reaches the database: there is nowhere to look around
-    assert gtfs_helper.get_local_stop_list(_hass(None), None, {"device_tracker_id": "person.gone"}) == 0
+    assert local_stops.get_local_stop_list(_hass(None), None, {"device_tracker_id": "person.gone"}) == 0
 
 
 def test_the_refresh_lists_nothing_for_a_missing_tracker(monkeypatch):
-    monkeypatch.setattr(gtfs_helper, "check_extracting", lambda *a: False)
+    monkeypatch.setattr(local_stops, "check_extracting", lambda *a: False)
     me = types.SimpleNamespace(hass=_hass(None), _data={
         "schedule": object(), "offset": 0, "file": "src", "gtfs_dir": ".",
         "device_tracker_id": "person.gone", "radius": 100})
-    assert gtfs_helper.get_local_stops_next_departures(me) == []
+    assert local_stops.get_local_stops_next_departures(me) == []

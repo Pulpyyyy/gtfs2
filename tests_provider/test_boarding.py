@@ -64,6 +64,10 @@ import fixture_db  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
 try:
+    local_stops = ha_stub.load("local_stops")
+except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
+    local_stops = gtfs_helper
+try:
     geojson = ha_stub.load("geojson")
 except FileNotFoundError:  # a tree without the fork's map files
     geojson = None
@@ -251,7 +255,7 @@ def test_a_stop_with_no_way_on_lists_no_local_departure(record_property, bus):
                 _data={"schedule": bus, "offset": 0, "file": "fixture", "gtfs_dir": ".",
                        "device_tracker_id": "person.rider", "radius": 100,
                        "timerange": 60, "timerange_history": 15, "name": "boarding"})
-            listed = [d["trip_id"] for entry in gtfs_helper.get_local_stops_next_departures(me) or []
+            listed = [d["trip_id"] for entry in local_stops.get_local_stops_next_departures(me) or []
                       for d in entry.get("departure", []) if d["stop_id"] == stop_id]
             check.same(len(listed), want, f"departures listed at {stop_id} in the next hour",
                        stop=stop_id, listed=listed)

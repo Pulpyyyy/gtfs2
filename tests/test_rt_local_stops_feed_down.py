@@ -15,7 +15,7 @@ from freezegun import freeze_time
 
 import test_stop_combined as combined
 
-gtfs_helper = combined.gtfs_helper
+local_stops = combined.local_stops
 dt_util = combined.dt_util
 
 
@@ -37,13 +37,13 @@ def test_a_failed_download_keeps_the_timetable():
         with freeze_time(at, tz_offset=0):
             static = combined._LocalStopContext(hass, 0, "local_stop_name")
             static._realtime = False
-            timetable = gtfs_helper._interpret_local_stop_rows(static, rows)
+            timetable = local_stops._interpret_local_stop_rows(static, rows)
 
             failing = combined._LocalStopContext(hass, 0, "local_stop_name")
             # the feed cache answers None for a download that failed
-            with patch.object(gtfs_helper, "get_gtfs_feed_entities",
+            with patch.object(local_stops, "get_gtfs_feed_entities",
                               return_value=None) as feed:
-                got = gtfs_helper._interpret_local_stop_rows(failing, rows)
+                got = local_stops._interpret_local_stop_rows(failing, rows)
         assert feed.call_count == 1, case_id
         assert _departures(timetable), case_id
         assert isinstance(got, list), case_id

@@ -246,6 +246,7 @@ refresh_steps.py         next service date, trips struck by the realtime
 route_names.py           line labels, lines a feed declares
 stations.py              train entries: stations instead of stops
 exports.py               which map files a refresh writes, and when
+local_stops.py           the departures around a person, timetable and realtime
 ```
 
 Functions here take values, not entities: `departure_attributes` takes the
@@ -484,7 +485,8 @@ interval (01587fd).
 
 A local stops entry follows a person (`device_tracker_id`) and gets one
 sensor per stop near them, from `GTFSLocalStopUpdateCoordinator`, every
-`local_stop_refresh_interval` minutes (15 by default).
+`local_stop_refresh_interval` minutes (15 by default). Its departures are
+read in `local_stops.py`.
 
 ```
 position       the tracker's coordinates; no tracker, or none yet: no

@@ -17,7 +17,7 @@ from freezegun import freeze_time
 
 import test_stop_combined as combined
 
-gtfs_helper = combined.gtfs_helper
+local_stops = combined.local_stops
 dt_util = combined.dt_util
 rt_source = combined.ha_stub.load("rt_source")
 
@@ -39,8 +39,8 @@ def _asked(location):
     asked = []
     at = captured_at.astimezone(datetime.timezone.utc).replace(tzinfo=None)
     with freeze_time(at, tz_offset=0), \
-            patch.object(gtfs_helper, "get_gtfs_feed_entities", lambda **kw: asked.append(kw)):
-        gtfs_helper._interpret_local_stop_rows(context, rows)
+            patch.object(local_stops, "get_gtfs_feed_entities", lambda **kw: asked.append(kw)):
+        local_stops._interpret_local_stop_rows(context, rows)
     return asked[0]
 
 

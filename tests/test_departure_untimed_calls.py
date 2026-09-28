@@ -22,6 +22,7 @@ ha_stub.install()
 import homeassistant.util.dt as dt_util  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
+local_stops = ha_stub.load("local_stops")
 
 FEED = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,UTC\n",
@@ -79,7 +80,7 @@ def test_the_timed_calls_of_the_same_trip_still_ride(tmp_path):
 
 def test_the_local_stops_query_leaves_an_untimed_call_out(tmp_path):
     schedule = _schedule(tmp_path)
-    rows = gtfs_helper._fetch_local_stop_rows(
+    rows = local_stops._fetch_local_stop_rows(
         schedule, 47.01, 1.01, 0.03, "+60 minute", "-15 minute", AT.replace(tzinfo=None))
     assert {(r["trip_id"], r["stop_id"]) for r in rows} == {("T", "S1"), ("T", "S3")}
     schedule.engine.dispose()

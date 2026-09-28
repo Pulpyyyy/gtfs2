@@ -57,6 +57,10 @@ import fixture_db  # noqa: E402
 import test_journeys as tj  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
+try:
+    local_stops = ha_stub.load("local_stops")
+except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
+    local_stops = gtfs_helper
 
 FIXTURES = Path(__file__).parent / "fixtures"
 PROMISES = ("route", "local_stop", "service")
@@ -392,7 +396,7 @@ def check_local_stop(conn, schedule, days, where, zone_name, zone, call, label, 
                "timerange": WINDOW, "timerange_history": 15, "name": "night"})
     want = _calls_within(conn, days, call.stop_id, zone, now)
     got = set()
-    for entry in gtfs_helper.get_local_stops_next_departures(me) or []:
+    for entry in local_stops.get_local_stops_next_departures(me) or []:
         for departure in entry.get("departure", []):
             if departure["stop_id"] == call.stop_id:
                 got.add((_instant(departure["departure_datetime"]), str(departure["trip_id"])))

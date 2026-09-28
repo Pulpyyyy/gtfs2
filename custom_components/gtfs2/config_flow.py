@@ -55,8 +55,8 @@ from .gtfs_helper import (
     remove_datasource,
     check_datasource_index,
     get_agency_list,
-    get_local_stop_list,
 )
+from .local_stops import get_local_stop_list
 from .stations import get_station_list, get_station_modes
 from .route_names import get_route_options_from_zip, get_agencies_in_zip, LINE_MODES, with_modes
 from .notifications import _async_text

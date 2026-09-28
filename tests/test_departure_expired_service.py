@@ -23,6 +23,7 @@ ha_stub.install()
 import homeassistant.util.dt as dt_util  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
+local_stops = ha_stub.load("local_stops")
 
 FEED = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,UTC\n",
@@ -68,7 +69,7 @@ def test_the_route_query_leaves_out_a_period_already_over(tmp_path):
 
 def test_the_local_stops_query_leaves_out_a_period_already_over(tmp_path):
     schedule = _schedule(tmp_path)
-    rows = gtfs_helper._fetch_local_stop_rows(
+    rows = local_stops._fetch_local_stop_rows(
         schedule, 47.0, 1.0, 0.001, "+60 minute", "-15 minute",
         AT.replace(tzinfo=None))
     listed = {(r["trip_id"], r["departure_dt"]) for r in rows if r["stop_id"] == "S1"}
