@@ -1894,6 +1894,22 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     return stops
 
 
+def _shortest_ride(seq, origin, destination):
+    """(where the ride boards, where it alights) of the trip's shortest ride
+    from origin to destination, seq being its places in call order; None
+    when it rides none."""
+    best = None
+    last_origin = None
+    for i, p in enumerate(seq):
+        if p == origin:
+            last_origin = i
+        elif p == destination and last_origin is not None:
+            if best is None or i - last_origin < best[1] - best[0]:
+                best = (last_origin, i)
+            last_origin = None
+    return best
+
+
 def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, towards=None):
     """The direction an entry must keep for this pair, or None.
 
@@ -1940,16 +1956,7 @@ def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, 
             return direction
     rides = []
     for trip_id, trip_stops in trips.items():
-        seq = [place[s] for s, _ in trip_stops]
-        best = None
-        last_origin = None
-        for i, p in enumerate(seq):
-            if p == origin:
-                last_origin = i
-            elif p == destination and last_origin is not None:
-                if best is None or i - last_origin < best[1] - best[0]:
-                    best = (last_origin, i)
-                last_origin = None
+        best = _shortest_ride([place[s] for s, _ in trip_stops], origin, destination)
         if best:
             rides.append((best[1] - best[0], labels.get(trip_id)))
     if len({label for _length, label in rides}) < 2:
