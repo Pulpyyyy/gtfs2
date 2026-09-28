@@ -29,3 +29,9 @@ ignore_imports =
     custom_components.gtfs2.source_zip -> custom_components.gtfs2.direction_repair
     custom_components.gtfs2.source_zip -> custom_components.gtfs2.gtfs_db
     custom_components.gtfs2.source_zip -> custom_components.gtfs2.gtfs_filter
+
+[importlinter:contract:acyclic]
+name = No import cycle between the component's modules
+type = acyclic_siblings
+ancestors =
+    custom_components.gtfs2

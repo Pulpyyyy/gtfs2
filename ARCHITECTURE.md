@@ -191,7 +191,8 @@ lower layer, and from the shared modules. It never imports from a higher
 layer. `gtfs_helper.py` and `gtfs_rt_helper.py` are upstream's and sit
 outside the layers until the gaps at the end are closed. The rule is an
 import-linter contract (`.importlinter`, CI: Imports) that lists the known
-gaps as its only exceptions: see "Known gaps".
+gaps as its only exceptions: see "Known gaps". A second contract forbids any
+import cycle between the modules, with no exception.
 
 **Why these five.** The cut follows what changes together. The source layer
 changes with hosts and publishers (validators, ranges, envelopes); the data
@@ -1002,20 +1003,19 @@ the rule it breaks can be checked by a test.
    the queries into the data layer, which rewrites upstream's functions in
    place, against the refactor rule above: closing it means the fork taking
    the file over, a decision the rule has so far left open.
-2. **Lower layers import upper ones:** `rt_source.py` and `source_zip.py`
+2. **Lower layers import upper ones:** `source_zip.py` and `rt_window.py`
    import `gtfs_helper`; `gtfs_helper` imports `route_names` and
-   `feed_window`; `geojson.py` imports `gtfs_rt_helper`; `source_zip.py`
+   `feed_window`; `geojson.py` and `rt_window.py` import `gtfs_rt_helper`;
+   `source_zip.py`
    imports `gtfs_db`, `gtfs_filter` and `direction_repair`; `config_flow.py`
    imports `close_schedule` from `coordinator.py`.
-3. **Import cycles:** `alerts` ↔ `gtfs_rt_helper`; `gtfs_helper` →
-   `gtfs_rt_helper` → `rt_source` → `gtfs_helper`.
-4. **`sensor.py` still builds much of the attributes itself**
+3. **`sensor.py` still builds much of the attributes itself**
    (`_update_attrs`).
-5. **The dependency rule holds only with exceptions.** The import-linter
+4. **The dependency rule holds only with exceptions.** The import-linter
    contract lists the imports of gaps 1 and 2 as allowed; an exception no
    import needs any more fails the check, so the list can only shrink to
-   none. The cycles of gap 3 are not checked.
-6. **Notifications for actionable failures** (refresh failed, lines
+   none.
+5. **Notifications for actionable failures** (refresh failed, lines
    missing) are persistent notifications; Home Assistant's Repairs issues
    would let the user act on them and would clear with the cause.
 

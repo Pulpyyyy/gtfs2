@@ -16,7 +16,7 @@ from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAUL
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
 import voluptuous as vol
 from .gtfs_helper import (update_gtfs_local_stops, get_route_departures, get_route_arrivals,
-                          get_trip_stops, train_entry_routes)
+                          get_trip_stops, train_entry_routes, get_datasources)
 from .notifications import async_notify_line_orphaned
 from .geojson import route_geojson_name, vehicle_positions_name, leg_geojson_pattern, owns_leg_file, timetable_name
 from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
@@ -255,6 +255,12 @@ async def async_intern_datasources(hass: HomeAssistant, data):
     return result
 
 
+async def _bootstrap_sources(hass: HomeAssistant) -> None:
+    """Give every source on disk or in an entry its datasource entry."""
+    datasources = await get_datasources(hass, DEFAULT_PATH)
+    await async_bootstrap_datasource_entries(hass, datasources)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GTFS from a config entry."""
     hass.data.setdefault(DOMAIN, {})
@@ -266,7 +272,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if not hass.data[DOMAIN].get("rt_bootstrap_started"):
         hass.data[DOMAIN]["rt_bootstrap_started"] = True
         hass.async_create_background_task(
-            async_bootstrap_datasource_entries(hass),
+            _bootstrap_sources(hass),
             name="gtfs2 datasource bootstrap",
         )
 

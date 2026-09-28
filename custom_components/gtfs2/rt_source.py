@@ -25,7 +25,6 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 from .const import (
     DOMAIN,
-    DEFAULT_PATH,
     DEFAULT_API_KEY_LOCATION,
     DEFAULT_API_KEY_NAME,
     CONF_KIND,
@@ -335,7 +334,7 @@ async def async_ensure_datasource_entry(
     )
 
 
-async def async_bootstrap_datasource_entries(hass: HomeAssistant) -> None:
+async def async_bootstrap_datasource_entries(hass: HomeAssistant, datasources) -> None:
     """Give every known source its datasource entry, idempotently.
 
     Runs in the background at every start: the sources are collected from the
@@ -343,10 +342,9 @@ async def async_bootstrap_datasource_entries(hass: HomeAssistant) -> None:
     created. Deliberately never through async_migrate_entry - a per-entry
     migration of a per-source object is how a bootstrap ends half-done and
     unrepeatable, and the journey entries are not touched at all.
+    The caller lists the sources on disk (get_datasources).
     """
-    from .gtfs_helper import get_datasources
-
-    files = set(await get_datasources(hass, DEFAULT_PATH))
+    files = set(datasources)
     for entry in hass.config_entries.async_entries(DOMAIN):
         if (entry.data.get(CONF_KIND) != ENTRY_KIND_DATASOURCE
                 and entry.data.get(CONF_FILE)):
