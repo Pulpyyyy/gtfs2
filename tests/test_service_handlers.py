@@ -21,6 +21,7 @@ import types
 import ha_stub
 
 integration = ha_stub.load("__init__")
+services = ha_stub.load("datasource_services")
 
 
 def _handlers(hass=None):
@@ -52,10 +53,10 @@ def test_update_gtfs_refreshes_a_source_from_its_own_settings(monkeypatch, caplo
         refreshes.append((entry_, use_zip, flags))
         return True
 
-    monkeypatch.setattr(integration, "datasource_entry", lambda hass, file: entry)
-    monkeypatch.setattr(integration, "refresh_data_for",
+    monkeypatch.setattr(services, "datasource_entry", lambda hass, file: entry)
+    monkeypatch.setattr(services, "refresh_data_for",
                         lambda hass, e: {"url": "https://tao/gtfs.zip", "api_key": "k1"})
-    monkeypatch.setattr(integration, "async_refresh_source", refresh)
+    monkeypatch.setattr(services, "async_refresh_source", refresh)
     _, handlers = _handlers()
     with caplog.at_level(logging.WARNING):
         assert _run(handlers["update_gtfs"], _call(
@@ -74,10 +75,10 @@ def test_update_gtfs_is_quiet_when_the_call_repeats_the_source(monkeypatch, capl
         refreshes.append((use_zip, flags))
         return False
 
-    monkeypatch.setattr(integration, "datasource_entry", lambda hass, file: object())
-    monkeypatch.setattr(integration, "refresh_data_for",
+    monkeypatch.setattr(services, "datasource_entry", lambda hass, file: object())
+    monkeypatch.setattr(services, "refresh_data_for",
                         lambda hass, e: {"url": "https://tao/gtfs.zip"})
-    monkeypatch.setattr(integration, "async_refresh_source", refresh)
+    monkeypatch.setattr(services, "async_refresh_source", refresh)
     _, handlers = _handlers()
     with caplog.at_level(logging.WARNING):
         # the same url, the "na" placeholder and a blank key say nothing new
@@ -100,9 +101,9 @@ def test_update_gtfs_creates_a_source_it_does_not_know(monkeypatch):
         async def ensure(hass, file, *, url, extract_from, api):
             created.append((file, url, extract_from))
 
-        monkeypatch.setattr(integration, "datasource_entry", lambda hass, file: None)
-        monkeypatch.setattr(integration, "async_refresh_source_data", refresh_data)
-        monkeypatch.setattr(integration, "async_ensure_datasource_entry", ensure)
+        monkeypatch.setattr(services, "datasource_entry", lambda hass, file: None)
+        monkeypatch.setattr(services, "async_refresh_source_data", refresh_data)
+        monkeypatch.setattr(services, "async_ensure_datasource_entry", ensure)
         _, handlers = _handlers()
         assert _run(handlers["update_gtfs"], _call(file="new")) is built
         # the fields the service always defaulted, for the legacy import
@@ -120,9 +121,9 @@ def test_a_created_source_keeps_the_address_it_came_from(monkeypatch):
     async def ensure(hass, file, *, url, extract_from, api):
         created.append((file, url, extract_from, api.get("api_key")))
 
-    monkeypatch.setattr(integration, "datasource_entry", lambda hass, file: None)
-    monkeypatch.setattr(integration, "async_refresh_source_data", refresh_data)
-    monkeypatch.setattr(integration, "async_ensure_datasource_entry", ensure)
+    monkeypatch.setattr(services, "datasource_entry", lambda hass, file: None)
+    monkeypatch.setattr(services, "async_refresh_source_data", refresh_data)
+    monkeypatch.setattr(services, "async_ensure_datasource_entry", ensure)
     _, handlers = _handlers()
     _run(handlers["update_gtfs"], _call(file="new", url="https://new/gtfs.zip",
                                         extract_from="zip", api_key="k"))

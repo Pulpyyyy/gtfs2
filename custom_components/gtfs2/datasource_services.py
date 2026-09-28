@@ -1,4 +1,5 @@
-"""The prune and intern services: shrink the picked datasources, or every one.
+"""The services that act on datasources: refresh one (async_update_gtfs),
+shrink the picked ones, or every one (prune and intern).
 
 A call names its sources by device, entity or plain name
 (_wanted_files); each source is rewritten on a copy swapped in, under the
@@ -13,10 +14,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
-from .const import DOMAIN, DEFAULT_PATH
+from .const import DOMAIN, DEFAULT_PATH, CONF_API_KEY, CONF_EXTRACT_FROM, CONF_URL
 from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource
-from .rt_source import source_readers
-from .source_refresh import source_lock
+from .key_mask import note_key
+from .rt_source import async_ensure_datasource_entry, datasource_entry, source_readers
+from .source_refresh import (
+    async_refresh_source, async_refresh_source_data, refresh_data_for, source_lock,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -154,3 +158,52 @@ async def async_intern_datasources(hass: HomeAssistant, data):
     if unknown:
         result["unknown"] = unknown
     return result
+
+
+async def async_update_gtfs(hass: HomeAssistant, call_data):
+    """The update_gtfs service.
+
+    Refreshes the datasource through the scratch database: the fresh
+    feed is filtered down to the routes actually followed, rebuilt
+    beside the live file and swapped in, so the sensors never read a
+    half-built database. A datasource with no line yet, a source this
+    call creates included, is built whole the same way.
+
+    A source that exists is refreshed from what it knows about itself,
+    exactly like the update entity and the scheduled check: its own
+    address and key apply, the call only says whether to rebuild from
+    the kept zip and sets the per-import flags. The address and key in
+    the call are only read to create a source that does not exist yet,
+    and the new source keeps them from then on.
+    """
+    note_key(call_data.get(CONF_API_KEY))
+    _LOGGER.debug("Updating GTFS with: %s", call_data)
+    data = dict(call_data)
+    file = data.get("file", "")
+    entry = datasource_entry(hass, file)
+    if entry is not None:
+        stored = refresh_data_for(hass, entry)
+        for key in (CONF_URL, CONF_API_KEY):
+            given = (data.get(key) or "").strip()
+            if given and given != "na" and given != (stored.get(key) or ""):
+                _LOGGER.warning(
+                    "update_gtfs: the %s given for %s differs from the "
+                    "source's own, which applies; change it on the "
+                    "source's configuration screen", key, file)
+        return await async_refresh_source(
+            hass, entry,
+            use_zip=data.get(CONF_EXTRACT_FROM) == "zip",
+            flags={k: data[k] for k in ("clean_feed_info", "check_source_dates")
+                   if k in data})
+    # a source to create: the legacy fields apply, absent ones read as
+    # the service always defaulted them
+    data.setdefault(CONF_URL, "na")
+    data.setdefault(CONF_EXTRACT_FROM, "url")
+    ok = await async_refresh_source_data(hass, file, data)
+    if ok:
+        # the source is born with the address and key it was created
+        # from, so the next refresh needs nothing but its name
+        await async_ensure_datasource_entry(
+            hass, file, url=data.get(CONF_URL) or "na",
+            extract_from=data.get(CONF_EXTRACT_FROM) or "url", api=data)
+    return ok
