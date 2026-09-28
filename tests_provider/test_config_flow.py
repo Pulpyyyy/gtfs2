@@ -75,9 +75,6 @@ so a fix has to lift the mark.
 
 What no walk reaches, and why:
 
-    stop_incorrect   _check_config's one caller, the train arrival screen,
-                     takes it for a valid pair on purpose (a day the trains
-                     give way to coaches), so it is never shown
     no_stops_read    the stop, way and arrival queries raising: every
                      database the flow can open answers them
     generic_failure  from remove, a file deletion refused; from

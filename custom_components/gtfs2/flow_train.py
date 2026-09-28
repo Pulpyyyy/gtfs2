@@ -111,7 +111,7 @@ class TrainScreens:
         # departure, so the journey exists; whether one is due in the next
         # hours is the coordinator's business: a sensor created on a day the
         # trains give way to coaches is still valid
-        if check_config and check_config != "stop_incorrect":
+        if check_config:
             _LOGGER.debug(f"CheckConfig: {check_config}")
             errors["base"] = check_config
             return _show(errors, destination)

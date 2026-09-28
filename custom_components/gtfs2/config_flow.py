@@ -45,7 +45,6 @@ from .const import (
 
 from .gtfs_helper import (
     get_gtfs,
-    get_next_departure,
     get_route_count,
     get_route_list,
     get_stop_list,
@@ -103,7 +102,6 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
     def __init__(self) -> None:
         """Init ConfigFlow."""
         self._pygtfs = ""
-        self._data: dict[str, str] = {}
         self._user_inputs: dict = {}
         # the way the rider leaves the origin, when it was asked: it narrows
         # the destination screen and picks a loop's rotation, the entry does
@@ -678,37 +676,14 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             return "generic_failure"
         close_schedule(self._pygtfs)
         self._pygtfs = schedule
-        self._data = {
-            "schedule": self._pygtfs,
-            "origin": data["origin"],
-            "destination": data["destination"],
-            "offset": 0,
-            "gtfs_dir": DEFAULT_PATH,
-            "name": data.get(CONF_NAME, ""),
-            "next_departure": None,
-            "file": data["file"],
-            "route_type": data["route_type"],
-            "line": data.get("line", "")
-        }
         # check and/or add indexes
         await self.hass.async_add_executor_job(
                     check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH, data["file"]
                 )
-             
-        try:
-            self._data["next_departure"] = await self.hass.async_add_executor_job(
-                get_next_departure, self.hass, self._data
-            )
-        except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.exception(
-                "Config: error getting gtfs data from generic helper: %s",
-                {ex},
-                exc_info=1,
-            )
-            return "generic_failure"
-        if self._data["next_departure"]:
-            return None
-        return "stop_incorrect"
+        # no departure is looked for: the arrival was offered from the trips
+        # that ride it from the departure, so the journey exists (see
+        # async_step_destination_train)
+        return None
 
     @staticmethod
     @callback
