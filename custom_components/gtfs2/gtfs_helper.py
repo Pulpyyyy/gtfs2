@@ -23,7 +23,6 @@ from .const import (
     )
 from .gtfs_rt_helper import on_service_day
 from .gtfs_rt_helper import safe_file_part  # noqa: F401  a provider test reads it here
-from .route_names import get_routes_in_zip, _adds_to, _route_label, route_ends, set_lines_apart
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -871,111 +870,6 @@ IMPORT_IGNORED = ("shapes.txt", "transfers.txt", "fare_attributes.txt",
                   "levels.txt", "pathways.txt", "translations.txt")
 
 
-def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
-    """List the routes of a datasource.
-
-    with_trips_only skips the routes that carry no trip. A datasource holds
-    every route of the network, and routes stays complete even when the trips
-    of a route are not (or no longer) loaded, so offering those would send the
-    user to a stop list that comes back empty.
-
-    Routes that a prune emptied are the exception: they are kept, because the
-    user is entitled to add a line the prune removed, and hiding it would leave
-    no way back. They come back flagged so the caller can offer to reload the
-    datasource rather than walking into an empty stop list.
-
-    Which lines those are is read from the source zip, not from the database:
-    a prune empties whatever links routes to stops, so the database can only
-    report the lines it still carries. gtfs_dir enables that lookup; without it
-    the pruned lines are simply not offered, as before.
-    """
-    _LOGGER.debug("Getting routes with data: %s", data)
-    route_type_where = ""
-    agency_where = ""
-    trips_where = ""
-    pruned = set()
-    if with_trips_only:
-        with_trips = "and exists (select 1 from trips t where t.route_id = r.route_id)"
-        if gtfs_dir:
-            in_zip = get_routes_in_zip(gtfs_dir, data["file"])
-            if in_zip:
-                with schedule.engine.connect() as conn:
-                    loaded = {r[0] for r in conn.execute(
-                        text("select distinct route_id from trips"))}
-                # declared by the feed but carrying no trip here: a prune took
-                # them out, and the zip can put them back
-                pruned = in_zip - loaded
-        trips_where = with_trips
-        if pruned:
-            placeholders = ", ".join(f":pr{i}" for i in range(len(pruned)))
-            trips_where = f"and (exists (select 1 from trips t where t.route_id = r.route_id) or r.route_id in ({placeholders}))"
-    # bound, not written into the query: an agency_id holding a quote
-    # broke the list, and what the flow hands in is the user's pick
-    agency_id = data["agency"].split(': ', 1)[0]
-    if agency_id != "0":
-        agency_where = "and r.agency_id = :agency_id"
-    if data["route_type"] != "99":
-        route_type_where = "and route_type = :route_type"
-    sql_routes = f"""
-    SELECT r.route_type, r.route_id, r.route_short_name, r.route_long_name, a.agency_name
-    from routes r
-    left join agency a on a.agency_id = r.agency_id
-    where 1=1
-    {route_type_where}
-    {agency_where}
-    {trips_where}
-    order by agency_name
-    """  # noqa: S608
-    routes_list = []
-    routes = []
-    with schedule.engine.connect() as conn:
-        params = {"agency_id": agency_id, "route_type": data["route_type"]}
-        params.update({f"pr{i}": r for i, r in enumerate(sorted(pruned))})
-        rows = conn.execute(text(sql_routes), params).fetchall()
-    for row_cursor in rows:
-        routes_list.append(list(row_cursor))
-    # the lines whose long name says nothing get the two ends of the route
-    # instead, read in one go rather than one query per line
-    endpoints = route_ends(
-        schedule, gtfs_dir, data["file"], [str(x[1]) for x in routes_list if not _adds_to(x[2], x[3])])
-    for x in routes_list:
-        # the value keeps route_type and route_id, which the flow parses back;
-        # what follows the second ## is only ever shown to the user, so it
-        # leads with the line number and where it goes, not the raw id
-        route_type, route_id, short, long, agency = (str(v) for v in x)
-        # route_long_name names the two ends of the line, in no particular
-        # order: the direction is picked on the same screen, so no arrow here
-        shown = _route_label(short, long, endpoints.get(route_id), route_id)
-        if route_id in pruned:
-            # a fourth field the flow reads to know the timetable is missing;
-            # the label itself stays clean, the flow explains it in words
-            val = f"{route_type}##{route_id}##{shown}##pruned"
-        else:
-            val = f"{route_type}##{route_id}##{shown}"
-        routes.append(val)
-    routes = set_lines_apart(routes, [x[4] for x in routes_list], schedule, gtfs_dir,
-                             data["file"], [str(x[1]) for x in routes_list])
-    _LOGGER.debug(f"routes: {routes}")
-    return routes
-
-
-def get_route_count(schedule, data):
-    """How many routes get_route_list lists without with_trips_only.
-
-    The route screen only shows that number. Building the whole list to
-    count it read the ends of every line with no long name from
-    stop_times: IDFM with every operator, 1837 lines, 25 to 47 s once many
-    lines are imported, and the screen waited for it.
-    """
-    agency_id = data["agency"].split(': ', 1)[0]
-    agency_where = "and agency_id = :agency_id" if agency_id != "0" else ""
-    route_type_where = "and route_type = :route_type" if data["route_type"] != "99" else ""
-    sql = f"select count(*) from routes where 1=1 {agency_where} {route_type_where}"  # noqa: S608
-    with schedule.engine.connect() as conn:
-        return conn.execute(
-            text(sql), {"agency_id": agency_id, "route_type": data["route_type"]}).scalar()
-
-
 # A place is what the rider waits at, whatever the feed writes it as. Most
 # feeds give each side of the road a record of its own, one per direction,
 # and some give one per platform: Zou files the two poles of Pont de la
@@ -1086,26 +980,6 @@ def gtfs_seconds(value):
         return None
     hours, minutes, seconds = (int(part) for part in parts)
     return days * 86400 + hours * 3600 + minutes * 60 + seconds
-
-
-def get_agency_list(schedule, data):
-    _LOGGER.debug("Getting agencies with data: %s", data)
-    sql_agencies = """
-    SELECT a.agency_id, a.agency_name 
-    from agency a
-    order by a.agency_name
-    """
-    agencies_list = []
-    agencies = []
-    with schedule.engine.connect() as conn:
-        rows = conn.execute(text(sql_agencies), {"q": "q"}).fetchall()
-    for row_cursor in rows:
-        agencies_list.append(list(row_cursor))
-    for x in agencies_list:
-        val = str(x[0]) + ": " + str(x[1])
-        agencies.append(val)
-    _LOGGER.debug(f"agencies: {agencies}")
-    return agencies
 
 # the databases a refresh or an import works in beside a source, never
 # sources of their own: <file>.refresh.sqlite, <file>.import.sqlite and the
