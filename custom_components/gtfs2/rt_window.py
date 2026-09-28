@@ -212,6 +212,49 @@ def rt_window_gate(hass, file, schedule, trip_update_url, now=None):
         return None
 
 
+def _forget_envelopes(file, edition, cutoff):
+    """Drop the envelopes of a day gone, and those of this source read from
+    a database it no longer has."""
+    with _ENVELOPES_LOCK:
+        for key in [k for k in _ENVELOPES
+                    if k[2] < cutoff or (k[0] == file and k[1] != edition)]:
+            # the day is gone, or the database it was read from is
+            del _ENVELOPES[key]
+
+
+def _after_close(hass, file, trip_update_url, state, now_aware, now_local, last_close):
+    """Past the last window's close: None while a vehicle still under way,
+    or the tail of the last stretch, keeps the feeds read; "overtime_cap"
+    once the stretches ran out their budget; "closed" when nothing keeps
+    them open."""
+    cap = last_close + OVERTIME_CAP
+    if now_local <= cap:
+        # the lines the source's sensors name; a source read only by
+        # train or local stops sensors names none, and the check then
+        # listens to the whole feed rather than going deaf
+        if trip_update_url and cached_feed_has_future_stop(
+                file, trip_update_url, source_readers(hass, file)[0],
+                now_aware.timestamp()):
+            until = min(now_local + EXTEND, cap)
+            state.update(extended_until=until.isoformat(),
+                         window_start=last_close.isoformat(),
+                         window_end=until.isoformat(), paused=None)
+            return None
+        extended = state.get("extended_until")
+        if extended and now_local <= datetime.fromisoformat(extended):
+            # the ten-minute tail of the last fetch that showed activity
+            state["paused"] = None
+            return None
+    else:
+        extended = state.get("extended_until")
+        if extended and datetime.fromisoformat(extended) >= cap:
+            # the budget is what ended the run, and says so until the
+            # next window opens
+            state["paused"] = "overtime_cap"
+            return "overtime_cap"
+    return "closed"
+
+
 def _gate(hass, file, schedule, trip_update_url, now=None):
     now_aware = now or dt_util.now()
     zone = _feed_zone(hass, file, schedule)
@@ -222,13 +265,7 @@ def _gate(hass, file, schedule, trip_update_url, now=None):
     now_local = now_aware.replace(tzinfo=None)
     today = now_local.date()
 
-    cutoff = (today - timedelta(days=1)).isoformat()
-    edition = _edition_of(hass, file)
-    with _ENVELOPES_LOCK:
-        for key in [k for k in _ENVELOPES
-                    if k[2] < cutoff or (k[0] == file and k[1] != edition)]:
-            # the day is gone, or the database it was read from is
-            del _ENVELOPES[key]
+    _forget_envelopes(file, _edition_of(hass, file), (today - timedelta(days=1)).isoformat())
 
     win_yesterday = _window_for(hass, file, schedule, today - timedelta(days=1))
     win_today = _window_for(hass, file, schedule, today)
@@ -246,33 +283,10 @@ def _gate(hass, file, schedule, trip_update_url, now=None):
         return None
 
     closes = [w[1] for w in windows if w[1] < now_local]
-    last_close = max(closes) if closes else None
-    if last_close is not None:
-        cap = last_close + OVERTIME_CAP
-        if now_local <= cap:
-            # the lines the source's sensors name; a source read only by
-            # train or local stops sensors names none, and the check then
-            # listens to the whole feed rather than going deaf
-            if trip_update_url and cached_feed_has_future_stop(
-                    file, trip_update_url, source_readers(hass, file)[0],
-                    now_aware.timestamp()):
-                until = min(now_local + EXTEND, cap)
-                state.update(extended_until=until.isoformat(),
-                             window_start=last_close.isoformat(),
-                             window_end=until.isoformat(), paused=None)
-                return None
-            extended = state.get("extended_until")
-            if extended and now_local <= datetime.fromisoformat(extended):
-                # the ten-minute tail of the last fetch that showed activity
-                state["paused"] = None
-                return None
-        else:
-            extended = state.get("extended_until")
-            if extended and datetime.fromisoformat(extended) >= cap:
-                # the budget is what ended the run, and says so until the
-                # next window opens
-                state["paused"] = "overtime_cap"
-                return "overtime_cap"
+    if closes:
+        verdict = _after_close(hass, file, trip_update_url, state, now_aware, now_local, max(closes))
+        if verdict != "closed":
+            return verdict
 
     reason = "out_of_window" if win_today else "no_service_today"
     state.update(
