@@ -1010,11 +1010,30 @@ be closed by the refactor, not accepted as the design. A gap is closed when
 the rule it breaks can be checked by a test.
 
 1. **`gtfs_helper.py` sits outside the layers and every layer imports it.**
-   It holds the departure queries and `get_gtfs`. The fork took the file
-   over (2026-09-28): the stops around a person (`local_stops.py`), the
-   places of a line (`places.py`) and the timetable services
-   (`departure_services.py`) left it, moved unchanged. Closing the gap
-   means moving the queries themselves into the data layer.
+   The fork took the file over (2026-09-28): the stops around a person
+   (`local_stops.py`), the places of a line (`places.py`) and the timetable
+   services (`departure_services.py`) left it, moved unchanged. It still
+   holds seven families:
+
+   ```
+   departure queries    _fetch_departure_rows, get_next_departure,
+                        get_next_service_date, drop_departure_trips,
+                        departure_query_args, shown_ends
+   shared SQL pieces    _boards, _alights, _place_group, _day_offset,
+                        _on_service_day, _runs_on, gtfs_seconds, agency_zone
+   trains               departure_route_type, entry_stations,
+                        train_entry_routes, station_names_in, RAIL_*
+   opening a database   get_gtfs
+   sources on disk      get_datasources, get_zipfiles, remove_datasource,
+                        check_extracting
+   indexes              check_datasource_index, drop_import_indexes
+   flow lists           get_route_list, get_route_count, get_agency_list
+   ```
+
+   Closing the gap means giving each family a layer: the sources on disk
+   and the indexes to `gtfs_db.py`, the trains to `stations.py`, the flow
+   lists to `places.py`, and the queries, their SQL pieces and `get_gtfs`
+   to the data layer.
 2. **Lower layers import upper ones:** `source_zip.py` and `rt_window.py`
    import `gtfs_helper`; `gtfs_helper` imports `route_names`; `geojson.py`,
    `leg.py` and `rt_window.py` import `gtfs_rt_helper`; `source_zip.py`
