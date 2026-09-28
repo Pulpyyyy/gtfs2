@@ -13,7 +13,7 @@ from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
 from homeassistant.helpers import entity_registry as er
 
-from .const import DEFAULT_PATH
+from .const import DEFAULT_PATH, id_of
 from .feed_window import last_service_day
 from .gtfs_helper import _fetch_departure_rows, departure_query_args, get_gtfs, get_next_service_date, journey_data
 
@@ -59,7 +59,7 @@ def _route_departure_from(data, first_day, at="origin_depart_dt"):
     as a UTC instant, or None when the calendar has none in its horizon;
     with at="dest_arrival_dt", that ride's arrival."""
     day = get_next_service_date(
-        data["schedule"], data["origin"].split(": ")[0], data["destination"].split(": ")[0],
+        data["schedule"], id_of(data["origin"]), id_of(data["destination"]),
         first_day, data["route_type"], **departure_query_args(data))
     if not day:
         return None

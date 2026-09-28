@@ -14,6 +14,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 import homeassistant.util.dt as dt_util
 
 from .const import (
+    id_of,
     DEFAULT_PATH,
     DEFAULT_REFRESH_INTERVAL, 
     DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
@@ -339,7 +340,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._alerts_url = with_query_key(rt_cfg.get(CONF_ALERTS_URL), rt_cfg)
         self._headers = rt_headers(rt_cfg)
         self._icon = ICONS.get(int(self._data["route_type"]), ICON)
-        self._destination_id = data["destination"].split(": ")[0]
+        self._destination_id = id_of(data["destination"])
         self._follow_departure(data)
         self._relative = False
 

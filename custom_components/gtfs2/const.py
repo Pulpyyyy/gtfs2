@@ -364,3 +364,9 @@ TRANSLATION_DESCRIPTION_PLACEHOLDERS = {
     "docu_configuring_options": "https://github.com/vingerha/gtfs2/wiki/04:-Configuring-a-route's-options-(inc.-adding-real%E2%80%90time)",
     "model": "Example model",
 }
+
+
+def id_of(value):
+    """The id of an entry field stored as "id: name" (its route, origin or
+    destination): what stands before the first ": ". An empty field is ""."""
+    return (value or "").split(": ")[0]

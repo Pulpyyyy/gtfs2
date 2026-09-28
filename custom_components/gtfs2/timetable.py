@@ -11,7 +11,7 @@ import os
 
 import homeassistant.util.dt as dt_util
 
-from .const import DEFAULT_PATH_GEOJSON
+from .const import DEFAULT_PATH_GEOJSON, id_of
 from .feed_window import last_service_day
 from .geojson import entry_file_part, write_json_if_changed
 from .gtfs_helper import _fetch_departure_rows, departure_query_args, get_next_service_date
@@ -119,7 +119,7 @@ def write_timetable_file(hass, data, today, zip_path):
     next_departure = None
     after = (first + datetime.timedelta(days=TIMETABLE_DAYS)).isoformat()
     day = get_next_service_date(
-        schedule, data["origin"].split(": ")[0], data["destination"].split(": ")[0], after,
+        schedule, id_of(data["origin"]), id_of(data["destination"]), after,
         data["route_type"], **args)
     if day:
         later, _origin = _fetch_departure_rows(

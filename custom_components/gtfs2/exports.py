@@ -21,7 +21,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
-from .const import DEFAULT_PATH, DEFAULT_PATH_GEOJSON, DOMAIN
+from .const import DEFAULT_PATH, DEFAULT_PATH_GEOJSON, DOMAIN, id_of
 from .gtfs_db import feed_zip, real_path
 from .gtfs_helper import shown_ends, train_entry_routes
 from .geojson import write_route_file, route_geojson_name, get_representative_trip, vehicle_positions_name
@@ -288,7 +288,7 @@ async def remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None:
     leg_owner = entry.data.get("name")
     # the timetable is the entry's own too, named after it alone
     own = [timetable_name(entry.data["name"])] if entry.data.get("name") else []
-    route = (entry.data.get("route") or "").split(": ")[0]
+    route = id_of(entry.data.get("route"))
     direction = entry.data.get("direction")
     if route == "train":
         # a train entry's departures ride whatever line serves its two
@@ -301,7 +301,7 @@ async def remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None:
             for d in ("0", "1", "None"):
                 still_used = any(
                     e.entry_id != entry.entry_id
-                    and ((e.data.get("route") or "").split(": ")[0] == route_id
+                    and (id_of(e.data.get("route")) == route_id
                          # another train entry on this source may ride it too
                          or (e.data.get("route") == "train"
                              and e.data.get("file") == entry.data.get("file")))
@@ -321,7 +321,7 @@ async def remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None:
     for d in directions:
         still_used = any(
             e.entry_id != entry.entry_id
-            and (e.data.get("route") or "").split(": ")[0] == route
+            and id_of(e.data.get("route")) == route
             and (e.data.get("direction") is None or str(e.data.get("direction")) == d)
             for e in hass.config_entries.async_entries(DOMAIN)
         )

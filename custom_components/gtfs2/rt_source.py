@@ -24,6 +24,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 from .const import (
+    id_of,
     DOMAIN,
     DEFAULT_API_KEY_LOCATION,
     DEFAULT_API_KEY_NAME,
@@ -138,11 +139,11 @@ def source_readers(hass: HomeAssistant, file, exclude=None) -> tuple[set[str], b
     for entry in journey_entries(hass, file):
         if exclude is not None and entry.entry_id == exclude:
             continue
-        route = entry.data.get("route")
-        if entry.data.get("device_tracker_id") or route in (None, "", "train"):
+        route = id_of(entry.data.get("route"))
+        if entry.data.get("device_tracker_id") or route in ("", "train"):
             whole = True
         else:
-            routes.add(route.split(": ")[0])
+            routes.add(route)
     return routes, whole
 
 

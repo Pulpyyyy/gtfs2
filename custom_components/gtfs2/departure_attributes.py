@@ -23,6 +23,7 @@ from homeassistant.util import slugify
 import homeassistant.util.dt as dt_util
 
 from .const import (
+    id_of,
     ATTR_ARRIVAL,
     ATTR_BICYCLE,
     ATTR_DAY,
@@ -91,8 +92,8 @@ def departure_records(schedule, data):
                "route": None, "agency": None}
     if schedule is None or isinstance(schedule, str) or data.get("extracting"):
         return records
-    origin = (data.get("origin") or "").split(": ")[0]
-    destination = (data.get("destination") or "").split(": ")[0]
+    origin = id_of(data.get("origin"))
+    destination = id_of(data.get("destination"))
     departure = data.get("next_departure") or {}
     if data.get("route_type") == "2":
         records["origin"], records["destination"] = origin, destination
@@ -110,7 +111,7 @@ def departure_records(schedule, data):
     else:
         # the line of the entry itself, so a card can still name and colour
         # it on a day it does not run
-        route_id = (data.get("route") or "").split(": ")[0]
+        route_id = id_of(data.get("route"))
     if route_id:
         routes = schedule.routes_by_id(route_id)
         records["route"] = routes[0] if routes else None

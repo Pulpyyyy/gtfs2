@@ -14,6 +14,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 import homeassistant.util.dt as dt_util
 
 from .const import (
+    id_of,
     ATTR_RT_UPDATED_AT,
     ATTR_INFO,
     ATTR_INFO_RT,
@@ -346,8 +347,8 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
             # the future. Nothing to describe, and nothing to query
             return self._show_nothing("Datasource %s has no usable schedule (%s), nothing to show for %s",
                                       self.coordinator.data.get("file"), self._pygtfs or "empty", self._name)
-        self.origin = self.coordinator.data["origin"].split(": ")[0]
-        self.destination = self.coordinator.data["destination"].split(": ")[0]
+        self.origin = id_of(self.coordinator.data["origin"])
+        self.destination = id_of(self.coordinator.data["destination"])
         self._offset = self.coordinator.data["offset"]
         self._departure = self.coordinator.data.get("next_departure",None)
         self._departure_rt = self.coordinator.data.get("next_departure_realtime_attr",None)

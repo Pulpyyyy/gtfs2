@@ -8,7 +8,7 @@ from homeassistant.helpers import config_validation as cv
 
 from datetime import timedelta
 
-from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_FILE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM
+from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_FILE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM, id_of
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
 import voluptuous as vol
 from .gtfs_helper import get_datasources
@@ -207,7 +207,7 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
     and the choice stays with the user.
     """
     filename = entry.data.get("file")
-    route = (entry.data.get("route") or "").split(": ")[0]
+    route = id_of(entry.data.get("route"))
     if not filename or not route or entry.data.get("device_tracker_id"):
         return
     routes, unrestricted = source_readers(hass, filename, exclude=entry.entry_id)

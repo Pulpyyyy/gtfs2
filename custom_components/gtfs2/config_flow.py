@@ -13,6 +13,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    id_of,
     DEFAULT_PATH,
     DOMAIN,
     DEFAULT_REFRESH_INTERVAL,
@@ -409,7 +410,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
                 # Every option carries the "pruned" flag: no timetable is
                 # loaded, and that flag is exactly what sends the submission
                 # through the screen that imports the line.
-                agency = self._user_inputs.get(CONF_AGENCY, "0: ALL").split(': ')[0]
+                agency = id_of(self._user_inputs.get(CONF_AGENCY, "0: ALL"))
                 usable = await self.hass.async_add_executor_job(
                     get_route_options_from_zip, gtfs_dir,
                     self._user_inputs[CONF_FILE], agency)

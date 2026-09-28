@@ -21,6 +21,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
 from .const import (
+    id_of,
     CONF_AGENCY,
     CONF_ALSO_RELOAD,
     CONF_FILE,
@@ -108,7 +109,7 @@ class ReloadScreens:
             missing = sorted(in_zip - loaded - {route_id})
             # the operator was named on the agency screen: offer that
             # operator's missing lines, not the whole feed's
-            agency = self._user_inputs.get(CONF_AGENCY, "0: ALL").split(': ')[0]
+            agency = id_of(self._user_inputs.get(CONF_AGENCY, "0: ALL"))
             missing = await self.hass.async_add_executor_job(
                 routes_in_zip_for_agency, gtfs_dir, filename, missing, agency)
             if self._pygtfs and hasattr(self._pygtfs, 'session'):
@@ -291,10 +292,9 @@ class ReloadScreens:
         # the entries created by this flow are made through separate flows, so
         # they are not guaranteed to be registered yet. Without this, the line
         # just added could be pruned away moments after being imported.
-        if self._user_inputs.get(CONF_ROUTE):
-            keep.add(self._user_inputs[CONF_ROUTE].split(": ")[0])
-        if self._return_trip and self._return_trip.get(CONF_ROUTE):
-            keep.add(self._return_trip[CONF_ROUTE].split(": ")[0])
+        for trip in (self._user_inputs, self._return_trip or {}):
+            if route := id_of(trip.get(CONF_ROUTE)):
+                keep.add(route)
         # same reasoning for the lines this flow imported alongside: their
         # sensors come in the next flows, and dropping them here would undo
         # an import the user asked for minutes ago

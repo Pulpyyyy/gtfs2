@@ -15,6 +15,7 @@ from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
 
 from .const import (
+    id_of,
     CONF_DESTINATION_STATIONS,
     CONF_ORIGIN_STATIONS,
     DEFAULT_PATH,
@@ -323,8 +324,8 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
     else:
         route_type_where = "1=1"
         name_params = {}
-        start_station_id = origin.split(': ')[0]
-        end_station_id = destination.split(': ')[0]
+        start_station_id = id_of(origin)
+        end_station_id = id_of(destination)
         # both ends are matched on the whole place, every record of it: the
         # entry holds one record, the vehicle may call at another (the other
         # side of the road, the other quay of a terminus)
@@ -768,7 +769,7 @@ def departure_query_args(_data):
     code the flow picked and every station ticked at each end."""
     return {
         "direction": _data.get("loop_direction"),
-        "route": (_data.get("route") or "").split(": ")[0] or None,
+        "route": id_of(_data.get("route")) or None,
         "line": str(_data.get("line", "") or "").strip() or None,
         "origin_names": entry_stations(_data, "origin"),
         "destination_names": entry_stations(_data, "destination"),
@@ -781,11 +782,11 @@ def shown_ends(data, departure):
     the last departure of the day is gone, the entry still says which line,
     way and stops the sensor follows."""
     return (
-        str(departure.get("route_id") or (data.get("route") or "").split(": ")[0]),
+        str(departure.get("route_id") or id_of(data.get("route"))),
         # a direction of 0 is a real one: only a missing key falls back
         str(departure.get("trip_direction_id", data.get("direction"))),
-        str(departure.get("origin_stop_id") or (data.get("origin") or "").split(": ")[0]),
-        str(departure.get("destination_stop_id") or (data.get("destination") or "").split(": ")[0]),
+        str(departure.get("origin_stop_id") or id_of(data.get("origin"))),
+        str(departure.get("destination_stop_id") or id_of(data.get("destination"))),
     )
 
 

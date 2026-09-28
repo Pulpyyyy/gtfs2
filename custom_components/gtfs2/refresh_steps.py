@@ -15,7 +15,7 @@ import logging
 
 import homeassistant.util.dt as dt_util
 
-from .const import ATTR_RT_CANCELLED, ATTR_RT_SKIPPED
+from .const import ATTR_RT_CANCELLED, ATTR_RT_SKIPPED, id_of
 from .gtfs_helper import departure_query_args, drop_departure_trips, get_next_service_date
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck
 
@@ -36,7 +36,7 @@ async def next_service_date_for(hass, schedule, data, offset):
         # the date is lost on every refresh
         return await hass.async_add_executor_job(partial(
             get_next_service_date, schedule,
-            data["origin"].split(": ")[0], data["destination"].split(": ")[0],
+            id_of(data["origin"]), id_of(data["destination"]),
             (dt_util.now() + timedelta(
                 minutes=offset or 0)).strftime("%Y-%m-%d"),
             data["route_type"],
