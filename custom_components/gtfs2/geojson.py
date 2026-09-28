@@ -24,7 +24,8 @@ from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH_GEOJSON
 from .gtfs_db import feed_zip
-from .gtfs_helper import _call_type, _line_ways, gtfs_seconds, shown_ends
+from .gtfs_helper import gtfs_seconds, shown_ends
+from .places import _call_type, _line_ways
 from .gtfs_rt_helper import safe_file_part, write_json_file
 from .gtfs_shape import read_shape, trip_shape_id
 

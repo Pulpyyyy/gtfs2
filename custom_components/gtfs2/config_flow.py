@@ -47,16 +47,13 @@ from .gtfs_helper import (
     get_gtfs,
     get_route_count,
     get_route_list,
-    get_stop_list,
-    get_destination_stop_list,
-    get_pair_direction,
-    get_towards,
     get_datasources,
     remove_datasource,
     check_datasource_index,
     get_agency_list,
 )
 from .local_stops import get_local_stop_list
+from .places import get_destination_stop_list, get_pair_direction, get_stop_list, get_towards
 from .stations import get_station_list, get_station_modes
 from .route_names import get_route_options_from_zip, get_agencies_in_zip, LINE_MODES, with_modes
 from .notifications import _async_text

@@ -20,7 +20,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+places = ha_stub.load("places")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
 STOPS = "ABCDEFGHX"
@@ -60,7 +60,7 @@ def test_a_stop_a_long_ride_brings_moves_where_a_short_one_calls_at_it(tmp_path)
         ("SHORT", 0, "AXBCD"),      # calls at X before B and C
     ])
     try:
-        stops = gtfs_helper.get_stop_list(schedule, "R", None)
+        stops = places.get_stop_list(schedule, "R", None)
         assert [str(s).split(":")[0] for s in stops] == list("AXBCDEFGH")
     finally:
         schedule.engine.dispose()

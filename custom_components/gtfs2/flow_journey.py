@@ -44,7 +44,7 @@ from .const import (
 )
 from .geojson import name_in_use
 from .rt_source import datasource_unique_id
-from .gtfs_helper import get_direction_labels, get_pair_direction, has_trip_between
+from .places import get_direction_labels, get_pair_direction, has_trip_between
 
 _LOGGER = logging.getLogger(__name__)
 

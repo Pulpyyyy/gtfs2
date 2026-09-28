@@ -17,7 +17,8 @@ import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
 from .geojson import entry_file_part, write_json_if_changed
-from .gtfs_helper import _call_type, agency_zone, gtfs_seconds, shown_ends
+from .gtfs_helper import agency_zone, gtfs_seconds, shown_ends
+from .places import _call_type
 from .gtfs_rt_helper import safe_file_part, stop_update_clock
 from .rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, stop_relationship, trip_relationship,

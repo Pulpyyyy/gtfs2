@@ -18,7 +18,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+places = ha_stub.load("places")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
 
@@ -56,7 +56,7 @@ def _schedule(tmp_path, zero, one):
 def test_the_list_starts_where_direction_0_starts(tmp_path, zero, one, listed):
     schedule = _schedule(tmp_path, zero, one)
     try:
-        stops = gtfs_helper.get_stop_list(schedule, "R", None)
+        stops = places.get_stop_list(schedule, "R", None)
         assert [str(s).split(":")[0] for s in stops] == listed
     finally:
         schedule.engine.dispose()

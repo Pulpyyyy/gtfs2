@@ -16,7 +16,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+places = ha_stub.load("places")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type\n"
 FEED = {
@@ -48,11 +48,11 @@ def test_a_way_offers_only_its_own_set_downs(tmp_path):
     pygtfs.append_feed(schedule, str(archive))
 
     def listed(towards=None):
-        found = gtfs_helper.get_destination_stop_list(schedule, "R1", None, "O", towards=towards)
+        found = places.get_destination_stop_list(schedule, "R1", None, "O", towards=towards)
         return sorted(str(s).split(":")[0] for s in found)
 
     try:
-        assert sorted(way for way, _label in gtfs_helper.get_towards(schedule, "R1", "O")) == ["X", "Y"]
+        assert sorted(way for way, _label in places.get_towards(schedule, "R1", "O")) == ["X", "Y"]
         assert listed("X") == ["Q", "X"]
         assert listed("Y") == ["P", "R", "Y"]
         # asked no way, every set-down of the line from here

@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+places = ha_stub.load("places")
 
 STOPS = {"A": "Gare", "B": "Centre", "C": "Hopital", "D": "Stade", "E": "Lac"}
 
@@ -40,7 +40,7 @@ def test_trips_without_direction_count_as_direction_zero(tmp_path):
         ("TN", None, "ABCD"),      # no direction_id, the longest of "0"
         ("T1", 1, "DCBA"),
     ])
-    labels = gtfs_helper.get_direction_labels(schedule, "R")
+    labels = places.get_direction_labels(schedule, "R")
     assert labels == {"0": "Gare → Stade", "1": "Stade → Gare"}
 
 
@@ -49,4 +49,4 @@ def test_the_longest_trip_names_its_direction(tmp_path):
         ("short", 0, "BC"),
         ("long", 0, "ABCDE"),
     ])
-    assert gtfs_helper.get_direction_labels(schedule, "R") == {"0": "Gare → Lac"}
+    assert places.get_direction_labels(schedule, "R") == {"0": "Gare → Lac"}

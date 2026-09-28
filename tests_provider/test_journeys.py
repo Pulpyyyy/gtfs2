@@ -90,6 +90,10 @@ import fixture_db  # noqa: E402
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the platforms and with them the rest of Home Assistant.
 gtfs_helper = ha_stub.load("gtfs_helper")
+try:
+    places = ha_stub.load("places")
+except FileNotFoundError:  # a tree that lists a line's places in gtfs_helper
+    places = gtfs_helper
 # the station queries have a module of their own here; a checkout run with
 # --component that keeps them in gtfs_helper is read there, and a function
 # it lacks fails the cases that need it
@@ -144,8 +148,8 @@ def _asked_once(function):
 
 
 get_next_departure = _asked_once(_function(gtfs_helper, "get_next_departure"))
-get_stop_list = _function(gtfs_helper, "get_stop_list")
-get_destination_stop_list = _function(gtfs_helper, "get_destination_stop_list")
+get_stop_list = _function(places, "get_stop_list")
+get_destination_stop_list = _function(places, "get_destination_stop_list")
 get_next_service_date = _function(gtfs_helper, "get_next_service_date")
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -385,7 +389,7 @@ def _repair_directions(schedule):
 
 
 # a pickup_type / drop_off_type as the feed meant it: the component's own
-_flag = gtfs_helper._call_type
+_flag = places._call_type
 
 
 def line_places(fx, route_id):
@@ -401,8 +405,8 @@ def line_places(fx, route_id):
     Liberation-Interives), never by a copy of its rule here.
     """
     with fx.schedule.engine.connect() as conn:
-        kept, station_names, place, _trips = gtfs_helper._line_of(conn, route_id, None)
-    entries = gtfs_helper._entries_of(kept, gtfs_helper._labels_of(kept, station_names))
+        kept, station_names, place, _trips = places._line_of(conn, route_id, None)
+    entries = places._entries_of(kept, places._labels_of(kept, station_names))
     ids = [entry.split(": ", 1)[0] for entry in entries]
     position = {stop_id: n for n, stop_id in enumerate(ids)}
     entry_of = {record: position[p] for record, p in place.items() if p in position}
@@ -626,7 +630,7 @@ def served_between(patterns, origins, destinations):
 # a ride read as list positions, cut where it comes back to a position it
 # already passed (a racket, a loop): the component's own cut. A ride of one
 # place gives a piece of one, which rides_in_order passes as nothing to check
-pieces_of = gtfs_helper._segments_of
+pieces_of = places._segments_of
 
 
 def rides_in_order(piece, size, ends=(), ways=(True, False)):
@@ -1042,9 +1046,9 @@ def check_route(check, fx, route_id, direction, kind):
                 # (_calls_out); which branch comes first is its choice, set
                 # on hand-written feeds in tests/, and only recorded here
                 with schedule.engine.connect() as conn:
-                    _kept, _names, place, line_trips = gtfs_helper._line_of(conn, route_id, None)
-                    boarding = gtfs_helper._origin_boarding(conn, route_id, origin)
-                rides = [[p for p in ride if p in at] for ride, _trip_id in gtfs_helper._calls_out(
+                    _kept, _names, place, line_trips = places._line_of(conn, route_id, None)
+                    boarding = places._origin_boarding(conn, route_id, origin)
+                rides = [[p for p in ride if p in at] for ride, _trip_id in places._calls_out(
                     line_trips, place, place.get(origin, origin), boarding)]
                 mixed = branches_interleaved(offered, rides)
                 check.note(not mixed, f"the destinations {who} keep one branch at a time"
@@ -1056,7 +1060,7 @@ def check_route(check, fx, route_id, direction, kind):
                 # a loop's terminus every stop is reached both ways round, so
                 # there nearest first is the order and this one is recorded
                 # as not applying.
-                terminus = entry_of[origin] in gtfs_helper._loop_termini(
+                terminus = entry_of[origin] in places._loop_termini(
                     {n: [(s, None) for s in other] for n, other in enumerate(everything)},
                     entry_of)
                 along = True
@@ -1156,7 +1160,7 @@ def check_route(check, fx, route_id, direction, kind):
                                f"one place ({named(fx, origin)}), not a journey the list offers",
                                asked=asked, got=None, same_place=True)
                     continue
-                kept = gtfs_helper.get_pair_direction(schedule, route_id, origin, destination)
+                kept = places.get_pair_direction(schedule, route_id, origin, destination)
                 data = _data_for(schedule, route_id, route_type, entries,
                                  entry_of, pattern[o], pattern[d], kept)
                 origins, reached = fx.siblings_of(origin), fx.siblings_of(destination)
@@ -1243,7 +1247,7 @@ def check_route(check, fx, route_id, direction, kind):
                 else:
                     swapped = dict(data, origin=data["destination"],
                                    destination=data["origin"],
-                                   direction=str(gtfs_helper.get_pair_direction(
+                                   direction=str(places.get_pair_direction(
                                        schedule, route_id, destination, origin)))
                     result = get_next_departure(hass, swapped)
                     # Both ways round are offered, so the reverse pair is a
@@ -1393,7 +1397,7 @@ def check_midnight(check, fx, clock, hass, route_id, route_type, direction,
                        include_tomorrow=include_tomorrow)
         return
     ids = [entry.split(": ", 1)[0] for entry in entries]
-    query_direction = gtfs_helper.get_pair_direction(
+    query_direction = places.get_pair_direction(
         schedule, route_id, ids[stood_for[origin]], ids[stood_for[destination]])
     days = pair_service_days(fx, origin, destination, route_type,
                              route_id, query_direction)
@@ -1503,11 +1507,11 @@ def check_towards(check, fx, route_id, everything, ids, entry_of, home):
     origin = ids[home]
     who = f"from {named(fx, origin)}"
     with schedule.engine.connect() as conn:
-        _kept, _names, place, trips = gtfs_helper._line_of(conn, route_id)
-        boarding = gtfs_helper._origin_boarding(conn, route_id, origin)
+        _kept, _names, place, trips = places._line_of(conn, route_id)
+        boarding = places._origin_boarding(conn, route_id, origin)
     origin_place = place.get(origin, origin)
-    ways_seen = gtfs_helper._ways_of(trips, place, origin_place, boarding)
-    terminus = origin_place in gtfs_helper._loop_termini(trips, place)
+    ways_seen = places._ways_of(trips, place, origin_place, boarding)
+    terminus = origin_place in places._loop_termini(trips, place)
     # each ride is read from one trip of its pattern: the places the
     # pattern's trips set riders down at are its own (a turnback or a
     # relief point on the way, Brisbane's G:link, is ridden past)
@@ -1516,7 +1520,7 @@ def check_towards(check, fx, route_id, everything, ids, entry_of, home):
     set_down = {pattern: {place.get(s, s) for s in pattern if fx.alights(trip_ids, s)}
                 for pattern, trip_ids in everything.items()}
     expected = len(ways_seen) >= 2
-    ways = gtfs_helper.get_towards(schedule, route_id, origin)
+    ways = places.get_towards(schedule, route_id, origin)
     check.note(bool(ways) == expected and (not ways or len(ways) == len(ways_seen)),
                f"{len(ways)} ways asked {who}, the trips go {len(ways_seen)} ways"
                + (" (a loop's terminus)" if terminus else ""),
@@ -1567,7 +1571,7 @@ def check_towards(check, fx, route_id, everything, ids, entry_of, home):
             # at a loop's terminus the answer is the rotation: the entry
             # keeps a label the trips riding that way carry
             far = offered[-1]
-            kept = gtfs_helper.get_pair_direction(schedule, route_id, origin, far, way)
+            kept = places.get_pair_direction(schedule, route_id, origin, far, way)
             trip_ids = [t for ride, trip_id in mine if far in ride
                         for t in everything.get(pattern_of.get(trip_id), ())]
             with schedule.engine.connect() as conn:

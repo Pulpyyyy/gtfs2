@@ -263,6 +263,7 @@ gtfs_shape.py         read one shape out of the zip (shapes.txt is never importe
 geojson.py            the files written under www/gtfs2 for a map card: names, route file
 leg.py                the leg file: the ride of the next departure, stop by stop
 timetable.py          the timetable file: every departure over three service days
+places.py             the places of a line the flow offers, their order and direction
 feed_window.py        how long the kept timetable is good for
 ```
 
@@ -1009,13 +1010,15 @@ be closed by the refactor, not accepted as the design. A gap is closed when
 the rule it breaks can be checked by a test.
 
 1. **`gtfs_helper.py` sits outside the layers and every layer imports it.**
-   It holds the departure queries and `get_gtfs`. Closing it means moving
-   the queries into the data layer, which rewrites upstream's functions in
-   place, against the refactor rule above: closing it means the fork taking
-   the file over, a decision the rule has so far left open.
+   It holds the departure queries and `get_gtfs`. The fork took the file
+   over (2026-09-28): the stops around a person (`local_stops.py`), the
+   places of a line (`places.py`) and the timetable services
+   (`departure_services.py`) left it, moved unchanged. Closing the gap
+   means moving the queries themselves into the data layer.
 2. **Lower layers import upper ones:** `source_zip.py` and `rt_window.py`
-   import `gtfs_helper`; `gtfs_helper` imports `route_names`; `geojson.py`, `leg.py` and `rt_window.py` import
-   `gtfs_rt_helper`; `source_zip.py` imports `gtfs_db`, `gtfs_filter` and `direction_repair`; `config_flow.py`
+   import `gtfs_helper`; `gtfs_helper` imports `route_names`; `geojson.py`,
+   `leg.py` and `rt_window.py` import `gtfs_rt_helper`; `source_zip.py`
+   imports `gtfs_db`, `gtfs_filter` and `direction_repair`; `config_flow.py`
    imports `close_schedule` from `coordinator.py`.
 3. **`sensor.py` still builds much of the attributes itself**
    (`_update_attrs`).

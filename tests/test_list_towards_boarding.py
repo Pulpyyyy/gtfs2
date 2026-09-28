@@ -18,7 +18,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+places = ha_stub.load("places")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type\n"
 FEED = {
@@ -48,11 +48,11 @@ def test_a_way_whose_sample_only_sets_down_is_still_offered(tmp_path):
     schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
     pygtfs.append_feed(schedule, str(archive))
     try:
-        ways = gtfs_helper.get_towards(schedule, "R", "B")
+        ways = places.get_towards(schedule, "R", "B")
         assert sorted(way for way, _label in ways) == ["C", "D"]
         # and each way keeps its own destinations
         for way, place in (("C", "C"), ("D", "D")):
-            listed = gtfs_helper.get_destination_stop_list(schedule, "R", None, "B", towards=way)
+            listed = places.get_destination_stop_list(schedule, "R", None, "B", towards=way)
             assert [str(s).split(":")[0] for s in listed] == [place]
     finally:
         schedule.engine.dispose()

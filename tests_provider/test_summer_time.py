@@ -138,7 +138,7 @@ def test_the_next_ride_holds_on_the_day_the_clocks_change(record_property, fixtu
             check.note(True, f"the ride {pattern[0]} .. {pattern[-1]} ends where it starts",
                        same_place=True)
             continue
-        kept = tj.gtfs_helper.get_pair_direction(schedule, route_id, origin, destination)
+        kept = tj.places.get_pair_direction(schedule, route_id, origin, destination)
         data = tj._data_for(schedule, route_id, route_type, entries, entry_of,
                             pattern[ends[0]], pattern[ends[1]], kept)
         origins, reached = fx.siblings_of(origin), fx.siblings_of(destination)

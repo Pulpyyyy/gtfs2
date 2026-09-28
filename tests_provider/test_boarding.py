@@ -64,6 +64,10 @@ import fixture_db  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
 try:
+    places = ha_stub.load("places")
+except FileNotFoundError:  # a tree that lists a line's places in gtfs_helper
+    places = gtfs_helper
+try:
     local_stops = ha_stub.load("local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
     local_stops = gtfs_helper
@@ -141,7 +145,7 @@ def _train_data(schedule, origin, destination):
 
 def _reader(name):
     """The helper under test, or None where this tree has no such reader."""
-    return (getattr(gtfs_helper, name, None) or getattr(geojson, name, None)
+    return (getattr(gtfs_helper, name, None) or getattr(places, name, None) or getattr(geojson, name, None)
             or getattr(leg_mod, name, None) or getattr(stations, name, None))
 
 
@@ -176,7 +180,7 @@ def _done(record_property, check, **case):
 
 def test_stop_list_offers_the_places_with_a_way_on(record_property, bus):
     check = Check()
-    offered = _ids(gtfs_helper.get_stop_list(bus, ROUTE, None))
+    offered = _ids(places.get_stop_list(bus, ROUTE, None))
     # Mairie (B) takes nobody on on any trip, the terminus (E) neither;
     # Hameau (H) wants a phone call, which is a way on
     check.same(offered, ["A", "C", "H", "D"], "the origin list")
@@ -189,7 +193,7 @@ def test_destinations_offer_the_places_with_a_way_off(record_property, bus):
                          ("C", ["H", "E"]),
                          ("H", ["E"]),
                          ("D", ["E"])):
-        offered = _ids(gtfs_helper.get_destination_stop_list(bus, ROUTE, None, origin))
+        offered = _ids(places.get_destination_stop_list(bus, ROUTE, None, origin))
         check.same(offered, want, f"the destinations from {origin}", origin=origin)
     _done(record_property, check, fixture="boarding", promise="destinations")
 
@@ -370,9 +374,9 @@ def test_the_route_file_flags_the_line_not_the_drawn_trip(record_property, bus_w
                 ("H", True, True), ("D", True, True), ("E", False, True)],
                "the route file's line flags with T4")
     # the lists follow: Mairie is a departure, Zone an arrival from Gare
-    check.same(_ids(gtfs_helper.get_stop_list(bus_with_t4, ROUTE, None)),
+    check.same(_ids(places.get_stop_list(bus_with_t4, ROUTE, None)),
                ["A", "B", "C", "H", "D"], "the origin list with T4")
-    check.same(_ids(gtfs_helper.get_destination_stop_list(bus_with_t4, ROUTE, None, "A")),
+    check.same(_ids(places.get_destination_stop_list(bus_with_t4, ROUTE, None, "A")),
                ["B", "C", "H", "D", "E"], "the destinations from A with T4")
     _done(record_property, check, fixture="boarding", promise="line_flags")
 

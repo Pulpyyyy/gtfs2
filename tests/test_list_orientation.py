@@ -20,7 +20,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+places = ha_stub.load("places")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
 STOPS = "ABCDEFGHIJKW"
@@ -56,7 +56,7 @@ def test_a_way_back_through_a_one_way_loop_keeps_its_stop_between_its_neighbours
     # back: K J W I down the list, then B C D E F up it, round the loop
     schedule = _schedule(tmp_path, "ABCDEFGHIJK", "KJWIBCDEF")
     try:
-        stops = gtfs_helper.get_stop_list(schedule, "R", None)
+        stops = places.get_stop_list(schedule, "R", None)
         assert [str(s).split(":")[0] for s in stops] == list("ABCDEFGHIWJK")
     finally:
         schedule.engine.dispose()

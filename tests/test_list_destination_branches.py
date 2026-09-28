@@ -18,7 +18,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+places = ha_stub.load("places")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
 STOPS = {"O": (45.0, 1.0), "X1": (45.1, 1.2), "X2": (45.2, 1.4), "Y1": (45.1, 0.8), "Y2": (45.2, 0.6)}
@@ -81,7 +81,7 @@ def test_a_side_is_finished_before_the_other_way_starts(tmp_path):
     schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
     pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
     try:
-        found = gtfs_helper.get_destination_stop_list(schedule, "R", None, "O")
+        found = places.get_destination_stop_list(schedule, "R", None, "O")
         assert [str(s).split(":")[0] for s in found] == ["A", "B", "C", "D", "Q", "X", "Y", "Z"]
     finally:
         schedule.engine.dispose()
@@ -115,7 +115,7 @@ def test_a_branch_waiting_for_another_is_finished_through_it(tmp_path):
     schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
     pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
     try:
-        found = gtfs_helper.get_destination_stop_list(schedule, "R", None, "O")
+        found = places.get_destination_stop_list(schedule, "R", None, "O")
         assert [str(s).split(":")[0] for s in found] == ["P", "C", "D", "T", "U", "X", "Y"]
     finally:
         schedule.engine.dispose()
@@ -149,7 +149,7 @@ def test_the_branch_that_joins_comes_before_one_off_a_place_listed(tmp_path):
     schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
     pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
     try:
-        found = gtfs_helper.get_destination_stop_list(schedule, "R", None, "O")
+        found = places.get_destination_stop_list(schedule, "R", None, "O")
         assert [str(s).split(":")[0] for s in found] == ["A", "B", "E", "F", "T", "U", "C"]
     finally:
         schedule.engine.dispose()
@@ -162,7 +162,7 @@ def test_the_branch_that_joins_comes_before_one_off_a_place_listed(tmp_path):
 def test_one_branch_at_a_time_the_busiest_first(tmp_path, x_trips, y_trips, listed):
     schedule = _schedule(tmp_path, x_trips, y_trips)
     try:
-        found = gtfs_helper.get_destination_stop_list(schedule, "R", None, "O")
+        found = places.get_destination_stop_list(schedule, "R", None, "O")
         assert [str(s).split(":")[0] for s in found] == listed
     finally:
         schedule.engine.dispose()

@@ -17,7 +17,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+places = ha_stub.load("places")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
 
@@ -51,7 +51,7 @@ def test_a_cycle_between_variants_comes_before_the_terminus(tmp_path):
     pygtfs.append_feed(schedule, str(archive))
     try:
         listed = [str(s).split(":")[0] for s in
-                  gtfs_helper.get_destination_stop_list(schedule, "R", None, "O")]
+                  places.get_destination_stop_list(schedule, "R", None, "O")]
         # the busier variant's order first, the terminus last
         assert listed == ["A", "B", "T"]
     finally:
@@ -60,6 +60,6 @@ def test_a_cycle_between_variants_comes_before_the_terminus(tmp_path):
 
 def test_places_that_order_each_other_are_one_group():
     before = {"O": set(), "A": {"O", "B"}, "B": {"O", "A"}, "T": {"A", "B"}}
-    group = gtfs_helper._groups_of(before)
+    group = places._groups_of(before)
     assert group["A"] == group["B"]
     assert len({group["O"], group["A"], group["T"]}) == 3
