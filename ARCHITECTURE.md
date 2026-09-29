@@ -5,8 +5,9 @@ lives there, and **which path the code takes in which case**. Every figure
 quoted comes from the commit that introduced the behaviour; the commit is
 named so the measurement can be found again.
 
-It describes `refactor/architecture` as of 775a9ba (2026-09-23). A commit
-that adds, moves or renames a module updates this file in the same commit.
+It describes `refactor/architecture` as of the last commit that changed it.
+A commit that adds, moves or renames a module updates this file in the same
+commit.
 
 Contents: Context · Goals · How the fork is maintained · Layers · Glossary ·
 Config entries · Services · Line labels and directions · A refresh cycle ·
