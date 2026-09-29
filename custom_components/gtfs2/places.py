@@ -751,6 +751,82 @@ def _sample_rows(conn, samples):
             for name, parent, station, lat, lon in [records[stop_id]]]
 
 
+def _riding_order(calls, trip_count):
+    """What the rides from the origin say of each place: {place: how soon a
+    ride reaches it}, {place: the places a ride calls at just before it},
+    {place: how many trips ride through it}."""
+    # Riding order first: a place comes after every place some trip calls at
+    # just before it on its way from the origin, so two branches that meet
+    # again (GVB 1 reaches Leidseplein by Overtoom or by Jan Pieter
+    # Heijestraat) keep each ride's order. A later call at the origin starts
+    # the ride again (Palm Bus 21 passes Gare SNCF out and back). A place met
+    # again on the same ride orders nothing, and what the ride meets next
+    # comes after the last place it met for the first time: a spur ridden
+    # out and back (Krakow 141 turns off at Rzepakowa for Ruszcza and comes
+    # back through it) sits where the ride serves it, not after the line.
+    # Where the rides leave the order open, the branch in progress is
+    # finished before another starts, so the stops of one street stay
+    # together: interleaving them by distance read as no bus runs (Zou 653
+    # put RD du 24 Août inside the Plascassier village loop, which is the
+    # other variant). The busiest branch comes first, by the trips it
+    # carries, then the nearest.
+    reach, before, weight = {}, {}, {}
+    for ride, trip_id in calls:
+        count, newest, met = 0, None, set()
+        for p in ride:
+            count += 1
+            reach[p] = min(reach.get(p, count), count)
+            before.setdefault(p, set())
+            if p in met:
+                continue
+            if newest is not None:
+                before[p].add(newest)
+            met.add(p)
+            newest = p
+        for p in set(ride):
+            weight[p] = weight.get(p, 0) + trip_count.get(trip_id, 1)
+    return reach, before, weight
+
+
+def _placed_in_order(reach, before, weight, position):
+    """The places the rides reach, in the order the list offers them."""
+    # places that come before one another, two variants riding them in
+    # opposite orders, form one group: it is free once what comes before it
+    # from outside is placed. Waiting for each other, they came last, after
+    # the terminus (TEC B0026 listed Noduwez after Jodoigne; the 48-feed
+    # sweep). Without such a cycle every place is a group of its own
+    group = _groups_of(before)
+    onward = _onward_of(before)
+    order, placed, rank, joined = [], set(), {}, {}
+    while len(order) < len(reach):
+        blocked = {group[p] for p in reach if p not in placed
+                   for q in before[p] if q not in placed and group[q] != group[p]}
+        ready = [p for p in reach if p not in placed and group[p] not in blocked]
+        # nothing free: a loop's rotations order each other round
+        pool = ready or [p for p in reach if p not in placed]
+        # what goes on to where the latest place listed is headed comes
+        # first: the branch in progress, a branch that joins it, then what
+        # branches off it further back, before another side of the line
+        # starts. Taking the busiest free place instead left a side's last
+        # pole, the other quay of a terminus, after the whole other way (TAO
+        # 40 listed Chèques Postaux quai C after the Gare d'Orléans end; the
+        # 48-feed sweep); and a branch waiting for another to join it was
+        # left for a third (Rome 404 from Fabriano listed Fabriano/Pergola,
+        # then the Urbania branch, then Corridonia, which joins Pergola's at
+        # Casale S. Basilio). Next, what hangs off the latest place listed:
+        # ahead of the branch that joins, it cut the side in progress in
+        # two (GtfsDe 22884, Zagreb 14)
+        p = min(pool, key=lambda q: (-max((joined.get(x, -1) for x in onward[q]), default=-1),
+                                     -max((rank[x] for x in before[q] if x in rank), default=-1),
+                                     -weight[q], reach[q], position.get(q, 0)))
+        rank[p] = len(order)
+        for x in onward[p]:
+            joined[x] = rank[p]
+        order.append(p)
+        placed.add(p)
+    return order
+
+
 def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, towards=None):
     """The places a trip really reaches from the departure place.
 
@@ -820,71 +896,8 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     riders = {trip_id for _ride, trip_id in calls}
     alightable = {place[s] for sample, s in alighting
                   if s in place and (towards is None or sample in riders)}
-    # Riding order first: a place comes after every place some trip calls at
-    # just before it on its way from the origin, so two branches that meet
-    # again (GVB 1 reaches Leidseplein by Overtoom or by Jan Pieter
-    # Heijestraat) keep each ride's order. A later call at the origin starts
-    # the ride again (Palm Bus 21 passes Gare SNCF out and back). A place met
-    # again on the same ride orders nothing, and what the ride meets next
-    # comes after the last place it met for the first time: a spur ridden
-    # out and back (Krakow 141 turns off at Rzepakowa for Ruszcza and comes
-    # back through it) sits where the ride serves it, not after the line.
-    # Where the rides leave the order open, the branch in progress is
-    # finished before another starts, so the stops of one street stay
-    # together: interleaving them by distance read as no bus runs (Zou 653
-    # put RD du 24 Août inside the Plascassier village loop, which is the
-    # other variant). The busiest branch comes first, by the trips it
-    # carries, then the nearest.
-    reach, before, weight = {}, {}, {}
-    for ride, trip_id in calls:
-        count, newest, met = 0, None, set()
-        for p in ride:
-            count += 1
-            reach[p] = min(reach.get(p, count), count)
-            before.setdefault(p, set())
-            if p in met:
-                continue
-            if newest is not None:
-                before[p].add(newest)
-            met.add(p)
-            newest = p
-        for p in set(ride):
-            weight[p] = weight.get(p, 0) + trip_count.get(trip_id, 1)
-
-    # places that come before one another, two variants riding them in
-    # opposite orders, form one group: it is free once what comes before it
-    # from outside is placed. Waiting for each other, they came last, after
-    # the terminus (TEC B0026 listed Noduwez after Jodoigne; the 48-feed
-    # sweep). Without such a cycle every place is a group of its own
-    group = _groups_of(before)
-    onward = _onward_of(before)
-    order, placed, rank, joined = [], set(), {}, {}
-    while len(order) < len(reach):
-        blocked = {group[p] for p in reach if p not in placed
-                   for q in before[p] if q not in placed and group[q] != group[p]}
-        ready = [p for p in reach if p not in placed and group[p] not in blocked]
-        # nothing free: a loop's rotations order each other round
-        pool = ready or [p for p in reach if p not in placed]
-        # what goes on to where the latest place listed is headed comes
-        # first: the branch in progress, a branch that joins it, then what
-        # branches off it further back, before another side of the line
-        # starts. Taking the busiest free place instead left a side's last
-        # pole, the other quay of a terminus, after the whole other way (TAO
-        # 40 listed Chèques Postaux quai C after the Gare d'Orléans end; the
-        # 48-feed sweep); and a branch waiting for another to join it was
-        # left for a third (Rome 404 from Fabriano listed Fabriano/Pergola,
-        # then the Urbania branch, then Corridonia, which joins Pergola's at
-        # Casale S. Basilio). Next, what hangs off the latest place listed:
-        # ahead of the branch that joins, it cut the side in progress in
-        # two (GtfsDe 22884, Zagreb 14)
-        p = min(pool, key=lambda q: (-max((joined.get(x, -1) for x in onward[q]), default=-1),
-                                     -max((rank[x] for x in before[q] if x in rank), default=-1),
-                                     -weight[q], reach[q], position.get(q, 0)))
-        rank[p] = len(order)
-        for x in onward[p]:
-            joined[x] = rank[p]
-        order.append(p)
-        placed.add(p)
+    reach, before, weight = _riding_order(calls, trip_count)
+    order = _placed_in_order(reach, before, weight, position)
     kept = [by_place[p] for p in order if p in by_place and p in alightable]
     stops = _entries_of(kept, _labels_of(line, station_names))
     _LOGGER.debug(f"Destinations from {origin_stop_id}: {stops}")
