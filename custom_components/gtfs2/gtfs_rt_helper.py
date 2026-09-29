@@ -328,6 +328,16 @@ def stop_update_clock(stop):
             int(told.get("delay") or 0))
 
 
+def delay_of(delay, realtime, scheduled):
+    """A call's delay in seconds: the feed's, else, when it gives none or a
+    zero one, the gap between the time it gives and the timetable's, both
+    epoch seconds. IDFM's gateway writes 0 for a metro two minutes late,
+    TAO and Palm Bus leave the delay out."""
+    if not delay and realtime and scheduled:
+        return realtime - scheduled
+    return delay
+
+
 def _stop_time_and_delay(stop, trip_id, scheduled):
     ''' When the vehicle leaves the stop, and its delay '''
     stop_time, delay = stop_update_clock(stop)
@@ -339,11 +349,10 @@ def _stop_time_and_delay(stop, trip_id, scheduled):
         stop_time = scheduled[trip_id] + delay
         _LOGGER.debug("Trip %s carries a delay and no time: %s + %ss",
                       trip_id, scheduled[trip_id], delay)
-    elif stop_time and not delay and scheduled.get(trip_id):
-        # a time and no delay, or a zero one: IDFM's gateway writes 0 for
-        # a metro two minutes late, TAO and Palm Bus leave it out. The
-        # delay is the gap to the timetable, as the leg file reads it
-        delay = stop_time - scheduled[trip_id]
+    elif stop_time and scheduled.get(trip_id):
+        # a time and no delay, or a zero one: the delay is the gap to the
+        # timetable, as the leg file reads it
+        delay = delay_of(delay, stop_time, scheduled[trip_id])
     return stop_time, delay
 
 

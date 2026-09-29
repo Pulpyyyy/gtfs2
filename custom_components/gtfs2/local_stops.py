@@ -21,7 +21,7 @@ from .const import (
     TIME_STR_FORMAT,
 )
 from .gtfs_helper import _boards, _day_offset, _on_service_day, _runs_on, check_extracting
-from .gtfs_rt_helper import get_rt_route_trip_statuses, on_service_day, struck_trips
+from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, on_service_day, struck_trips
 from .rt_feed import get_gtfs_feed_entities
 
 _LOGGER = logging.getLogger(__name__)
@@ -161,6 +161,11 @@ def _build_local_stop_element(self, row, base_datetime,
         depart_time_corrected_time = dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_agency)
     #_LOGGER.debug("Departure time corrected based on realtime-time: %s", depart_time_corrected_time)
 
+    if departure_rt != "-":
+        # the same rule as the line sensors' (delay_of)
+        delay_rt = delay_of(0 if delay_rt == "-" else delay_rt,
+                            int(depart_time_corrected_time.timestamp()),
+                            int(self._departure_datetime.timestamp()))
     if delay_rt == 0:
         delay_rt = "-"
     depart_time_corrected = local_departure_leaves(
