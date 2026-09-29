@@ -55,5 +55,6 @@ def test_a_delay_the_feed_gives_stands():
 
 
 def test_without_the_timetable_s_time_the_feed_s_zero_stays():
-    # a trip the board does not list: no time of its own to compare with
+    # a trip the board does not list, and no database to read its time
+    # from: nothing to compare with (with one, test_rt_delay_off_board)
     assert _delays({"time": EXPECTED, "delay": 0}, on_board=False) == [0]

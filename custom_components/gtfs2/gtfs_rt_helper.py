@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import quote
 import json
 import os
@@ -220,6 +220,84 @@ def _scheduled_departures(self):
     if departure.get("trip_id") and stamp:
         due.setdefault(str(departure["trip_id"]), stamp)
     return due
+
+
+def _off_board_times(self, feed_entities, scheduled):
+    """{trip_id: (the service day the feed names or None, the time it
+    gives at this entity's stop)} of the followed trips the board does not
+    list."""
+    found = {}
+    for entity in feed_entities:
+        if not entity.get("trip_update"):
+            continue
+        trip = entity["trip_update"]["trip"]
+        group, route_id, direction_id = _trip_group_route_direction(self, trip)
+        trip_id = trip.get("trip_id") or ""
+        if (not trip_id or trip_id in scheduled
+                or not _follows_trip(self, group, route_id, direction_id, trip_id, entity.get("id") or "")):
+            continue
+        for stop in entity["trip_update"].get("stop_time_update") or []:
+            if (stop.get("stop_id") or "") == self._stop_id:
+                when, _delay = stop_update_clock(stop)
+                if when:
+                    found[trip_id] = (trip.get("start_date") or None, when)
+                break
+    return found
+
+
+def _due_on_its_day(start_date, seconds, near, zone):
+    """Epoch seconds of a stop time `seconds` past its service day's
+    midnight, on the day the feed names (YYYYMMDD), else on the day before,
+    the day or the day after `near` that puts it nearest to `near`."""
+    if start_date:
+        try:
+            days = [datetime.strptime(str(start_date), "%Y%m%d").date()]
+        except ValueError:
+            days = []
+    else:
+        days = []
+    if not days:
+        today = datetime.fromtimestamp(near, zone).date()
+        days = [today - timedelta(days=1), today, today + timedelta(days=1)]
+    due = [int((datetime.combine(day, datetime.min.time(), tzinfo=zone) + timedelta(seconds=seconds)).timestamp())
+           for day in days]
+    return min(due, key=lambda when: abs(when - near))
+
+
+def _scheduled_off_board(self, feed_entities, scheduled):
+    """When the timetable has the followed trips the board does not list,
+    at this entity's stop, by trip id, epoch seconds.
+
+    The board lists the departures still to come by the timetable: a train
+    late past its own time has left it while the feed still announces it,
+    and its delay was then the feed's alone, 0 on IDFM for a train four
+    minutes late. Read from the database for those trips only.
+    """
+    realtime = _off_board_times(self, feed_entities, scheduled)
+    schedule = (getattr(self, "_data", None) or {}).get("schedule")
+    if not realtime or not hasattr(schedule, "engine"):
+        return {}
+    sql = """
+    SELECT trip_id, (julianday(departure_time) - julianday('1970-01-01')) * 86400
+    FROM stop_times
+    WHERE stop_id = :stop AND trip_id IN (SELECT value FROM json_each(:trips))
+    """
+    try:
+        with schedule.engine.connect() as conn:
+            rows = conn.execute(sql_text(sql), {"stop": self._stop_id,
+                                                "trips": json.dumps(sorted(realtime))}).fetchall()
+    except Exception as ex:  # pylint: disable=broad-except
+        _LOGGER.debug("Could not read the timetable of the trips off the board: %s", ex)
+        return {}
+    # the clocks the board's own departures are written in
+    shown = (self._data.get("next_departure") or {}).get("departure_time")
+    zone = getattr(shown, "tzinfo", None) or dt_util.DEFAULT_TIME_ZONE
+    found = {}
+    for trip_id, seconds in rows:
+        if seconds is not None and str(trip_id) in realtime:
+            start_date, when = realtime[str(trip_id)]
+            found[str(trip_id)] = _due_on_its_day(start_date, round(seconds), when, zone)
+    return found
 
 
 def _names_trip(watched, seen):
@@ -475,8 +553,10 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
         return {}
 
     # what the timetable says for the trips on the board, to lay a delay on
-    # when the feed publishes one without a time
+    # when the feed publishes one without a time, and to read a delay the
+    # feed writes as 0; the trips it no longer lists as well
     scheduled = _scheduled_departures(self)
+    scheduled.update(_scheduled_off_board(self, feed_entities, scheduled))
 
     if self._rt_group == "route":
         _LOGGER.debug("Search departure times for route: %s, trip: %s, type: %s, direction: %s, short_name: %s, trip_list: %s", self._route_id, self._trip_id, self._rt_group, self._direction, self._trip_short_name, self._trip_list)
