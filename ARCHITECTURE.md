@@ -166,8 +166,8 @@ before or after.
 
 ## Overview: the layers
 
-GTFS2 is organised in five layers, plus a query module and a few shared
-modules that every layer uses:
+GTFS2 is organised in five layers, plus a few shared modules that every
+layer uses:
 
 ```
 ┌──────────────────────────┐
@@ -177,23 +177,21 @@ modules that every layer uses:
 ├──────────────────────────┤
 │ Domain services layer    │  what the data means for one sensor
 ├──────────────────────────┤
-│ Data management layer    │  the database files and what is written from them
+│ Data management layer    │  the database files: built, read, written out
 ├──────────────────────────┤
-│ Source & feed layer      │  where the data comes from, and when
+│ Source & feed layer      │  where the data comes from
 └──────────────────────────┘
 
-  gtfs_helper.py     reads the database for every layer (queries, get_gtfs)
-  gtfs_rt_helper.py  reads the realtime feeds
   shared             const.py, key_mask.py, notifications.py
 ```
 
-**Dependency rule (target).** A module imports from its own layer, from a
-lower layer, and from the shared modules. It never imports from a higher
-layer. `gtfs_helper.py` and `gtfs_rt_helper.py` are upstream's and sit
-outside the layers until the gaps at the end are closed. The rule is an
-import-linter contract (`.importlinter`, CI: Imports) that lists the known
-gaps as its only exceptions: see "Known gaps". A second contract forbids any
-import cycle between the modules, with no exception.
+**Dependency rule.** A module imports from its own layer, from a lower
+layer, and from the shared modules. It never imports from a higher layer.
+The rule is an import-linter contract (`.importlinter`, CI: Imports), with
+no exception. A second contract forbids any import cycle between the
+modules, with no exception either. A module sits above everything it
+needs: refreshing a source and importing its zip build the database, so
+they are in the data layer, beside what reads it.
 
 **Why these five.** The cut follows what changes together. The source layer
 changes with hosts and publishers (validators, ranges, envelopes); the data
@@ -250,6 +248,7 @@ route_names.py           line labels, lines a feed declares
 stations.py              train entries: stations instead of stops
 exports.py               which map files a refresh writes, and when
 local_stops.py           the departures around a person, timetable and realtime
+gtfs_rt_helper.py        the realtime of one sensor: next services, delays, alerts, vehicles
 ```
 
 Functions here take values, not entities: `departure_attributes` takes the
@@ -259,10 +258,14 @@ attributes dict and what it reads, "nothing of the entity" (3f01c10).
 
 ```
 gtfs_db.py            everything that opens a database file directly, the sources on disk
+gtfs_helper.py        the departure queries and the SQL pieces every reader shares; get_gtfs
+source_zip.py         the zip beside a datasource: fetched, kept, refreshed, imported
+source_refresh.py     automatic refresh of the static feeds, per source and mode
+rt_window.py          when the realtime feeds are worth reading, off the timetable
 gtfs_filter.py        cut a zip down to chosen routes before any import
 direction_repair.py   repair trip direction_id after import
 gtfs_shape.py         read one shape out of the zip (shapes.txt is never imported)
-geojson.py            the files written under www/gtfs2 for a map card: names, route file
+geojson.py            the files written under www/gtfs2 for a map card: names, route file, writing
 leg.py                the leg file: the ride of the next departure, stop by stop
 timetable.py          the timetable file: every departure over three service days
 places.py             the places of a line the flow offers, their order and direction
@@ -277,11 +280,8 @@ can be tested on plain SQLite files.
 
 ```
 rt_source.py        the datasource entries, owning the realtime feeds and keys
-source_zip.py       the zip beside a datasource: fetched, kept, refreshed
 zip_peek.py         read a remote zip's contents, take one member out of it
 freshness.py        ask the host whether the feed changed, without downloading
-source_refresh.py   automatic refresh of the static feeds, per source and mode
-rt_window.py        when the realtime feeds are worth reading
 rt_feed.py          a realtime feed read once per publication, decoded
 ```
 
@@ -545,9 +545,8 @@ while it lasts, and its recovery once at info (be807b9): every entry of a
 source reads the feeds every minute, and used to log the same error each
 time.
 
-`alerts.py` and `gtfs_rt_helper.py` import each other: the helper reads the
-alert feed, `alerts.py` decides what one alert means for the entry. See
-"Known gaps".
+`gtfs_rt_helper.py` reads the alert feed, `alerts.py` decides what one
+alert means for the entry.
 
 ### What realtime changes on a sensor
 
@@ -974,7 +973,7 @@ Journey entry      line, direction, stops, name
 
 **Business logic stays outside entities.** Entities read what the domain
 layer computed; the domain layer takes values, not entities, so it can be
-tested without Home Assistant. Current state: see "Known gaps".
+tested without Home Assistant.
 
 **Measure before choosing.** Performance choices name their measurement and
 their feed (SNCF, IDFM, gtfs-nl, Orleans, TAO…); caps are set where the
@@ -1013,45 +1012,20 @@ coordinator already filled and refreshes it plainly (b960969).
 
 ## Known gaps
 
-What the code does not follow yet from the design above. All are meant to
-be closed by the refactor, not accepted as the design. A gap is closed when
-the rule it breaks can be checked by a test.
+What the code does not follow yet from the design above: none. A gap is
+closed when the rule it breaks can be checked by a test.
 
-1. **`gtfs_helper.py` sits outside the layers and every layer imports it.**
-   The fork took the file over (2026-09-28): the stops around a person
-   (`local_stops.py`), the places of a line (`places.py`) and the timetable
-   services (`departure_services.py`) left it, moved unchanged; the flow's
-   line and agency lists went to `route_names.py`, the sources on disk to
-   `gtfs_db.py`. It still holds five families:
-
-   ```
-   departure queries    _fetch_departure_rows, get_next_departure,
-                        get_next_service_date, drop_departure_trips,
-                        departure_query_args, shown_ends
-   shared SQL pieces    _boards, _alights, _place_group, _day_offset,
-                        _on_service_day, _runs_on, gtfs_seconds, agency_zone
-   trains               departure_route_type, entry_stations,
-                        train_entry_routes, station_names_in, RAIL_*
-   opening a database   get_gtfs
-   extracting, indexes  check_extracting, check_datasource_index,
-                        drop_import_indexes
-   ```
-
-   Closing the gap means moving them together to the data layer. None
-   goes alone: `get_gtfs` reads check_extracting, which the index check
-   reads too, and `rt_window.py` (gap 2) reaches `gtfs_db.py` through
-   `gtfs_helper`, which the contract forbids; the train helpers cannot go
-   to `stations.py` on their own, the queries read them and `stations.py`
-   reads the queries' SQL pieces, a loop.
-2. **Lower layers import upper ones:** `source_zip.py` and `rt_window.py`
-   import `gtfs_helper`; `geojson.py`,
-   `leg.py` and `rt_window.py` import `gtfs_rt_helper`; `source_zip.py`
-   imports `gtfs_db`, `gtfs_filter` and `direction_repair`; `config_flow.py`
-   imports `close_schedule` from `coordinator.py`.
-3. **The dependency rule holds only with exceptions.** The import-linter
-   contract lists the imports of gaps 1 and 2 as allowed; an exception no
-   import needs any more fails the check, so the list can only shrink to
-   none.
+The last three closed on 2026-09-30. `gtfs_helper.py` and
+`gtfs_rt_helper.py`, upstream's two files that every layer imported, sat
+outside the layers while the fork's code left them (the stops around a
+person, the places of a line, the timetable services, the flow's lists,
+the sources on disk); what stayed is a data layer module (the departure
+queries and their SQL pieces) and a domain one (the realtime of a
+sensor), once the few functions a lower layer needed went down: the file
+name and json writing to `geojson.py`, the feed's route id match, stop
+clock and service day to `rt_feed.py`, the cache check to `rt_window.py`,
+`close_schedule` to `gtfs_db.py`. The import contract, which listed the
+imports of the gaps as its exceptions, has none left.
 
 ## Known defects
 

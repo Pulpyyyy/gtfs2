@@ -5,9 +5,8 @@ on:
   pull_request:
 
 # The dependency rule of ARCHITECTURE.md as an import-linter contract
-# (.importlinter): no module imports from a higher layer, but for the
-# known gaps it lists. An exception no import needs any more fails too, so
-# the list only shrinks.
+# (.importlinter): no module imports from a higher layer, with no
+# exception, and no import cycle between the modules.
 jobs:
   imports:
     runs-on: ubuntu-latest

@@ -3,8 +3,7 @@ root_package = custom_components.gtfs2
 
 # The dependency rule of ARCHITECTURE.md: a module imports from its own
 # layer, from a lower one and from the modules outside the layers, never
-# from a higher layer. The ignored imports are the known gaps of
-# ARCHITECTURE.md; the list only shrinks, an entry goes when its gap closes.
+# from a higher layer.
 [importlinter:contract:layers]
 name = A module never imports from a higher layer
 type = layers
@@ -13,19 +12,9 @@ containers =
 layers =
     coordinator : sensor : update : button : switch : datasource_services : departure_services : repairs
     config_flow : flow_source : flow_reload : flow_journey : flow_train : flow_options
-    alerts : departure_attributes : refresh_steps : route_names : stations : exports : local_stops
-    gtfs_db : gtfs_filter : direction_repair : gtfs_shape : geojson : leg : timetable : feed_window : places
-    rt_source : source_zip : zip_peek : freshness : source_refresh : rt_window : rt_feed
-ignore_imports =
-    # gaps 1 and 2: gtfs_helper and gtfs_rt_helper, imported by every
-    # layer, import layered modules in turn
-    custom_components.gtfs2.gtfs_rt_helper -> custom_components.gtfs2.alerts
-    custom_components.gtfs2.gtfs_rt_helper -> custom_components.gtfs2.route_names
-    custom_components.gtfs2.gtfs_rt_helper -> custom_components.gtfs2.rt_source
-    # gap 2: lower layers importing upper ones
-    custom_components.gtfs2.source_zip -> custom_components.gtfs2.direction_repair
-    custom_components.gtfs2.source_zip -> custom_components.gtfs2.gtfs_db
-    custom_components.gtfs2.source_zip -> custom_components.gtfs2.gtfs_filter
+    alerts : departure_attributes : refresh_steps : route_names : stations : exports : local_stops : gtfs_rt_helper
+    gtfs_db : gtfs_filter : direction_repair : gtfs_shape : geojson : leg : timetable : feed_window : places : gtfs_helper : source_zip : source_refresh : rt_window
+    rt_source : zip_peek : freshness : rt_feed
 
 [importlinter:contract:acyclic]
 name = No import cycle between the component's modules
