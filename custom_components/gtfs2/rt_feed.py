@@ -5,7 +5,9 @@ reads it (get_gtfs_feed_entities); a failure said once, not once per
 sensor and per minute; and the body, json or protobuf, decoded into what
 the readers walk (convert_gtfs_realtime_to_json,
 convert_gtfs_realtime_positions_to_json), with the GTFS-RT enums spelled
-out (trip_relationship, stop_relationship).
+out (trip_relationship, stop_relationship). Also how a route id the feed
+gives names a configured route (_same_route), for the trip updates and
+the alerts alike.
 """
 import json
 import logging
@@ -430,3 +432,25 @@ def convert_gtfs_realtime_positions_to_json(gtfs_realtime_data):
         }
         json_data["entity"].append(entity_dict)
     return json_data
+
+
+def _same_route(configured, seen):
+    """Whether a realtime route_id designates the configured route.
+
+    Some feeds qualify their ids, so an exact match alone is too strict and a
+    plain substring test was used instead. That test makes "Line:1" swallow
+    "Line:11", and "Line:4" swallow 40, 41, 43 and 45: the sensor then reports
+    departures of a line the user never asked for.
+
+    A qualified id still has to end on the configured one, at a separator, so
+    a longer number cannot pass for a shorter one.
+    """
+    configured, seen = str(configured or ""), str(seen or "")
+    if not configured or not seen:
+        return False
+    if configured == seen:
+        return True
+    if not seen.endswith(configured):
+        return False
+    # the character before must be a separator, never a digit or a letter
+    return not seen[-len(configured) - 1].isalnum()

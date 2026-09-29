@@ -42,11 +42,11 @@ from .const import (
 
     TIME_STR_FORMAT
 )
-from .alerts import _same_route, journey_alerts
+from .alerts import journey_alerts
 from .key_mask import fetch
 from .rt_feed import (
-    _FEED_CACHE, CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, _with_user_agent, get_gtfs_feed_entities,
-    stop_relationship, trip_relationship,
+    _FEED_CACHE, CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, _same_route, _with_user_agent,
+    get_gtfs_feed_entities, stop_relationship, trip_relationship,
 )
 from .rt_source import with_query_key
 
