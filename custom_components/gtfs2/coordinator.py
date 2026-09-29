@@ -31,7 +31,7 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_db import real_path
+from .gtfs_db import close_schedule, real_path
 from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, journey_data, shown_ends
 from .local_stops import get_local_stops_next_departures, drop_gone_local_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
@@ -43,16 +43,6 @@ from .departure_attributes import departure_records
 from .exports import export_leg, export_route_shape, export_timetable
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def close_schedule(schedule) -> None:
-    """Let a schedule go: its session, then its engine's connections."""
-    if schedule and hasattr(schedule, "session"):
-        try:
-            schedule.session.close()
-            schedule.engine.dispose()
-        except Exception:  # pylint: disable=broad-except
-            pass
 
 
 def _database_edition(hass, file):

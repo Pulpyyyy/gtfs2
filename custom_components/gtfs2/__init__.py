@@ -9,14 +9,14 @@ from homeassistant.helpers import config_validation as cv
 from datetime import timedelta
 
 from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_FILE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM, id_of
-from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator, close_schedule
+from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
 from .departure_services import get_route_departures, get_route_arrivals, get_trip_stops
 from .local_stops import update_gtfs_local_stops
 from .notifications import async_notify_line_orphaned, clear_line_orphaned
 from .exports import remove_entry_geojson
 from .datasource_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
-from .gtfs_db import real_path, routes_in, get_datasources
+from .gtfs_db import real_path, routes_in, get_datasources, close_schedule
 from .gtfs_rt_helper import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
 from .rt_source import (

@@ -7,12 +7,13 @@ hand written queries and 18 raw writes, none of them going through pygtfs. So
 that work already existed, scattered through gtfs_helper.py; this module gives
 it one home.
 
-Three things live here:
+Four things live here:
 
   the two database model    real_path / scratch_path / create_real_from /
                             copy_route / discard_scratch
   reshaping a datasource    prune_gtfs_datasource / intern_gtfs_datasource
   the sources on disk       get_datasources / get_zipfiles / remove_datasource
+  letting a schedule go     close_schedule
 
 They belong together because they answer the same question - what is physically
 in the file, and which files are there - and because the first largely replaces the second: once imports
@@ -956,3 +957,13 @@ def remove_datasource(hass, path, filename, include_sqlite):
         if os.path.exists(os.path.join(gtfs_dir, filename + suffix)):
             os.remove(os.path.join(gtfs_dir, filename + suffix))
     return "removed"
+
+
+def close_schedule(schedule) -> None:
+    """Let a schedule go: its session, then its engine's connections."""
+    if schedule and hasattr(schedule, "session"):
+        try:
+            schedule.session.close()
+            schedule.engine.dispose()
+        except Exception:  # pylint: disable=broad-except
+            pass

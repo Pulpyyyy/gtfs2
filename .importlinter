@@ -23,7 +23,6 @@ ignore_imports =
     custom_components.gtfs2.gtfs_rt_helper -> custom_components.gtfs2.route_names
     custom_components.gtfs2.gtfs_rt_helper -> custom_components.gtfs2.rt_source
     # gap 2: lower layers importing upper ones
-    custom_components.gtfs2.config_flow -> custom_components.gtfs2.coordinator
     custom_components.gtfs2.source_zip -> custom_components.gtfs2.direction_repair
     custom_components.gtfs2.source_zip -> custom_components.gtfs2.gtfs_db
     custom_components.gtfs2.source_zip -> custom_components.gtfs2.gtfs_filter

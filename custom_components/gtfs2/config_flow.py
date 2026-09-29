@@ -45,14 +45,13 @@ from .const import (
 )
 
 from .gtfs_helper import get_gtfs, check_datasource_index
-from .gtfs_db import get_datasources, remove_datasource
+from .gtfs_db import get_datasources, remove_datasource, close_schedule
 from .route_names import get_agency_list, get_route_count, get_route_list
 from .local_stops import get_local_stop_list
 from .places import get_destination_stop_list, get_pair_direction, get_stop_list, get_towards
 from .stations import get_station_list, get_station_modes
 from .route_names import get_route_options_from_zip, get_agencies_in_zip, LINE_MODES, with_modes
 from .notifications import _async_text
-from .coordinator import close_schedule
 from .source_refresh import source_lock
 
 from .rt_source import (
