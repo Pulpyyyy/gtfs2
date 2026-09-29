@@ -4,8 +4,9 @@ Their names, so that the writer, the sensor attribute and the removal on
 entry deletion agree (route_geojson_name, vehicle_positions_name); the
 route file, the line drawn from its fullest trip with the shape read out
 of the zip and the boarding rules per stop (write_route_file); and what
-every file here shares: an entry's name as a file name part
-(entry_file_part) and a write skipped when nothing changed
+every file here shares: an id or an entry's name as a file name part
+(safe_file_part, entry_file_part), a write no reader catches half done
+(write_json_file) and a write skipped when nothing changed
 (write_json_if_changed). The leg file is in leg.py, the timetable in
 timetable.py. The coordinator calls the writers from the executor; the
 positions file itself is written by gtfs_rt_helper.get_rt_vehicle_positions.
@@ -17,6 +18,8 @@ import json
 import logging
 import os
 import re
+import threading
+import time
 import unicodedata
 from collections import Counter
 
@@ -26,7 +29,6 @@ from .const import DEFAULT_PATH_GEOJSON
 from .gtfs_db import feed_zip
 from .gtfs_helper import gtfs_seconds, shown_ends
 from .places import _call_type, _line_ways
-from .gtfs_rt_helper import safe_file_part, write_json_file
 from .gtfs_shape import read_shape, trip_shape_id
 
 _LOGGER = logging.getLogger(__name__)
@@ -375,3 +377,52 @@ def name_in_use(name, taken) -> bool:
     file part, and the second entry wrote over the first one's files."""
     part = entry_file_part(name)
     return name in taken or any(entry_file_part(t) == part for t in taken if t)
+
+
+_UNSAFE_FILE_PART = re.compile(r"[^a-z0-9._-]+")
+
+
+def safe_file_part(value) -> str:
+    """A route or direction id, made safe to put in a file name.
+
+    Both geojson files are named after ids that come out of the datasource,
+    that is to say out of a url the user pasted: an id like ZOP:653 makes a
+    file no Windows share can read, a percent sign has to be escaped in the
+    /local/ url that serves the file, and an id carrying a slash writes into
+    a directory that does not exist and loses the file to an OSError.
+
+    Rather than list the separators a feed may bring, keep letters, digits,
+    dot, dash and underscore, replace every run of the rest with a single
+    underscore and lowercase, so one route always lands on one file.
+    """
+    return re.sub(r"\.\.+", "_", _UNSAFE_FILE_PART.sub("_", str(value).lower()))
+
+
+def write_json_file(file, doc):
+    """Write a json file the way a reader can never catch it half written.
+
+    The map cards fetch these files while the sensors rewrite them, every
+    minute for the vehicles: written in place, a fetch landing mid-write
+    read a truncated document and dropped the layer. The file is written
+    beside its target and renamed over it, which a reader sees whole.
+    """
+    # a name of its own per writer: two entries on one line write the same
+    # file in the same second, and a shared staging name had each rename
+    # the other's half-written file, or find it gone
+    staged = f"{file}.{os.getpid()}.{threading.get_ident()}.tmp"
+    try:
+        with open(staged, "w") as outfile:
+            json.dump(doc, outfile)
+        for attempt in range(5):
+            try:
+                os.replace(staged, file)
+                break
+            except PermissionError:
+                # Windows refuses a rename onto a file another writer is
+                # renaming onto at that instant; it is free a moment later
+                if attempt == 4:
+                    raise
+                time.sleep(0.02)
+    finally:
+        if os.path.exists(staged):
+            os.remove(staged)

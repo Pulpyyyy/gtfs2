@@ -16,10 +16,9 @@ from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
-from .geojson import entry_file_part, write_json_if_changed
+from .geojson import entry_file_part, safe_file_part, write_json_if_changed
 from .gtfs_helper import agency_zone, gtfs_seconds, shown_ends
 from .places import _call_type
-from .gtfs_rt_helper import safe_file_part
 from .rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, stop_relationship, stop_update_clock,
     trip_relationship,
