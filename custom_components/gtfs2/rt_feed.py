@@ -7,7 +7,9 @@ the readers walk (convert_gtfs_realtime_to_json,
 convert_gtfs_realtime_positions_to_json), with the GTFS-RT enums spelled
 out (trip_relationship, stop_relationship). Also how a route id the feed
 gives names a configured route (_same_route), for the trip updates and
-the alerts alike.
+the alerts alike, the time and delay a stop update gives
+(stop_update_clock) and whether the day a feed names for a trip is the
+service day (on_service_day).
 """
 import json
 import logging
@@ -454,3 +456,31 @@ def _same_route(configured, seen):
         return False
     # the character before must be a separator, never a digit or a letter
     return not seen[-len(configured) - 1].isalnum()
+
+
+def stop_update_clock(stop):
+    ''' (time, delay) of a stop update: the departure's when it says
+    anything, the arrival's otherwise; 0 for what it leaves out '''
+    # a train that arrives late and makes up time while it stands at
+    # the stop leaves with the departure's delay, not the arrival's.
+    # A json feed writes its int64 times as strings
+    arrival = stop.get("arrival") or {}
+    departure = stop.get("departure") or {}
+    told = departure if (departure.get("time") or departure.get("delay")) else arrival
+    return (int(departure.get("time") or arrival.get("time") or 0),
+            int(told.get("delay") or 0))
+
+
+def on_service_day(start_date, service_day):
+    """Whether a feed's start_date is the service day.
+
+    start_date is what the feed named, YYYYMMDD, or None for "unsaid",
+    or the set of days it named for that trip: a strike lasts more than a
+    day and a feed then publishes the same trip id once per day it hits.
+    service_day is YYYY-MM-DD, or a datetime string starting with it.
+    """
+    if isinstance(start_date, (set, frozenset, list, tuple)):
+        return any(on_service_day(day, service_day) for day in start_date) if start_date else True
+    if not start_date:
+        return True
+    return str(service_day or "")[:10].replace("-", "") == str(start_date)[:8]

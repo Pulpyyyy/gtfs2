@@ -21,8 +21,8 @@ from .const import (
     TIME_STR_FORMAT,
 )
 from .gtfs_helper import _boards, _day_offset, _on_service_day, _runs_on, check_extracting
-from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, on_service_day, struck_trips
-from .rt_feed import get_gtfs_feed_entities
+from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
+from .rt_feed import get_gtfs_feed_entities, on_service_day
 
 _LOGGER = logging.getLogger(__name__)
 

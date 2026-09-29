@@ -18,6 +18,7 @@ import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
 leg_mod = ha_stub.load("leg")
+rt_feed = ha_stub.load("rt_feed")
 
 UTC = datetime.timezone.utc
 NOW = datetime.datetime(2026, 9, 27, 11, 30, tzinfo=UTC)
@@ -67,10 +68,10 @@ def test_an_arrival_alone_gives_its_delay():
 
 
 def test_a_departure_with_a_delay_and_no_time_keeps_the_arrival_s_time():
-    assert gtfs_rt_helper.stop_update_clock(
+    assert rt_feed.stop_update_clock(
         _update(arrival=LATE_ARRIVAL, departure={"delay": 60})) == (EXPECTED - 60, 60)
 
 
 def test_a_json_feed_s_text_values_are_read_as_numbers():
-    assert gtfs_rt_helper.stop_update_clock(
+    assert rt_feed.stop_update_clock(
         _update(departure={"time": str(EXPECTED), "delay": "60"})) == (EXPECTED, 60)

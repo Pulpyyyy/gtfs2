@@ -21,7 +21,7 @@ from .const import (
     DEFAULT_PATH,
     TIME_STR_FORMAT
     )
-from .gtfs_rt_helper import on_service_day
+from .rt_feed import on_service_day
 from .gtfs_rt_helper import safe_file_part  # noqa: F401  a provider test reads it here
 
 _LOGGER = logging.getLogger(__name__)

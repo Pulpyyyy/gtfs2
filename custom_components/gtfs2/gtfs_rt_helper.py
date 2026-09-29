@@ -46,7 +46,8 @@ from .alerts import journey_alerts
 from .key_mask import fetch
 from .rt_feed import (
     _FEED_CACHE, CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, _same_route, _with_user_agent,
-    get_gtfs_feed_entities, stop_relationship, trip_relationship,
+    get_gtfs_feed_entities, stop_relationship, stop_update_clock,
+    trip_relationship,
 )
 from .rt_source import with_query_key
 
@@ -393,19 +394,6 @@ def _follows_trip(self, group, route_id, direction_id, trip_id, entity_id):
             or trip_id in (getattr(self, "_trip_list", None) or ()))
 
 
-def stop_update_clock(stop):
-    ''' (time, delay) of a stop update: the departure's when it says
-    anything, the arrival's otherwise; 0 for what it leaves out '''
-    # a train that arrives late and makes up time while it stands at
-    # the stop leaves with the departure's delay, not the arrival's.
-    # A json feed writes its int64 times as strings
-    arrival = stop.get("arrival") or {}
-    departure = stop.get("departure") or {}
-    told = departure if (departure.get("time") or departure.get("delay")) else arrival
-    return (int(departure.get("time") or arrival.get("time") or 0),
-            int(told.get("delay") or 0))
-
-
 def delay_of(delay, realtime, scheduled):
     """A call's delay in seconds: the feed's, else, when it gives none or a
     zero one, the gap between the time it gives and the timetable's, both
@@ -621,20 +609,6 @@ def merge_struck(*sources):
                 days if isinstance(days, (set, frozenset, list, tuple)) else {days})
     return merged
 
-
-def on_service_day(start_date, service_day):
-    """Whether a feed's start_date is the service day.
-
-    start_date is what the feed named, YYYYMMDD, or None for "unsaid",
-    or the set of days it named for that trip: a strike lasts more than a
-    day and a feed then publishes the same trip id once per day it hits.
-    service_day is YYYY-MM-DD, or a datetime string starting with it.
-    """
-    if isinstance(start_date, (set, frozenset, list, tuple)):
-        return any(on_service_day(day, service_day) for day in start_date) if start_date else True
-    if not start_date:
-        return True
-    return str(service_day or "")[:10].replace("-", "") == str(start_date)[:8]
 
 def _trip_destinations(schedule, trip_ids):
     """{trip_id: where it goes}: its headsign, or its last stop when the

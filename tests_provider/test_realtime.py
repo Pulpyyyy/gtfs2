@@ -59,6 +59,8 @@ try:
     rt_feed = ha_stub.load("rt_feed")
 except FileNotFoundError:  # a tree that reads its feeds in gtfs_rt_helper
     rt_feed = gtfs_rt_helper
+# the service day rule, where the tree keeps it
+on_service_day = getattr(rt_feed, "on_service_day", None) or gtfs_rt_helper.on_service_day
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sncf"
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
@@ -233,10 +235,10 @@ def test_the_board_moves_on_without_the_struck_trip(record_property, sncf, entit
         # struck with no day named: dropped on every day, nothing left here
         every = gtfs_helper.drop_departure_trips(_hass(), data, {cancelled: None})
         check.same(every, {}, "struck with no day named, the trip is out on every day")
-    check.same([gtfs_rt_helper.on_service_day("20260826", "2026-08-26"),
-                gtfs_rt_helper.on_service_day("20260826", "2026-08-27"),
-                gtfs_rt_helper.on_service_day(None, "2026-08-27"),
-                gtfs_rt_helper.on_service_day("20260826", "2026-08-26 08:08:00")],
+    check.same([on_service_day("20260826", "2026-08-26"),
+                on_service_day("20260826", "2026-08-27"),
+                on_service_day(None, "2026-08-27"),
+                on_service_day("20260826", "2026-08-26 08:08:00")],
                [True, False, True, True], "the service day rule")
     _done(record_property, check, fixture="sncf", promise="board")
 
