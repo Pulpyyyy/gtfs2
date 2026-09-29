@@ -8,6 +8,7 @@ follows the order a trip calls at them, branches and loops included.
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import statistics
@@ -707,6 +708,49 @@ def _close_group(root, stack, on_stack, group):
             return
 
 
+def _rides_after(calls):
+    """The rides after the origin, out of every call of every trip through it
+    (trip_id, stop_sequence, stop_id, whether riders get off there), in trip
+    then sequence order.
+
+    Trips calling at the same stops in the same order are one ride, which
+    the smallest trip_id stands for, as _STOP_ROWS samples. Returns the
+    sampled trips with their calls, {sampled trip: how many trips its ride
+    stands for}, and every (sampled trip, stop) some trip of the ride sets
+    riders down at.
+    """
+    by_trip = {}
+    for trip_id, sequence, stop_id, _alights_there in calls:
+        by_trip.setdefault(trip_id, []).append((sequence, stop_id))
+    ride_of = {trip_id: tuple(ride) for trip_id, ride in by_trip.items()}
+    sample_of, count = {}, {}
+    for trip_id, ride in ride_of.items():
+        if ride not in sample_of or trip_id < sample_of[ride]:
+            sample_of[ride] = trip_id
+        count[ride] = count.get(ride, 0) + 1
+    samples = {sample_of[ride]: ride for ride in sample_of}
+    trip_count = {sample_of[ride]: n for ride, n in count.items()}
+    alighting = {(sample_of[ride_of[trip_id]], stop_id)
+                 for trip_id, _sequence, stop_id, alights_there in calls if alights_there}
+    return samples, trip_count, alighting
+
+
+def _sample_rows(conn, samples):
+    """The sampled rides' calls at the stops the feed describes, shaped as
+    _STOP_ROWS rows, in trip then sequence order."""
+    stop_ids = sorted({stop_id for ride in samples.values() for _sequence, stop_id in ride})
+    records = {row[0]: row[1:] for row in conn.execute(text("""
+        select s.stop_id, s.stop_name, s.parent_station, station.stop_name, s.stop_lat, s.stop_lon
+        from stops s
+        left join stops station on station.stop_id = s.parent_station
+        where s.stop_id in (select value from json_each(:stop_ids))
+        """), {"stop_ids": json.dumps(stop_ids)}).fetchall()}
+    return [(trip_id, stop_id, name, sequence, parent, station, lat, lon)
+            for trip_id in sorted(samples)
+            for sequence, stop_id in samples[trip_id] if stop_id in records
+            for name, parent, station, lat, lon in [records[stop_id]]]
+
+
 def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, towards=None):
     """The places a trip really reaches from the departure place.
 
@@ -731,57 +775,30 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     """
     _LOGGER.debug("Getting destinations for route: %s direction: %s from: %s",
                   route_id, direction, origin_stop_id)
-    # same sampling as _STOP_ROWS, on the part of each trip after the origin
-    rides_sql = f"""
+    # every call after the origin of every trip of the route through it,
+    # read once: the rides, how many trips each stands for and where riders
+    # get off all come out of it (_rides_after)
+    calls_sql = f"""
     with through as (
         select trip_id, min(stop_sequence) as origin_sequence
         from stop_times where stop_id in {_STOP_GROUP} and {_boards("stop_times")}
         group by trip_id
-    ), ride as (
-        select t.trip_id, group_concat(st.stop_sequence || ':' || st.stop_id) as stops
-        from trips t
-        inner join through o on o.trip_id = t.trip_id
-        inner join stop_times st on st.trip_id = t.trip_id
-            and st.stop_sequence > o.origin_sequence
-        where t.route_id = :route_id
-        and (:direction is null or t.direction_id = :direction or t.direction_id is null)
-        group by t.trip_id
-    )"""  # noqa: S608
-    sql = rides_sql + """, sample as (
-        select min(trip_id) as trip_id from ride group by stops
     )
-    SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name,
-           s.stop_lat, s.stop_lon
-    from sample
-    inner join through o on o.trip_id = sample.trip_id
-    inner join stop_times st on st.trip_id = sample.trip_id
+    SELECT t.trip_id, st.stop_sequence, st.stop_id, {_alights("st")}
+    from trips t
+    inner join through o on o.trip_id = t.trip_id
+    inner join stop_times st on st.trip_id = t.trip_id
         and st.stop_sequence > o.origin_sequence
-    inner join stops s on s.stop_id = st.stop_id
-    left join stops station on station.stop_id = s.parent_station
-    order by st.trip_id, st.stop_sequence
-    """
-    # how many trips each sampled ride stands for
-    weights_sql = rides_sql + """
-    select min(trip_id), count(*) from ride group by stops
-    """
-    # the records some trip through the origin sets riders down at, after it,
-    # each with the sampled trip of its ride: a way asked keeps its own
-    alighting_sql = rides_sql + f""", sampled as (
-        select trip_id, min(trip_id) over (partition by stops) as sample_id from ride
-    )
-    select distinct sampled.sample_id, st.stop_id
-    from sampled
-    inner join through o on o.trip_id = sampled.trip_id
-    inner join stop_times st on st.trip_id = sampled.trip_id
-        and st.stop_sequence > o.origin_sequence
-    where {_alights("st")}
-    """
+    where t.route_id = :route_id
+    and (:direction is null or t.direction_id = :direction or t.direction_id is null)
+    order by t.trip_id, st.stop_sequence
+    """  # noqa: S608
     scope = {"route_id": route_id, "direction": _direction_param(direction)}
     with schedule.engine.connect() as conn:
         line, station_names, place, _line_trips = _line_of(conn, route_id, direction)
-        rows = conn.execute(text(sql), {**scope, "origin": origin_stop_id}).fetchall()
-        trip_count = dict(conn.execute(text(weights_sql), {**scope, "origin": origin_stop_id}).fetchall())
-        alighting = conn.execute(text(alighting_sql), {**scope, "origin": origin_stop_id}).fetchall()
+        samples, trip_count, alighting = _rides_after(
+            conn.execute(text(calls_sql), {**scope, "origin": origin_stop_id}).fetchall())
+        rows = _sample_rows(conn, samples)
         boarding = (_origin_boarding(conn, route_id, origin_stop_id, direction)
                     if towards is not None else None)
     position = {x[0]: i for i, x in enumerate(line)}
