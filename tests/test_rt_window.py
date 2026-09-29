@@ -46,7 +46,7 @@ import sqlalchemy
 import ha_stub
 
 rt_window = ha_stub.load("rt_window")
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_feed = ha_stub.load("rt_feed")
 
 FILE = "winnet"
 URL = "http://example.org/trip-updates"
@@ -140,7 +140,7 @@ def _at(day, hms):
 def _feed(now, offset_seconds, route="L1"):
     """One trip update in the realtime cache, its stop offset from now."""
     when = int(now.timestamp()) + offset_seconds
-    gtfs_rt_helper._FEED_CACHE[(FILE, URL, "trip_data")] = (time.time(), [{
+    rt_feed._FEED_CACHE[(FILE, URL, "trip_data")] = (time.time(), [{
         "id": "e1",
         "trip_update": {
             "trip": {"trip_id": "t1", "route_id": route},
@@ -169,7 +169,7 @@ def fresh_state():
         rt_window._STATE.clear()
         rt_window._ENVELOPES.clear()
         rt_window._ZONES.clear()
-        gtfs_rt_helper._FEED_CACHE.pop((FILE, URL, "trip_data"), None)
+        rt_feed._FEED_CACHE.pop((FILE, URL, "trip_data"), None)
     clear()
     yield
     clear()

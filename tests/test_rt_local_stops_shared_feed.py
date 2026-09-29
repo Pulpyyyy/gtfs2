@@ -19,7 +19,7 @@ import ha_stub
 
 local_stops = ha_stub.load("local_stops")
 rt_feed = sys.modules[local_stops.get_gtfs_feed_entities.__module__]
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_window = ha_stub.load("rt_window")
 
 URL = "http://rt.test/local-trips"
 SOURCE = "town"
@@ -73,7 +73,7 @@ def test_the_realtime_window_sees_what_local_stops_read(monkeypatch):
                         lambda url, headers, label: _feed(stop_at))
     local_stops._local_stop_feed(_local_stops())
     # no line named: a source read by local stops alone listens to the whole feed
-    assert gtfs_rt_helper.cached_feed_has_future_stop(SOURCE, URL, [], stop_at - 60)
+    assert rt_window.cached_feed_has_future_stop(SOURCE, URL, [], stop_at - 60)
     _forget()
 
 

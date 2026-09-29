@@ -32,7 +32,7 @@ from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH
 from .gtfs_helper import _runs_on, agency_zone, gtfs_seconds
-from .gtfs_rt_helper import cached_feed_has_future_stop
+from .rt_feed import _FEED_CACHE, _same_route
 from .rt_source import source_readers
 
 _LOGGER = logging.getLogger(__name__)
@@ -294,3 +294,41 @@ def _gate(hass, file, schedule, trip_update_url, now=None):
         window_start=win_today[0].isoformat() if win_today else None,
         window_end=win_today[1].isoformat() if win_today else None)
     return reason
+
+
+def cached_feed_has_future_stop(owner, url, routes, now_epoch):
+    """Whether the last cached trip-updates fetch still announces a stop time
+    in the future for one of the routes (any route, when none are named).
+
+    Feeds the automatic polling window: at its theoretical close, a vehicle
+    still under way keeps the window open a little longer. The decision rests
+    on a future stop time and nothing else - not on a delay field, which some
+    feeds never fill, and not on the mere presence of a vehicle, because a
+    parked one republished all night is exactly what this must not mistake
+    for service (the map's stale-feed lesson).
+
+    Reads the cache only, never fetches: deciding whether to keep polling
+    must not itself poll. An empty cache answers no.
+    """
+    cached = _FEED_CACHE.get((owner, url, "trip_data"))
+    if not cached:
+        return False
+    for entity in cached[1] or []:
+        if not isinstance(entity, dict):
+            continue
+        trip_update = entity.get("trip_update")
+        if not trip_update:
+            continue
+        seen = (trip_update.get("trip") or {}).get("route_id")
+        if routes and not any(_same_route(route, seen) for route in routes):
+            continue
+        for stop in trip_update.get("stop_time_update") or []:
+            # a json feed writes int64 as text, as the departure reader knows
+            try:
+                when = max(int((stop.get("arrival") or {}).get("time") or 0),
+                           int((stop.get("departure") or {}).get("time") or 0))
+            except (TypeError, ValueError):
+                continue
+            if when > now_epoch:
+                return True
+    return False

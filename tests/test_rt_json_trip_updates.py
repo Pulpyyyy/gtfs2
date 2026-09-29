@@ -17,6 +17,7 @@ import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
 rt_feed = ha_stub.load("rt_feed")
+rt_window = ha_stub.load("rt_window")
 
 NOW = datetime.datetime(2026, 9, 22, 8, 0, tzinfo=datetime.timezone.utc)
 IN_TEN = int((NOW + datetime.timedelta(minutes=10)).timestamp())
@@ -64,14 +65,14 @@ def test_the_window_reads_a_stop_time_written_as_text():
     # come; times as strings raised there, and the window stayed open blind
     entities = [{"trip_update": {"trip": {"route_id": "R1"},
                                  "stop_time_update": [{"departure": {"time": str(IN_TEN)}}]}}]
-    gtfs_rt_helper._FEED_CACHE[("owner", "http://feed.invalid/rt", "trip_data")] = (0, entities)
+    rt_feed._FEED_CACHE[("owner", "http://feed.invalid/rt", "trip_data")] = (0, entities)
     try:
         now = int(NOW.timestamp())
-        assert gtfs_rt_helper.cached_feed_has_future_stop("owner", "http://feed.invalid/rt", ["R1"], now)
-        assert not gtfs_rt_helper.cached_feed_has_future_stop(
+        assert rt_window.cached_feed_has_future_stop("owner", "http://feed.invalid/rt", ["R1"], now)
+        assert not rt_window.cached_feed_has_future_stop(
             "owner", "http://feed.invalid/rt", ["R1"], IN_TEN + 60)
     finally:
-        gtfs_rt_helper._FEED_CACHE.pop(("owner", "http://feed.invalid/rt", "trip_data"), None)
+        rt_feed._FEED_CACHE.pop(("owner", "http://feed.invalid/rt", "trip_data"), None)
 
 
 def test_a_line_qualified_by_the_feed_is_read_up_to_its_delimiter():
