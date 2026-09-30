@@ -949,31 +949,25 @@ def remove_datasource(hass, path, filename, include_sqlite):
     """Remove the files of a datasource."""
     gtfs_dir = hass.config.path(path)
     _LOGGER.info(f"Removing datasource: {os.path.join(gtfs_dir, filename)}.*")
-    if include_sqlite and os.path.exists(os.path.join(gtfs_dir, filename + ".sqlite")):
-        os.remove(os.path.join(gtfs_dir, filename + ".sqlite"))
-    if os.path.exists(os.path.join(gtfs_dir, filename + "_temp.zip")):     
-        os.remove(os.path.join(gtfs_dir, filename + "_temp.zip"))
-    if os.path.exists(os.path.join(gtfs_dir, filename + "_temp_out.zip")):        
-        os.remove(os.path.join(gtfs_dir, filename + "_temp_out.zip"))
-    if os.path.exists(os.path.join(gtfs_dir, filename + ".sqlite-journal")):        
-        os.remove(os.path.join(gtfs_dir, filename + ".sqlite-journal"))
-    if os.path.exists(os.path.join(gtfs_dir, filename + ".zip")):
-        os.remove(os.path.join(gtfs_dir, filename + ".zip"))
-    # the sidecar follows the zip it describes
-    if os.path.exists(os.path.join(gtfs_dir, filename + ".zip.meta.json")):
-        os.remove(os.path.join(gtfs_dir, filename + ".zip.meta.json"))
+    suffixes = [".sqlite"] if include_sqlite else []
+    suffixes += ["_temp.zip", "_temp_out.zip", ".sqlite-journal", ".zip",
+                 # the sidecar follows the zip it describes
+                 ".zip.meta.json"]
     # what the fork keeps beside a source: the record of the installed
     # edition, and what a download, a refresh or an import stopped half way
     # leaves. Left behind, the record made a new source of the same name
     # look already built from an edition it never had
     # (.extracting: the marker of a legacy extract an older version left)
-    leftovers = [".zip.new", ".extracting", ".refresh.sqlite", ".refresh.sqlite-journal",
+    suffixes += [".zip.new", ".extracting", ".refresh.sqlite", ".refresh.sqlite-journal",
                  ".import.sqlite", ".import.sqlite-journal", ".import.sqlite.zip"]
     if include_sqlite:
-        leftovers += [".sqlite.meta.json", ".sqlite-wal", ".sqlite-shm"]
-    for suffix in leftovers:
-        if os.path.exists(os.path.join(gtfs_dir, filename + suffix)):
-            os.remove(os.path.join(gtfs_dir, filename + suffix))
+        suffixes += [".sqlite.meta.json", ".sqlite-wal", ".sqlite-shm"]
+    # os.remove, not remove_files: a file that cannot go fails the removal,
+    # which the config flow reports
+    for suffix in suffixes:
+        path = os.path.join(gtfs_dir, filename + suffix)
+        if os.path.exists(path):
+            os.remove(path)
     return "removed"
 
 
