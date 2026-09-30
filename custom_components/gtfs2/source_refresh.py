@@ -5,9 +5,8 @@ The datasource entry carries the choice, per source:
 - off: nothing runs by itself. The update entity stays a manual button and
   the update service keeps doing what it always did.
 - notify: one conditional request at the check hour. When the feed changed,
-  the update entity turns "update available", a notification says so and an
-  event fires, so an automation can install in whatever window suits the
-  install. Installing stays a human's or an automation's decision.
+  the update entity turns "update available" and an event fires, so an
+  automation can install in whatever window suits the install. Installing stays a human's or an automation's decision.
 - auto: same check, and the install runs by itself at the first check that
   finds a change.
 
