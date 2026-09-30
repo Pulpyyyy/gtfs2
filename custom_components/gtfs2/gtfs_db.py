@@ -336,6 +336,24 @@ def routes_in(db_file):
         conn.close()
 
 
+def route_name_in(db_file, route_id):
+    """The name riders know a route by, its short name, else its long name,
+    as the database lists it; None when the file does not say. routes.txt
+    is kept whole, so a line with no trip left is still named."""
+    if not os.path.exists(db_file):
+        return None
+    conn = sqlite3.connect(db_file, timeout=60)
+    try:
+        row = conn.execute("select route_short_name, route_long_name from routes "
+                           "where route_id = ?", (route_id,)).fetchone()
+    except sqlite3.Error as ex:
+        _LOGGER.warning("Could not read the name of route %s in %s: %s", route_id, db_file, ex)
+        return None
+    finally:
+        conn.close()
+    return next((str(name).strip() for name in row or () if name and str(name).strip()), None)
+
+
 def import_routes(gtfs_dir, filename, route_ids, build_scratch):
     """Bring routes into the real database, through the scratch one.
 

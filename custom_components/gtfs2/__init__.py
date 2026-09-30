@@ -16,7 +16,7 @@ from .local_stops import update_gtfs_local_stops
 from .notifications import async_notify_line_orphaned, clear_line_orphaned
 from .exports import remove_entry_geojson
 from .datasource_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
-from .gtfs_db import real_path, routes_in, get_datasources, close_schedule
+from .gtfs_db import real_path, routes_in, route_name_in, get_datasources, close_schedule
 from .gtfs_rt_helper import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
 from .rt_source import (
@@ -223,7 +223,12 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
         # the timetable is already gone, or the database would not say:
         # either way there is nothing worth saying
         return
-    label = (entry.data.get("route") or "").split(": ", 1)[-1]
+    # the entry keeps the line's id alone (ORLEANS:Line:12): the issue
+    # names it as riders do, by the name the database lists for it; an
+    # older entry wrote its label after the id
+    label = await hass.async_add_executor_job(
+        route_name_in, real_path(gtfs_dir, filename), route)
+    label = label or (entry.data.get("route") or "").split(": ", 1)[-1]
     await async_notify_line_orphaned(hass, filename, route, label or route)
      
 

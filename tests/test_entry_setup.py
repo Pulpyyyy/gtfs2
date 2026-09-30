@@ -15,6 +15,7 @@ last sensor of a line whose timetable is still in the database.
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 import types
 
 import ha_stub
@@ -218,6 +219,40 @@ def test_the_last_sensor_of_a_line_names_it(monkeypatch):
     bare = _Entry("j3", file="tao", route="R2")
     asyncio.run(integration._notify_orphaned_line(_Hass([bare]), bare))
     assert said == [("tao", "R2", "R2")]
+
+
+def test_the_line_is_named_as_the_database_names_it(monkeypatch):
+    # the flow keeps the id alone: the issue read "ORLEANS:Line:12" where
+    # riders say 12 (field test of 2026-09-29)
+    said, _ = _orphans(monkeypatch, {"ORLEANS:Line:12"})
+    asked = []
+
+    def route_name_in(path, route):
+        asked.append(route)
+        return "12"
+
+    monkeypatch.setattr(integration, "route_name_in", route_name_in)
+    gone = _Entry("j1", file="tao", route="ORLEANS:Line:12")
+    asyncio.run(integration._notify_orphaned_line(_Hass([gone]), gone))
+    assert said == [("tao", "ORLEANS:Line:12", "12")]
+    assert asked == ["ORLEANS:Line:12"]
+
+
+def test_the_database_names_a_route_by_its_short_name_else_its_long_one(tmp_path):
+    gtfs_db = ha_stub.load("gtfs_db")
+    db = tmp_path / "tao.sqlite"
+    conn = sqlite3.connect(db)
+    conn.execute("create table routes (route_id text, route_short_name text, route_long_name text)")
+    conn.executemany("insert into routes values (?, ?, ?)", [
+        ("ORLEANS:Line:12", "12", "Ligne 12"), ("R2", " ", "Tram A"), ("R3", None, None)])
+    conn.commit()
+    conn.close()
+    assert gtfs_db.route_name_in(str(db), "ORLEANS:Line:12") == "12"
+    assert gtfs_db.route_name_in(str(db), "R2") == "Tram A"
+    # nothing to name it by, a route the file does not list, no file
+    assert gtfs_db.route_name_in(str(db), "R3") is None
+    assert gtfs_db.route_name_in(str(db), "R9") is None
+    assert gtfs_db.route_name_in(str(tmp_path / "gone.sqlite"), "R1") is None
 
 
 def test_a_line_still_read_or_already_gone_is_not_named(monkeypatch):
