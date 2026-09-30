@@ -60,6 +60,13 @@ def due_in_minutes(timestamp):
     _LOGGER.debug("GTFS RT due in minutes, timestamp: %s, now_utc: %s", timestamp, dt_util.utcnow())
     return int(diff.total_seconds() / 60)
 
+def _read_feed(self, url, label):
+    """The entities of one of the entity's realtime feeds, read with its
+    headers through its source's cache."""
+    return get_gtfs_feed_entities(url=url, headers=self._headers, label=label,
+                                  owner=self._data.get("file", ""))
+
+
 def get_next_services(self):
     self._stop = self._stop_id
     self._destination = self._destination_id
@@ -464,10 +471,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
     # it once for the current refresh cycle (e.g. matching many stops against
     # the same feed), avoiding a re-fetch + re-parse per call.
     if feed_entities is None:
-        feed_entities = get_gtfs_feed_entities(
-            url=self._trip_update_url, headers=self._headers, label="trip_data",
-            owner=self._data.get("file", ""),
-        )
+        feed_entities = _read_feed(self, self._trip_update_url, "trip_data")
     self._feed_entities = feed_entities
     
     if not feed_entities:
@@ -685,12 +689,7 @@ def _title_vehicles(self, schedule, titles):
 
 
 def get_rt_vehicle_positions(self):
-    feed_entities = get_gtfs_feed_entities(
-        url=self._vehicle_position_url,
-        headers=self._headers,
-        label="vehicle_positions",
-        owner=self._data.get("file", ""),
-    )
+    feed_entities = _read_feed(self, self._vehicle_position_url, "vehicle_positions")
     geojson_body = []
     titles = []
     if feed_entities is None:
@@ -749,12 +748,7 @@ def get_rt_alerts(self):
     # an entry created before this option existed has no alerts_url at all, and
     # subscripting None raised, which cost that entry its whole realtime block
     if str(self._alerts_url or "")[:4] == "http":
-        feed_entities = get_gtfs_feed_entities(
-            url=self._alerts_url,
-            headers=self._headers,
-            label="alerts",
-            owner=self._data.get("file", ""),
-        )
+        feed_entities = _read_feed(self, self._alerts_url, "alerts")
         rt_alerts = journey_alerts(self, feed_entities)
 
     return rt_alerts
