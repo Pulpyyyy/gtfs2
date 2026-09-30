@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 import requests
 
+import feed_db
 import ha_stub
 
 source_zip = ha_stub.load("source_zip")
@@ -64,11 +65,7 @@ def _built(tmp_path, zip_source=FEED):
 
 
 def _routes(path):
-    conn = sqlite3.connect(path)
-    try:
-        return sorted(r[0] for r in conn.execute("select distinct route_id from trips"))
-    finally:
-        conn.close()
+    return sorted(r[0] for r in feed_db.rows(path, "select distinct route_id from trips"))
 
 
 def _refresh(gtfs_dir, **data):

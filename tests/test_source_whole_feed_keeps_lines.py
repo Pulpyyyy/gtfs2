@@ -11,6 +11,7 @@ import shutil
 import sqlite3
 from pathlib import Path
 
+import feed_db
 import ha_stub
 
 source_zip = ha_stub.load("source_zip")
@@ -31,11 +32,7 @@ def _source(tmp_path):
 
 
 def _tables(path):
-    conn = sqlite3.connect(path)
-    try:
-        return {r[0] for r in conn.execute("select name from sqlite_master where type='table'")}
-    finally:
-        conn.close()
+    return {r[0] for r in feed_db.rows(path, "select name from sqlite_master where type='table'")}
 
 
 def test_a_followed_line_gone_refuses_the_swap(tmp_path):
@@ -72,11 +69,7 @@ def _refresh(gtfs_dir, monkeypatch):
 
 
 def _trips(path):
-    conn = sqlite3.connect(path)
-    try:
-        return conn.execute("select count(*) from trips").fetchone()[0]
-    finally:
-        conn.close()
+    return feed_db.rows(path, "select count(*) from trips")[0][0]
 
 
 def test_a_source_with_no_database_is_built_whole(tmp_path, monkeypatch):

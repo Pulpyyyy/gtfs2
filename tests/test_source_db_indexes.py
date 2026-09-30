@@ -13,6 +13,7 @@ import zipfile
 
 from sqlalchemy import create_engine, event
 
+import feed_db
 import ha_stub
 
 gtfs_helper = ha_stub.load("gtfs_helper")
@@ -53,11 +54,7 @@ def _datasource(tmp_path, interned=False):
 
 
 def _indexes(db):
-    conn = sqlite3.connect(db)
-    try:
-        return {name for (name,) in conn.execute("select name from sqlite_master where type = 'index'")}
-    finally:
-        conn.close()
+    return {name for (name,) in feed_db.rows(db, "select name from sqlite_master where type = 'index'")}
 
 
 def test_missing_indexes_are_made_and_routes_get_their_agency(tmp_path):
@@ -94,13 +91,9 @@ def test_the_same_file_is_not_read_again(tmp_path):
 
 def _stop_times_indexes(db):
     """The indexes on stop_times besides its primary key."""
-    conn = sqlite3.connect(db)
-    try:
-        return {name for (name,) in conn.execute(
-            "select name from sqlite_master where type = 'index' "
+    return {name for (name,) in feed_db.rows(
+        db, "select name from sqlite_master where type = 'index' "
             "and tbl_name = 'stop_times' and sql is not null")}
-    finally:
-        conn.close()
 
 
 def test_an_import_fills_stop_times_before_indexing_it(tmp_path):

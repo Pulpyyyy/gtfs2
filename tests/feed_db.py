@@ -10,9 +10,13 @@ tests_provider/fixture_db does the same for the fixtures of that suite.
         ...
     finally:
         schedule.engine.dispose()
+
+rows() reads a database file back, the way a test checks what a step
+left on disk, and lets the file go after.
 """
 from __future__ import annotations
 
+import sqlite3
 import zipfile
 from pathlib import Path
 
@@ -29,3 +33,13 @@ def build(folder, tables):
     schedule = pygtfs.Schedule(str(Path(folder) / "feed.sqlite"))
     pygtfs.append_feed(schedule, str(archive))
     return schedule
+
+
+def rows(path, sql):
+    """The rows the query reads from the database at path, the file closed
+    after."""
+    conn = sqlite3.connect(path)
+    try:
+        return conn.execute(sql).fetchall()
+    finally:
+        conn.close()

@@ -9,10 +9,10 @@ database answers so, and its zip stays as it is.
 """
 from __future__ import annotations
 
-import sqlite3
 import types
 import zipfile
 
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -45,11 +45,7 @@ def _zip(path):
 
 
 def _count(db, table):
-    conn = sqlite3.connect(db)
-    try:
-        return conn.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-    finally:
-        conn.close()
+    return feed_db.rows(db, f"select count(*) from {table}")[0][0]  # noqa: S608
 
 
 def test_the_whole_feed_import_reads_the_zip_without_writing_it(tmp_path):

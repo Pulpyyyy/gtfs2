@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sqlite3
 
+import feed_db
 import ha_stub
 
 gtfs_db = ha_stub.load("gtfs_db")
@@ -31,12 +32,8 @@ def make_db(path, extra_column=None):
 
 
 def tables(path):
-    conn = sqlite3.connect(path)
-    try:
-        return {name: kind for name, kind in conn.execute(
-            "select name, type from sqlite_master where type in ('table', 'view')")}
-    finally:
-        conn.close()
+    return dict(feed_db.rows(
+        path, "select name, type from sqlite_master where type in ('table', 'view')"))
 
 
 def test_intern_replaces_stop_times_by_a_view(tmp_path):
