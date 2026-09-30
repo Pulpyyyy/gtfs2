@@ -7,12 +7,12 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # both ends of the Python the supported Home Assistant versions run
-    # on: 3.12 for 2024.12, 3.14 for today's
+    # the Python the supported Home Assistant versions run on: 3.14 from
+    # 2026.3, the minimum
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.14"]
+        python-version: ["3.14"]
     steps:
       - uses: actions/checkout@v4
 

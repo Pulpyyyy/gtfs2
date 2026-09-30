@@ -68,14 +68,16 @@ Non-goals:
   has a fallback for a developer's Windows box, unguarded for the few
   microseconds of the rename (`swap_in`).
 
-Minimum Home Assistant: 2024.12 (`hacs.json`; upstream's asks 2023.10.1).
-The options flow reads
+Minimum Home Assistant: 2026.3 (`hacs.json`; upstream's asks 2023.10.1),
+the first release that asks Python 3.14: the fork follows the Python Home
+Assistant runs on now, not every one it ran on. The options flow reads
 `self.config_entry` without storing it, which `OptionsFlow` provides from
 2024.12 on (2024.11 has it on `OptionsFlowWithConfigEntry` only);
 `entry.runtime_data` needs 2024.5.
 
-Python: 3.12 to 3.14, what Home Assistant runs on from 2024.12 (3.12) to
-today (3.14). The test workflows run both ends.
+Python: 3.14. Home Assistant's `requires_python` on PyPI asks 3.12 or
+later up to 2025.1, 3.13 from 2025.2, 3.14 from 2026.3. The test workflows
+run 3.14.
 
 Libraries (`manifest.json`): pygtfs 0.1.11 or later, the one Home
 Assistant's own gtfs integration pins from 2026.7 (0.1.9 before); hassfest
@@ -83,7 +85,7 @@ refuses an exact pin on a package Home Assistant depends on (36c493a).
 gtfs-realtime-bindings 2.2.0: 1.0.0 predates the
 trip relationships DELETED and NEW, and read a deleted trip as SCHEDULED;
 3.0.0 requires protobuf 7.34 or later, while every Home Assistant release
-up to 2026.9 pins protobuf lower (5.28.3 in 2024.12, 6.32.0 in 2026.9), so
+up to 2026.9 pins protobuf lower (6.32.0 from 2026.3 to 2026.9), so
 it would not install. 2.2.0 loads on protobuf 5, 6 and 7, and protobuf
 itself is left to Home Assistant's pin.
 

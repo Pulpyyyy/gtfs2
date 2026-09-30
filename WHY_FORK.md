@@ -301,7 +301,7 @@ Goal:
 
 ## What it costs
 
-- Home Assistant 2024.12 or later (upstream accepts 2023.10).
+- Home Assistant 2026.3 or later, on Python 3.14 (upstream accepts 2023.10).
 - New entities per source: an update entity, a rebuild button, a realtime
   switch and two diagnostic sensors (realtime and timetable).
 - Existing entries are migrated at start-up: a datasource entry is created
