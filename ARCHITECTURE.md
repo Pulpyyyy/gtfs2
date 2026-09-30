@@ -9,7 +9,12 @@ It describes `refactor/architecture` as of the last commit that changed it.
 A commit that adds, moves or renames a module updates this file in the same
 commit.
 
-Contents: Context · Goals · How the fork is maintained · Layers · Glossary ·
+Why the fork exists, told as the problems a user meets, is in
+[WHY_FORK.md](WHY_FORK.md); the terms below, explained in plain words, in
+[CONCEPTS.md](CONCEPTS.md). This file gives their exact definitions, the
+figures with the commit that measured them, and the code that does it.
+
+Contents: Context · Goals · How the fork is maintained · Overview · Layers · Glossary ·
 Config entries · Services · Line labels and directions · A refresh cycle ·
 Local stops · Realtime · Static feed · Write paths · Failure and recovery ·
 Files on disk · Concurrency · API keys · Design decisions · Verification ·
@@ -23,7 +28,8 @@ per source, and that one file played two parts at once:
 - **the file the sensors query**, every minute, from every entry;
 - **the workspace an import rebuilds**, from scratch, in place.
 
-Four problems came from that, each measured on real installs:
+Four problems came from that, each measured on real installs (WHY_FORK.md
+quotes these figures):
 
 | Problem | Measured | Commit |
 |---|---|---|
@@ -37,6 +43,9 @@ keep in the database only what a sensor reads, and never write the file the
 sensors read.** Everything below follows from that.
 
 ## Goals and non-goals
+
+The technical ones. The fork's principles, and what it does not try to be
+(a route planner, a replacement for GTFS), are in WHY_FORK.md.
 
 Goals:
 
@@ -164,6 +173,59 @@ journey entries
 A behaviour change never rides along with a move. It gets its own commit,
 before or after.
 
+## Overview: the whole in one picture
+
+```mermaid
+flowchart LR
+  USER([User])
+  HOST[(Publisher host)]
+  CARD([Map cards])
+
+  subgraph HA["Home Assistant"]
+    CF["Config flow"]
+    DS["Datasource entry<br/>one per source"]
+    J["Journey entry<br/>one per sensor"]
+    LS["Local stops entry<br/>one per person or zone"]
+    SE["Source entities<br/>update, button, switch, diagnostics"]
+    SR["Source refresh<br/>night slot, update, button, update_gtfs"]
+    CO["Coordinators<br/>every minute, local stops 15 min"]
+    SEN["Sensors"]
+    REP["Repairs issues, notifications"]
+  end
+
+  subgraph DISK["gtfs2/"]
+    ZIP[("zip: the full record")]
+    DB[("sqlite: what sensors read")]
+  end
+  WWW[("www/gtfs2/: map files")]
+
+  USER --> CF
+  CF -->|creates| DS & J & LS
+  CF -->|first download, line lists| ZIP
+  CF -->|adds lines to| DB
+  DS --> SE
+  DS -.->|arms the night slot| SR
+  SE -.->|update, button| SR
+  SR -->|asks, downloads| HOST
+  SR -->|new edition| ZIP
+  ZIP -->|filter, build beside, check, swap| DB
+  SR --> REP
+  J & LS --> CO
+  DS -->|realtime feeds, keys| CO
+  HOST -->|realtime| CO
+  DB --> CO
+  ZIP -->|shapes| CO
+  CO --> SEN
+  CO --> WWW
+  WWW --> CARD
+```
+
+Solid arrows carry data, dotted ones start something. Each piece is told
+below: the entries in "Config entries", what source refresh runs in
+"Static feed architecture" and its write paths, the coordinators in "A
+refresh cycle" and "Realtime architecture", the map files in "Files on
+disk".
+
 ## Overview: the layers
 
 GTFS2 is organised in five layers, plus a few shared modules that every
@@ -247,7 +309,7 @@ refresh_steps.py         next service date, trips struck by the realtime
 route_names.py           line labels, lines a feed declares
 stations.py              train entries: stations instead of stops
 exports.py               which map files a refresh writes, and when
-local_stops.py           the departures around a person, timetable and realtime
+local_stops.py           the departures around a person or zone, timetable and realtime
 gtfs_rt_helper.py        the realtime of one sensor: next services, delays, alerts, vehicles
 ```
 
@@ -287,6 +349,9 @@ rt_feed.py          a realtime feed read once per publication, decoded
 
 ## Glossary
 
+CONCEPTS.md explains these in plain words; here is what the code means by
+them.
+
 ```
 source         a GTFS feed as the integration knows it, identified by its file
                name; its url can change, the name stays
@@ -298,8 +363,8 @@ edition        one version of a source's feed, named by its version label
 line, route    a GTFS route; the code says route, the screens say line
 journey        a sensor's trip on one line, from an origin to a destination, in
                one direction
-local stops    an entry that follows a person and lists the departures of the
-               stops around them
+local stops    an entry that follows a person or a zone and lists the
+               departures of the stops around it
 whole-feed     a source that some sensor reads across every line: a train
 source         entry (route "train"), a local stops entry, or an entry naming
                no line (_reads_whole_feed)
@@ -321,9 +386,22 @@ optimise       prune (when a keep set is given) then intern, in that order:
                interning first would mint keys for rows about to be deleted
 struck trip    a trip the realtime feed cancels or skips; it leaves the list and
                the next one takes its place
+place          what the flow offers as an origin or a destination: a stop, or
+               the stops of one station taken together, in the order a trip
+               calls at them (places.py)
+station        a train entry's end, picked by name: the feed files one record
+               per platform and the same station under several ids
+               (stations.py)
 refresh mode   off | notify | auto, per source (see "Static feed")
 window         the hours a source's realtime feeds are read, derived from its
                timetable (rt_window.py)
+feed window    how long the kept timetable is good for, read from the zip:
+               valid, ending (last service day within 7 days), expired or
+               unknown (feed_window.py)
+leg file       the ride of an entry's next departure, timed stop by stop,
+               realtime included (leg.py)
+timetable file every departure of an entry over the service day under way
+               and the two after it (timetable.py)
 lot            a feat/ or fix/ branch cut on upstream main, one change each
 ```
 
@@ -333,7 +411,7 @@ Three kinds of entry, told apart in `async_setup_entry`:
 
 ```
 datasource   data["kind"] == "datasource"   one per source, unique_id = gtfs2-source-<file>
-local stops  data["device_tracker_id"] set  one per followed person
+local stops  data["device_tracker_id"] set  one per followed person or zone
 journey      anything else                  one per sensor (bus or train)
 ```
 
@@ -368,7 +446,7 @@ A bus journey names its line, direction and stops; a train journey names
 stations and stores `route = "train"`, a marker rather than a route id.
 
 **Local stops entry.** Gets a `GTFSLocalStopUpdateCoordinator` and one sensor
-per stop around the person.
+per stop around the person or zone.
 
 Each cycle, a coordinator asks `rt_feed_config` for its realtime settings.
 An edit on the datasource entry reaches every sensor of the source within a
@@ -487,8 +565,8 @@ interval (01587fd).
 
 ### Local stops
 
-A local stops entry follows a person (`device_tracker_id`) and gets one
-sensor per stop near them, from `GTFSLocalStopUpdateCoordinator`, every
+A local stops entry follows a person or a zone (`device_tracker_id`) and
+gets one sensor per stop near it, from `GTFSLocalStopUpdateCoordinator`, every
 `local_stop_refresh_interval` minutes (15 by default). Its departures are
 read in `local_stops.py`.
 
@@ -945,7 +1023,9 @@ bb4f8f6).
 
 ## Design decisions
 
-Each decision, why, and what was rejected.
+Each decision, why, and what was rejected. The principles behind them are
+in WHY_FORK.md; atomic rebuilds are the first goal above, why a source owns
+its configuration is told under "Config entries".
 
 **The zip is the source of truth.** The database can be rebuilt from the zip
 at any time; shapes are read from the zip and never imported. A download
@@ -957,30 +1037,13 @@ which is most of a feed's size for one map line.
 import writes. Rejected: importing in place then pruning, which throws away
 the pruning at each refresh and shows readers a half-built file.
 
-**Rebuilds are atomic: build, validate, swap.** Sensors see the old complete
-data or the new complete data. A failed download, import or check leaves
-the current data in place.
-
 **Adding lines does not swap.** It only appends, one transaction per line.
 Building a full copy for each added line would cost the time and disk of
 the whole database for a change that touches none of its existing rows.
 
-**Source owns configuration.**
-
-```
-Datasource entry   file, url, keys, realtime feeds, refresh mode
-    ↓
-Journey entry      line, direction, stops, name
-```
-
 **Business logic stays outside entities.** Entities read what the domain
 layer computed; the domain layer takes values, not entities, so it can be
 tested without Home Assistant.
-
-**Measure before choosing.** Performance choices name their measurement and
-their feed (SNCF, IDFM, gtfs-nl, Orleans, TAO…); caps are set where the
-measured cost stops paying, e.g. the headsign read over `stop_times.txt`
-stops above 150 MB (eb98488).
 
 ## Verification
 
