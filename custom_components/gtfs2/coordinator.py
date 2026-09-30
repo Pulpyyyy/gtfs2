@@ -44,6 +44,21 @@ from .exports import export_leg, export_route_shape, export_timetable
 _LOGGER = logging.getLogger(__name__)
 
 
+async def _still_unpacking(coordinator, previous_data):
+    """Whether the source is still being unpacked; its last reading is then
+    kept, marked extracting, for the entry to show meanwhile."""
+    data = coordinator._data
+    # two file checks, off the event loop like every other file read here
+    if not await coordinator.hass.async_add_executor_job(
+            check_extracting, coordinator.hass,
+            coordinator.hass.config.path(data['gtfs_dir']), data['file']):
+        return False
+    _LOGGER.debug("Cannot update this sensor as still unpacking: %s", data["file"])
+    data.update(previous_data)
+    data["extracting"] = True
+    return True
+
+
 def _database_edition(hass, file):
     """The source's database as far as reopening it goes: which file, its size, its last write.
 
@@ -150,13 +165,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
 
         self._data = self._entry_data(data, options)
 
-        # two file checks, off the event loop like every other file read here
-        if await self.hass.async_add_executor_job(
-                check_extracting, self.hass,
-                self.hass.config.path(self._data['gtfs_dir']), self._data['file']):
-            _LOGGER.debug("Cannot update this sensor as still unpacking: %s", self._data["file"])
-            self._data.update(previous_data)
-            self._data["extracting"] = True
+        if await _still_unpacking(self, previous_data):
             return self._data
 
         # a database gone since the last reading: read the timetable now,
@@ -509,13 +518,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat()
 
         
-        # two file checks, off the event loop like every other file read here
-        if await self.hass.async_add_executor_job(
-                check_extracting, self.hass,
-                self.hass.config.path(self._data['gtfs_dir']), self._data['file']):
-            _LOGGER.debug("Cannot update this sensor as still unpacking: %s", self._data["file"])
-            self._data.update(previous_data)
-            self._data["extracting"] = True
+        if await _still_unpacking(self, previous_data):
             return self._data
 
         if self._no_schedule(data["file"]):
