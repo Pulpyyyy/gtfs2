@@ -77,8 +77,10 @@ The options flow reads
 Python: 3.12 to 3.14, what Home Assistant runs on from 2024.12 (3.12) to
 today (3.14). The test workflows run both ends.
 
-Libraries (`manifest.json`): pygtfs 0.1.11, the one Home Assistant's own
-gtfs integration pins. gtfs-realtime-bindings 2.2.0: 1.0.0 predates the
+Libraries (`manifest.json`): pygtfs 0.1.11 or later, the one Home
+Assistant's own gtfs integration pins from 2026.7 (0.1.9 before); hassfest
+refuses an exact pin on a package Home Assistant depends on (36c493a).
+gtfs-realtime-bindings 2.2.0: 1.0.0 predates the
 trip relationships DELETED and NEW, and read a deleted trip as SCHEDULED;
 3.0.0 requires protobuf 7.34 or later, while every Home Assistant release
 up to 2026.9 pins protobuf lower (5.28.3 in 2024.12, 6.32.0 in 2026.9), so
