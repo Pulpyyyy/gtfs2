@@ -234,14 +234,10 @@ def next_departure_lists(attributes, departure, listed):
 def map_files(attributes, data):
     """The drawn line and the timed ride, exported with or without realtime;
     data is the coordinator's."""
-    if data.get("route_geojson_file", None):
-        attributes["route_geojson_file"] = data["route_geojson_file"]
-    if data.get("leg_geojson_file", None):
-        attributes["leg_geojson_file"] = data["leg_geojson_file"]
-    if data.get("timetable_file", None):
-        attributes["timetable_file"] = data["timetable_file"]
-    if data.get("vehicle_positions_file", None):
-        attributes["vehicle_positions_file"] = data["vehicle_positions_file"]
+    for key in ("route_geojson_file", "leg_geojson_file", "timetable_file",
+                "vehicle_positions_file"):
+        if data.get(key):
+            attributes[key] = data[key]
 
 
 def alert_details(attributes, alert):
