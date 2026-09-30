@@ -274,9 +274,9 @@ Benefits:
 ## Problem: answers that stop short
 
 Upstream's `extract_departures` service reads the sensor's query, capped at
-a number of rows, and sorts the days in UTC. On a tram every 7 minutes,
-"tomorrow" came back empty all morning and was never complete; departures
-after midnight fell into the wrong day.
+100 rows, and sorts them into days by their UTC clock. On a line with more
+than 100 departures left in the day, "tomorrow" comes back empty; a
+departure at 00:30 in Paris is filed under the evening before.
 
 Solution: the services read whole service days, in the local zone.
 `extract_departures` and `extract_arrivals` return every departure, or

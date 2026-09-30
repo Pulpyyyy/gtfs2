@@ -68,7 +68,8 @@ Non-goals:
   has a fallback for a developer's Windows box, unguarded for the few
   microseconds of the rename (`swap_in`).
 
-Minimum Home Assistant: 2024.12 (`hacs.json`). The options flow reads
+Minimum Home Assistant: 2024.12 (`hacs.json`; upstream's asks 2023.10.1).
+The options flow reads
 `self.config_entry` without storing it, which `OptionsFlow` provides from
 2024.12 on (2024.11 has it on `OptionsFlowWithConfigEntry` only);
 `entry.runtime_data` needs 2024.5.
@@ -538,7 +539,10 @@ intern_datasource        replace the text keys of stop_times by integers
 
 `extract_departures` reads both service days whole, not the sensor's first
 rows: a busy line has more than ten departures left today, and the ten the
-sensor lists all fell on today, so "tomorrow" came back empty (aafc3c6).
+sensor lists all fell on today, so "tomorrow" came back empty; and the
+days were told by the departures' UTC clock, a run at 00:30 in Paris
+filed under the evening before (aafc3c6). Upstream's query now stops at
+100 rows and still sorts by the UTC clock (upstream 69b6091).
 Without next and until, two empty lists said the same for a line that
 resumes on Thursday, a line suspended and a feed that ran out (115d543).
 It answers for journey entries only; a datasource or local stops entry
