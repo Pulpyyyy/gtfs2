@@ -22,7 +22,7 @@ from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH, DEFAULT_PATH_GEOJSON, DOMAIN, id_of
-from .gtfs_db import feed_zip, real_path
+from .gtfs_db import feed_zip, real_path, remove_files
 from .gtfs_helper import shown_ends, train_entry_routes
 from .geojson import write_route_file, route_geojson_name, get_representative_trip, vehicle_positions_name
 from .leg import write_leg_file, leg_geojson_name, leg_geojson_pattern, owns_leg_file
@@ -361,11 +361,4 @@ def _remove_geojson_files(geojson_dir, leg_owner, names):
              # the glob can reach another entry's file, see owns_leg_file
              if owns_leg_file(path, leg_owner)]
     paths += [os.path.join(geojson_dir, name) for name in dict.fromkeys(names)]
-    for path in paths:
-        if not os.path.exists(path):
-            continue
-        try:
-            os.remove(path)
-            _LOGGER.info("Removed %s", path)
-        except OSError as ex:
-            _LOGGER.warning("Could not remove %s: %s", path, ex)
+    remove_files(*paths)
