@@ -6,6 +6,8 @@
           "source": "Ajouter une source de données : le fichier GTFS d'un réseau de transport",
           "start_end": "Ajouter un trajet entre deux arrêts précis",
           "local_stops": "Ajouter tous les départs autour d'un emplacement, toutes lignes",
+          "source_real_time": "Régler le temps réel d'une source",
+          "source_static_refresh": "Changer le fichier horaire d'une source et ses mises à jour",
           "remove": "Supprimer une source de données et libérer de l'espace disque"
         },
         "description": "Une **source de données** contient les horaires d'un réseau de transport. Les **capteurs** y puisent : autant que vous voulez, sur la même source.\n\n[documentation]({docu_menu_options})"
@@ -36,6 +38,74 @@
           "file": "Les sources déjà présentes dans votre dossier `gtfs2`.",
           "device_tracker_id": "Les arrêts sont cherchés autour de cette personne ou de cette zone, et la suivent quand elle se déplace.",
           "name": "Affiché sur votre tableau de bord, par exemple `Départs près de la maison`."
+        }
+      },
+      "pick_source": {
+        "description": "Les mêmes réglages que le bouton **Configurer** de la source.",
+        "data": {
+          "file": "Source de données"
+        }
+      },
+      "real_time": {
+        "description": "Ces flux appartiennent à la source entière : tous les capteurs qui la lisent les utilisent, en moins d'une minute, sans redémarrage. Seul **departures** active le temps réel. Videz un champ pour retirer ce flux, videz tout pour retirer le temps réel de cette source.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "trip_update_url": "Adresse du flux des départs",
+          "vehicle_position_url": "Adresse du flux de position des véhicules (facultatif)",
+          "vehicle_max_age": "Âge maximal d'une position de véhicule",
+          "alerts_url": "Adresse du flux d'alertes trafic (facultatif)",
+          "needs_api_key": "Une clé d'API est nécessaire"
+        },
+        "data_description": {
+          "trip_update_url": "Le retard réel sur votre capteur, au lieu de l'horaire théorique.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Où se trouvent les véhicules, pour une carte. Laissez vide si vous n'en voulez pas.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minutes au-delà desquelles un véhicule dont la position n'a pas été mise à jour quitte la carte : certains flux continuent de publier les véhicules rentrés au dépôt. 0 garde tous les véhicules.",
+          "alerts_url": "Les messages de perturbation de l'exploitant. Laissez vide si vous n'en voulez pas.\n`…/`**`service-alerts`**",
+          "needs_api_key": "Cochez si le fournisseur vous a remis une clé pour lire ces flux."
+        }
+      },
+      "real_time_key": {
+        "description": "Le fournisseur les indique dans sa documentation.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "api_key": "Clé d'API",
+          "api_key_name": "Nom attendu par le fournisseur",
+          "api_key_location": "Où placer la clé",
+          "accept": "Envoyer aussi Accept: application/x-protobuf (effectif seulement si la clé va dans l'en-tête)"
+        },
+        "data_description": {
+          "api_key": "La clé elle-même, telle que le fournisseur vous l'a donnée.",
+          "api_key_name": "Le mot placé devant votre clé. Dans l'adresse : `?`**`apikey`**`=VOTRE_CLE`. Dans un en-tête : **`x-api-key`**`: VOTRE_CLE`. Il varie selon les fournisseurs (`apikey`, `api_key`, `app_key`, `Authorization`) et la casse compte.",
+          "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête.",
+          "accept": "Effectif seulement si la clé va dans l'en-tête."
+        }
+      },
+      "static_refresh": {
+        "title": "Fichier horaire et mises à jour",
+        "description": "D'où vient le fichier horaire de cette source, et quoi faire des nouvelles versions. Chaque rafraîchissement, d'ici, de l'entité de mise à jour ou du service update_gtfs, utilise l'adresse et la clé ci-dessous. **Notifier** interroge l'hébergeur d'une seule petite requête, au rythme choisi, et signale les nouvelles versions : à vous ou à une automatisation de décider quand installer. **Installer automatiquement** installe dès qu'une version est trouvée. Les capteurs continuent de répondre pendant l'installation ; la bascule vers les nouvelles données se fait d'un coup.",
+        "data": {
+          "url": "Adresse du fichier source",
+          "needs_api_key": "Une clé d'API est nécessaire",
+          "static_refresh_mode": "À la nouvelle version",
+          "static_check_interval": "Fréquence de vérification"
+        },
+        "data_description": {
+          "url": "D'où le zip est téléchargé. À changer quand l'hébergeur déménage ou renumérote ses adresses ; le nom et tout ce qui est construit depuis le fichier restent.",
+          "needs_api_key": "Cochez si le fournisseur vous a remis une clé pour télécharger le fichier. Décochez pour retirer une clé dont la source n'a plus besoin.",
+          "static_refresh_mode": "Ne rien faire : rien ne change pour cette source.",
+          "static_check_interval": "En heures : 24 pour tous les jours, 360 pour tous les 15 jours. Le moment exact est choisi pour vous, la nuit pour les rythmes quotidiens et plus lents, et étalé par source pour lisser les mises à jour."
+        }
+      },
+      "static_refresh_key": {
+        "title": "Clé du fichier horaire",
+        "description": "Le fournisseur les indique dans sa documentation. La clé déjà enregistrée est affichée : une clé renouvelée ne demande que de saisir la nouvelle.\n\n[documentation]({docu_extracting})",
+        "data": {
+          "api_key": "Clé d'API",
+          "api_key_name": "Nom attendu par le fournisseur",
+          "api_key_location": "Où placer la clé"
+        },
+        "data_description": {
+          "api_key": "La clé elle-même, telle que le fournisseur vous l'a donnée.",
+          "api_key_name": "Le mot placé devant votre clé. Dans l'adresse : `?`**`apikey`**`=VOTRE_CLE`. Dans un en-tête : **`x-api-key`**`: VOTRE_CLE`. Il varie selon les fournisseurs (`apikey`, `api_key`, `app_key`, `Authorization`) et la casse compte.",
+          "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête."
         }
       },
       "source": {
@@ -281,7 +351,9 @@
       "reload_failed": "La ligne n'a pas pu être rétablie. Le fichier réseau est peut-être absent ou illisible ; la source de données, elle, n'a pas été modifiée.",
       "optimised": "Espace disque libéré. La source occupe maintenant {size}.",
       "finished": "Configuration terminée. Vous pouvez ajouter d'autres trajets à tout moment depuis la page de l'intégration.",
-      "no_destination": "Aucun arrêt n'est atteignable depuis l'origine choisie dans cette direction"
+      "no_destination": "Aucun arrêt n'est atteignable depuis l'origine choisie dans cette direction",
+      "source_saved": "Les réglages de la source sont enregistrés.",
+      "no_source_entry": "Cette source n'a pas encore de réglages : ils apparaissent au prochain redémarrage de Home Assistant."
     },
     "progress": {
       "extracting": "{file} est en cours d'écriture : un import de lignes ou une optimisation de cette source est en cours. Le flux reprend dès que c'est terminé ; **{size}** pour l'instant.",

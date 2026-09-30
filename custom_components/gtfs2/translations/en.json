@@ -6,6 +6,8 @@
           "source": "Add a data source: the GTFS file of a transport network",
           "start_end": "Add a journey between two specific stops",
           "local_stops": "Add every departure around a location, all routes",
+          "source_real_time": "Set the realtime feeds of a data source",
+          "source_static_refresh": "Change the timetable file of a data source and its updates",
           "remove": "Remove a data source and free up disk space"
         },
         "description": "A **data source** holds the timetable of one transport network. **Sensors** read from it: as many as you like, on the same source.\n\n[documentation]({docu_menu_options})"
@@ -36,6 +38,74 @@
           "file": "Sources already present in your `gtfs2` folder.",
           "device_tracker_id": "The stops are looked up around this person or zone, and follow them when they move.",
           "name": "Shown on your dashboard, for example `Departures near home`."
+        }
+      },
+      "pick_source": {
+        "description": "The same settings as the source's **Configure** button.",
+        "data": {
+          "file": "Data source"
+        }
+      },
+      "real_time": {
+        "description": "These feeds belong to the whole source: every sensor reading it uses them, within a minute, no restart needed. **departures** is the only one that switches realtime on. Empty a field to drop that feed, empty them all to remove realtime from this source.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "trip_update_url": "Departures feed address",
+          "vehicle_position_url": "Vehicle positions feed address (optional)",
+          "vehicle_max_age": "Maximum age of a vehicle position",
+          "alerts_url": "Service alerts feed address (optional)",
+          "needs_api_key": "This requires an API key"
+        },
+        "data_description": {
+          "trip_update_url": "The real delay on your sensor, instead of the timetable.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Where the vehicles are, for a map card. Leave empty if you do not want it.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minutes after which a vehicle whose position has not been updated leaves the map: some feeds keep publishing the vehicles back at the depot. 0 keeps every vehicle.",
+          "alerts_url": "Disruption messages from the operator. Leave empty if you do not want it.\n`…/`**`service-alerts`**",
+          "needs_api_key": "Tick this if the provider gave you a key to read these feeds."
+        }
+      },
+      "real_time_key": {
+        "description": "The provider states these in its documentation.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "api_key": "API key",
+          "api_key_name": "Name the provider expects",
+          "api_key_location": "Where the key goes",
+          "accept": "Also send Accept: application/x-protobuf (only applies when the key goes in the header)"
+        },
+        "data_description": {
+          "api_key": "The key itself, copied from the provider.",
+          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_location": "In the web address, or in the request header.",
+          "accept": "Only applies when the key goes in the header."
+        }
+      },
+      "static_refresh": {
+        "title": "Timetable file and updates",
+        "description": "Where this source's timetable file comes from, and what to do about new versions. Every refresh, whether from here, from the update entity or from the update_gtfs service, uses the address and key below. **Notify** asks the host with one tiny request, at the chosen rhythm, and says when a new version exists, so you or an automation decide when to install. **Install automatically** installs it right away. Sensors keep answering during an install; the switch to the new data happens in one go.",
+        "data": {
+          "url": "Feed address",
+          "needs_api_key": "This requires an API key",
+          "static_refresh_mode": "On a new version",
+          "static_check_interval": "Check frequency"
+        },
+        "data_description": {
+          "url": "Where the zip is downloaded from. Change it when the provider moves or renumbers its urls; the name and everything built from the feed stay.",
+          "needs_api_key": "Tick this if the provider gave you a key to download the file. Untick it to drop a key the source no longer needs.",
+          "static_refresh_mode": "Off changes nothing for this source.",
+          "static_check_interval": "In hours: 24 is daily, 360 is every 15 days. The exact moment is chosen for you, at night for daily and slower rhythms, and staggered per source so updates spread out."
+        }
+      },
+      "static_refresh_key": {
+        "title": "Timetable file key",
+        "description": "The provider states these in its documentation. The key already stored is shown, so a rotated key only means typing the new one.\n\n[documentation]({docu_extracting})",
+        "data": {
+          "api_key": "API key",
+          "api_key_name": "Name the provider expects",
+          "api_key_location": "Where the key goes"
+        },
+        "data_description": {
+          "api_key": "The key itself, copied from the provider.",
+          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_location": "In the web address, or in the request header."
         }
       },
       "source": {
@@ -281,7 +351,9 @@
       "reload_failed": "The line could not be brought back. The network file may be missing or unreadable; the datasource itself was left untouched.",
       "optimised": "Disk space freed. The source now takes {size}.",
       "finished": "Setup complete. You can add more journeys at any time from the integration page.",
-      "no_destination": "No stop can be reached from the selected origin in this direction"
+      "no_destination": "No stop can be reached from the selected origin in this direction",
+      "source_saved": "The data source settings are saved.",
+      "no_source_entry": "This data source has no settings yet: they appear once Home Assistant restarts."
     },
     "progress": {
       "extracting": "{file} is being written: a line import or an optimisation of this source is under way. The flow carries on as soon as it ends; **{size}** so far.",

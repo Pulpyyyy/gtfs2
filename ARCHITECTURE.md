@@ -357,7 +357,9 @@ flow_options.py    OptionsScreens: realtime feeds and static refresh of a source
 
 Collects input, creates datasource and journey entries, starts imports. An
 import can outlive its flow window; its outcome is then told through
-`notifications.py`.
+`notifications.py`. A source's realtime feeds and static refresh are the
+same screens from its entry's **Configure** button and from the main menu,
+which asks which source first and saves on it.
 
 ### 3. Domain services layer
 

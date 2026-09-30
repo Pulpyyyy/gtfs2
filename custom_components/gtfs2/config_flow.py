@@ -82,7 +82,8 @@ def _stop_options(stops):
 
 
 @config_entries.HANDLERS.register(DOMAIN)
-class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, config_entries.ConfigFlow, domain=DOMAIN):
+class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, OptionsScreens,
+                 config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for GTFS."""
 
     VERSION = 10
@@ -98,6 +99,10 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         # not keep it
         self._towards = None
         self._pending_error: str | None = None
+        # a source's settings reached from the main menu: the source picked
+        # and the screen asked for
+        self._picked_source = None
+        self._source_screen = None
         # the screen that picked the source, where an error about the source
         # sends the rider back to (see _back_to_source)
         self._source_step: str | None = None
@@ -164,8 +169,10 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
         return self.async_show_menu(
             step_id="user",
             # ordered by lifecycle: a datasource must exist before a sensor
-            # can read from it, and is removed last
-            menu_options=["source", "start_end", "local_stops", "remove"],
+            # can read from it, its settings change while sensors read it,
+            # and it is removed last
+            menu_options=["source", "start_end", "local_stops", "source_real_time",
+                          "source_static_refresh", "remove"],
             description_placeholders=placeholders,
         )
 
@@ -282,6 +289,53 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, con
             )
         return await self.async_step_source_url()
 
+
+    async def async_step_source_real_time(self, user_input: dict | None = None) -> FlowResult:
+        """A source's realtime feeds, from the main menu."""
+        self._source_screen = "real_time"
+        return await self.async_step_pick_source()
+
+    async def async_step_source_static_refresh(self, user_input: dict | None = None) -> FlowResult:
+        """A source's timetable file and its updates, from the main menu."""
+        self._source_screen = "static_refresh"
+        return await self.async_step_pick_source()
+
+    async def async_step_pick_source(self, user_input: dict | None = None) -> FlowResult:
+        """Which source to set, then the screen its CONFIGURE button opens.
+
+        The source's settings used to be reached from its entry only; the
+        main menu offers them too, the same screens (OptionsScreens), saved
+        on the source picked (_save_source).
+        """
+        files = sorted(entry.data[CONF_FILE] for entry in self.hass.config_entries.async_entries(DOMAIN)
+                       if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE)
+        if not files:
+            # the files are there, their entries not yet: the start of
+            # Home Assistant creates them
+            return self.async_abort(reason="no_source_entry")
+        if user_input is None:
+            return self.async_show_form(
+                step_id="pick_source",
+                data_schema=vol.Schema({vol.Required(CONF_FILE): vol.In(files)}),
+                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+            )
+        self._picked_source = datasource_entry(self.hass, user_input[CONF_FILE])
+        if self._picked_source is None:
+            return self.async_abort(reason="no_source_entry")
+        if self._source_screen == "real_time":
+            return await self.async_step_real_time()
+        return await self.async_step_static_refresh()
+
+    def _source(self):
+        """The source picked from the main menu."""
+        return self._picked_source
+
+    def _save_source(self, options) -> FlowResult:
+        """A config flow creates no entry here: it updates the source
+        picked, whose listeners follow as from its CONFIGURE button, and
+        says so."""
+        self.hass.config_entries.async_update_entry(self._picked_source, options=options)
+        return self.async_abort(reason="source_saved")
 
     async def async_step_remove(self, user_input: dict | None = None) -> FlowResult:
         """Handle a flow initialized by the user."""

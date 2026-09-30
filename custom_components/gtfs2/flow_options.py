@@ -5,7 +5,9 @@ source for every sensor of the source: the menu that leads to them, the
 key screen of the realtime feeds, and the static refresh screens (how
 often to ask the host whether the zip changed, and with which key). The
 schemas come from flow_source, the same fields as when the source was
-created. Mixed in GTFSOptionsFlowHandler.
+created. Mixed in GTFSOptionsFlowHandler, and in ConfigFlow for the main
+menu's way to them, which names the source and saves it its own way
+(_source, _save_source).
 """
 from __future__ import annotations
 

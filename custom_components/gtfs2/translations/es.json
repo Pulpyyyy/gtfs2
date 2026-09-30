@@ -6,6 +6,8 @@
           "source": "Añadir una fuente de datos: el archivo GTFS de una red de transporte",
           "start_end": "Añadir un trayecto entre dos paradas concretas",
           "local_stops": "Añadir todas las salidas alrededor de una ubicación, todas las líneas",
+          "source_real_time": "Ajustar el tiempo real de una fuente de datos",
+          "source_static_refresh": "Cambiar el archivo de horarios de una fuente de datos y sus actualizaciones",
           "remove": "Eliminar una fuente de datos y liberar espacio en disco"
         },
         "description": "Una **fuente de datos** contiene los horarios de una red de transporte. Los **sensores** leen de ella: tantos como quiera, sobre la misma fuente.\n\n[documentación]({docu_menu_options})"
@@ -36,6 +38,74 @@
           "file": "Fuentes ya presentes en su carpeta `gtfs2`.",
           "device_tracker_id": "Las paradas se buscan alrededor de esta persona o zona, y la siguen cuando se desplaza.",
           "name": "Se muestra en su panel, por ejemplo `Salidas cerca de casa`."
+        }
+      },
+      "pick_source": {
+        "description": "Los mismos ajustes que el botón **Configurar** de la fuente.",
+        "data": {
+          "file": "Fuente de datos"
+        }
+      },
+      "real_time": {
+        "description": "Estos feeds pertenecen a toda la fuente: todos los sensores que la leen los usan, en menos de un minuto, sin reiniciar. Únicamente **departures** activa el tiempo real. Vacíe un campo para quitar ese feed, vacíelos todos para quitar el tiempo real de esta fuente.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "trip_update_url": "Dirección del flujo de salidas",
+          "vehicle_position_url": "Dirección del flujo de posiciones de vehículos (opcional)",
+          "vehicle_max_age": "Antigüedad máxima de la posición de un vehículo",
+          "alerts_url": "Dirección del flujo de avisos de servicio (opcional)",
+          "needs_api_key": "Se necesita una clave API"
+        },
+        "data_description": {
+          "trip_update_url": "El retraso real en su sensor, en lugar del horario previsto.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Dónde están los vehículos, para un mapa. Déjelo vacío si no lo quiere.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minutos tras los cuales un vehículo cuya posición no se ha actualizado sale del mapa: algunos feeds siguen publicando los vehículos que han vuelto al depósito. 0 conserva todos los vehículos.",
+          "alerts_url": "Mensajes de incidencias del operador. Déjelo vacío si no lo quiere.\n`…/`**`service-alerts`**",
+          "needs_api_key": "Marque si el proveedor le dio una clave para leer estos flujos."
+        }
+      },
+      "real_time_key": {
+        "description": "El proveedor los indica en su documentación.\n\n[documentación]({docu_configuring_options})",
+        "data": {
+          "api_key": "Clave API",
+          "api_key_name": "Nombre que espera el proveedor",
+          "api_key_location": "Dónde va la clave",
+          "accept": "Enviar también Accept: application/x-protobuf (solo si la clave va en la cabecera)"
+        },
+        "data_description": {
+          "api_key": "La clave en sí, tal como se la dio el proveedor.",
+          "api_key_name": "La palabra colocada antes de su clave. En la dirección: `?`**`apikey`**`=SU_CLAVE`. En una cabecera: **`x-api-key`**`: SU_CLAVE`. Varía según el proveedor (`apikey`, `api_key`, `app_key`, `Authorization`) y distingue mayúsculas.",
+          "api_key_location": "En la dirección web, o en la cabecera de la petición.",
+          "accept": "Solo se aplica si la clave va en la cabecera."
+        }
+      },
+      "static_refresh": {
+        "title": "Archivo de horarios y actualizaciones",
+        "description": "De dónde procede el archivo de horarios de esta fuente y qué hacer con las nuevas versiones. Cada actualización, ya sea desde aquí, desde la entidad de actualización o desde el servicio update_gtfs, usa la dirección y la clave de abajo. **Notificar** pregunta al proveedor con una petición mínima, al ritmo elegido, y avisa cuando existe una nueva versión, para que usted o una automatización decidan cuándo instalarla. **Instalar automáticamente** la instala de inmediato. Los sensores siguen respondiendo durante la instalación; el cambio a los nuevos datos ocurre de una sola vez.",
+        "data": {
+          "url": "Dirección del feed",
+          "needs_api_key": "Esto requiere una clave API",
+          "static_refresh_mode": "Ante una nueva versión",
+          "static_check_interval": "Frecuencia de comprobación"
+        },
+        "data_description": {
+          "url": "Desde dónde se descarga el zip. Cámbiela cuando el proveedor mueva o renumere sus direcciones; el nombre y todo lo construido a partir del feed se conservan.",
+          "needs_api_key": "Marque esto si el proveedor le dio una clave para descargar el archivo. Desmárquelo para eliminar una clave que la fuente ya no necesita.",
+          "static_refresh_mode": "Desactivado no cambia nada para esta fuente.",
+          "static_check_interval": "En horas: 24 es diario, 360 es cada 15 días. El momento exacto se elige por usted, de noche para los ritmos diarios y más lentos, y escalonado por fuente para repartir las actualizaciones."
+        }
+      },
+      "static_refresh_key": {
+        "title": "Clave del archivo de horarios",
+        "description": "El proveedor las indica en su documentación. Se muestra la clave ya guardada, de modo que una clave rotada solo implica escribir la nueva.\n\n[documentación]({docu_extracting})",
+        "data": {
+          "api_key": "Clave API",
+          "api_key_name": "Nombre que espera el proveedor",
+          "api_key_location": "Dónde va la clave"
+        },
+        "data_description": {
+          "api_key": "La clave en sí, copiada del proveedor.",
+          "api_key_name": "La palabra que precede a su clave. En la dirección: `?`**`apikey`**`=SU_CLAVE`. En una cabecera: **`x-api-key`**`: SU_CLAVE`. Cambia según el proveedor (`apikey`, `api_key`, `app_key`, `Authorization`) y distingue mayúsculas de minúsculas.",
+          "api_key_location": "En la dirección web, o en la cabecera de la petición."
         }
       },
       "source": {
@@ -281,7 +351,9 @@
       "reload_failed": "No se ha podido restaurar la línea. Puede que el archivo de red falte o no se pueda leer; la fuente de datos no se ha modificado.",
       "optimised": "Espacio liberado. La fuente ocupa ahora {size}.",
       "finished": "Configuración completada. Puede añadir más trayectos cuando quiera desde la página de la integración.",
-      "no_destination": "Ninguna parada es alcanzable desde el origen seleccionado en esta dirección"
+      "no_destination": "Ninguna parada es alcanzable desde el origen seleccionado en esta dirección",
+      "source_saved": "Los ajustes de la fuente de datos se han guardado.",
+      "no_source_entry": "Esta fuente de datos aún no tiene ajustes: aparecen tras el próximo reinicio de Home Assistant."
     },
     "progress": {
       "extracting": "{file} se está escribiendo: hay en curso una importación de líneas o una optimización de esta fuente. El flujo continúa en cuanto termine; **{size}** por ahora.",

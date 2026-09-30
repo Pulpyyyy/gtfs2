@@ -691,7 +691,8 @@ def test_a_bus_journey_holds_what_the_sensor_reads(world):
     async def scenario(hass):
         await install_source(hass, "tao-journeys", "tao")
         menu = shown(await start(hass), MENU, "user")
-        assert menu["menu_options"] == ["source", "start_end", "local_stops", "remove"]
+        assert menu["menu_options"] == ["source", "start_end", "local_stops", "source_real_time",
+                                        "source_static_refresh", "remove"]
         sources = shown(await choose(hass, menu, "start_end"), FORM, "start_end")
         assert offered(sources, "file") == ["tao"]
         # one operator in the feed: its screen is not shown
@@ -1340,6 +1341,62 @@ def test_local_stops_take_a_person_or_a_zone_once_per_source(world):
         shown(await submit(hass, again, file="tao", device_tracker_id="zone.work",
                            name="around work"), CREATE)
         assert len(hass.journeys()) == 2
+    walk(world, scenario)
+
+
+def test_a_source_s_settings_are_reached_from_the_main_menu_too(world):
+    # the realtime feeds and the static refresh of a source, which only its
+    # CONFIGURE button led to: the main menu names the source, then shows
+    # the same screens and saves on that source (2026-09-30)
+    async def scenario(hass):
+        await install_source(hass, "tao-journeys", "tao")
+        await install_source(hass, "sncf-journeys", "sncf")
+        source = hass.datasource("tao")
+        hass.config_entries.async_update_entry(source, options={"rt_enabled": False})
+
+        pick = shown(await choose(hass, await start(hass), "source_real_time"), FORM, "pick_source")
+        assert offered(pick, "file") == ["sncf", "tao"]
+        feeds = shown(await submit(hass, pick, file="tao"), FORM, "real_time")
+        assert default(feeds, "alerts_url") == ""
+        done = shown(await submit(hass, feeds, alerts_url="https://rt.example/alerts"), ABORT)
+        assert done["reason"] == "source_saved"
+        assert dict(source.options) == {"alerts_url": "https://rt.example/alerts",
+                                        "rt_enabled": False}
+        # the other source is left as it was
+        assert "alerts_url" not in hass.datasource("sncf").options
+        # and the source's own button reads what the menu saved
+        again = await choose(hass, await options_of(hass, source), "real_time",
+                             hass.config_entries.options)
+        assert default(again, "alerts_url") == "https://rt.example/alerts"
+
+        pick = shown(await choose(hass, await start(hass), "source_static_refresh"), FORM, "pick_source")
+        refresh = shown(await submit(hass, pick, file="tao"), FORM, "static_refresh")
+        again = shown(await submit(hass, refresh, url="ftp://feeds.example/tao.zip"),
+                      FORM, "static_refresh")
+        assert again["errors"] == {"url": "invalid_source_url"}
+        key = shown(await submit(hass, again, url=URL, needs_api_key=True,
+                                 static_refresh_mode="notify", static_check_interval=6),
+                    FORM, "static_refresh_key")
+        done = shown(await submit(hass, key, api_key="static-secret", api_key_name="token",
+                                  api_key_location="header"), ABORT)
+        assert done["reason"] == "source_saved"
+        assert dict(source.data) == {
+            "kind": "datasource", "file": "tao", "url": URL, "extract_from": "url",
+            "api_key": "static-secret", "api_key_name": "token", "api_key_location": "header"}
+        assert dict(source.options) == {"alerts_url": "https://rt.example/alerts",
+                                        "rt_enabled": False, "static_refresh_mode": "notify",
+                                        "static_check_interval": 6}
+    walk(world, scenario)
+
+
+def test_a_source_file_with_no_entry_yet_has_no_settings_to_offer(world):
+    # the start of Home Assistant creates a source's entry: a file without
+    # one has nothing the screens could save on
+    async def scenario(hass):
+        await install_source(hass, "tao-journeys", "tao")
+        await hass.config_entries.async_remove(hass.datasource("tao").entry_id)
+        done = shown(await choose(hass, await start(hass), "source_real_time"), ABORT)
+        assert done["reason"] == "no_source_entry"
     walk(world, scenario)
 
 

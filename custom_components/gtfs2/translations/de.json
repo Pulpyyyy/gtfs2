@@ -6,6 +6,8 @@
           "source": "Eine Datenquelle hinzufügen: die GTFS-Datei eines Verkehrsnetzes",
           "start_end": "Eine Fahrt zwischen zwei bestimmten Haltestellen hinzufügen",
           "local_stops": "Alle Abfahrten rund um einen Standort hinzufügen, alle Linien",
+          "source_real_time": "Die Echtzeit einer Datenquelle einstellen",
+          "source_static_refresh": "Die Fahrplandatei einer Datenquelle und ihre Aktualisierungen ändern",
           "remove": "Eine Datenquelle entfernen und Speicherplatz freigeben"
         },
         "description": "Eine **Datenquelle** enthält den Fahrplan eines Verkehrsnetzes. **Sensoren** lesen daraus: beliebig viele, aus derselben Quelle.\n\n[Dokumentation]({docu_menu_options})"
@@ -36,6 +38,74 @@
           "file": "Quellen, die bereits in Ihrem `gtfs2`-Ordner liegen.",
           "device_tracker_id": "Die Haltestellen werden rund um diese Person oder Zone gesucht und folgen ihr bei Bewegung.",
           "name": "Auf Ihrem Dashboard angezeigt, zum Beispiel `Abfahrten in der Nähe`."
+        }
+      },
+      "pick_source": {
+        "description": "Dieselben Einstellungen wie über die Schaltfläche **Konfigurieren** der Datenquelle.",
+        "data": {
+          "file": "Datenquelle"
+        }
+      },
+      "real_time": {
+        "description": "Diese Feeds gehören zur ganzen Quelle: alle Sensoren, die sie lesen, nutzen sie, innerhalb einer Minute, ohne Neustart. Allein **departures** schaltet Echtzeit ein. Ein geleertes Feld entfernt diesen Feed, alles leeren entfernt die Echtzeit dieser Quelle.\n\n[documentation]({docu_configuring_options})",
+        "data": {
+          "trip_update_url": "Adresse des Abfahrten-Feeds",
+          "vehicle_position_url": "Adresse des Fahrzeugpositions-Feeds (optional)",
+          "vehicle_max_age": "Höchstalter einer Fahrzeugposition",
+          "alerts_url": "Adresse des Störungsmeldungs-Feeds (optional)",
+          "needs_api_key": "Ein API-Schlüssel ist erforderlich"
+        },
+        "data_description": {
+          "trip_update_url": "Die tatsächliche Verspätung an Ihrem Sensor statt des Fahrplans.\n`…/`**`trip-updates`**",
+          "vehicle_position_url": "Wo die Fahrzeuge sind, für eine Karte. Leer lassen, wenn nicht gewünscht.\n`…/`**`vehicle-positions`**",
+          "vehicle_max_age": "Minuten, nach denen ein Fahrzeug, dessen Position nicht aktualisiert wurde, von der Karte verschwindet: manche Feeds melden weiterhin Fahrzeuge, die ins Depot zurückgekehrt sind. 0 behält alle Fahrzeuge.",
+          "alerts_url": "Meldungen des Betreibers. Leer lassen, wenn nicht gewünscht.\n`…/`**`service-alerts`**",
+          "needs_api_key": "Ankreuzen, wenn der Anbieter Ihnen einen Schlüssel für diese Feeds gegeben hat."
+        }
+      },
+      "real_time_key": {
+        "description": "Der Anbieter nennt diese in seiner Dokumentation.\n\n[Dokumentation]({docu_configuring_options})",
+        "data": {
+          "api_key": "API-Schlüssel",
+          "api_key_name": "Vom Anbieter erwarteter Name",
+          "api_key_location": "Wohin der Schlüssel gehört",
+          "accept": "Zusätzlich Accept: application/x-protobuf senden (nur wirksam, wenn der Schlüssel im Header steht)"
+        },
+        "data_description": {
+          "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
+          "api_key_name": "Das Wort vor Ihrem Schlüssel. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. Im Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Er unterscheidet sich je nach Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`), Groß- und Kleinschreibung zählt.",
+          "api_key_location": "In der Web-Adresse oder im Anfrage-Header.",
+          "accept": "Nur wirksam, wenn der Schlüssel im Header steht."
+        }
+      },
+      "static_refresh": {
+        "title": "Fahrplandatei und Aktualisierungen",
+        "description": "Woher die Fahrplandatei dieser Quelle stammt und was mit neuen Versionen geschehen soll. Jede Aktualisierung, ob von hier, über die Update-Entität oder über den Dienst update_gtfs, verwendet die Adresse und den Schlüssel unten. **Benachrichtigen** fragt den Anbieter im gewählten Rhythmus mit einer winzigen Anfrage und meldet, wenn eine neue Version vorliegt, damit Sie oder eine Automatisierung über den Zeitpunkt entscheiden. **Automatisch installieren** installiert sie sofort. Die Sensoren antworten während einer Installation weiter; die Umschaltung auf die neuen Daten erfolgt in einem Zug.",
+        "data": {
+          "url": "Feed-Adresse",
+          "needs_api_key": "Dafür ist ein API-Schlüssel nötig",
+          "static_refresh_mode": "Bei einer neuen Version",
+          "static_check_interval": "Prüfintervall"
+        },
+        "data_description": {
+          "url": "Von wo die ZIP-Datei heruntergeladen wird. Ändern Sie sie, wenn der Anbieter seine Adressen verschiebt oder neu nummeriert; der Name und alles aus dem Feed Aufgebaute bleiben erhalten.",
+          "needs_api_key": "Aktivieren, wenn der Anbieter Ihnen einen Schlüssel zum Herunterladen der Datei gegeben hat. Deaktivieren, um einen Schlüssel zu entfernen, den die Quelle nicht mehr braucht.",
+          "static_refresh_mode": "Aus ändert für diese Quelle nichts.",
+          "static_check_interval": "In Stunden: 24 ist täglich, 360 alle 15 Tage. Der genaue Zeitpunkt wird für Sie gewählt, nachts bei täglichen und langsameren Rhythmen, und je Quelle versetzt, damit sich die Aktualisierungen verteilen."
+        }
+      },
+      "static_refresh_key": {
+        "title": "Schlüssel der Fahrplandatei",
+        "description": "Der Anbieter nennt diese in seiner Dokumentation. Der bereits gespeicherte Schlüssel wird angezeigt, sodass ein gewechselter Schlüssel nur bedeutet, den neuen einzugeben.\n\n[Dokumentation]({docu_extracting})",
+        "data": {
+          "api_key": "API-Schlüssel",
+          "api_key_name": "Vom Anbieter erwarteter Name",
+          "api_key_location": "Wohin der Schlüssel gehört"
+        },
+        "data_description": {
+          "api_key": "Der Schlüssel selbst, vom Anbieter kopiert.",
+          "api_key_name": "Das Wort, das vor Ihrem Schlüssel steht. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. In einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Es unterscheidet sich je Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`) und beachtet Groß- und Kleinschreibung.",
+          "api_key_location": "In der Webadresse oder im Anfrage-Header."
         }
       },
       "source": {
@@ -281,7 +351,9 @@
       "reload_failed": "Die Linie konnte nicht wiederhergestellt werden. Die Netzdatei fehlt möglicherweise oder ist unlesbar; die Datenquelle selbst blieb unverändert.",
       "optimised": "Speicherplatz freigegeben. Die Quelle belegt jetzt {size}.",
       "finished": "Einrichtung abgeschlossen. Weitere Fahrten können Sie jederzeit auf der Integrationsseite hinzufügen.",
-      "no_destination": "Von der gewählten Starthaltestelle ist in dieser Richtung keine Haltestelle erreichbar"
+      "no_destination": "Von der gewählten Starthaltestelle ist in dieser Richtung keine Haltestelle erreichbar",
+      "source_saved": "Die Einstellungen der Datenquelle sind gespeichert.",
+      "no_source_entry": "Diese Datenquelle hat noch keine Einstellungen: sie erscheinen nach dem nächsten Neustart von Home Assistant."
     },
     "progress": {
       "extracting": "{file} wird gerade geschrieben: ein Linienimport oder eine Optimierung dieser Quelle läuft. Der Ablauf geht weiter, sobald das beendet ist; bisher **{size}**.",
