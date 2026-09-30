@@ -212,27 +212,23 @@ def next_service_info(attributes, state, next_service, offset):
         _departure_day_info(attributes, state, offset)
 
 
+_FORK_DEPARTURE_LISTS = (
+    # next departures durations, in minutes
+    "next_departures_durations",
+    # the stop each next departure leaves from: a place can be served
+    # from two of its records in turn (a terminus's quays)
+    "next_departures_origin_stop_id",
+    # next departures route types: a rail line may list a coach
+    "next_departures_route_types",
+)
+
+
 def next_departure_lists(attributes, departure, listed):
     """The fork's lists beside next_departures: durations, the stop each one
     leaves from, the route type of each. listed is the next_departures list,
     empty lists when there is none."""
-    # Add next departures durations, in minutes
-    attributes["next_departures_durations"] = []
-    if listed:
-        attributes["next_departures_durations"] = departure[
-            "next_departures_durations"][:10]
-
-    # Add the stop each next departure leaves from: a place can be served
-    # from two of its records in turn (a terminus's quays)
-    attributes["next_departures_origin_stop_id"] = []
-    if listed:
-        attributes["next_departures_origin_stop_id"] = departure.get(
-            "next_departures_origin_stop_id", [])[:10]
-    # Add next departures route types: a rail line may list a coach
-    attributes["next_departures_route_types"] = []
-    if listed:
-        attributes["next_departures_route_types"] = departure.get(
-            "next_departures_route_types", [])[:10]
+    for key in _FORK_DEPARTURE_LISTS:
+        attributes[key] = departure.get(key, [])[:10] if listed else []
 
 
 def map_files(attributes, data):
