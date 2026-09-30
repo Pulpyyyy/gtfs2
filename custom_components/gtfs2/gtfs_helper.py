@@ -210,10 +210,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
             inner join calendar cal on cal.service_id = s.service_id
             where cal.start_date <= dates.d and cal.end_date >= dates.d
               and {_runs_on("dates.d", "cal")}
-              and not exists (
-                  select 1 from calendar_dates cx
-                  where cx.service_id = s.service_id
-                    and cx.date = dates.d and cx.exception_type = 2))
+              and not {_removed_on("s.service_id", "dates.d")})
         or exists (
             select 1 from serving s
             inner join calendar_dates cd on cd.service_id = s.service_id
@@ -409,11 +406,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
             SELECT service_id, d AS date
             FROM cal_expand
             WHERE {_runs_on("d")}
-            AND NOT EXISTS (
-              SELECT 1 FROM calendar_dates cd
-              WHERE cd.service_id = cal_expand.service_id
-                AND cd.date = cal_expand.d AND cd.exception_type = 2
-            )
+            AND NOT {_removed_on("cal_expand.service_id", "cal_expand.d")}
             UNION
                 SELECT cd2.service_id, cd2.date
                 FROM calendar_dates cd2
@@ -939,6 +932,13 @@ def _runs_on(day, calendar=""):
             f" when 2 then {cal}tuesday when 3 then {cal}wednesday"
             f" when 4 then {cal}thursday when 5 then {cal}friday"
             f" else {cal}saturday end) = 1")
+
+
+def _removed_on(service, day):
+    """SQL: calendar_dates takes this service out on this date."""
+    return (f"exists (select 1 from calendar_dates removed"
+            f" where removed.service_id = {service}"
+            f" and removed.date = {day} and removed.exception_type = 2)")
 
 
 def _boards(alias):

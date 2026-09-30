@@ -31,7 +31,7 @@ from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH
 from .gtfs_db import file_edition, real_path
-from .gtfs_helper import _runs_on, agency_zone, gtfs_seconds
+from .gtfs_helper import _removed_on, _runs_on, agency_zone, gtfs_seconds
 from .rt_feed import _FEED_CACHE, _same_route
 from .rt_source import source_readers
 
@@ -65,10 +65,7 @@ _ACTIVE_TRIPS_SQL = f"""
         select service_id from calendar
         where start_date <= date(:d) and end_date >= date(:d)
           and {_runs_on("date(:d)")}
-          and not exists (
-              select 1 from calendar_dates cx
-              where cx.service_id = calendar.service_id
-                and cx.date = date(:d) and cx.exception_type = 2)
+          and not {_removed_on("calendar.service_id", "date(:d)")}
         union
         select service_id from calendar_dates
         where date = date(:d) and exception_type = 1

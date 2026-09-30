@@ -20,7 +20,7 @@ from .const import (
     ICONS,
     TIME_STR_FORMAT,
 )
-from .gtfs_helper import _boards, _day_offset, _on_service_day, _runs_on, check_extracting
+from .gtfs_helper import _boards, _day_offset, _on_service_day, _removed_on, _runs_on, check_extracting
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
 from .rt_feed import get_gtfs_feed_entities, on_service_day
 
@@ -244,10 +244,7 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
             WHERE cal.service_id IN (SELECT service_id FROM candidate_stops)
               AND cd.date BETWEEN cal.start_date AND cal.end_date
               AND {_runs_on("cd.date", "cal")}
-              AND NOT EXISTS (
-                SELECT 1 FROM calendar_dates ex
-                WHERE ex.service_id = cal.service_id AND ex.date = cd.date AND ex.exception_type = 2
-              )
+              AND NOT {_removed_on("cal.service_id", "cd.date")}
             UNION
             SELECT cd2.service_id, cd2.date
             FROM calendar_dates cd2
