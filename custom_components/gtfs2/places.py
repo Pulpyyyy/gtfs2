@@ -67,25 +67,23 @@ def _call_type(value):
         return 0
 
 
-# the records of a line where some trip takes riders on (BOARDING) or sets
-# them down (ALIGHTING): the lists offer a place when one of its records is
-_BOARDING_ROWS = f"""
+def _calls_where(can):
+    """SQL: the records of a line where some trip of it this way lets
+    riders do what can(alias) says, _boards or _alights."""
+    return f"""
     select distinct st.stop_id
     from trips t
     inner join stop_times st on st.trip_id = t.trip_id
     where t.route_id = :route_id
     and (:direction is null or t.direction_id = :direction or t.direction_id is null)
-    and {_boards("st")}
+    and {can("st")}
 """
 
-_ALIGHTING_ROWS = f"""
-    select distinct st.stop_id
-    from trips t
-    inner join stop_times st on st.trip_id = t.trip_id
-    where t.route_id = :route_id
-    and (:direction is null or t.direction_id = :direction or t.direction_id is null)
-    and {_alights("st")}
-"""
+
+# the records of a line where some trip takes riders on (BOARDING) or sets
+# them down (ALIGHTING): the lists offer a place when one of its records is
+_BOARDING_ROWS = _calls_where(_boards)
+_ALIGHTING_ROWS = _calls_where(_alights)
 
 
 def _line_ways(conn, route_id, direction=None):
