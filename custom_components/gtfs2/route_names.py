@@ -20,6 +20,7 @@ from datetime import date
 
 from sqlalchemy.sql import text
 
+from .feed_window import runs_some_day
 from .gtfs_db import feed_zip
 from .gtfs_filter import _member, read_zip_agencies, read_zip_routes, table_reader
 
@@ -354,7 +355,10 @@ def _read_service_spans(zin):
     if member is not None:
         with zin.open(member) as fh:
             for row in table_reader(fh):
-                seen(row.get("service_id"), row.get("start_date"), row.get("end_date"))
+                # every weekday off, the window is no day the line runs:
+                # Bizkaibus dated its lines from 2017, Zagreb to 2030
+                if runs_some_day(row):
+                    seen(row.get("service_id"), row.get("start_date"), row.get("end_date"))
     member = _member(zin, "calendar_dates.txt")
     if member is not None:
         with zin.open(member) as fh:

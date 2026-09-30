@@ -201,14 +201,33 @@ def test_the_days_a_line_runs_come_from_both_calendars(tmp_path):
         # no trip_headsign: four of the surveyed feeds leave it out
         "trips.txt": "route_id,service_id,trip_id\n"
                      "W,WEEK,T1\nW,SAT,T2\nD,DAYS,T3\nN,NONE,T4\n",
-        "calendar.txt": "service_id,start_date,end_date\n"
-                        "WEEK,20260105,20260630\nSAT,20260110,20260627\n",
+        # calendar.txt as GTFS writes it, weekday flags given
+        "calendar.txt": "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                        "start_date,end_date\n"
+                        "WEEK,1,1,1,1,1,0,0,20260105,20260630\n"
+                        "SAT,0,0,0,0,0,1,0,20260110,20260627\n",
         "calendar_dates.txt": "service_id,date,exception_type\n"
                               # an added day widens the window, a removed one never
                               "WEEK,20260702,1\nWEEK,20261225,2\n"
                               "DAYS,20260301,1\nDAYS,20260214,1\n"})
     assert route_names.route_spans(gtfs_dir, "feed", ["W", "D", "N", "absent"]) == {
         "W": ("20260105", "20260702"), "D": ("20260214", "20260301")}
+
+
+def test_a_calendar_row_with_every_weekday_off_gives_no_days(tmp_path):
+    # Bizkaibus and Zagreb give each service a window running no weekday,
+    # from 2017 or to 2030, and list its days in calendar_dates.txt: the
+    # window is no day the line runs, the lines ran from 2017 to 2030
+    gtfs_dir = _dated_feed(tmp_path, {
+        "trips.txt": "route_id,service_id,trip_id\nB,SEPT,T1\nZ,NEVER,T2\n",
+        "calendar.txt": "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                        "start_date,end_date\n"
+                        "SEPT,0,0,0,0,0,0,0,20170407,20301231\n"
+                        "NEVER,0,0,0,0,0,0,0,20170407,20301231\n",
+        "calendar_dates.txt": "service_id,date,exception_type\n"
+                              "SEPT,20260915,1\nSEPT,20261115,1\n"})
+    assert route_names.route_spans(gtfs_dir, "feed", ["B", "Z"]) == {
+        "B": ("20260915", "20261115")}
 
 
 def test_the_route_list_of_a_feed_cut_by_period(tmp_path):
@@ -219,8 +238,10 @@ def test_the_route_list_of_a_feed_cut_by_period(tmp_path):
                       "AIR-1,TL,AIR,,2\nAIR-2,TL,AIR,,2\nAIR-3,TL,AIR,,2\nGC-1,TL,GC,,2\n",
         "trips.txt": "route_id,service_id,trip_id\n"
                      "AIR-1,OLD,T1\nAIR-2,NEXT,T2\nAIR-3,ONE,T3\nGC-1,OLD,T4\n",
-        "calendar.txt": "service_id,start_date,end_date\n"
-                        "OLD,20000101,20000131\nNEXT,20990101,20990630\n",
+        "calendar.txt": "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                        "start_date,end_date\n"
+                        "OLD,1,1,1,1,1,1,1,20000101,20000131\n"
+                        "NEXT,1,1,1,1,1,1,1,20990101,20990630\n",
         "calendar_dates.txt": "service_id,date,exception_type\nONE,20990701,1\n"})
     assert route_names.get_route_options_from_zip(gtfs_dir, "feed") == [
         "2##AIR-2##AIR · 2099-01-01 → 2099-06-30##pruned",

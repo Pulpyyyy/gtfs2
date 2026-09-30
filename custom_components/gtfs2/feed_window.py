@@ -69,13 +69,19 @@ def _feed_info(rows):
     return {}
 
 
+def runs_some_day(row):
+    """Whether a calendar.txt row runs on some weekday: a row with every
+    flag off runs on none, whatever its dates say."""
+    return any((row.get(day) or "").strip() == "1" for day in WEEKDAYS)
+
+
 def _service_days(calendar, calendar_dates):
     """(first, last) service day of the calendars: the windows of calendar
     rows whose weekdays are not all off, and the additions of the
     calendar_dates rows."""
     first = last = None
     for row in calendar:
-        if not any((row.get(day) or "").strip() == "1" for day in WEEKDAYS):
+        if not runs_some_day(row):
             # the TAO shape: every flag off, the dates mean nothing
             continue
         first = _earliest(first, _iso(row.get("start_date")))
