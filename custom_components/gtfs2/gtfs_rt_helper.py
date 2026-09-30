@@ -107,24 +107,12 @@ def get_next_services(self):
     }
     
     if len(next_services) > 0:
-        attrs[ATTR_DUE_AT] = (
-            next_services[0].strftime(TIME_STR_FORMAT)
-            if len(next_services) > 0
-            else "-"
-        )
+        attrs[ATTR_DUE_AT] = next_services[0].strftime(TIME_STR_FORMAT)
 
     if len(next_services) > 1:
-        attrs[ATTR_NEXT_UP] = (
-            next_services[1].strftime(TIME_STR_FORMAT)
-            if len(next_services) > 1
-            else "-"
-        )
+        attrs[ATTR_NEXT_UP] = next_services[1].strftime(TIME_STR_FORMAT)
     if len(next_delays) > 0:
-        attrs[ATTR_DELAY] = (
-            next_delays[0]
-            if len(next_delays) > 0
-            else "-"
-        )                 
+        attrs[ATTR_DELAY] = next_delays[0]
     if self._relative :
         attrs[ATTR_UNIT_OF_MEASUREMENT] = "min"
     else :
