@@ -38,7 +38,8 @@ from .const import (
     DEFAULT_VEHICLE_MAX_AGE,
     DEFAULT_PATH_GEOJSON,
 
-    TIME_STR_FORMAT
+    TIME_STR_FORMAT,
+    id_of,
 )
 from .alerts import journey_alerts
 from .geojson import safe_file_part, write_json_file
@@ -805,7 +806,9 @@ def get_gtfs_rt(hass, path, data):
         config_entry = hass.config_entries.async_get_entry(entity.config_entry_id)
         cf_data = config_entry.data
         cf_options = config_entry.options
-        _stop_id = cf_data["origin"].split(':')[0]
+        # the id before the first ": ", whole: a stop id may hold a ":"
+        # (StopPoint:OCE...), cut there the host was asked for "StopPoint"
+        _stop_id = id_of(cf_data["origin"])
         _LOGGER.debug("_stop_id: %s", _stop_id)
         _LOGGER.debug("config entry data: %s, options: %s", cf_data, cf_options)
         file = data["file"] + "_rt.json"
