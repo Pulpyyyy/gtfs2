@@ -70,9 +70,10 @@ def get_next_services(self):
     _LOGGER.debug("Configuration for RT route: %s, RT trip: %s, RT stop: %s, RT direction: %s, trip short name: %s", self._route, self._trip, self._stop, self._direction, self._trip_short_name)
     self._rt_group = "route"
     rt_departures = get_rt_route_trip_statuses(self)
-    next_services = rt_departures.get(self._route, {}).get(self._direction, {}).get(self._stop, {}).get("departures", [])
-    next_delays = rt_departures.get(self._route, {}).get(self._direction, {}).get(self._stop, {}).get("delays", [])
-    next_trips = rt_departures.get(self._route, {}).get(self._direction, {}).get(self._stop, {}).get("trips", [])
+    at_stop = rt_departures.get(self._route, {}).get(self._direction, {}).get(self._stop, {})
+    next_services = at_stop.get("departures", [])
+    next_delays = at_stop.get("delays", [])
+    next_trips = at_stop.get("trips", [])
 
     if next_services:
         _LOGGER.debug("Next services: %s", next_services)
