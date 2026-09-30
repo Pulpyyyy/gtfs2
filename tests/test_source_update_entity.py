@@ -123,6 +123,21 @@ def test_a_rebuild_is_told_when_it_starts(monkeypatch):
     assert seen == [(signal, True), (signal, False)]
 
 
+def test_new_options_are_told_to_the_entity(monkeypatch):
+    """The mode, the interval and the next check are attributes: changed,
+    they showed only once the next check wrote the state (field test of
+    2026-09-29). Rearming the check tells the source's entities."""
+    seen, armed = [], []
+    monkeypatch.setattr(source_refresh, "async_dispatcher_send",
+                        lambda hass, signal: seen.append(signal))
+    monkeypatch.setattr(source_refresh, "async_arm_source_check",
+                        lambda hass, entry: armed.append(entry.entry_id))
+    entry = types.SimpleNamespace(data={"file": "src"}, options={}, entry_id="e1")
+    asyncio.run(source_refresh.async_rearm_source_check(_Hass(), entry))
+    assert armed == ["e1"]
+    assert seen == [source_refresh.SIGNAL_SOURCE_REFRESH.format("src")]
+
+
 def test_any_other_version_is_newer():
     entity = _entity(_Hass())
     for latest, installed in [

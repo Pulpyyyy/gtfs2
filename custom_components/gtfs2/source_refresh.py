@@ -71,7 +71,7 @@ _LOGGER = logging.getLogger(__name__)
 # fired towards automations when a source in notify mode has a new version
 EVENT_SOURCE_UPDATE_AVAILABLE = "gtfs2_source_update_available"
 # per-source dispatcher signal: something about the static feed moved,
-# re-read the sidecars
+# or the source's settings, re-read the sidecars
 SIGNAL_SOURCE_REFRESH = "gtfs2_source_refresh_{}"
 
 # the flags a refresh honours that live on the journey entries, kept there
@@ -559,6 +559,10 @@ def async_arm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
 async def async_rearm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """The update listener shape of arming: options changed, follow them."""
     async_arm_source_check(hass, entry)
+    # the update entity shows the mode, the interval and the next check:
+    # without a word it kept the old ones until the next check wrote its
+    # state (field test of 2026-09-29, 36 minutes after notify was set)
+    async_dispatcher_send(hass, SIGNAL_SOURCE_REFRESH.format(entry.data.get(CONF_FILE)))
 
 
 @callback
