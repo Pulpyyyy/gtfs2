@@ -604,8 +604,10 @@ the kept zip.
 Chosen per source on the datasource entry (`source_refresh.py`):
 
 ```
-off      nothing runs by itself; the button, the update entity and the
-         update service still refresh on demand
+off      nothing runs by itself; the button and the update service still
+         refresh on demand. The update entity claims no version beyond the
+         installed one, so it has nothing to install, and asking it to
+         check for an update does nothing
 notify   one conditional request per check; on a new edition the update
          entity turns "update available" and, once per version, the event
          gtfs2_source_update_available fires, so an automation can install
