@@ -633,7 +633,7 @@ def served_between(patterns, origins, destinations):
 pieces_of = places._segments_of
 
 
-def rides_in_order(piece, size, ends=(), ways=(True, False)):
+def rides_in_order(piece, size, ends=(), ways=(True, False), excused=None):
     """One way along the list, forward or backward.
 
     A loop has no straight order: its seam, a step across more than half the
@@ -641,7 +641,8 @@ def rides_in_order(piece, size, ends=(), ways=(True, False)):
     Montesquieu, Cheques Postaux quai D, then quai C, and GVB 14 starts in the
     turning loop at Flevopark, so one step against the way is allowed when it
     touches the trip's own first or last stop (ends). A step against the way
-    in the middle of a ride still fails.
+    in the middle of a ride still fails, unless `excused(a, b)` says no list
+    can follow it.
     """
     for forward in ways:
         wraps = shuffles = 0
@@ -650,6 +651,8 @@ def rides_in_order(piece, size, ends=(), ways=(True, False)):
             if abs(step) > size / 2:
                 wraps += 1
             elif (step > 0) != forward:
+                if excused is not None and excused(a, b):
+                    continue
                 if a in ends or b in ends:
                     shuffles += 1
                 else:
@@ -679,6 +682,32 @@ def variants_disagree(met, others):
             return None
         excused.append((a, b))
     return excused
+
+
+def calls_next(rides):
+    """{place: the places some ride calls at right after it}, the rides as
+    list positions."""
+    after = {}
+    for ride in rides:
+        for a, b in zip(ride, ride[1:]):
+            if a != b:
+                after.setdefault(a, set()).add(b)
+    return after
+
+
+def rides_lead_back(after, a, b):
+    """Whether the rides lead from b back to a, one after another: then no
+    list keeps a before b for them all (two variants running the pair the
+    other way, or a chain of them round a cycle)."""
+    seen, todo = {b}, [b]
+    while todo:
+        for n in after.get(todo.pop(), ()):
+            if n == a:
+                return True
+            if n not in seen:
+                seen.add(n)
+                todo.append(n)
+    return False
 
 
 def stretches_from(pattern, home, entry_of, ids, at):
@@ -966,6 +995,9 @@ def check_route(check, fx, route_id, direction, kind):
         in_line_order = [s for s in ids if s in set(offered_ids)] == offered_ids
         check.note(in_line_order, "the origin list keeps the line's order",
                    offered=offered_ids)
+        known_of = {pattern: [entry_of[stop] for stop in pattern if stop in entry_of]
+                    for pattern in grouped}
+        after = calls_next(piece for known in known_of.values() for piece in pieces_of(known))
         for pattern in grouped:
             unoffered = [stop for stop in pattern
                          if stop not in entry_of
@@ -975,11 +1007,29 @@ def check_route(check, fx, route_id, direction, kind):
                 text += (": " + listed([named(fx, stop) for stop in unoffered])
                          + f" (on the ride {pattern[0]} .. {pattern[-1]})")
             check.note(not unoffered, text, unoffered=list(unoffered))
-            known = [entry_of[stop] for stop in pattern if stop in entry_of]
+            known = known_of[pattern]
             ends = (known[0], known[-1]) if known else ()
-            ordered = all(rides_in_order(piece, len(ids), ends) for piece in pieces_of(known))
+            # a step the rides of this direction also make the other way
+            # round, two variants or a chain of them, is no list's to follow
+            # both ways (Krakow M 141, Roma 2, Clemson TL-3): recorded, as
+            # the destinations check does. The origin list reads both ways,
+            # so the other direction's rides are not in it
+            disagree = []
+
+            def excused(a, b):
+                if rides_lead_back(after, a, b):
+                    disagree.append([ids[a], ids[b]])
+                    return True
+                return False
+
+            ordered = all(rides_in_order(piece, len(ids), ends, excused=excused)
+                          for piece in pieces_of(known))
             check.note(ordered, "the list contradicts the riding order "
-                                f"{pattern[0]} .. {pattern[-1]}")
+                                f"{pattern[0]} .. {pattern[-1]}"
+                                + (f" (variants disagree on "
+                                   f"{listed([' before '.join(named(fx, s) for s in p) for p in disagree])})"
+                                   if disagree and ordered else ""),
+                       variants_disagree=disagree)
         # which end comes first (the one the trips of direction 0 leave
         # from) is the component's rule, set in tests/test_list_heading.py
         return
@@ -1954,3 +2004,22 @@ def test_variants_disagree_excuses_only_a_pair_another_ride_runs_the_lists_way()
     assert variants_disagree([0, 2, 1, 3], []) is None
     # a ride in the list's order has nothing to excuse
     assert variants_disagree([0, 1, 2, 3], []) == []
+
+
+def test_a_step_the_rides_also_make_the_other_way_round_is_excused():
+    # list order 0 1 2 3 4; this ride meets 2 before 1
+    ride = [0, 2, 1, 3]
+    assert not rides_in_order(ride, 5)
+    # another ride runs 1 before 2: no list keeps both
+    after = calls_next([ride, [0, 1, 2, 3]])
+    assert rides_in_order(ride, 5, excused=lambda a, b: rides_lead_back(after, a, b))
+    # or a chain of rides does: 1 before 4, 4 before 2
+    after = calls_next([ride, [1, 4], [4, 2]])
+    assert rides_in_order(ride, 5, excused=lambda a, b: rides_lead_back(after, a, b))
+    # nothing leads back from 1 to 2: the list's fault
+    after = calls_next([ride, [0, 3]])
+    assert not rides_in_order(ride, 5, excused=lambda a, b: rides_lead_back(after, a, b))
+    # read backward the same way: a ride going down the list
+    down = [4, 2, 3, 1]
+    after = calls_next([down, [4, 3, 2, 1]])
+    assert rides_in_order(down, 5, excused=lambda a, b: rides_lead_back(after, a, b))
