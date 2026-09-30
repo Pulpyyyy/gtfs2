@@ -45,14 +45,13 @@ from __future__ import annotations
 import asyncio
 import datetime
 import json
-import re
-import zoneinfo
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from freezegun import freeze_time
 
+import case_files
 import ha_stub
 
 ha_stub.install()
@@ -80,8 +79,6 @@ CASE_ROOT = Path(__file__).parent / "case_route_combined"
 # Fixed integration config -- not per-case diffable data, so not stored
 # as its own case file. Same choice as TIMEZONE in test_static_cases.py.
 TIMEZONE = "Europe/Paris"
-
-_EVAL_GLOBALS = {"datetime": datetime, "zoneinfo": zoneinfo}
 
 
 class _FakeConfig:
@@ -161,93 +158,7 @@ class _FakeConfigEntry:
         }
 
 
-_CASE_NUM_RE = re.compile(r"case_(\d+)")
-
-
-def _discover_cases(case_root: Path) -> list[tuple[str, Path]]:
-    if not case_root.is_dir():
-        return []
-
-    cases: dict[str, Path] = {}
-    for path in case_root.iterdir():
-        if path.is_dir() and path.name.startswith("case_"):
-            match = _CASE_NUM_RE.match(path.name)
-            if match:
-                cases.setdefault(f"case_{match.group(1)}", path)
-        elif path.is_file():
-            match = _CASE_NUM_RE.match(path.name)
-            if match:
-                cases.setdefault(f"case_{match.group(1)}", case_root)
-
-    def _case_number(case_id: str) -> float:
-        try:
-            return int(case_id.split("_")[1])
-        except (IndexError, ValueError):
-            return float("inf")
-
-    return sorted(cases.items(), key=lambda item: _case_number(item[0]))
-
-
-def _find_case_file(case_dir: Path, case_id: str, suffix: str) -> Path:
-    case_num = case_id.split("_", 1)[1]
-    prefix = f"case_{case_num}"
-    matches = []
-    for path in case_dir.iterdir():
-        name = path.name
-        if not name.startswith(prefix) or not name.endswith(suffix):
-            continue
-        next_char = name[len(prefix):len(prefix) + 1]
-        if next_char.isdigit():
-            continue
-        matches.append(path)
-    if not matches:
-        raise FileNotFoundError(f"No file for {case_id!r} ending in {suffix!r} found in {case_dir}")
-    if len(matches) > 1:
-        raise ValueError(f"Multiple files for {case_id!r} ending in {suffix!r} found in {case_dir}: {matches}")
-    return matches[0]
-
-
-def _parse_literal(text: str) -> object:
-    return eval(text.strip(), _EVAL_GLOBALS)  # noqa: S307 - trusted, locally captured fixture
-
-
-def _parse_datetime_capture(text: str) -> tuple[str, datetime.datetime]:
-    lines = [line for line in text.strip().splitlines() if line.strip()]
-    label = ""
-    if lines and lines[0].strip().lower().startswith("label:"):
-        label = lines[0].split(":", 1)[1].strip()
-        lines = lines[1:]
-    if not lines:
-        raise ValueError("Datetime capture has no datetime line after stripping the label")
-    return label, datetime.datetime.fromisoformat(lines[0].strip())
-
-
-def _normalize_datetimes(value):
-    """Recursively convert any datetime subclass (e.g. freezegun's
-    FakeDatetime, produced by code running inside a `freeze_time` block)
-    into a plain `datetime.datetime` with identical field values.
-
-    Without this, a value computed under `freeze_time` and a value
-    parsed from a captured expected-output file can be equal (same
-    year/month/day/hour/minute/second/tzinfo) but different *types* --
-    pytest's diff then shows a class-name difference as if it were a
-    real one. Generic: doesn't know or care about field names, so unlike
-    filtering the printed diff text, it can't accidentally hide an
-    actual difference.
-    """
-    if isinstance(value, datetime.datetime) and type(value) is not datetime.datetime:
-        return datetime.datetime(
-            value.year, value.month, value.day, value.hour,
-            value.minute, value.second, value.microsecond, value.tzinfo,
-        )
-    if isinstance(value, dict):
-        return {k: _normalize_datetimes(v) for k, v in value.items()}
-    if isinstance(value, list):
-        return [_normalize_datetimes(v) for v in value]
-    return value
-
-
-CASES = _discover_cases(CASE_ROOT)
+CASES = case_files.discover_cases(CASE_ROOT)
 
 # the schedule get_gtfs hands the refresh. An object and not a word: a
 # word is what get_gtfs answers when there is no database, and the refresh
@@ -258,17 +169,17 @@ SCHEDULE = object()
 
 @pytest.mark.parametrize("case_id,case_dir", CASES, ids=[c[0] for c in CASES])
 def test_coordinator_case(case_id: str, case_dir: Path):
-    rows = _parse_literal(
-        _find_case_file(case_dir, case_id, "_static_realtime_input_fetch_departure_rows.txt").read_text(encoding="utf-8")
+    rows = case_files.parse_literal(
+        case_files.find_case_file(case_dir, case_id, "_static_realtime_input_fetch_departure_rows.txt").read_text(encoding="utf-8")
     )
-    label, captured_at = _parse_datetime_capture(
-        _find_case_file(case_dir, case_id, "_static_realtime_input_datetime.txt").read_text(encoding="utf-8")
+    label, captured_at = case_files.parse_datetime_capture(
+        case_files.find_case_file(case_dir, case_id, "_static_realtime_input_datetime.txt").read_text(encoding="utf-8")
     )
     feed_entities = json.loads(
-        _find_case_file(case_dir, case_id, "_static_realtime_input_feed_entities.txt").read_text(encoding="utf-8")
+        case_files.find_case_file(case_dir, case_id, "_static_realtime_input_feed_entities.txt").read_text(encoding="utf-8")
     )
-    expected = _parse_literal(
-        _find_case_file(case_dir, case_id, "_static_realtime_output_combined.txt").read_text(encoding="utf-8")
+    expected = case_files.parse_literal(
+        case_files.find_case_file(case_dir, case_id, "_static_realtime_output_combined.txt").read_text(encoding="utf-8")
     )
 
     dt_util.set_default_time_zone(dt_util.get_time_zone(TIMEZONE))
@@ -314,7 +225,7 @@ def test_coordinator_case(case_id: str, case_dir: Path):
              patch.object(gtfs_rt_helper_mod, "get_gtfs_feed_entities", return_value=feed_entities):
             result = asyncio.run(coord._async_update_data())
 
-    result = _normalize_datetimes(result)
+    result = case_files.normalize_datetimes(result)
     # the rows kept for a later realtime refresh are this case's own input
     # file, not an output: compared through what the coordinator made of
     # them, never repeated in the capture. The records are the same kind of

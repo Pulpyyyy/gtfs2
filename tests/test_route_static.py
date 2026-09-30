@@ -23,12 +23,12 @@ from __future__ import annotations
 
 import datetime
 import re
-import zoneinfo
 from pathlib import Path
 
 import pytest
 from freezegun import freeze_time
 
+import case_files
 import ha_stub
  
 # Registers the homeassistant stand-ins, and does nothing where a real Home
@@ -51,8 +51,6 @@ CASE_ROOT = Path(__file__).parent / "case_route"
 # datetime capture instead -- not needed while every case is Paris.
 TIMEZONE = "Europe/Paris"
 
-_EVAL_GLOBALS = {"datetime": datetime, "zoneinfo": zoneinfo}
-
 
 class _FakeConfig:
     def __init__(self, time_zone: str) -> None:
@@ -74,91 +72,14 @@ class _FakeHass:
         self.config = _FakeConfig(time_zone)
 
 
-_CASE_NUM_RE = re.compile(r"case_(\d+)")
-
-
-def _discover_cases(case_root: Path) -> list[tuple[str, Path]]:
-    """Every case under `case_root`, as (case_id, dir_containing_its_files).
-
-    A case's files may be named `case_1_...` or `case_1a_/case_1b_/...`
-    (a sub-letter per file, e.g. from an earlier naming convention) --
-    either way, everything sharing the same case *number* is grouped
-    into one case, identified as `case_1`, `case_2`, etc.
-
-    Supports both folder layouts too:
-    - grouped:  case_route/case_1/case_1..._....txt
-    - flat:     case_route/case_1..._....txt directly
-    """
-    if not case_root.is_dir():
-        return []
-
-    cases: dict[str, Path] = {}
-    for path in case_root.iterdir():
-        if path.is_dir() and path.name.startswith("case_"):
-            match = _CASE_NUM_RE.match(path.name)
-            if match:
-                cases.setdefault(f"case_{match.group(1)}", path)
-        elif path.is_file():
-            match = _CASE_NUM_RE.match(path.name)
-            if match:
-                cases.setdefault(f"case_{match.group(1)}", case_root)
-
-    def _case_number(case_id: str) -> float:
-        try:
-            return int(case_id.split("_")[1])
-        except (IndexError, ValueError):
-            return float("inf")
-
-    return sorted(cases.items(), key=lambda item: _case_number(item[0]))
-
-
-def _find_case_file(case_dir: Path, case_id: str, suffix: str) -> Path:
-    """The single file for `case_id` in `case_dir` whose name ends with
-    `suffix`. Matched by case number, not an exact `case_1_` prefix, so
-    `case_1_...`, `case_1a_...`, `case_1b_...` etc. all count as
-    belonging to `case_1` -- while still telling `case_1` apart from
-    `case_10`, `case_11`, ... (a plain `str.startswith` alone would not).
-    """
-    case_num = case_id.split("_", 1)[1]
-    prefix = f"case_{case_num}"
-    matches = []
-    for path in case_dir.iterdir():
-        name = path.name
-        if not name.startswith(prefix) or not name.endswith(suffix):
-            continue
-        next_char = name[len(prefix):len(prefix) + 1]
-        if next_char.isdigit():
-            continue  # this is case_10's file, not case_1's
-        matches.append(path)
-    if not matches:
-        raise FileNotFoundError(f"No file for {case_id!r} ending in {suffix!r} found in {case_dir}")
-    if len(matches) > 1:
-        raise ValueError(f"Multiple files for {case_id!r} ending in {suffix!r} found in {case_dir}: {matches}")
-    return matches[0]
-
-
 def _parse_rows_capture(text: str) -> list[dict]:
     """Format: a bare Python list-of-dicts literal, nothing else."""
-    return eval(text.strip(), _EVAL_GLOBALS)  # noqa: S307 - trusted, locally captured fixture
-
-
-def _parse_datetime_capture(text: str) -> tuple[str, datetime.datetime]:
-    """Format: an optional `label: <free text>` line, then one bare ISO
-    datetime. Returns (label, instant); label is "" if absent.
-    """
-    lines = [line for line in text.strip().splitlines() if line.strip()]
-    label = ""
-    if lines and lines[0].strip().lower().startswith("label:"):
-        label = lines[0].split(":", 1)[1].strip()
-        lines = lines[1:]
-    if not lines:
-        raise ValueError("Datetime capture has no datetime line after stripping the label")
-    return label, datetime.datetime.fromisoformat(lines[0].strip())
+    return case_files.parse_literal(text)
 
 
 def _parse_interpret_output_capture(text: str) -> dict:
     """Format: a bare Python dict literal, nothing else"""
-    return eval(text.strip(), _EVAL_GLOBALS)  # noqa: S307 - trusted, locally captured fixture
+    return case_files.parse_literal(text)
 
 
 def _parse_coordinator_data_capture(text: str) -> dict:
@@ -171,26 +92,26 @@ def _parse_coordinator_data_capture(text: str) -> dict:
     it; everything else in the capture is parsed as-is.
     """
     body = re.sub(r"<pygtfs\.schedule\.Schedule object at 0x[0-9a-fA-F]+>", "None", text.strip())
-    return eval(body, _EVAL_GLOBALS)  # noqa: S307 - trusted, locally captured fixture
+    return case_files.parse_literal(body)
 
 
-CASES = _discover_cases(CASE_ROOT)
+CASES = case_files.discover_cases(CASE_ROOT)
 
 
 @pytest.mark.parametrize("case_id,case_dir", CASES, ids=[c[0] for c in CASES])
 def test_route_static(case_id: str, case_dir: Path):
     rows = _parse_rows_capture(
-        _find_case_file(case_dir, case_id, "_static_route_input_fetch_departure_rows.txt").read_text(encoding="utf-8")
+        case_files.find_case_file(case_dir, case_id, "_static_route_input_fetch_departure_rows.txt").read_text(encoding="utf-8")
     )
     start_station_id = rows[0]["origin_stop_id"]
-    label, captured_at = _parse_datetime_capture(
-        _find_case_file(case_dir, case_id, "_static_route_input_datetime.txt").read_text(encoding="utf-8")
+    label, captured_at = case_files.parse_datetime_capture(
+        case_files.find_case_file(case_dir, case_id, "_static_route_input_datetime.txt").read_text(encoding="utf-8")
     )
     expected_interpret_result = _parse_interpret_output_capture(
-        _find_case_file(case_dir, case_id, "_static_route_output_interpret_departure_rows.txt").read_text(encoding="utf-8")
+        case_files.find_case_file(case_dir, case_id, "_static_route_output_interpret_departure_rows.txt").read_text(encoding="utf-8")
     )
     coordinator_data = _parse_coordinator_data_capture(
-        _find_case_file(case_dir, case_id, "_static_route_output_coordinator_data.txt").read_text(encoding="utf-8")
+        case_files.find_case_file(case_dir, case_id, "_static_route_output_coordinator_data.txt").read_text(encoding="utf-8")
     )
 
     # HA sets its own default timezone once at startup from

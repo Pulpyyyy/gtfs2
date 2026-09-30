@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 from freezegun import freeze_time
 
+import case_files
 import test_stop_combined as combined
 
 local_stops = combined.local_stops
@@ -27,9 +28,9 @@ def _departures(stops):
 def test_a_failed_download_keeps_the_timetable():
     assert combined.CASES
     for case_id, case_dir in combined.CASES:
-        rows = combined._parse_literal(combined._find_case_file(
+        rows = case_files.parse_literal(case_files.find_case_file(
             case_dir, case_id, "_static_realtime_stop_input_fetch_departure_rows.txt").read_text(encoding="utf-8"))
-        _label, captured_at = combined._parse_datetime_capture(combined._find_case_file(
+        _label, captured_at = case_files.parse_datetime_capture(case_files.find_case_file(
             case_dir, case_id, "_static_realtime_stop_input_datetime.txt").read_text(encoding="utf-8"))
         dt_util.set_default_time_zone(dt_util.get_time_zone(combined.TIMEZONE))
         hass = combined._FakeHass(combined.TIMEZONE)
