@@ -204,6 +204,17 @@ class GTFSDatasourceTimetableSensor(SensorEntity):
         }
 
 
+def _entry_device(name):
+    """The device of a journey or local stops entry, named after it."""
+    return DeviceInfo(
+        name=f"GTFS - {name}",
+        entry_type=DeviceEntryType.SERVICE,
+        identifiers={(DOMAIN, f"GTFS - {name}")},
+        manufacturer="GTFS",
+        model=name,
+    )
+
+
 class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
     """Implementation of a GTFS departure sensor."""
 
@@ -245,13 +256,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._state: datetime.datetime | None = None
 
         self._attr_unique_id = f"gtfs-{self._name}"
-        self._attr_device_info = DeviceInfo(
-            name=f"GTFS - {self._name}",
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, f"GTFS - {self._name}")},
-            manufacturer="GTFS",
-            model=self._name,
-        )
+        self._attr_device_info = _entry_device(self._name)
         # _update_attrs fills self._attributes in place and returns None on
         # its early paths: assigning its return here replaced the dict with
         # None, and the next update crashed writing into it
@@ -449,13 +454,7 @@ class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
         self._attributes: dict[str, Any] = {}
 
         self._attr_unique_id = self._name
-        self._attr_device_info = DeviceInfo(
-            name=f"GTFS - {name}",
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, f"GTFS - {name}")},
-            manufacturer="GTFS",
-            model=name,
-        )
+        self._attr_device_info = _entry_device(name)
         self._stop = stop
         # same as the departures sensor: keep the dict when the first update
         # returns early because the source is still extracting
