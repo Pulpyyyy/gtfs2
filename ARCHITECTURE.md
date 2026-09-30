@@ -936,7 +936,7 @@ bb4f8f6).
 - The flow's key screens show the same mask for a stored key: the key
   never goes back to the browser, and a mask sent back keeps the key.
 - A url that carries a key is masked before it is stored or shown: the zip
-  sidecar and the update entity's `source_url`.
+  sidecar and the update entity's `source_url` and `configured_url`.
 - A key sent in a header goes to the host it was given for. `requests`
   drops only `Authorization` on a redirect to another host; `fetch` drops
   every header the caller gave, `User-Agent` and `Accept` apart (e0150bf).

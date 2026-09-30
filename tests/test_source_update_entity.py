@@ -181,6 +181,24 @@ def test_the_versions_are_read_off_the_sidecars(tmp_path):
     assert attributes["refresh_mode"] == "off" and attributes["next_check"] is None
 
 
+def test_the_url_set_is_shown_beside_the_one_last_fetched():
+    # a wrong url set for an hour showed the last good one alone (field
+    # test of 2026-09-29): both are said, masked alike
+    key_mask.note_key("test-configured-url-key")
+    entry = types.SimpleNamespace(
+        data={"file": "src", "kind": "datasource",
+              "url": "https://tao/wrong.zip?key=test-configured-url-key"},
+        options={}, entry_id="e1")
+    entity = update.GTFSSourceUpdateEntity(_Hass(), entry)
+    entity._installed_meta = {**BUILT, "url": "https://tao/gtfs.zip"}
+    attributes = entity.extra_state_attributes
+    assert attributes["source_url"] == "https://tao/gtfs.zip"
+    assert attributes["configured_url"] == "https://tao/wrong.zip?key=" + key_mask.KEY_MASK
+    # a source fed from a zip has none
+    entry.data.pop("url")
+    assert entity.extra_state_attributes["configured_url"] is None
+
+
 def test_a_database_never_recorded_is_read_off_the_zip(tmp_path):
     _source(tmp_path, kept=NEWER, feed=False)
     entity = _loaded(tmp_path)

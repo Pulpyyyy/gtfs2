@@ -25,6 +25,7 @@ from .const import (
     CONF_FILE,
     CONF_KIND,
     CONF_STATIC_REFRESH_MODE,
+    CONF_URL,
     ENTRY_KIND_DATASOURCE,
     STATIC_REFRESH_OFF,
 )
@@ -214,6 +215,11 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
             # masked here too: a file written before the mask existed
             # still holds the key
             "source_url": hide_keys(meta["url"]) if meta.get("url") else None,
+            # the url the source is set to fetch, which the next download
+            # asks: changed, source_url above still names the last one
+            # (field test of 2026-09-29, a wrong url tried for an hour)
+            "configured_url": (hide_keys(self._entry.data[CONF_URL])
+                               if self._entry.data.get(CONF_URL) else None),
             "source_size": meta.get("size"),
             # the schedule, so the entity says when it will look next
             "refresh_mode": self._entry.options.get(CONF_STATIC_REFRESH_MODE,
