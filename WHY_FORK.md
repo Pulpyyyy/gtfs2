@@ -38,6 +38,52 @@ than handling providers one by one.
 
 ---
 
+## Problem: a setup made for GTFS specialists
+
+Current situation upstream: the setup screens show the feed as the feed
+stores it. The user has to know how their provider names and organises
+its lines and stops, and the documentation speaks the same language.
+
+The same line and the same stop of TAO (Orléans), as each version offers
+them:
+
+| Screen | Upstream | Fork |
+|---|---|---|
+| Line | `0##ORLEANS:Line:A: (A - JULES VERNE - HOPITAL LA SOURCE) TAO (Orléans)` | `A : JULES VERNE - HOPITAL LA SOURCE` |
+| Origin | `ORLEANS:StopArea:THOPIT2: Hôpital de La Source (0)` | `Hôpital de La Source` |
+| Transport type | asked first: "all but trains" or "trains only", which sends the user down two different setups | not asked: the line picked says it |
+| Operator | always asked | asked only when the source has several |
+
+Solution: **a setup that asks what a rider knows**. The whole setup was
+rewritten screen by screen:
+
+- every screen opens with a plain question: "Which line should this sensor
+  follow?", "Where is the starting point?", "Where should the transport
+  data come from?"
+- the first screen says what a source and a sensor are; a first-time user
+  with no source yet is guided to add one
+- a line reads as its number then where it goes; when the feed leaves the
+  name empty, the destinations its vehicles show stand in; lines sort the
+  way a line number is read, and the mode is added where two lines share
+  a number
+- a stop is offered by its name, once, all platforms of a station
+  together; a train journey is picked station by station, by name
+- fields carry a short explanation under them, and errors say what to do,
+  in the five languages of the integration
+- the screens say what will happen before it happens (a download, how
+  long a large network takes) and show progress while it runs
+- a zip holding several networks asks which one; only that one is
+  downloaded
+- disk space is shown in plain figures, and a line removed to save space
+  can be brought back from the same screens
+
+Benefits:
+
+- a sensor set up without knowing what a `route_id` or a `stop_id` is
+- fewer wrong picks, fewer support questions
+
+---
+
 ## Problem: duplicated realtime configuration
 
 Current situation upstream: every journey carries its own copy of the
@@ -73,30 +119,59 @@ Benefits:
 
 ---
 
-## Problem: rebuilding unchanged feeds
+## Problem: keeping the timetable up to date is the user's job
 
-Current situation:
+Current situation upstream: the only way to renew a source's timetable is
+the `update_gtfs` service. The user has to:
+
+1. write an automation that calls it, on a schedule of their own
+2. type into it again what the source's setup already holds: file name,
+   url, API key, the key's name and where it goes
+3. accept that it downloads and rebuilds every time, changed or not
+4. find out alone whether it worked, and when the kept timetable runs out
 
 ```text
-Download → Rebuild → Nothing changed
-(repeated at every refresh)
+Automation (written by hand) → Download → Rebuild → Nothing changed
+(repeated at every run, with no word on the result)
 ```
 
-Solution: **freshness**. Before downloading anything, the fork asks the
-host whether the feed changed, with one conditional request built from the
-last answer's `ETag` and `Last-Modified`. Eleven of thirteen hosts probed in
-September 2026 answer it. When a host cannot say, the download is compared
-by its sha256 hash before anything is rebuilt.
+Solution: **the source looks after itself**. In the source's options, one
+choice (what to do with a new edition) and one frequency:
 
-Each source then follows its own refresh mode: `off`, `notify` (the update
-entity says a new edition is available) or `auto` (the rebuild runs by
-itself), checked at night in a slot of its own.
+```text
+off      nothing runs by itself; the rebuild button still works
+notify   the update entity says a new edition is available; an event lets
+         an automation install it at a time that suits
+auto     the new edition is installed at the first check that finds it
+```
+
+A source is `off` until its options say otherwise, so nothing changes
+behind the back of someone who just migrated.
+
+Behind that choice:
+
+- **Freshness.** Before downloading anything, the fork asks the host
+  whether the feed changed, with one conditional request built from the
+  last answer's `ETag` and `Last-Modified`. Eleven of thirteen hosts probed
+  in September 2026 answer it. When a host cannot say, the download is
+  compared by its sha256 hash before anything is rebuilt.
+- **Timing.** Each source is checked in a night slot of its own, between
+  03:00 and 06:00, so two sources never rebuild on the same minute. A check missed
+  while Home Assistant was off is caught up after start.
+- **Follow-up.** The update entity shows the installed edition and the
+  new one, and installs it like any other update in Home Assistant. A
+  diagnostic sensor says how long the kept timetable is still good for
+  (valid, ending, expired). A failed refresh is raised in Settings >
+  Repairs with its fix, and clears when a refresh succeeds.
+
+The `update_gtfs` service stays, for the automations that already use it.
 
 Benefits:
 
-- less network traffic
-- less CPU and disk activity
-- a rebuild only when there is something new
+- no automation to write, no settings typed twice
+- a download only when the host has something new, a rebuild only when
+  the download differs
+- the user sees what is installed, what is waiting, and what went wrong
 
 ---
 
