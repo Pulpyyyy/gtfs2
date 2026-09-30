@@ -29,7 +29,8 @@ from .const import (
     DEFAULT_PATH,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
-from .gtfs_db import import_routes, on_a_copy, optimise_datasource, real_path, routes_in, scratch_path
+from .gtfs_db import (close_schedule, import_routes, on_a_copy, optimise_datasource, real_path,
+                      routes_in, scratch_path)
 from .gtfs_helper import check_datasource_index
 from .notifications import async_notify_import
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
@@ -262,6 +263,9 @@ class ReloadScreens:
         # index at this very moment leaves a journal that the gate mistakes
         # for an unpacking still running. Measured in the field: get_gtfs
         # answered "extracting" and the direction screen crashed on a string.
+        # The schedule the route screen opened is let go first, as
+        # _reopen_schedule does: left to the collector, it held the file
+        close_schedule(self._pygtfs)
         self._pygtfs = await self.hass.async_add_executor_job(
             open_datasource, self.hass.config.path(DEFAULT_PATH),
             self._user_inputs[CONF_FILE])

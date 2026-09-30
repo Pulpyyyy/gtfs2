@@ -116,6 +116,7 @@ const = ha_stub.load("const")
 config_flow = ha_stub.load("config_flow")
 notifications = ha_stub.load("notifications")
 flow_source = ha_stub.load("flow_source")
+flow_reload = ha_stub.load("flow_reload")
 rt_source = ha_stub.load("rt_source")
 gtfs_db = ha_stub.load("gtfs_db")
 key_mask = ha_stub.load("key_mask")
@@ -902,7 +903,7 @@ def test_optimise_keeps_the_lines_the_entries_read_and_drops_the_rest(world):
     walk(world, scenario)
 
 
-def test_a_new_source_imports_only_the_lines_picked(world):
+def test_a_new_source_imports_only_the_lines_picked(world, monkeypatch):
     async def scenario(hass):
         drop_zip(hass, "tao-journeys", "tao")
         # nothing built yet: the first menu only leads to a source
@@ -953,7 +954,17 @@ def test_a_new_source_imports_only_the_lines_picked(world):
         assert [r.split("##")[1] for r in flagged] == [left_out]
         alone = shown(await submit(hass, lines, route=flagged[0]), FORM, "route_reload_only")
         assert fields(alone) == {}
+        # the route screen opened the database built on the first pass; the
+        # reopening after the import lets that one go first, where it stayed
+        # open until collected, holding the file on Windows
+        [flow] = hass.config_entries.flow._progress.values()
+        held = flow._pygtfs
+        let_go = []
+        close = flow_reload.close_schedule
+        monkeypatch.setattr(flow_reload, "close_schedule",
+                            lambda schedule: (let_go.append(schedule), close(schedule)))
         result = await submit(hass, alone)
+        assert hasattr(held, "session") and held in let_go
         assert result["step_id"] in ("stops", "towards")
         loaded = {r for (r,) in rows(hass, "tao", "select distinct route_id from trips")}
         assert loaded == set(zip_routes("tao-journeys"))
