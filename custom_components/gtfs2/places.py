@@ -1024,7 +1024,8 @@ def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, 
 def _quickest_rotations(schedule, route_id, origin_stop_id, destination_stop_id, candidates):
     """Of the direction labels in candidates, the one whose shortest rides of
     the pair take the least time, by the median over its trips; all of them
-    when that does not tell them apart."""
+    when that does not tell them apart. The rides are the departure query's:
+    only a call the rider can use is an end, or in the way."""
     origin_group = _place_group("origin")
     destination_group = _place_group("destination")
     sql = f"""
@@ -1036,13 +1037,14 @@ def _quickest_rotations(schedule, route_id, origin_stop_id, destination_stop_id,
       and o.stop_id in {origin_group}
       and d.stop_id in {destination_group}
       and o.stop_sequence < d.stop_sequence
+      and {_boards("o")} and {_alights("d")}
       and not exists (
           select 1 from stop_times between_stop
           where between_stop.trip_id = t.trip_id
             and between_stop.stop_sequence > o.stop_sequence
             and between_stop.stop_sequence < d.stop_sequence
-            and (between_stop.stop_id in {origin_group}
-                 or between_stop.stop_id in {destination_group}))
+            and ((between_stop.stop_id in {origin_group} and {_boards("between_stop")})
+                 or (between_stop.stop_id in {destination_group} and {_alights("between_stop")})))
     """  # noqa: S608
     minutes = {}
     try:
