@@ -22,7 +22,7 @@ from sqlalchemy.sql import text
 
 from .feed_window import runs_some_day
 from .gtfs_db import feed_zip
-from .gtfs_filter import _member, read_zip_agencies, read_zip_routes, table_reader
+from .gtfs_filter import _member, read_zip_agencies, read_zip_routes, table_reader, table_rows
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -321,16 +321,12 @@ def _names_a_place(headsign, places=frozenset()):
 
 def _read_place_words(zin):
     """The stop names of an open feed and their first words, casefolded."""
-    member = _member(zin, "stops.txt")
-    if member is None:
-        return frozenset()
     words = set()
-    with zin.open(member) as fh:
-        for row in table_reader(fh):
-            name = (row.get("stop_name") or "").strip().casefold()
-            if name:
-                words.add(name)
-                words.add(re.split(r"[\s\-/]", name, 1)[0])
+    for row in table_rows(zin, "stops.txt"):
+        name = (row.get("stop_name") or "").strip().casefold()
+        if name:
+            words.add(name)
+            words.add(re.split(r"[\s\-/]", name, 1)[0])
     return frozenset(words)
 
 
@@ -351,20 +347,14 @@ def _read_service_spans(zin):
         was = spans.get(service)
         spans[service] = ((min(was[0], first), max(was[1], last)) if was
                           else (first, last))
-    member = _member(zin, "calendar.txt")
-    if member is not None:
-        with zin.open(member) as fh:
-            for row in table_reader(fh):
-                # every weekday off, the window is no day the line runs:
-                # Bizkaibus dated its lines from 2017, Zagreb to 2030
-                if runs_some_day(row):
-                    seen(row.get("service_id"), row.get("start_date"), row.get("end_date"))
-    member = _member(zin, "calendar_dates.txt")
-    if member is not None:
-        with zin.open(member) as fh:
-            for row in table_reader(fh):
-                if (row.get("exception_type") or "1").strip() == "1":
-                    seen(row.get("service_id"), row.get("date"), row.get("date"))
+    for row in table_rows(zin, "calendar.txt"):
+        # every weekday off, the window is no day the line runs:
+        # Bizkaibus dated its lines from 2017, Zagreb to 2030
+        if runs_some_day(row):
+            seen(row.get("service_id"), row.get("start_date"), row.get("end_date"))
+    for row in table_rows(zin, "calendar_dates.txt"):
+        if (row.get("exception_type") or "1").strip() == "1":
+            seen(row.get("service_id"), row.get("date"), row.get("date"))
     return spans
 
 

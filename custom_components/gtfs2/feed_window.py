@@ -27,7 +27,7 @@ import logging
 import os
 import zipfile
 
-from .gtfs_filter import table_reader
+from .gtfs_filter import table_rows
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -114,19 +114,10 @@ def read_feed_window(zip_path):
         _LOGGER.debug("No zip to read a feed window from at %s: %s", zip_path, ex)
         return {}
     with archive:
-        names = {name.split("/")[-1]: name for name in archive.namelist()}
-
-        def rows(member):
-            # a table the feed leaves out reads as no row
-            if member not in names:
-                return
-            with archive.open(names[member]) as raw:
-                yield from table_reader(raw)
-
         try:
-            window.update(_feed_info(rows("feed_info.txt")))
+            window.update(_feed_info(table_rows(archive, "feed_info.txt")))
             window["first_service_day"], window["last_service_day"] = _service_days(
-                rows("calendar.txt"), rows("calendar_dates.txt"))
+                table_rows(archive, "calendar.txt"), table_rows(archive, "calendar_dates.txt"))
         except (KeyError, OSError, UnicodeDecodeError, csv.Error) as ex:
             _LOGGER.warning("Could not read the feed window of %s: %s", zip_path, ex)
     return window

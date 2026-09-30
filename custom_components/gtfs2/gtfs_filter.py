@@ -69,6 +69,16 @@ def table_reader(raw):
     return reader
 
 
+def table_rows(zin, name):
+    """The rows of a table of an open feed, wherever the feed nested it,
+    read by table_reader; a table the feed leaves out reads as no row."""
+    member = _member(zin, name)
+    if member is None:
+        return
+    with zin.open(member) as raw:
+        yield from table_reader(raw)
+
+
 def _header(rows, name):
     """The header row of a table, or the end of the filtering.
 
@@ -286,10 +296,7 @@ def feed_info_unreadable(zip_path):
     """
     try:
         with zipfile.ZipFile(zip_path) as zin:
-            member = _member(zin, "feed_info.txt")
-            if member is None:
-                return False
-            for row in table_reader(zin.open(member)):
+            for row in table_rows(zin, "feed_info.txt"):
                 for column in ("feed_start_date", "feed_end_date"):
                     if column not in row:
                         continue
@@ -361,10 +368,7 @@ def read_zip_agencies(zip_path):
     """The agency.txt rows of a feed, as dicts, or [] when unreadable."""
     try:
         with zipfile.ZipFile(zip_path) as zin:
-            member = _member(zin, "agency.txt")
-            if member is None:
-                return []
-            return [row for row in table_reader(zin.open(member)) if row.get("agency_name")]
+            return [row for row in table_rows(zin, "agency.txt") if row.get("agency_name")]
     except (OSError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
         _LOGGER.warning("Could not read agencies from %s: %s", zip_path, ex)
         return []
