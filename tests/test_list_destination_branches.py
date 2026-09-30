@@ -155,6 +155,44 @@ def test_the_branch_that_joins_comes_before_one_off_a_place_listed(tmp_path):
         schedule.engine.dispose()
 
 
+def test_a_side_meeting_a_split_one_is_left_for_last(tmp_path):
+    # O -> A -> B -> C -> D (three trips), O -> A -> B -> C -> J (one),
+    # O -> A -> B -> S (one), O -> K -> L (one), O -> K -> M -> J (one).
+    # The C side meets the K side at J, and K also sends a run to L: S,
+    # a side of its own, comes before C, whose run to J then carries on
+    # into K's; from K, M, which the C run waits at J for, before L. The
+    # busier C side first cut the S side in two with K's (Zou school 9200
+    # from Pourtoules: Conil, Les Sables, Caristie, Lycée de l'Arc)
+    stops = {"O": (45.0, 1.0), "A": (45.1, 1.1), "B": (45.2, 1.2), "C": (45.3, 1.3),
+             "D": (45.4, 1.4), "J": (45.4, 1.2), "S": (45.3, 1.0), "K": (44.9, 1.1),
+             "L": (44.8, 1.1), "M": (44.9, 1.3)}
+    rides = [("D1", "OABCD"), ("D2", "OABCD"), ("D3", "OABCD"), ("J1", "OABCJ"),
+             ("S1", "OABS"), ("L1", "OKL"), ("M1", "OKMJ")]
+    feed = {
+        "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,UTC\n",
+        "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\n" + "".join(
+            f"{s},{s} stop,{lat},{lon}\n" for s, (lat, lon) in stops.items()),
+        "routes.txt": "route_id,agency_id,route_short_name,route_long_name,route_type\nR,A,1,One,3\n",
+        "trips.txt": "route_id,service_id,trip_id,direction_id\n" + "".join(
+            f"R,S,{t},0\n" for t, _ride in rides),
+        "stop_times.txt": HEAD + "".join(_calls(t, list(ride)) for t, ride in rides),
+        "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                         "start_date,end_date\nS,1,1,1,1,1,1,1,20260901,20261231\n"),
+    }
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zout:
+        for name, body in feed.items():
+            zout.writestr(name, body)
+    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
+    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
+    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    try:
+        found = places.get_destination_stop_list(schedule, "R", None, "O")
+        assert [str(s).split(":")[0] for s in found] == ["A", "B", "S", "C", "D", "K", "M", "J", "L"]
+    finally:
+        schedule.engine.dispose()
+
+
 @pytest.mark.parametrize(("x_trips", "y_trips", "listed"), [
     (3, 1, ["X1", "X2", "Y1", "Y2"]),
     (1, 3, ["Y1", "Y2", "X1", "X2"]),

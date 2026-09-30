@@ -788,7 +788,30 @@ def _riding_order(calls, trip_count):
     return reach, before, weight
 
 
-def _placed_in_order(reach, before, weight, position):
+def _tails_of(calls):
+    """{place: each way on a ride goes from it, as the place and the places
+    the ride reaches after it}. A ride ending short on another's way is not
+    a way of its own (gtfs-nl 152922 turns trips at Rotterdam Centraal)."""
+    tails = {}
+    for ride, _trip_id in calls:
+        for n, p in enumerate(ride):
+            if p not in ride[:n]:
+                tails.setdefault(p, set()).add(frozenset(ride[n:]))
+    return {p: [tail for tail in ways if not any(tail < other for other in ways)]
+            for p, ways in tails.items()}
+
+
+def _meets_a_split_side(place, pool, onward, tails):
+    """Whether what a free place leads to is reached from another free
+    place too, neither lying on the other's way, which a ride also leaves
+    for somewhere else."""
+    return any(other != place and other not in onward[place] and place not in onward[other]
+               and onward[place] & onward[other]
+               and any(not tail & onward[place] for tail in tails[other])
+               for other in pool)
+
+
+def _placed_in_order(reach, before, weight, position, tails):
     """The places the rides reach, in the order the list offers them."""
     # places that come before one another, two variants riding them in
     # opposite orders, form one group: it is free once what comes before it
@@ -797,7 +820,7 @@ def _placed_in_order(reach, before, weight, position):
     # sweep). Without such a cycle every place is a group of its own
     group = _groups_of(before)
     onward = _onward_of(before)
-    order, placed, rank, joined = [], set(), {}, {}
+    order, placed, rank, joined, waiting = [], set(), {}, {}, {}
     while len(order) < len(reach):
         blocked = {group[p] for p in reach if p not in placed
                    for q in before[p] if q not in placed and group[q] != group[p]}
@@ -815,13 +838,29 @@ def _placed_in_order(reach, before, weight, position):
         # then the Urbania branch, then Corridonia, which joins Pergola's at
         # Casale S. Basilio). Next, what hangs off the latest place listed:
         # ahead of the branch that joins, it cut the side in progress in
-        # two (GtfsDe 22884, Zagreb 14)
+        # two (GtfsDe 22884, Zagreb 14). Between two places hanging off it
+        # alike, the one going on to a place a ride listed further back
+        # waits at, then a side of its own before one that meets another
+        # side later, when a ride of that other side goes elsewhere too:
+        # left last, the ride it carries on runs into the side it meets.
+        # Zou school 9200 from Pourtoules listed the Conil side, which meets
+        # the Caristie side at Louis Pasteur, Caristie also sending a run to
+        # Lycée de l'Arc, before the Les Sables side, and from Caristie went
+        # to Lycée de l'Arc before Louis Pasteur, which the Pont de la Gare
+        # run waited at. A side that meets one wholly heading there comes
+        # first, the busiest, the one joining it after (GtfsDe 22884)
         p = min(pool, key=lambda q: (-max((joined.get(x, -1) for x in onward[q]), default=-1),
                                      -max((rank[x] for x in before[q] if x in rank), default=-1),
+                                     -max((waiting.get(x, -1) for x in onward[q] if x != q and group[x] in blocked),
+                                          default=-1),
+                                     _meets_a_split_side(q, pool, onward, tails),
                                      -weight[q], reach[q], position.get(q, 0)))
         rank[p] = len(order)
         for x in onward[p]:
             joined[x] = rank[p]
+        for x in reach:
+            if p in before[x]:
+                waiting[x] = rank[p]
         order.append(p)
         placed.add(p)
     return order
@@ -897,7 +936,7 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     alightable = {place[s] for sample, s in alighting
                   if s in place and (towards is None or sample in riders)}
     reach, before, weight = _riding_order(calls, trip_count)
-    order = _placed_in_order(reach, before, weight, position)
+    order = _placed_in_order(reach, before, weight, position, _tails_of(calls))
     kept = [by_place[p] for p in order if p in by_place and p in alightable]
     stops = _entries_of(kept, _labels_of(line, station_names))
     _LOGGER.debug(f"Destinations from {origin_stop_id}: {stops}")
