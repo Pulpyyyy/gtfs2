@@ -22,7 +22,7 @@ from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH, DEFAULT_PATH_GEOJSON, DOMAIN, id_of
-from .gtfs_db import feed_zip, real_path, remove_files
+from .gtfs_db import feed_zip, file_edition, real_path, remove_files
 from .gtfs_helper import shown_ends, train_entry_routes
 from .geojson import write_route_file, route_geojson_name, get_representative_trip, vehicle_positions_name
 from .leg import write_leg_file, leg_geojson_name, leg_geojson_pattern, owns_leg_file
@@ -36,12 +36,7 @@ def _route_export_state(zip_path, file):
     the zip it is drawn from (size and modification time, changed by a
     refresh and by an import that rewrites the zip in place) and whether
     the file is still there. Two stats, made for the executor."""
-    try:
-        stat = os.stat(zip_path)
-        edition = f"{stat.st_size}:{stat.st_mtime_ns}"
-    except OSError:
-        edition = ""
-    return edition, os.path.exists(file)
+    return file_edition(zip_path), os.path.exists(file)
 
 
 def _what_changed(previous, key, parts):

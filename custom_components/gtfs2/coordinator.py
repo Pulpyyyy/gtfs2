@@ -4,7 +4,6 @@ from __future__ import annotations
 import datetime
 from datetime import timedelta
 import logging
-import os
 import re
 
 from homeassistant.config_entries import ConfigEntry
@@ -31,7 +30,7 @@ from .const import (
     ICON,
     ICONS
 )    
-from .gtfs_db import close_schedule, real_path
+from .gtfs_db import close_schedule, file_edition, real_path
 from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, journey_data, shown_ends
 from .local_stops import get_local_stops_next_departures, drop_gone_local_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
@@ -52,10 +51,10 @@ def _database_edition(hass, file):
     a schedule opened on the old one goes on reading it.
     """
     try:
-        stat = os.stat(real_path(hass.config.path(DEFAULT_PATH), file))
-    except (OSError, TypeError):
+        path = real_path(hass.config.path(DEFAULT_PATH), file)
+    except TypeError:
         return None
-    return f"{stat.st_ino}:{int(stat.st_mtime)}:{stat.st_size}"
+    return file_edition(path)
 
 
 async def schedule_for(coordinator, data):

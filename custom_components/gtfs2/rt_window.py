@@ -23,7 +23,6 @@ early.
 from __future__ import annotations
 
 import logging
-import os
 import threading
 from datetime import datetime, time, timedelta
 
@@ -31,6 +30,7 @@ import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH
+from .gtfs_db import file_edition, real_path
 from .gtfs_helper import _runs_on, agency_zone, gtfs_seconds
 from .rt_feed import _FEED_CACHE, _same_route
 from .rt_source import source_readers
@@ -134,21 +134,21 @@ def _service_envelope(schedule, date_str):
 def _edition_of(hass, file):
     """What the source's database is right now, as far as a cache cares.
 
-    Its size and the moment it was last written: every writer changes one
-    or the other, whether it swaps a rebuilt file in or writes in place,
-    and no writer has to know this cache exists. An unreadable file reads
+    Which file it is, its size and the moment it was last written
+    (file_edition): every writer changes one or the other, whether it swaps
+    a rebuilt file in or writes in place, and no writer has to know this
+    cache exists. An unreadable file reads
     as its own edition, so the envelope is asked again rather than served
     from an answer about another file.
     """
     try:
-        path = os.path.join(hass.config.path(DEFAULT_PATH), file + ".sqlite")
-        stat = os.stat(path)
-    except (OSError, AttributeError):
-        # no such file, or a caller holding a schedule and no config at all
-        # (the offline harnesses): one edition for them all, the cache then
-        # behaves as it did before this was read
-        return "unknown"
-    return f"{int(stat.st_mtime)}:{stat.st_size}"
+        path = real_path(hass.config.path(DEFAULT_PATH), file)
+    except AttributeError:
+        path = None
+    # no such file, or a caller holding a schedule and no config at all
+    # (the offline harnesses): one edition for them all, the cache then
+    # behaves as it did before this was read
+    return file_edition(path) or "unknown"
 
 
 # the zone a source's clocks are written in, by (file, edition): one small

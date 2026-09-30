@@ -24,9 +24,9 @@ from __future__ import annotations
 import csv
 import datetime
 import logging
-import os
 import zipfile
 
+from .gtfs_db import file_edition
 from .gtfs_filter import table_rows
 
 _LOGGER = logging.getLogger(__name__)
@@ -154,11 +154,9 @@ _LAST_SERVICE_DAY = {}
 def last_service_day(zip_path):
     """read_feed_window's last_service_day, cached per edition of the zip;
     None without a zip."""
-    try:
-        stat = os.stat(zip_path)
-    except OSError:
+    edition = file_edition(zip_path)
+    if edition is None:
         return None
-    edition = (stat.st_size, stat.st_mtime_ns)
     cached = _LAST_SERVICE_DAY.get(zip_path)
     if cached is None or cached[0] != edition:
         # one entry per source, replaced by its next edition: emptied on

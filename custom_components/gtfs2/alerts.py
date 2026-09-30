@@ -11,12 +11,12 @@ and _journey_stops), which of the texts to show and in which language
 from __future__ import annotations
 
 import logging
-import os
 import threading
 
 import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text as sql_text
 
+from .gtfs_db import file_edition
 from .rt_feed import _same_route
 
 _LOGGER = logging.getLogger(__name__)
@@ -210,17 +210,17 @@ def _same_trip(named, trip_id):
 # what each source's database was when its stops were last read: the two
 # caches above hold what a stop is called and which station it hangs from,
 # and a rebuild can rename a stop, move it under another station or drop it
-_EDITIONS: dict[str, str] = {}
+_EDITIONS: dict = {}
 
 
 def _edition_of(schedule):
-    """The source's database as far as a cache cares: size and last write."""
+    """The source's database as far as a cache cares: which file, its last
+    write, its size (file_edition)."""
     try:
         path = schedule.engine.url.database
-        stat = os.stat(path)
-    except (AttributeError, OSError, TypeError):
+    except AttributeError:
         return "unknown"
-    return f"{int(stat.st_mtime)}:{stat.st_size}"
+    return file_edition(path) or "unknown"
 
 
 def forget_stale_stops(data):

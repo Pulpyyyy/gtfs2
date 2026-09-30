@@ -21,7 +21,7 @@ from datetime import date
 from sqlalchemy.sql import text
 
 from .feed_window import runs_some_day
-from .gtfs_db import feed_zip
+from .gtfs_db import feed_zip, file_edition
 from .gtfs_filter import _member, read_zip_agencies, read_zip_routes, table_reader, table_rows
 
 _LOGGER = logging.getLogger(__name__)
@@ -438,8 +438,7 @@ def _from_trips(gtfs_dir, filename):
     zip_path = feed_zip(gtfs_dir, filename) if gtfs_dir else None
     if not zip_path or not os.path.exists(zip_path):
         return {}, {}
-    stat = os.stat(zip_path)
-    key = (zip_path, stat.st_size, stat.st_mtime_ns)
+    key = (zip_path, file_edition(zip_path))
     if key not in _HEADSIGN_ENDS:
         for old in [k for k in _HEADSIGN_ENDS if k[0] == zip_path]:
             del _HEADSIGN_ENDS[old]
@@ -575,8 +574,7 @@ def look_alike_ends(schedule, gtfs_dir, filename, route_ids):
             "Not reading the %s MB of stops of %s to name %s look-alike routes",
             size // (1024 * 1024), filename, len(missing))
         return ends
-    stat = os.stat(zip_path)
-    key = (zip_path, stat.st_size, stat.st_mtime_ns)
+    key = (zip_path, file_edition(zip_path))
     if key not in _STOP_ENDS:
         for old in [k for k in _STOP_ENDS if k[0] == zip_path]:
             del _STOP_ENDS[old]

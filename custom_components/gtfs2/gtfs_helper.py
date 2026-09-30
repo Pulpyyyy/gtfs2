@@ -21,6 +21,7 @@ from .const import (
     DEFAULT_PATH,
     TIME_STR_FORMAT
     )
+from .gtfs_db import file_edition
 from .rt_feed import on_service_day
 
 _LOGGER = logging.getLogger(__name__)
@@ -1047,11 +1048,7 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
         _LOGGER.warning("Cannot check indexes: datasource %s has no usable schedule (%s)", file, schedule or "empty")
         return
     db_file = os.path.join(hass.config.path(gtfs_dir), file + ".sqlite")
-    try:
-        stat = os.stat(db_file)
-        edition = (stat.st_ino, stat.st_mtime_ns, stat.st_size)
-    except OSError:
-        edition = None
+    edition = file_edition(db_file)
     if edition is not None and _INDEX_CHECKED.get(db_file) == edition:
         return
 
@@ -1088,8 +1085,7 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
             _LOGGER.info("Fix missing agency_id in routes table")
             conn.execute(text(sql_fix_route_agency))
         conn.commit()
-    try:
-        stat = os.stat(db_file)
-        _INDEX_CHECKED[db_file] = (stat.st_ino, stat.st_mtime_ns, stat.st_size)
-    except OSError:
-        pass
+    # the edition the checks leave, indexes made
+    edition = file_edition(db_file)
+    if edition is not None:
+        _INDEX_CHECKED[db_file] = edition

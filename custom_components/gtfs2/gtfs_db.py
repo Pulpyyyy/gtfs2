@@ -81,6 +81,18 @@ def feed_zip(gtfs_dir, filename):
     return os.path.join(gtfs_dir, filename + ".zip")
 
 
+def file_edition(path):
+    """Which file stands at path and as what, for a cache kept on it: its
+    inode, its last write to the nanosecond, its size; None when there is
+    none. A refresh swaps another file in under the same name, which the
+    inode tells even when size and time come out the same."""
+    try:
+        stat = os.stat(path)
+    except (OSError, TypeError, ValueError):
+        return None
+    return (stat.st_ino, stat.st_mtime_ns, stat.st_size)
+
+
 def staging_name(filename):
     """The name a rebuilt database takes until it is swapped in."""
     return filename + ".refresh"

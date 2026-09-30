@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import statistics
 
 from sqlalchemy.sql import text
 
+from .gtfs_db import file_edition
 from .gtfs_helper import PLACE_LAT, PLACE_LON, _alights, _boards, _place_group, gtfs_seconds
 
 _LOGGER = logging.getLogger(__name__)
@@ -433,10 +433,12 @@ def _line_rows(conn, sql, params):
     file stays the same one, unchanged; read afresh when it cannot say."""
     try:
         path = conn.engine.url.database
-        stat = os.stat(path)
-    except (AttributeError, OSError, TypeError, ValueError):
+    except AttributeError:
+        path = None
+    edition = file_edition(path)
+    if edition is None:
         return conn.execute(text(sql), params).fetchall()
-    key = (path, stat.st_ino, stat.st_mtime_ns, stat.st_size, sql, tuple(sorted(params.items())))
+    key = (path, edition, sql, tuple(sorted(params.items())))
     rows = _LINE_ROWS.get(key)
     if rows is None:
         rows = conn.execute(text(sql), params).fetchall()
