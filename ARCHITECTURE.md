@@ -177,47 +177,106 @@ before or after.
 
 ```mermaid
 flowchart LR
-  USER([User])
-  HOST[(Publisher host)]
-  CARD([Map cards])
 
-  subgraph HA["Home Assistant"]
-    CF["Config flow"]
-    DS["Datasource entry<br/>one per source"]
-    J["Journey entry<br/>one per sensor"]
-    LS["Local stops entry<br/>one per person or zone"]
-    SE["Source entities<br/>update, button, switch, diagnostics"]
-    SR["Source refresh<br/>night slot, update, button, update_gtfs"]
-    CO["Coordinators<br/>every minute, local stops 15 min"]
-    SEN["Sensors"]
-    REP["Repairs issues, notifications"]
-  end
+USER["User"]
+HOST["Publisher host"]
 
-  subgraph DISK["gtfs2/"]
-    ZIP[("zip: the full record")]
-    DB[("sqlite: what sensors read")]
-  end
-  WWW[("www/gtfs2/: map files")]
+subgraph Configuration
+CF["Config Flow"]
+DS["Datasource"]
+J["Journey"]
+end
 
-  USER --> CF
-  CF -->|creates| DS & J & LS
-  CF -->|first download, line lists| ZIP
-  CF -->|adds lines to| DB
-  DS --> SE
-  DS -.->|arms the night slot| SR
-  SE -.->|update, button| SR
-  SR -->|asks, downloads| HOST
-  SR -->|new edition| ZIP
-  ZIP -->|filter, build beside, check, swap| DB
-  SR --> REP
-  J & LS --> CO
-  DS -->|realtime feeds, keys| CO
-  HOST -->|realtime| CO
-  DB --> CO
-  ZIP -->|shapes| CO
-  CO --> SEN
-  CO --> WWW
-  WWW --> CARD
+subgraph Automation
+SCH["Night Scheduler"]
+UPD["Update Entity"]
+BTN["Rebuild Button"]
+REP["Repairs"]
+end
+
+subgraph Static_Feed_Lifecycle["Static Feed Lifecycle"]
+SR["Source Refresh"]
+FR["Freshness"]
+ZIP["Kept Zip"]
+GF["GTFS Filter"]
+SC["Scratch DB"]
+ST["Staging DB"]
+SW["Atomic Swap"]
+LD["Live DB"]
+end
+
+subgraph Domain
+RN["Route Names"]
+STA["Stations"]
+PL["Places"]
+end
+
+subgraph Realtime
+RTF["RT Feed"]
+RTR["RT Reader"]
+ALT["Alerts"]
+end
+
+subgraph Output
+CO["Coordinator"]
+SEN["Sensors"]
+TT["Timetable"]
+LEG["Leg"]
+GEO["GeoJSON"]
+end
+
+%% User configuration
+USER --> CF
+CF --> DS
+CF --> J
+
+%% Automation
+DS -. arms .-> SCH
+SCH -. triggers .-> SR
+UPD -. triggers .-> SR
+BTN -. triggers .-> SR
+SR --> REP
+J -. last sensor removed .-> REP
+
+%% Static feed: refresh a source
+SR -->|asks first| FR
+FR -->|changed?| HOST
+SR -->|downloads| ZIP
+HOST --> ZIP
+ZIP --> GF
+GF -->|refresh| ST
+ST -->|lines checked| SW
+SW --> LD
+
+%% Static feed: add lines from the flow
+CF -->|add lines| GF
+GF -->|add lines| SC
+SC -->|copy lines| LD
+
+%% Domain feeds the flow's choices
+ZIP --> RN
+LD --> RN
+LD --> STA
+LD --> PL
+RN -->|lines| CF
+STA -->|stations| CF
+PL -->|stops, directions| CF
+
+%% Realtime
+DS --> RTF
+HOST --> RTF
+RTF --> RTR
+RTF --> ALT
+
+%% Outputs
+J --> CO
+LD --> CO
+RTR -->|delays, cancellations| CO
+ALT -->|alerts| CO
+CO --> SEN
+CO --> TT
+CO --> LEG
+CO --> GEO
 ```
 
 Solid arrows carry data, dotted ones start something. Each piece is told
