@@ -43,6 +43,16 @@ _LOGGER = logging.getLogger(__name__)
 class OptionsScreens:
     """The datasource options: menu, realtime key, static refresh and its key."""
 
+    def _source(self):
+        """The datasource entry these screens set: here, the one whose
+        options are open."""
+        return self.config_entry
+
+    def _save_source(self, options) -> FlowResult:
+        """Keep the source's new options: an options flow stores the ones
+        it returns, and the entry's listeners follow."""
+        return self.async_create_entry(title="", data=options)
+
     async def async_step_source_menu(
            self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
@@ -66,7 +76,7 @@ class OptionsScreens:
         offered. The key fields stay behind their toggle.
         """
         errors: dict[str, str] = {}
-        opts = self.config_entry.options
+        opts = self._source().options
 
         if user_input is None:
             return self.async_show_form(
@@ -81,16 +91,16 @@ class OptionsScreens:
             return await self.async_step_real_time_key()
         self._user_inputs.update(user_input)
         _LOGGER.debug(f"UserInput Source realtime: {self._user_inputs}")
-        return self.async_create_entry(
-            title="", data=_collect_source_rt_options(
-                self._user_inputs, {}, previous=self.config_entry.options))
+        return self._save_source(
+            _collect_source_rt_options(
+                self._user_inputs, {}, previous=self._source().options))
 
     async def async_step_real_time_key(
            self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Ask for the realtime api key, only when the source needs one."""
         errors: dict[str, str] = {}
-        opts = self.config_entry.options
+        opts = self._source().options
         if user_input is None:
             return self.async_show_form(
                 step_id="real_time_key",
@@ -99,10 +109,10 @@ class OptionsScreens:
                 errors=errors,
             )
         _LOGGER.debug("UserInput Source realtime key received")
-        return self.async_create_entry(
-            title="", data=_collect_source_rt_options(
+        return self._save_source(
+            _collect_source_rt_options(
                 self._user_inputs, _typed_key(user_input, opts),
-                previous=self.config_entry.options))
+                previous=self._source().options))
 
     async def async_step_static_refresh(
            self, user_input: dict[str, Any] | None = None
@@ -125,8 +135,8 @@ class OptionsScreens:
         to the journey entries, so a downgrade to upstream keeps working.
         """
         errors: dict[str, str] = {}
-        opts = self.config_entry.options
-        current = static_feed_config(self.hass, self.config_entry)
+        opts = self._source().options
+        current = static_feed_config(self.hass, self._source())
         if user_input is not None:
             new_url = (user_input.get(CONF_URL) or "").strip()
             if new_url and not new_url.startswith(("http://", "https://")):
@@ -186,13 +196,13 @@ class OptionsScreens:
             return self.async_show_form(
                 step_id="static_refresh_key",
                 data_schema=vol.Schema(_source_key_schema(
-                    static_feed_config(self.hass, self.config_entry))),
+                    static_feed_config(self.hass, self._source()))),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                 errors={},
             )
         _LOGGER.debug("UserInput Source static key received")
         return self._finish_static_refresh(_typed_key(
-            user_input, static_feed_config(self.hass, self.config_entry)))
+            user_input, static_feed_config(self.hass, self._source())))
 
     def _finish_static_refresh(self, key_fields) -> FlowResult:
         """Store what the static feed screens collected.
@@ -204,7 +214,7 @@ class OptionsScreens:
         which is what the bootstrap would have done at the next start.
         """
         fields = self._user_inputs
-        entry = self.config_entry
+        entry = self._source()
         new_data = {**entry.data}
         for key in STATIC_KEY_KEYS:
             new_data.pop(key, None)
@@ -215,8 +225,8 @@ class OptionsScreens:
                 new_data[CONF_EXTRACT_FROM] = "url"
         if new_data != dict(entry.data):
             self.hass.config_entries.async_update_entry(entry, data=new_data)
-        return self.async_create_entry(
-            title="", data={
+        return self._save_source(
+            {
                 **entry.options,
                 CONF_STATIC_REFRESH_MODE: fields[CONF_STATIC_REFRESH_MODE],
                 CONF_STATIC_CHECK_INTERVAL: int(fields[CONF_STATIC_CHECK_INTERVAL]),
