@@ -1,292 +1,291 @@
 # Concepts
 
-This file explains the core concepts used in the fork.
+This file explains, in plain words, the concepts the fork is built on. It
+uses the same terms as the code and as the Glossary of
+[ARCHITECTURE.md](ARCHITECTURE.md), which gives their exact definitions.
+Why the fork exists is told in [WHY_FORK.md](WHY_FORK.md).
 
 ---
 
-# Source
+## Source
 
-A source is a GTFS feed.
+A source is a GTFS feed as the integration knows it.
 
-Example:
+Examples: TAO, SNCF, Palm Bus.
 
-TAO
-SNCF
-Palm Bus
-
-A source is identified by its file name.
-
-The URL may change.
-
-The source identity remains.
+A source is identified by its file name. Its url may change; the name, and
+so the source, stays.
 
 ---
 
-# Datasource
+## Datasource
 
-A datasource is the runtime representation of a source.
+A datasource is what a source becomes:
 
-It owns:
+- on disk: its zip and its database
+- in Home Assistant: its datasource entry
+
+The datasource entry owns what belongs to the source rather than to one
+sensor:
 
 - realtime feeds
 - API keys
-- refresh policy
+- refresh mode
 - update state
 
-Think:
+```text
+Source → Datasource
+            ├── Journey
+            └── Local stops
+```
 
-Source
-↓
-Datasource
-
-Routes and journeys consume it.
+Journeys and local stops entries read their datasource.
 
 ---
 
-# Journey
+## Line (route)
 
-A journey is a user-facing trip definition.
+A GTFS route. The code says route, the screens say line.
+
+---
+
+## Journey
+
+A journey is a sensor's trip on one line, from an origin to a destination,
+in one direction.
 
 Examples:
 
-Station A → Station B
+```text
+Stop A → Stop B          a bus or a tram
+Station A → Station B    a train
+```
 
-Stop A → Stop B
-
-A journey produces sensors.
-
----
-
-# Edition
-
-A feed changes over time.
-
-Each version is called an edition.
-
-Example:
-
-Edition 1
-↓
-Edition 2
-↓
-Edition 3
-
-Refresh replaces one edition with another.
+Each journey entry produces one sensor.
 
 ---
 
-# Freshness
+## Local stops
+
+An entry that follows a person or a zone, and lists the departures of the
+stops around them.
+
+---
+
+## Edition
+
+A feed changes over time. Each version of it is an edition, named by its
+version label: the host's `Last-Modified`, else its `ETag`, else the start
+of the zip's sha256 hash, else the download date.
+
+```text
+Edition 1 → Edition 2 → Edition 3
+```
+
+A refresh replaces one edition with the next.
+
+---
+
+## Freshness
 
 Freshness answers:
 
-    Has the source changed?
+> Has the source changed?
 
-Typical signals:
+The integration asks the host with one conditional request built from the
+last answer's `ETag` and `Last-Modified`. When the host cannot say, the
+sha256 hash of the download decides.
 
-- ETag
-- Last-Modified
-- Hash
-
-Freshness decides whether rebuilding is necessary.
+Freshness decides whether a rebuild is needed.
 
 ---
 
-# Refresh
+## Refresh mode
 
-Refresh answers:
+The refresh mode answers:
 
-    What should happen after a change was detected?
+> What happens when a new edition is found?
 
-Modes:
+Chosen per source:
 
-- Off
-- Notify
-- Auto
+```text
+off      nothing runs by itself; the button still refreshes on demand
+notify   the update entity says a new edition is available
+auto     the rebuild runs at the first check that finds a change
+```
 
----
-
-# Feed Window
-
-Feed Window answers:
-
-    How long is the timetable valid?
-
-Examples:
-
-- valid
-- ending soon
-- expired
+Each source is checked in a night slot of its own.
 
 ---
 
-# RT Window
+## Feed window
 
-Realtime Window answers:
+The feed window answers:
 
-    Is it useful to read realtime right now?
+> How long is the kept timetable good for?
 
-A line that is not operating often does not need realtime polling.
-
----
-
-# ZIP
-
-The ZIP is the source of truth.
-
-The fork never considers the database to be authoritative.
-
-Relationship:
-
-ZIP
-↓
-Database
-
-Never:
-
-Database
-↓
-ZIP
+```text
+valid     the last service day is more than 7 days away
+ending    it is within 7 days
+expired   it is past
+unknown   the zip does not say
+```
 
 ---
 
-# GTFS Filter
+## Realtime window
 
-GTFS Filter creates a reduced feed.
+The realtime window answers:
 
-Full Feed
-↓
-Filter
-↓
-Reduced Feed
+> Is it useful to read realtime right now?
 
-Only the relevant routes remain.
+A source's realtime feeds are only read from 10 minutes before the first
+passage of the day to 20 minutes after the last. A line that is not running
+needs no polling.
 
 ---
 
-# Scratch Database
+## Zip
 
-Temporary database created during imports.
+The zip is the source of truth. The database can be rebuilt from it at any
+time; the database is never taken as authoritative.
 
-Purpose:
-
-Build safely.
-
-Not read by sensors.
-
----
-
-# Staging Database
-
-A complete candidate replacement database.
-
-Purpose:
-
-Validate before activation.
+```text
+Zip → Database      yes
+Database → Zip      never
+```
 
 ---
 
-# Live Database
+## GTFS filter
 
-The only database read by sensors.
+The GTFS filter cuts the zip down to the lines some entry follows, before
+anything is imported.
 
-Purpose:
+```text
+Full feed → Filter → Reduced feed
+```
 
-Serve production data.
+Only the followed lines are imported. The zip itself is kept whole.
 
 ---
 
-# Atomic Swap
+## Real database
 
-Replaces the live database with a validated staging database.
+`<file>.sqlite`, the only database sensors read.
 
-Result:
+---
+
+## Scratch database
+
+`<file>.import.sqlite`, the raw output of an import, deleted once the
+import ends.
+
+Purpose: build without touching anything a sensor reads.
+
+---
+
+## Staging database
+
+`<file>.refresh.sqlite`, a complete database built or copied beside the
+real one, about to replace it.
+
+Purpose: check the new edition before it goes live.
+
+---
+
+## Swap
+
+Puts a checked staging database in place of the real one, with one rename.
 
 Sensors see:
 
-- old valid data
+- the old edition, complete
 
 or
 
-- new valid data
+- the new edition, complete
 
-Never half-built data.
-
----
-
-# Place
-
-A place is a user-facing travel location.
-
-Examples:
-
-- stop
-- station
-- boarding location
-
-Places are used for journey selection.
+Never a half-built database. Adding lines to a source does not swap: each
+line is copied into the real database in one transaction, so a sensor sees
+it entirely or not at all.
 
 ---
 
-# Station
+## Place
 
-A station groups related stops.
+A place is where a rider can board or alight, as the setup screens offer
+it: a stop, or all the stops of one station taken together.
 
-Example:
+Places are what a journey's origin and destination are picked from.
 
+---
+
+## Station
+
+For trains, a station groups the records a feed files under one name: often
+one per platform, sometimes the same station under several ids.
+
+```text
 Railway station
-↓
-Platforms
+ ├── Platform 1
+ └── Platform 2
+```
 
-The user interacts with the station.
-
-The system interacts with the stops.
-
----
-
-# Leg
-
-A leg describes part of a journey.
-
-Example:
-
-Bus
-↓
-Train
-↓
-Metro
-
-The complete journey contains multiple legs.
+The user picks the station. The integration reads its stops.
 
 ---
 
-# Timetable
+## Struck trip
 
-A timetable contains departures over time.
-
-The timetable export is used by advanced consumers to reason about journeys.
-
----
-
-# Direction Repair
-
-Some providers publish incorrect directions.
-
-Direction Repair attempts to reconstruct the intended direction from actual stop ordering.
-
-Valid directions are preserved.
-
-Incorrect directions may be repaired.
+A trip the realtime feed cancels, or that skips the origin. It leaves the
+list of departures, and the next one takes its place.
 
 ---
 
-# Provider Verification
+## Leg
 
-A provider test verifies behaviour against a real-world feed.
+The leg file describes the ride of a journey's next departure, stop by
+stop, with its times, realtime included.
+
+```text
+Origin 08:12 → Stop 08:15 → Stop 08:19 → Destination 08:24
+```
+
+It is written for map cards. The fork does not chain several vehicles into
+one journey: it is not a route planner.
+
+---
+
+## Timetable file
+
+Every departure of a journey over the service day under way and the two
+after it, written as a file for map cards and other consumers.
+
+---
+
+## Direction repair
+
+Some providers label trips of both directions with the same `direction_id`,
+or scatter a few trips into the wrong one.
+
+Direction repair checks each trip against the stop order of its direction
+and of the opposite one, and relabels a trip that contradicts its own order
+but follows the opposite one.
+
+Trips whose direction is consistent are left untouched.
+
+---
+
+## Provider verification
+
+A provider test checks the integration's behaviour against a real-world
+feed, on every push.
 
 Goal:
 
-Detect regressions before users do.
+> Detect regressions before users do.
 
 Principle:
 
-Every recurring bug should eventually become a regression test.
+> Every recurring bug should eventually become a regression test.
