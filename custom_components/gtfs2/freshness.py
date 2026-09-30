@@ -172,14 +172,21 @@ def fetch_if_new(data, zip_path, adopt=True):
     try:
         response = open_source(data, url, headers)
         response.raise_for_status()
+        # a body cut off half way fails here, as a host that does not answer
+        staged = stage_zip(response, zip_path, inner)
     except Exception as ex:  # pylint: disable=broad-except
         # a host that does not answer, at every check it fails: one line
         # says it, the stack deep in requests adds nothing; an error of our
         # own keeps its stack
         log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
         log("Could not download %s: %s", data.get("url"), ex)
+        fresh = zip_path + ".new"
+        if os.path.exists(fresh):
+            try:
+                os.remove(fresh)
+            except OSError:
+                pass
         return None
-    staged = stage_zip(response, zip_path, inner)
     if staged is None:
         return None
     # compared once on disk: the body is not in memory to hash beforehand

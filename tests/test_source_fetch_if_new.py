@@ -129,3 +129,27 @@ def test_a_host_down_is_one_line_an_error_of_ours_keeps_its_stack(tmp_path, monk
     [record] = _errors(caplog)
     assert record.exc_info is not None
     assert (tmp_path / "src.zip").read_bytes() == feed_bytes("1")
+
+
+def test_a_body_cut_off_half_way_is_a_failed_download(tmp_path, monkeypatch, caplog):
+    # the host answers, then the connection drops in the middle of the body:
+    # the check hears a failed download, where the error left the night's
+    # check, and the part that came in is not left beside the zip
+    zip_path = kept_zip(tmp_path, "1")
+    body = feed_bytes("2")
+
+    def chunks(chunk_size):
+        yield body[:100]
+        raise requests.exceptions.ChunkedEncodingError("connection broken")
+
+    def cut(method, url, **kwargs):
+        return types.SimpleNamespace(
+            status_code=200, url=url, headers={}, iter_content=chunks,
+            raise_for_status=lambda: None, close=lambda: None)
+    monkeypatch.setattr(freshness, "fetch", cut)
+    with caplog.at_level(logging.ERROR):
+        assert freshness.fetch_if_new(DATA, zip_path) is None
+    [record] = _errors(caplog)
+    assert record.exc_info is None and "connection broken" in record.getMessage()
+    assert not (tmp_path / "src.zip.new").exists()
+    assert (tmp_path / "src.zip").read_bytes() == feed_bytes("1")
