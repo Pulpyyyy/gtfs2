@@ -294,6 +294,45 @@ class Fixture:
         from yesterday's (a time past 24:00) on, until a day starts after
         the best ride found or the calendar ends. `direction` None takes
         either way round, as the pair alone decides then."""
+        self._load_calls()
+        zone = zoneinfo.ZoneInfo(self.agency_tz)
+        rides = []  # (service_id, seconds from the service day's midnight, trip)
+        for trip_id, (route, way, service) in self._trips.items():
+            if route != route_id or (direction is not None and str(way) != str(direction)):
+                continue
+            leave = None
+            for stop_id, arrival, departure, way_on, way_off in self._calls.get(trip_id, ()):
+                if (stop_id in destinations and leave is not None and arrival is not None
+                        and way_off):
+                    rides.append((service, gtfs_seconds(leave), trip_id))
+                    break
+                if stop_id in origins and departure is not None and way_on:
+                    leave = departure
+        return self._first_ride(rides, now, zone)
+
+    def untimed_end(self, trip_ids, origins, destinations):
+        """Whether on every one of these trips the shortest ride between the
+        two places starts or ends at a call with no time: from the last call
+        with a way on at the origin, the first call with a way off at the
+        destination, timed or not. The component answers nothing from such
+        a trip. Clemson TL-70 times its loop at its first and last call
+        only, and passes TL-141 twice untimed before its timed end."""
+        self._load_calls()
+        found = False
+        for trip_id in trip_ids:
+            leave = None
+            for stop_id, arrival, departure, way_on, way_off in self._calls.get(trip_id, ()):
+                if stop_id in destinations and leave is not None and way_off:
+                    if leave[0] is not None and arrival is not None:
+                        return False
+                    found = True
+                    break
+                if stop_id in origins and way_on:
+                    leave = (departure,)
+        return found
+
+    def _load_calls(self):
+        """Every call and every trip, read once."""
         if not hasattr(self, "_calls"):
             self._calls, self._trips = {}, {}
             with self.schedule.engine.connect() as conn:
@@ -314,19 +353,10 @@ class Fixture:
                     "SELECT max(end_date) FROM calendar UNION ALL "
                     "SELECT max(date) FROM calendar_dates")) if row[0]]
             self._last_day = datetime.date.fromisoformat(max(ends)) if ends else None
-        zone = zoneinfo.ZoneInfo(self.agency_tz)
-        rides = []  # (service_id, seconds from the service day's midnight, trip)
-        for trip_id, (route, way, service) in self._trips.items():
-            if route != route_id or (direction is not None and str(way) != str(direction)):
-                continue
-            leave = None
-            for stop_id, arrival, departure, way_on, way_off in self._calls.get(trip_id, ()):
-                if (stop_id in destinations and leave is not None and arrival is not None
-                        and way_off):
-                    rides.append((service, gtfs_seconds(leave), trip_id))
-                    break
-                if stop_id in origins and departure is not None and way_on:
-                    leave = departure
+
+    def _first_ride(self, rides, now, zone):
+        """The first of the rides, (service_id, seconds, trip), on the days
+        the calendar runs them from yesterday on: (instant, trip_id)."""
         best = None
         day = now.astimezone(zone).date() - datetime.timedelta(days=1)
         while rides and self._last_day and day <= self._last_day:
@@ -1194,9 +1224,17 @@ def check_route(check, fx, route_id, direction, kind):
                                f"call to get on at before one to get off at",
                                no_rider_ends=True)
                     continue
+                ride = pattern[ends[0]:ends[1] + 1]
+                if fx.untimed_end(trip_ids, fx.siblings_of(ride[0]), fx.siblings_of(ride[-1])):
+                    # the feed leaves the shortest ride between the ends
+                    # untimed at one of them: the sensor has nothing to list
+                    # from these trips, which is no midnight fault
+                    check.note(True, f"the ride {ride[0]} .. {ride[-1]}: its shortest ride "
+                               f"between the ends starts or ends at a call with no time",
+                               untimed=True)
+                    continue
                 check_midnight(check, fx, clock, hass, route_id, route_type,
-                               direction, None, pattern[ends[0]:ends[1] + 1],
-                               entries, entry_of)
+                               direction, None, ride, entries, entry_of)
                 continue
             clock.move_to(fx.instant_on(day))
             for o, d in sample_pairs(pattern):
@@ -1230,17 +1268,21 @@ def check_route(check, fx, route_id, direction, kind):
                                f" on this ride, got {got['trip'] if got else 'nothing'}",
                                asked=asked, got=got, forbidden=True)
                     continue
-                if kind == "pairs" and not (fx.times(trip_ids, pattern[o])
-                                            and fx.times(trip_ids, pattern[d])):
+                if kind == "pairs" and (not (fx.times(trip_ids, pattern[o])
+                                             and fx.times(trip_ids, pattern[d]))
+                                        or fx.untimed_end(trip_ids, origins, reached)):
                     # the feed leaves one end of this ride untimed: its trips
                     # are never the answer, another ride timed at both
                     # places may be
                     result = get_next_departure(hass, data)
                     asked = asked_of(pattern, o, d, route_id, kept)
                     got = got_of(result)
+                    where = ("start" if not fx.times(trip_ids, pattern[o])
+                             else "end" if not fx.times(trip_ids, pattern[d])
+                             else "start or end of its shortest ride")
                     check.note(not result or result.get("trip_id") not in trip_ids,
                                f"asked {pattern[o]} -> {pattern[d]} on {route_id}: "
-                               f"no time at the {'start' if not fx.times(trip_ids, pattern[o]) else 'end'}"
+                               f"no time at the {where}"
                                f" of this ride, got {got['trip'] if got else 'nothing'}",
                                asked=asked, got=got, untimed=True)
                     continue
