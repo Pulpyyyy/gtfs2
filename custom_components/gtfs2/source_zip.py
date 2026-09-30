@@ -99,10 +99,7 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
             # pygtfs read the filtered zip through a handle it only drops on
             # collection, and Windows refuses to delete a file still open
             gc.collect()
-            try:
-                os.remove(filtered)
-            except OSError as ex:
-                _LOGGER.warning("Could not remove %s: %s", filtered, ex)
+            remove_files(filtered)
     if not ok:
         _LOGGER.error("The import database holds no feed after unpacking %s", file)
     return ok
@@ -315,12 +312,7 @@ def _fetch_zip(data, zip_path, envelope_ok=False):
         # kept for anything else, an error of our own
         log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
         log("Could not download %s: %s", data.get("url"), ex)
-        fresh = zip_path + ".new"
-        if os.path.exists(fresh):
-            try:
-                os.remove(fresh)
-            except OSError:
-                pass
+        remove_files(zip_path + ".new")
         return False
     return True
 
