@@ -31,7 +31,10 @@ from .const import (
     STATIC_REFRESH_OFF,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
-from .flow_source import _collect_source_rt_options, _source_key_schema, _source_rt_key_schema, _typed_key
+from .flow_source import (
+    _collect_source_rt_options, _source_key_schema, _source_rt_key_schema, _source_rt_schema,
+    _typed_key,
+)
 from .rt_source import STATIC_KEY_KEYS, static_feed_config, static_key_fields
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,6 +55,35 @@ class OptionsScreens:
         return self.async_show_menu(
             step_id="source_menu",
             menu_options=["real_time", "static_refresh"])
+
+    async def async_step_real_time(
+           self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """The source's realtime feeds, shared by every sensor reading it.
+
+        Every field is optional: emptying them all removes realtime from the
+        source, which is the one gesture the old per-sensor screens never
+        offered. The key fields stay behind their toggle.
+        """
+        errors: dict[str, str] = {}
+        opts = self.config_entry.options
+
+        if user_input is None:
+            return self.async_show_form(
+                step_id="real_time",
+                data_schema=vol.Schema(_source_rt_schema(opts)),
+                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+                errors=errors,
+            )
+
+        if user_input.pop(CONF_NEEDS_API_KEY, False):
+            self._user_inputs.update(user_input)
+            return await self.async_step_real_time_key()
+        self._user_inputs.update(user_input)
+        _LOGGER.debug(f"UserInput Source realtime: {self._user_inputs}")
+        return self.async_create_entry(
+            title="", data=_collect_source_rt_options(
+                self._user_inputs, {}, previous=self.config_entry.options))
 
     async def async_step_real_time_key(
            self, user_input: dict[str, Any] | None = None

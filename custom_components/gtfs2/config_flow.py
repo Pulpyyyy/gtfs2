@@ -58,10 +58,9 @@ from .rt_source import (
     RT_OPTION_KEYS,
     datasource_entry,
 )
-from .const import CONF_NEEDS_API_KEY, TRANSLATION_DESCRIPTION_PLACEHOLDERS
+from .const import TRANSLATION_DESCRIPTION_PLACEHOLDERS
 from .flow_train import TrainScreens
 from .flow_reload import ReloadScreens
-from .flow_source import _source_rt_schema, _collect_source_rt_options
 from .flow_source import SourceScreens
 from .flow_options import OptionsScreens
 from .flow_journey import _stop_id, _stop_name, _base_name
@@ -759,36 +758,6 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
                 data_schema=vol.Schema(opt1_schema),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             )
-
-
-    async def async_step_real_time(
-           self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """The source's realtime feeds, shared by every sensor reading it.
-
-        Every field is optional: emptying them all removes realtime from the
-        source, which is the one gesture the old per-sensor screens never
-        offered. The key fields stay behind their toggle.
-        """
-        errors: dict[str, str] = {}
-        opts = self.config_entry.options
-
-        if user_input is None:
-            return self.async_show_form(
-                step_id="real_time",
-                data_schema=vol.Schema(_source_rt_schema(opts)),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                errors=errors,
-            )
-
-        if user_input.pop(CONF_NEEDS_API_KEY, False):
-            self._user_inputs.update(user_input)
-            return await self.async_step_real_time_key()
-        self._user_inputs.update(user_input)
-        _LOGGER.debug(f"UserInput Source realtime: {self._user_inputs}")
-        return self.async_create_entry(
-            title="", data=_collect_source_rt_options(
-                self._user_inputs, {}, previous=self.config_entry.options))
 
 
 async def _reopen_schedule(self, data):
