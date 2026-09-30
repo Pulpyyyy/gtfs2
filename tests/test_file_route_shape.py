@@ -16,13 +16,13 @@ config.path points under the test's directory.
 """
 from __future__ import annotations
 
-import contextlib
 import json
 import sqlite3
 import types
 import zipfile
 
 import pytest
+from sqlalchemy import create_engine
 
 import ha_stub
 
@@ -64,41 +64,6 @@ CREATE TABLE stop_times (feed_id INTEGER NOT NULL, trip_id VARCHAR NOT NULL,
 """
 
 
-class _Sqlite3Engine:
-    """What the function asks of `schedule.engine`, answered by sqlite3.
-
-    For the CI venv, which has no SQLAlchemy: ha_stub stands in for its
-    text(), and the test swaps that for str, so the same SQL reaches sqlite3.
-    """
-
-    def __init__(self, path) -> None:
-        self._path = path
-
-    @contextlib.contextmanager
-    def connect(self):
-        conn = sqlite3.connect(self._path)
-        try:
-            yield _Sqlite3Connection(conn)
-        finally:
-            conn.close()
-
-    def dispose(self) -> None:
-        pass
-
-
-class _Sqlite3Connection:
-    def __init__(self, conn) -> None:
-        self._conn = conn
-
-    def execute(self, statement, params=None):
-        return self._conn.execute(str(statement), params or {})
-
-
-class _Schedule:
-    def __init__(self, engine) -> None:
-        self.engine = engine
-
-
 def write_zip(path, shapes=SHAPE_ROWS, columns=("shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence", "shape_dist_traveled"),
               trips=None):
     """A feed zip holding a table the function never reads, trips.txt
@@ -117,10 +82,10 @@ def write_zip(path, shapes=SHAPE_ROWS, columns=("shape_id", "shape_pt_lat", "sha
 
 
 @pytest.fixture
-def schedule(tmp_path, monkeypatch):
+def schedule(tmp_path):
     """Build a feed from one trip calling at STOPS, with or without a shape.
 
-    A real SQLAlchemy engine where one is installed, sqlite3 otherwise.
+    Read through a real SQLAlchemy engine, which pygtfs brings along.
     """
     engines = []
 
@@ -141,16 +106,9 @@ def schedule(tmp_path, monkeypatch):
              for sequence, (stop_id, *_) in enumerate(STOPS, 1)])
         db.commit()
         db.close()
-        try:
-            from sqlalchemy import create_engine
-        except ImportError:
-            monkeypatch.setattr(gtfs_helper, "text", str)
-            monkeypatch.setattr(geojson, "text", str)
-            engine = _Sqlite3Engine(path)
-        else:
-            engine = create_engine(f"sqlite:///{path}")
+        engine = create_engine(f"sqlite:///{path}")
         engines.append(engine)
-        return _Schedule(engine)
+        return types.SimpleNamespace(engine=engine)
 
     yield build
     for engine in engines:

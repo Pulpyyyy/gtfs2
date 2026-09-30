@@ -14,10 +14,11 @@ is all it reads.
 """
 from __future__ import annotations
 
-import contextlib
 import sqlite3
+import types
 
 import pytest
+from sqlalchemy import create_engine
 
 import ha_stub
 
@@ -59,47 +60,12 @@ CREATE TABLE stop_times (feed_id INTEGER NOT NULL, trip_id VARCHAR NOT NULL,
 """
 
 
-class _Sqlite3Engine:
-    """What the function asks of `schedule.engine`, answered by sqlite3.
-
-    For the CI venv, which has no SQLAlchemy: ha_stub stands in for its
-    text(), and the test swaps that for str, so the same SQL reaches sqlite3.
-    """
-
-    def __init__(self, path) -> None:
-        self._path = path
-
-    @contextlib.contextmanager
-    def connect(self):
-        conn = sqlite3.connect(self._path)
-        try:
-            yield _Sqlite3Connection(conn)
-        finally:
-            conn.close()
-
-    def dispose(self) -> None:
-        pass
-
-
-class _Sqlite3Connection:
-    def __init__(self, conn) -> None:
-        self._conn = conn
-
-    def execute(self, statement, params=None):
-        return self._conn.execute(str(statement), params or {})
-
-
-class _Schedule:
-    def __init__(self, engine) -> None:
-        self.engine = engine
-
-
 @pytest.fixture
-def schedule(tmp_path, monkeypatch):
+def schedule(tmp_path):
     """Build a feed from (trip_id, route_id, direction_id, stop_ids) rows;
     a trip gets a shape unless its row carries shaped=False as a fifth item.
 
-    A real SQLAlchemy engine where one is installed, sqlite3 otherwise.
+    Read through a real SQLAlchemy engine, which pygtfs brings along.
     """
     engines = []
 
@@ -118,15 +84,9 @@ def schedule(tmp_path, monkeypatch):
                 [(trip_id, stop_id, sequence) for sequence, stop_id in enumerate(calls, 1)])
         db.commit()
         db.close()
-        try:
-            from sqlalchemy import create_engine
-        except ImportError:
-            monkeypatch.setattr(geojson, "text", str)
-            engine = _Sqlite3Engine(path)
-        else:
-            engine = create_engine(f"sqlite:///{path}")
+        engine = create_engine(f"sqlite:///{path}")
         engines.append(engine)
-        return _Schedule(engine)
+        return types.SimpleNamespace(engine=engine)
 
     yield build
     for engine in engines:
