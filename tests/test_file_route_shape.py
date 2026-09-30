@@ -195,6 +195,18 @@ def test_a_bad_row_does_not_lose_the_shape(tmp_path):
     assert gtfs_shape.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
+def test_a_feed_nested_in_a_folder_has_its_shape(tmp_path):
+    # the import finds a table wherever the feed nested it (gtfs_filter's
+    # _member), and the zip is kept as sent: the shape is read from there too
+    write_zip(tmp_path / "flat.zip")
+    with zipfile.ZipFile(tmp_path / "flat.zip") as zin, \
+            zipfile.ZipFile(tmp_path / "feed.zip", "w") as zout:
+        for name in zin.namelist():
+            zout.writestr("gtfs/" + name, zin.read(name))
+    assert gtfs_shape.trip_shape_id(tmp_path / "feed.zip", "T1") == SHAPE
+    assert gtfs_shape.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+
+
 def test_unknown_shape_reads_none(tmp_path):
     write_zip(tmp_path / "feed.zip")
     assert gtfs_shape.read_shape(tmp_path / "feed.zip", "NOPE") is None
