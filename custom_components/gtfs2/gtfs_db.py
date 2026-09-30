@@ -664,32 +664,18 @@ def _prune_dependents(cur, filename, dry_run, stats):
         if not _table_has_columns(cur, table, feed_col, "trip_id"):
             _LOGGER.debug("Pruning %s: skipping absent or unexpected table %s", filename, table)
             continue
-        before = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-        if dry_run:
-            after = cur.execute(
-                f"select count(*) from {table} t inner join gtfs2_keep k "  # noqa: S608
-                f"on k.feed_id = t.{feed_col} and k.trip_id = t.trip_id").fetchone()[0]
-        else:
-            _rebuild_keep(cur, table, "exists (select 1 from gtfs2_keep k "
-                          f"where k.feed_id = src.{feed_col} and k.trip_id = src.trip_id)")
-            after = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-        stats[f"{table}_before"], stats[f"{table}_after"] = before, after
+        stats[f"{table}_before"], stats[f"{table}_after"] = _keep_rows(
+            cur, table, "exists (select 1 from gtfs2_keep k "
+            f"where k.feed_id = src.{feed_col} and k.trip_id = src.trip_id)", dry_run)
 
     for table, feed_col in PRUNE_SERVICE_DEPENDENTS:
         if not _table_has_columns(cur, table, feed_col, "service_id"):
             _LOGGER.debug("Pruning %s: skipping absent or unexpected table %s",
                           filename, table)
             continue
-        orphan = _ORPHAN_SERVICE.format(table=table, feed_col=feed_col)
-        before = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-        if dry_run:
-            after = cur.execute(
-                f"select count(*) from {table} where not {orphan}").fetchone()[0]  # noqa: S608
-        else:
-            _rebuild_keep(cur, table, "not " + _ORPHAN_SERVICE.format(
-                table="src", feed_col=feed_col))
-            after = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
-        stats[f"{table}_before"], stats[f"{table}_after"] = before, after
+        stats[f"{table}_before"], stats[f"{table}_after"] = _keep_rows(
+            cur, table, "not " + _ORPHAN_SERVICE.format(table="src", feed_col=feed_col),
+            dry_run)
 
 
 def _prune_interned(cur, dry_run, stats):
@@ -703,22 +689,29 @@ def _prune_interned(cur, dry_run, stats):
         return
     keep_tk = ("select k.tk from gtfs2_trip_key k "
                "inner join gtfs2_keep g on g.trip_id = k.trip_id")
-    before = cur.execute("select count(*) from gtfs2_stop_times").fetchone()[0]
-    if dry_run:
-        after = cur.execute(
-            f"select count(*) from gtfs2_stop_times where tk in ({keep_tk})"  # noqa: S608
-        ).fetchone()[0]
-    else:
-        _rebuild_keep(cur, "gtfs2_stop_times", f"src.tk in ({keep_tk})")
+    stats["gtfs2_stop_times_before"], stats["gtfs2_stop_times_after"] = _keep_rows(
+        cur, "gtfs2_stop_times", f"src.tk in ({keep_tk})", dry_run)
+    if not dry_run:
         # the key tables hold the long identifiers interning removed
         # from every row: leaving them behind keeps most of the weight
         _rebuild_keep(cur, "gtfs2_trip_key",
                       "src.tk in (select tk from gtfs2_stop_times)")
         _rebuild_keep(cur, "gtfs2_stop_key",
                       "src.sk in (select sk from gtfs2_stop_times)")
-        after = cur.execute("select count(*) from gtfs2_stop_times").fetchone()[0]
-    stats["gtfs2_stop_times_before"] = before
-    stats["gtfs2_stop_times_after"] = after
+
+
+def _keep_rows(cur, table, keep_where, dry_run):
+    """(rows before, rows after) of a table keeping the rows keep_where
+    accepts, aliased as src: kept by _rebuild_keep, or only counted on a
+    dry run, the same condition either way."""
+    before = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
+    if dry_run:
+        after = cur.execute(
+            f"select count(*) from {table} src where {keep_where}").fetchone()[0]  # noqa: S608
+    else:
+        _rebuild_keep(cur, table, keep_where)
+        after = cur.execute(f"select count(*) from {table}").fetchone()[0]  # noqa: S608
+    return before, after
 
 
 def _rebuild_keep(cur, table, keep_where, params=()):
