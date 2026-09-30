@@ -19,6 +19,18 @@ from .gtfs_helper import PLACE_LAT, PLACE_LON, _alights, _boards, _place_group, 
 
 _LOGGER = logging.getLogger(__name__)
 
+# each trip of the line this way with the stops it calls at, in order: its
+# pattern. _STOP_ROWS and _origin_boarding sample the same trip per pattern
+# from it
+_RIDES = """ride as (
+        select t.trip_id, group_concat(st.stop_sequence || ':' || st.stop_id) as stops
+        from trips t
+        inner join stop_times st on st.trip_id = t.trip_id
+        where t.route_id = :route_id
+        and (:direction is null or t.direction_id = :direction or t.direction_id is null)
+        group by t.trip_id
+    )"""
+
 
 # The trips of one direction ride a handful of distinct stop patterns, a
 # few thousand times each over the feed's calendar (TAO tram A: 4214 trips,
@@ -30,15 +42,8 @@ _LOGGER = logging.getLogger(__name__)
 # first costs more than reading every trip did (TAO A: 4.2 s against 2.8
 # for the six lines, 1.2 s this way). Should the order ever vary between
 # two trips of one pattern, that pattern is read twice, never lost.
-_STOP_ROWS = """
-    with ride as (
-        select t.trip_id, group_concat(st.stop_sequence || ':' || st.stop_id) as stops
-        from trips t
-        inner join stop_times st on st.trip_id = t.trip_id
-        where t.route_id = :route_id
-        and (:direction is null or t.direction_id = :direction or t.direction_id is null)
-        group by t.trip_id
-    ), sample as (
+_STOP_ROWS = f"""
+    with {_RIDES}, sample as (
         select min(trip_id) as trip_id from ride group by stops
     )
     SELECT st.trip_id, s.stop_id, s.stop_name, st.stop_sequence, s.parent_station, station.stop_name,
@@ -476,14 +481,7 @@ def _origin_boarding(conn, route_id, origin_stop_id, direction=None):
     whose sample only sets down at the origin lost its way out (Amtrak's
     Stockton, where one Thruway bus of three does not pick up)."""
     return {(row[0], row[1]) for row in _line_rows(conn, f"""
-        with ride as (
-            select t.trip_id, group_concat(st.stop_sequence || ':' || st.stop_id) as stops
-            from trips t
-            inner join stop_times st on st.trip_id = t.trip_id
-            where t.route_id = :route_id
-            and (:direction is null or t.direction_id = :direction or t.direction_id is null)
-            group by t.trip_id
-        ), sample as (
+        with {_RIDES}, sample as (
             select trip_id, min(trip_id) over (partition by stops) as sample_id from ride
         )
         select distinct sample.sample_id, st.stop_sequence
