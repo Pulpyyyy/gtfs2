@@ -9,12 +9,10 @@ strptime(None); one whose origin was simply found nothing.
 from __future__ import annotations
 
 import datetime
-import io
-import zipfile
 
-import pygtfs
 from freezegun import freeze_time
 
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -41,15 +39,7 @@ AT = datetime.datetime(2026, 9, 24, 9, 30, tzinfo=datetime.timezone.utc)
 
 
 def _schedule(tmp_path):
-    archive = tmp_path / "feed.zip"
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in FEED.items():
-            zout.writestr(name, body)
-    archive.write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(archive))
-    return schedule
+    return feed_db.build(tmp_path, FEED)
 
 
 def _rows(schedule, origin, destination):

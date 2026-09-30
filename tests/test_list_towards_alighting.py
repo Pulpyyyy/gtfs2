@@ -7,11 +7,7 @@ no way off was offered because the other way's buses set down there
 """
 from __future__ import annotations
 
-import io
-import zipfile
-
-import pygtfs
-
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -38,14 +34,7 @@ FEED = {
 
 
 def test_a_way_offers_only_its_own_set_downs(tmp_path):
-    archive = tmp_path / "feed.zip"
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in FEED.items():
-            zout.writestr(name, body)
-    archive.write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(archive))
+    schedule = feed_db.build(tmp_path, FEED)
 
     def listed(towards=None):
         found = places.get_destination_stop_list(schedule, "R1", None, "O", towards=towards)

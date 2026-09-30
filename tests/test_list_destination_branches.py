@@ -8,12 +8,9 @@ branches are interleaved, whichever comes first.
 """
 from __future__ import annotations
 
-import io
-import zipfile
-
-import pygtfs
 import pytest
 
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -42,14 +39,7 @@ def _schedule(tmp_path, x_trips, y_trips):
         "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
                          "start_date,end_date\nS,1,1,1,1,1,1,1,20260901,20261231\n"),
     }
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in feed.items():
-            zout.writestr(name, body)
-    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
-    return schedule
+    return feed_db.build(tmp_path, feed)
 
 
 def test_a_side_is_finished_before_the_other_way_starts(tmp_path):
@@ -73,13 +63,7 @@ def test_a_side_is_finished_before_the_other_way_starts(tmp_path):
         "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
                          "start_date,end_date\nS,1,1,1,1,1,1,1,20260901,20261231\n"),
     }
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in feed.items():
-            zout.writestr(name, body)
-    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    schedule = feed_db.build(tmp_path, feed)
     try:
         found = places.get_destination_stop_list(schedule, "R", None, "O")
         assert [str(s).split(":")[0] for s in found] == ["A", "B", "C", "D", "Q", "X", "Y", "Z"]
@@ -107,13 +91,7 @@ def test_a_branch_waiting_for_another_is_finished_through_it(tmp_path):
         "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
                          "start_date,end_date\nS,1,1,1,1,1,1,1,20260901,20261231\n"),
     }
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in feed.items():
-            zout.writestr(name, body)
-    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    schedule = feed_db.build(tmp_path, feed)
     try:
         found = places.get_destination_stop_list(schedule, "R", None, "O")
         assert [str(s).split(":")[0] for s in found] == ["P", "C", "D", "T", "U", "X", "Y"]
@@ -141,13 +119,7 @@ def test_the_branch_that_joins_comes_before_one_off_a_place_listed(tmp_path):
         "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
                          "start_date,end_date\nS,1,1,1,1,1,1,1,20260901,20261231\n"),
     }
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in feed.items():
-            zout.writestr(name, body)
-    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    schedule = feed_db.build(tmp_path, feed)
     try:
         found = places.get_destination_stop_list(schedule, "R", None, "O")
         assert [str(s).split(":")[0] for s in found] == ["A", "B", "E", "F", "T", "U", "C"]
@@ -179,13 +151,7 @@ def test_a_side_meeting_a_split_one_is_left_for_last(tmp_path):
         "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
                          "start_date,end_date\nS,1,1,1,1,1,1,1,20260901,20261231\n"),
     }
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in feed.items():
-            zout.writestr(name, body)
-    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    schedule = feed_db.build(tmp_path, feed)
     try:
         found = places.get_destination_stop_list(schedule, "R", None, "O")
         assert [str(s).split(":")[0] for s in found] == ["A", "B", "S", "C", "D", "K", "M", "J", "L"]

@@ -8,11 +8,7 @@ line calls at.
 """
 from __future__ import annotations
 
-import io
-import zipfile
-
-import pygtfs
-
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -46,13 +42,7 @@ FEED = {
 
 
 def test_a_mixed_line_labels_each_station_with_its_modes(tmp_path):
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in FEED.items():
-            zout.writestr(name, body)
-    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    schedule = feed_db.build(tmp_path, FEED)
     try:
         assert stations.get_station_modes(schedule, "MIXED") == {
             "Orléans": {"train", "coach"},

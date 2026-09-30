@@ -11,11 +11,7 @@ reads backward. Set here on a small feed with the answer written out.
 """
 from __future__ import annotations
 
-import io
-import zipfile
-
-import pygtfs
-
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -42,14 +38,7 @@ def _schedule(tmp_path, out, back):
         "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
                          "start_date,end_date\nS,1,1,1,1,1,1,1,20260901,20261231\n"),
     }
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in feed.items():
-            zout.writestr(name, body)
-    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
-    return schedule
+    return feed_db.build(tmp_path, feed)
 
 
 def test_a_way_back_through_a_one_way_loop_keeps_its_stop_between_its_neighbours(tmp_path):

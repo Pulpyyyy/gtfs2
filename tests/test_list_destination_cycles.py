@@ -8,11 +8,7 @@ group now, free once what comes before it is placed.
 """
 from __future__ import annotations
 
-import io
-import zipfile
-
-import pygtfs
-
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -41,14 +37,7 @@ FEED = {
 
 
 def test_a_cycle_between_variants_comes_before_the_terminus(tmp_path):
-    archive = tmp_path / "feed.zip"
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in FEED.items():
-            zout.writestr(name, body)
-    archive.write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(archive))
+    schedule = feed_db.build(tmp_path, FEED)
     try:
         listed = [str(s).split(":")[0] for s in
                   places.get_destination_stop_list(schedule, "R", None, "O")]

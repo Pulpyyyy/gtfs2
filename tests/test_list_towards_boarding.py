@@ -9,11 +9,7 @@ Sacramento went missing; the 48-feed sweep, 2026-09-26).
 """
 from __future__ import annotations
 
-import io
-import zipfile
-
-import pygtfs
-
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -39,14 +35,7 @@ FEED = {
 
 
 def test_a_way_whose_sample_only_sets_down_is_still_offered(tmp_path):
-    archive = tmp_path / "feed.zip"
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in FEED.items():
-            zout.writestr(name, body)
-    archive.write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(archive))
+    schedule = feed_db.build(tmp_path, FEED)
     try:
         ways = places.get_towards(schedule, "R", "B")
         assert sorted(way for way, _label in ways) == ["C", "D"]

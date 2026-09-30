@@ -9,13 +9,11 @@ again, a new edition, has them read again.
 """
 from __future__ import annotations
 
-import io
-import zipfile
-
 import pygtfs
 from freezegun import freeze_time
 from sqlalchemy import event
 
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -38,13 +36,7 @@ FEED = {
 
 
 def _database(tmp_path):
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in FEED.items():
-            zout.writestr(name, body)
-    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    schedule = feed_db.build(tmp_path, FEED)
     schedule.engine.dispose()
     return str(tmp_path / "feed.sqlite")
 

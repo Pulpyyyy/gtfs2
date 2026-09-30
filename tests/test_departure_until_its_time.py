@@ -9,13 +9,11 @@ ride the same way.
 from __future__ import annotations
 
 import datetime
-import io
 import types
-import zipfile
 
-import pygtfs
 from freezegun import freeze_time
 
+import feed_db
 import ha_stub
 
 ha_stub.install()
@@ -49,13 +47,7 @@ def _next_trip(schedule, at, folder):
 
 
 def test_a_departure_is_gone_from_its_time_on(tmp_path):
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        for name, body in FEED.items():
-            zout.writestr(name, body)
-    (tmp_path / "feed.zip").write_bytes(buffer.getvalue())
-    schedule = pygtfs.Schedule(str(tmp_path / "feed.sqlite"))
-    pygtfs.append_feed(schedule, str(tmp_path / "feed.zip"))
+    schedule = feed_db.build(tmp_path, FEED)
     day = datetime.date(2026, 9, 24)
     try:
         before = datetime.datetime.combine(day, datetime.time(9, 59, 59))
