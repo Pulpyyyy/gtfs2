@@ -317,16 +317,11 @@ SKIPPED_STOP = "SKIPPED"
 NO_DATA_STOP = "NO_DATA"
 
 
-def _trip_relationship(trip: gtfs_realtime_pb2.TripDescriptor) -> str:
+def _relationship(message: gtfs_realtime_pb2.TripDescriptor
+                  | gtfs_realtime_pb2.TripUpdate.StopTimeUpdate) -> str:
+    """The schedule_relationship of a trip or a stop time update, by name."""
     try:
-        return trip.ScheduleRelationship.Name(trip.schedule_relationship)
-    except (AttributeError, ValueError):
-        return "SCHEDULED"
-
-
-def _stop_relationship(stop_time_update: gtfs_realtime_pb2.TripUpdate.StopTimeUpdate) -> str:
-    try:
-        return stop_time_update.ScheduleRelationship.Name(stop_time_update.schedule_relationship)
+        return message.ScheduleRelationship.Name(message.schedule_relationship)
     except (AttributeError, ValueError):
         return "SCHEDULED"
 
@@ -381,7 +376,7 @@ def convert_gtfs_realtime_to_json(gtfs_realtime_data: bytes) -> dict[str, Any]:
         # stop SKIPPED, sometimes with a delay), so a reader must look here
         # first. Measured 2026-09-15: NL cancels 18 % of its trips of the
         # hour, the SNCF adds trains under ids the static feed has not.
-        entity_dict["trip_update"]["trip"]["schedule_relationship"] = _trip_relationship(
+        entity_dict["trip_update"]["trip"]["schedule_relationship"] = _relationship(
             entity.trip_update.trip)
         for stop_time_update in entity.trip_update.stop_time_update:
             stop_time_update_dict = {
@@ -389,7 +384,7 @@ def convert_gtfs_realtime_to_json(gtfs_realtime_data: bytes) -> dict[str, Any]:
                 "stop_id": stop_time_update.stop_id,
                 # SCHEDULED, SKIPPED (the vehicle does not call), NO_DATA
                 # (no prediction here, the timetable stands), UNSCHEDULED
-                "schedule_relationship": _stop_relationship(stop_time_update),
+                "schedule_relationship": _relationship(stop_time_update),
                 "arrival": {
                     "delay": stop_time_update.arrival.delay,
                     "time": stop_time_update.arrival.time
