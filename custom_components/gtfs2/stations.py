@@ -96,6 +96,12 @@ def get_station_list(schedule, route_id=None):
     return stations
 
 
+def _stop_mode(stop_id):
+    """"coach" or "train": the mode an SNCF stop serves, told by its id
+    alone (COACH_STOP_PREFIX)."""
+    return "coach" if str(stop_id).startswith(COACH_STOP_PREFIX) else "train"
+
+
 def get_station_modes(schedule, route_id):
     """{station name: {"train", "coach"}} for the stations a rail route calls
     at, when its trips mix trains and coaches; {} on a line of one mode.
@@ -119,8 +125,7 @@ def get_station_modes(schedule, route_id):
     modes = {}
     for name, stop_id in rows:
         if name:
-            modes.setdefault(name, set()).add(
-                "coach" if str(stop_id).startswith(COACH_STOP_PREFIX) else "train")
+            modes.setdefault(name, set()).add(_stop_mode(stop_id))
     mixed = set().union(*modes.values()) == {"train", "coach"} if modes else False
     _LOGGER.debug("Station modes for route %s: %s", route_id, modes if mixed else "one mode")
     return modes if mixed else {}
@@ -175,8 +180,7 @@ def get_train_destination_list(schedule, route_id, origin_name, line=None):
     reached = {}
     for name, stop_id in rows:
         if name and name != origin_name:
-            reached.setdefault(name, set()).add(
-                "coach" if str(stop_id).startswith(COACH_STOP_PREFIX) else "train")
+            reached.setdefault(name, set()).add(_stop_mode(stop_id))
     _LOGGER.debug("Train destinations from %s (line %s, route %s): %s",
                   origin_name, line, route_id, len(reached))
     return dict(sorted(reached.items()))
