@@ -10,9 +10,12 @@ ConfigFlow; every method reads and writes the flow's own state (self).
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Coroutine
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
@@ -23,13 +26,18 @@ from .const import (
     CONF_ORIGIN,
     CONF_ROUTE,
 )
+from .flow_journey import _Step
 from .notifications import _async_text
 from .stations import get_line_code, get_station_modes, get_train_destination_list, has_train_trip_between
+
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def _station_label(name, modes, words):
+def _station_label(name: str, modes: set[str] | None, words: dict[str, str]) -> str:
     """A station as the picker shows it. On a line that mixes trains and
     coaches every station says which of them call there, "Orléans (train,
     coach)", so a coach station reads as one; elsewhere the plain name."""
@@ -41,7 +49,24 @@ def _station_label(name, modes, words):
 class TrainScreens:
     """The two screens after the departure station of a train journey."""
 
-    async def _station_options(self, names, modes):
+    # what these screens use of the flow they are mixed in (ConfigFlow)
+    hass: HomeAssistant
+    _pygtfs: Schedule | str | None
+    _user_inputs: dict
+    _stops_error: str | None
+    _return_trip: dict | None
+    _return_name: str
+    async_show_form: Callable[..., FlowResult]
+    async_abort: Callable[..., FlowResult]
+    async_step_stops_train: _Step
+    async_step_extracting: _Step
+    _check_config: Callable[[dict], Coroutine[Any, Any, str | None]]
+    _journey_placeholders: Callable[..., dict[str, str]]
+    _suggested_name: Callable[[str], str]
+    _name_and_create: _Step
+
+    async def _station_options(self, names: list[str],
+                               modes: dict[str, set[str]]) -> list[selector.SelectOptionDict]:
         """Picker options for station names. On a line that mixes trains and
         coaches each one says which of them it is for; the value stays the
         plain name, which is what the queries match."""
@@ -79,7 +104,7 @@ class TrainScreens:
             return await self.async_step_stops_train()
         options = await self._station_options(list(reached), reached if mixed else {})
 
-        def _show(errors, picked=None):
+        def _show(errors: dict[str, str], picked: str | None = None) -> FlowResult:
             return self.async_show_form(
                 step_id="destination_train",
                 data_schema=vol.Schema({

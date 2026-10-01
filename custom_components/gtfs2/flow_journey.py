@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 import voluptuous as vol
 
@@ -48,6 +50,11 @@ from .source_refresh import source_zip_url
 from .places import get_direction_labels, get_pair_direction, has_trip_between
 
 _LOGGER = logging.getLogger(__name__)
+
+# a screen of the flow as another one calls it, async_step_<id>(user_input),
+# or a helper that ends on one: what a mixin declares of the screens it
+# hands over to
+type _Step = Callable[..., Coroutine[Any, Any, FlowResult]]
 
 
 def _stop_id(entry):
