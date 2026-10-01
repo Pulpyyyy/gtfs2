@@ -69,7 +69,7 @@ FEED_BEAT_MAX = 300
 RT_USER_AGENT = "GTFS2-HomeAssistant/1.0 (+https://github.com/vingerha/gtfs2)"
 
 
-def _with_user_agent(headers: Mapping[str, str] | None) -> dict[str, str]:
+def _with_user_agent(headers: Mapping[str, str | None] | None) -> dict[str, str | None]:
     """The request headers with a User-Agent naming the integration.
 
     requests announces itself as python-requests, which some agency gateways
@@ -77,13 +77,13 @@ def _with_user_agent(headers: Mapping[str, str] | None) -> dict[str, str]:
     answers 403 to it. Naming the client is enough to pass, and the address
     lets an operator see who is calling.
     """
-    merged = {"User-Agent": RT_USER_AGENT}
+    merged: dict[str, str | None] = {"User-Agent": RT_USER_AGENT}
     if headers:
         merged.update(headers)
     return merged
 
 
-def get_gtfs_feed_entities(url: str, headers: Mapping[str, str] | None, label: str,
+def get_gtfs_feed_entities(url: str, headers: Mapping[str, str | None] | None, label: str,
                            owner: str = "") -> FeedEntities | None:
     """Return the feed entities, fetching at most once per TTL and per feed.
 
@@ -201,7 +201,7 @@ def _say_recovered(url: str, label: str) -> None:
         _LOGGER.info("The %s feed at %s answers again", label, url)
 
 
-def _feed_body(url: str, headers: Mapping[str, str] | None, label: str) -> bytes | None:
+def _feed_body(url: str, headers: Mapping[str, str | None] | None, label: str) -> bytes | None:
     """The bytes of a realtime feed, from its host or from the file a
     file:// url names; None, the failure said, when there are none."""
     try:
@@ -290,11 +290,11 @@ def _protobuf_feed_entities(url: str, label: str,
     return feed.get('entity'), int((feed.get("header") or {}).get("timestamp") or 0) or None
 
 
-def _fetch_gtfs_feed_entities(url: str, headers: Mapping[str, str] | None, label: str) -> FeedEntities | None:
+def _fetch_gtfs_feed_entities(url: str, headers: Mapping[str, str | None] | None, label: str) -> FeedEntities | None:
     return _fetch_feed(url, headers, label)[0]
 
 
-def _fetch_feed(url: str, headers: Mapping[str, str] | None, label: str) -> tuple[FeedEntities | None, int | None]:
+def _fetch_feed(url: str, headers: Mapping[str, str | None] | None, label: str) -> tuple[FeedEntities | None, int | None]:
     """(the entities of a feed, when it says it was published), (None,
     None) when it could not be read."""
     _LOGGER.debug(f"GTFS RT get_feed_entities for url: {url} , headers: {headers}, label: {label}")
@@ -485,7 +485,7 @@ def delay_of(delay: int | None, realtime: int | None, scheduled: int | None) -> 
     return delay
 
 
-def on_service_day(start_date: str | Collection[str] | None, service_day: str | None) -> bool:
+def on_service_day(start_date: str | Collection[str | None] | None, service_day: str | None) -> bool:
     """Whether a feed's start_date is the service day.
 
     start_date is what the feed named, YYYYMMDD, or None for "unsaid",

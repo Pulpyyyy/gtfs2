@@ -5,10 +5,13 @@ local stops coordinator, and the service that refreshes them on demand
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 import datetime
 import logging
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import text
+from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
 from .const import (
@@ -23,12 +26,18 @@ from .const import (
 from .gtfs_helper import (_boards, _day_offset, _on_service_day, _removed_on, _row_instant, _runs_on,
                           check_extracting)
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
-from .rt_feed import get_gtfs_feed_entities, on_service_day
+from .rt_feed import FeedEntities, get_gtfs_feed_entities, on_service_day
+
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+
+    from .coordinator import GTFSLocalStopUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def _tracker_position(hass, entity_id):
+def _tracker_position(hass: HomeAssistant, entity_id: str) -> tuple[float | None, float | None]:
     """Where a person or zone is, (latitude, longitude), or (None, None).
 
     The entity may be gone, renamed or not loaded yet at start: its state
@@ -41,7 +50,7 @@ def _tracker_position(hass, entity_id):
     return state.attributes.get("latitude", None), state.attributes.get("longitude", None)
 
 
-def get_local_stop_list(hass, schedule, data):
+def get_local_stop_list(hass: HomeAssistant, schedule: Schedule, data: Mapping[str, Any]) -> int:
     _LOGGER.debug("Getting local stops list with data: %s", data)
     latitude, longitude = _tracker_position(hass, data['device_tracker_id'])
     if not latitude or not longitude:
@@ -62,7 +71,8 @@ def get_local_stop_list(hass, schedule, data):
     return rowcount
         
 
-def local_departure_leaves(scheduled, realtime, delay):
+def local_departure_leaves(scheduled: datetime.datetime, realtime: datetime.datetime | str,
+                           delay: int | str) -> datetime.datetime:
     """When a local stop departure leaves: the time the realtime feed gives
     (realtime, else the timetable's), and never before the timetable's
     plus the delay the feed announces. delay is seconds, or "-" when the
@@ -73,7 +83,7 @@ def local_departure_leaves(scheduled, realtime, delay):
     return leaves
 
 
-def drop_gone_local_departures(stops, now):
+def drop_gone_local_departures(stops: list[dict[str, Any]], now: datetime.datetime) -> list[dict[str, Any]]:
     """The local stops list without the departures gone by now (an aware
     datetime, the entry's offset included), by the rule the reading
     itself applies (local_departure_leaves); the list as it is when none
@@ -83,6 +93,7 @@ def drop_gone_local_departures(stops, now):
     and a departure gone stayed on it until then: the coordinator takes
     them out each minute in between, without reading anything.
     """
+    kept: list[dict[str, Any]]
     kept, gone = [], False
     for stop in stops:
         left = [d for d in stop["departure"]
@@ -93,9 +104,10 @@ def drop_gone_local_departures(stops, now):
     return kept if gone else stops
 
 
-def _build_local_stop_element(self, row, base_datetime,
-                              timezone_agency, timezone_stop, now_tz,
-                              apply_now_filter, feed_entities=None):
+def _build_local_stop_element(self: GTFSLocalStopUpdateCoordinator, row: Mapping[str, Any], base_datetime: str,
+                              timezone_agency: datetime.tzinfo | None, timezone_stop: datetime.tzinfo | None,
+                              now_tz: datetime.datetime, apply_now_filter: bool,
+                              feed_entities: FeedEntities | None = None) -> dict[str, Any] | None:
     """Build one departure element incl. realtime, for a given service date.
 
     base_datetime / datetime_label: both are departure_dt from the query.
@@ -118,11 +130,12 @@ def _build_local_stop_element(self, row, base_datetime,
     self._departure_time = self._departure_datetime.replace(tzinfo=None).strftime(TIME_STR_FORMAT)
     #_LOGGER.debug("Self._departure time in stop tz: %s", self._departure_time)
 
-    departure_rt = "-"
-    departure_rt_datetime = "-"
-    delay_rt = "-"
+    departure_rt: datetime.datetime | str = "-"
+    departure_rt_datetime: datetime.datetime | str = "-"
+    # seconds, or "-" when the feed gives none
+    delay_rt: Any = "-"
     delay_rt_derived = "-"
-    departures = []
+    departures: list[datetime.datetime] = []
 
     # Find RT if configured
     if self._realtime:
@@ -137,7 +150,7 @@ def _build_local_stop_element(self, row, base_datetime,
             _LOGGER.debug("Trip %s at %s is struck out by the feed on %s", self._trip_id, self._stop_id, base_datetime)
             return None
         if next_service:
-            svc = next_service.get(self._route, {}).get(self._direction, {}).get(self._stop_id, [])
+            svc = next_service.get(self._route, {}).get(self._direction, {}).get(self._stop_id, {})
             delays = svc.get("delays", []) if svc else []
             departures = svc.get("departures", []) if svc else []
             delay_rt = delays[0] if delays else "-"
@@ -194,8 +207,9 @@ def _build_local_stop_element(self, row, base_datetime,
         "icon": self._icon,
     }                
 
-def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
-                            time_range, time_range_history, now):
+def _fetch_local_stop_rows(schedule: Schedule, latitude: float, longitude: float, radius: float,
+                            time_range: str, time_range_history: str,
+                            now: datetime.datetime) -> list[dict[str, Any]]:
     """Run the local-stop SQL query and return plain dicts. """
     ## QUERY candidate_stops and candidate_dates are used to construct a list of valid_dates, i.e a list where services run
     ## valid_dates is then used in the main query
@@ -282,12 +296,12 @@ def _fetch_local_stop_rows(schedule, latitude, longitude, radius,
     return data_returned
 
 
-def _local_stop_feed(self):
+def _local_stop_feed(self: GTFSLocalStopUpdateCoordinator) -> FeedEntities | None:
     """The trip updates a local stops refresh lays on its departures, read
     once for all of them from the source's feed, the download the source's
     other sensors share: None without realtime, an empty list when the
     feed could not be read."""
-    if not self._realtime:
+    if not self._realtime or not self._trip_update_url:
         return None
     self._rt_group = "trip"
     feed_entities = get_gtfs_feed_entities(
@@ -302,11 +316,11 @@ def _local_stop_feed(self):
     return feed_entities
 
 
-def _feed_by_trip(feed_entities):
+def _feed_by_trip(feed_entities: FeedEntities | None) -> dict[tuple[str, str], list[int]]:
     """{("trip", trip_id) or ("id", entity id): [positions]} of the trip
     updates of a feed: the two ways a local stop departure matches one,
     by trip (_follows_trip in trip mode)."""
-    index = {}
+    index: dict[tuple[str, str], list[int]] = {}
     for position, entity in enumerate(feed_entities or ()):
         if not entity.get("trip_update", False):
             continue
@@ -315,7 +329,8 @@ def _feed_by_trip(feed_entities):
     return index
 
 
-def _trip_entities(self, feed_entities, index, row):
+def _trip_entities(self: GTFSLocalStopUpdateCoordinator, feed_entities: FeedEntities | None,
+                   index: dict[tuple[str, str], list[int]], row: Mapping[str, Any]) -> FeedEntities | None:
     """The trip updates a local stop departure can take its realtime from,
     in feed order: those naming its trip, or whose id is its trip's short
     name. Handed the whole feed, every departure walked all of it for its
@@ -327,7 +342,8 @@ def _trip_entities(self, feed_entities, index, row):
     return [feed_entities[position] for position in sorted(positions)]
 
 
-def _local_row_zones(row, timezone_local):
+def _local_row_zones(row: Mapping[str, Any], timezone_local: datetime.tzinfo | None
+                     ) -> tuple[datetime.tzinfo | None, datetime.tzinfo | None]:
     """(agency zone, stop zone) a local stop row is read in: the agency's,
     else the stop's, for the first; the stop's for the second; Home
     Assistant's when the feed names none."""
@@ -336,7 +352,8 @@ def _local_row_zones(row, timezone_local):
             dt_util.get_time_zone(row["stop_timezone"]) if row["stop_timezone"] is not None else timezone_local)
 
 
-def _interpret_local_stop_rows(self, rows):
+def _interpret_local_stop_rows(self: GTFSLocalStopUpdateCoordinator,
+                               rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Turn raw SQL-shaped rows into the local-stops departures list.
 
     No database: `rows` only needs to be a list of plain dicts, ordered
@@ -354,7 +371,7 @@ def _interpret_local_stop_rows(self, rows):
     feed_index = _feed_by_trip(feed_entities)
 
     # {stop_id: its entry}, the entry read from the stop's last row
-    stops = {}
+    stops: dict[str, dict[str, Any]] = {}
     for row in rows:
         timezone_agency, timezone_stop = _local_row_zones(row, timezone_local)
         _LOGGER.debug("Using Agency timezone: %s, Stop timezone: %s", timezone_agency, timezone_stop)
@@ -376,7 +393,7 @@ def _interpret_local_stop_rows(self, rows):
     _LOGGER.debug("Interpreted local stop rows returned: %s", local_stops_list)
     return local_stops_list
 
-def get_local_stops_next_departures(self):
+def get_local_stops_next_departures(self: GTFSLocalStopUpdateCoordinator) -> list[dict[str, Any]]:
     _LOGGER.debug("Get local stop departure with data: %s", self._data)
     if check_extracting(self.hass, self._data['gtfs_dir'],self._data['file']):
         _LOGGER.debug("Cannot get next departures on this datasource as still unpacking: %s", self._data["file"])
@@ -404,9 +421,9 @@ def get_local_stops_next_departures(self):
     return _interpret_local_stop_rows(self, rows)
 
 
-async def update_gtfs_local_stops(hass, data): 
+async def update_gtfs_local_stops(hass: HomeAssistant, data: Mapping[str, Any]) -> None:
     _LOGGER.debug("Update service for local stops with data: %s", data)
-    entries = []
+    entries: list[str] = []
     for entry in hass.config_entries.async_entries(DOMAIN):
         if entry.data.get("device_tracker_id") == data["entity_id"] :
             entries.append(entry.entry_id)
