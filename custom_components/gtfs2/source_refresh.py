@@ -26,9 +26,11 @@ written here after a successful refresh. The gap between the two is what
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Mapping
 import hashlib
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import Any
 
 import homeassistant.util.dt as dt_util
 from homeassistant.config_entries import ConfigEntry
@@ -85,11 +87,11 @@ _JOURNEY_REFRESH_KEYS = (
 )
 
 
-def _store(hass: HomeAssistant) -> dict:
+def _store(hass: HomeAssistant) -> dict[str, Any]:
     return hass.data.setdefault(DOMAIN, {})
 
 
-def source_lock(hass: HomeAssistant, file) -> asyncio.Lock:
+def source_lock(hass: HomeAssistant, file: str) -> asyncio.Lock:
     """One lock per source: never two rebuilds of the same feed at once."""
     locks = _store(hass).setdefault("source_locks", {})
     if file not in locks:
@@ -97,7 +99,7 @@ def source_lock(hass: HomeAssistant, file) -> asyncio.Lock:
     return locks[file]
 
 
-def probe_state(hass: HomeAssistant, file) -> dict:
+def probe_state(hass: HomeAssistant, file: str) -> dict[str, Any]:
     """What the last check learned, per source. Ephemeral on purpose: it is
     re-derivable at the next tick, so it lives in memory and a restart just
     means unknown-latest until the first check."""
@@ -110,7 +112,7 @@ def probe_state(hass: HomeAssistant, file) -> dict:
 CATCH_UP_DELAY = 10 * 60
 
 
-def last_look(hass: HomeAssistant, file):
+def last_look(hass: HomeAssistant, file: str) -> datetime | None:
     """When the host was last asked about this source, or None.
 
     What this run learned first, then what the sidecar recorded, which
@@ -120,14 +122,14 @@ def last_look(hass: HomeAssistant, file):
     return _last_look_in(hass, file, source_meta(source_zip_path(hass, file)))
 
 
-def _last_look_in(hass: HomeAssistant, file, zip_meta):
+def _last_look_in(hass: HomeAssistant, file: str, zip_meta: Mapping[str, Any]) -> datetime | None:
     """last_look, the zip's sidecar already read: zip_meta."""
     last = (probe_state(hass, file).get("checked_at") or zip_meta.get("checked_at")
             or zip_meta.get("downloaded_at"))
     return dt_util.parse_datetime(last) if last else None
 
 
-def default_check_time(file) -> tuple[int, int, int]:
+def default_check_time(file: str) -> tuple[int, int, int]:
     """A night slot of the source's own, between 03:00 and 05:59 local.
 
     Derived from the file name, so it is stable across restarts and spreads
@@ -149,7 +151,7 @@ def check_interval(entry: ConfigEntry) -> int:
                min(MAX_STATIC_CHECK_INTERVAL, value))
 
 
-def check_hours(interval: int, file) -> tuple[list[int], int, int]:
+def check_hours(interval: int, file: str) -> tuple[list[int], int, int]:
     """The local hours a source is looked at, for the frequency it asked.
 
     The user picks a frequency, the moment is picked here. The anchor is
@@ -168,7 +170,8 @@ def check_hours(interval: int, file) -> tuple[list[int], int, int]:
     return hours, minute, second
 
 
-def next_check_at(hass: HomeAssistant, entry: ConfigEntry, zip_meta):
+def next_check_at(hass: HomeAssistant, entry: ConfigEntry,
+                  zip_meta: Mapping[str, Any]) -> datetime | None:
     """When the next scheduled look at this source is due, or None.
 
     The tick pattern is check_hours'; for the cadences slower than daily the
@@ -206,7 +209,7 @@ def next_check_at(hass: HomeAssistant, entry: ConfigEntry, zip_meta):
     return None
 
 
-def source_zip_path(hass: HomeAssistant, file) -> str:
+def source_zip_path(hass: HomeAssistant, file: str) -> str:
     return feed_zip(hass.config.path(DEFAULT_PATH), file)
 
 
@@ -217,11 +220,11 @@ def source_zip_url(hass: HomeAssistant, file: str) -> str:
     return file_url(source_zip_path(hass, file))
 
 
-def _installed_meta_path(hass: HomeAssistant, file) -> str:
+def _installed_meta_path(hass: HomeAssistant, file: str) -> str:
     return real_path(hass.config.path(DEFAULT_PATH), file) + ".meta.json"
 
 
-def installed_meta(hass: HomeAssistant, file) -> dict:
+def installed_meta(hass: HomeAssistant, file: str) -> dict[str, Any]:
     """What the database was last built from.
 
     Falls back on the zip's sidecar when the build was never recorded: the
@@ -232,14 +235,14 @@ def installed_meta(hass: HomeAssistant, file) -> dict:
     return read_meta(_installed_meta_path(hass, file)) or source_meta(source_zip_path(hass, file))
 
 
-def _record_installed(hass: HomeAssistant, file) -> None:
+def _record_installed(hass: HomeAssistant, file: str) -> None:
     """After a successful rebuild, the database is what the zip is."""
     meta = dict(source_meta(source_zip_path(hass, file)))
     meta["built_at"] = dt_util.utcnow().isoformat()
     write_meta(_installed_meta_path(hass, file), meta, "rebuild", file)
 
 
-def _carry_validators(hass: HomeAssistant, file) -> None:
+def _carry_validators(hass: HomeAssistant, file: str) -> None:
     """The installed record follows the zip's validators, for the same bytes.
 
     fetch_if_new gives the zip's sidecar the validators a host sends anew
@@ -257,7 +260,7 @@ def _carry_validators(hass: HomeAssistant, file) -> None:
     write_meta(path, meta, "validators", file)
 
 
-def rebuild_pending(hass: HomeAssistant, file) -> bool:
+def rebuild_pending(hass: HomeAssistant, file: str) -> bool:
     """True when the kept zip is a newer edition than the database.
 
     The zip is adopted as soon as it is proven to be one, before anything
@@ -272,7 +275,7 @@ def rebuild_pending(hass: HomeAssistant, file) -> bool:
     return version_label(installed_meta(hass, file)) != version_label(kept)
 
 
-def version_label(meta: dict):
+def version_label(meta: Mapping[str, Any]) -> str | None:
     """A human answer to "which version is this", best evidence first."""
     if not meta:
         return None
@@ -281,7 +284,7 @@ def version_label(meta: dict):
             (meta.get("sha256") or "")[:12] or meta.get("downloaded_at"))
 
 
-def refresh_source(hass: HomeAssistant, path, data) -> bool:
+def refresh_source(hass: HomeAssistant, path: str, data: dict[str, Any]) -> bool:
     """The refresh itself plus its record, synchronous for executor jobs.
 
     Success means a new database was swapped in, route by route or whole:
@@ -293,11 +296,11 @@ def refresh_source(hass: HomeAssistant, path, data) -> bool:
     result = refresh_datasource(hass, path, data)
     if not isinstance(result, dict):
         return False
-    _record_installed(hass, data.get(CONF_FILE))
+    _record_installed(hass, data[CONF_FILE])
     return True
 
 
-def refresh_data_for(hass: HomeAssistant, entry: ConfigEntry) -> dict:
+def refresh_data_for(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     """What refresh_datasource needs, assembled from the source's entries.
 
     The datasource entry owns the identity and, once it has taken it over,
@@ -313,7 +316,8 @@ def refresh_data_for(hass: HomeAssistant, entry: ConfigEntry) -> dict:
     return data
 
 
-async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
+async def async_refresh_source_data(hass: HomeAssistant, file: str,
+                                    data: Mapping[str, Any]) -> bool:
     """One rebuild of a source from an assembled data dict, serialised per
     source, recorded, and told to its entities. The three triggers meet
     here: the update entity, the scheduled check and the update service."""
@@ -339,8 +343,8 @@ async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
 
 async def async_refresh_source(hass: HomeAssistant, entry: ConfigEntry,
                                *, use_zip: bool = False,
-                               flags: dict | None = None,
-                               fetch: dict | None = None) -> bool:
+                               flags: Mapping[str, Any] | None = None,
+                               fetch: Mapping[str, Any] | None = None) -> bool:
     """Refresh one source from what the source itself says.
 
     use_zip says the fresh feed already sits in the kept zip (a check that
@@ -364,7 +368,7 @@ async def async_refresh_source(hass: HomeAssistant, entry: ConfigEntry,
     return await async_refresh_source_data(hass, entry.data.get(CONF_FILE), data)
 
 
-async def _async_build_kept_zip(hass: HomeAssistant, entry: ConfigEntry, file) -> bool:
+async def _async_build_kept_zip(hass: HomeAssistant, entry: ConfigEntry, file: str) -> bool:
     """Build a source from its kept zip when the database lags behind it.
 
     Returns True when that build went through, and the check has nothing
@@ -387,7 +391,7 @@ async def _async_build_kept_zip(hass: HomeAssistant, entry: ConfigEntry, file) -
     return False
 
 
-async def _async_look_due(hass: HomeAssistant, entry: ConfigEntry, file) -> bool:
+async def _async_look_due(hass: HomeAssistant, entry: ConfigEntry, file: str) -> bool:
     """Whether tonight's tick is one the source's check frequency counts."""
     interval = check_interval(entry)
     if interval > 24:
@@ -401,7 +405,8 @@ async def _async_look_due(hass: HomeAssistant, entry: ConfigEntry, file) -> bool
     return True
 
 
-async def _async_probe(hass: HomeAssistant, file, data, zip_path) -> dict:
+async def _async_probe(hass: HomeAssistant, file: str, data: Mapping[str, Any],
+                       zip_path: str) -> dict[str, str | None]:
     """Ask the source's host whether the feed changed, and keep the answer
     in the source's probe state. Returns probe_source's answer."""
     probe = await hass.async_add_executor_job(probe_source, data, zip_path)
@@ -421,8 +426,9 @@ async def _async_probe(hass: HomeAssistant, file, data, zip_path) -> dict:
     return probe
 
 
-async def _async_take_download(hass: HomeAssistant, file, zip_path, probe,
-                               fetched) -> tuple[bool, bool]:
+async def _async_take_download(hass: HomeAssistant, file: str, zip_path: str,
+                               probe: Mapping[str, str | None],
+                               fetched: bool | str | None) -> tuple[bool, bool]:
     """What the download proved, over what the probe said.
 
     fetched is fetch_if_new's answer: True for a new feed now in the zip,
@@ -452,7 +458,7 @@ async def _async_take_download(hass: HomeAssistant, file, zip_path, probe,
     return probe["result"] == PROBE_CHANGED, False
 
 
-async def _async_offer_update(hass: HomeAssistant, file) -> None:
+async def _async_offer_update(hass: HomeAssistant, file: str) -> None:
     """Tell a source in notify mode has a new version: an event for the
     automations, once per version; the update entity shows it."""
     state = probe_state(hass, file)
@@ -538,10 +544,10 @@ def async_arm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
     interval = check_interval(entry)
     hours, minute, second = check_hours(interval, entry.data.get(CONF_FILE))
 
-    async def _tick(now):
+    async def _tick(now: datetime) -> None:
         await async_check_source(hass, entry)
 
-    async def _catch_up(now):
+    async def _catch_up(now: datetime) -> None:
         # the night slot passed while Home Assistant was down, or the
         # source was just switched on: look now rather than a day late
         last = await hass.async_add_executor_job(
@@ -555,7 +561,7 @@ def async_arm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
         hass, _tick, hour=hours, minute=minute, second=second)
     cancel_catch_up = async_call_later(hass, CATCH_UP_DELAY, _catch_up)
 
-    def _cancel():
+    def _cancel() -> None:
         cancel_tick()
         cancel_catch_up()
 
