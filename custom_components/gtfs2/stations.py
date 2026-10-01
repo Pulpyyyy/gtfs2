@@ -15,7 +15,7 @@ import logging
 
 from sqlalchemy.sql import text
 
-from .gtfs_helper import COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards, station_names_in
+from .gtfs_helper import COACH_STOP_PREFIX, RAIL_ROUTE_TYPES_SQL, _alights, _boards, station_names_in
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -154,7 +154,6 @@ def get_train_destination_list(schedule, route_id, origin_name, line=None):
     trips are held to the line's code like the departures, to the route
     itself when the line has none.
     """
-    rail = ",".join(str(t) for t in RAIL_ROUTE_TYPES)
     scope = "r.route_short_name = :line" if line else "t.route_id = :route_id"
     sql = f"""
     SELECT distinct sd.stop_name, sd.stop_id
@@ -165,7 +164,7 @@ def get_train_destination_list(schedule, route_id, origin_name, line=None):
     inner join stop_times d on d.trip_id = t.trip_id
         and d.stop_sequence > o.stop_sequence
     inner join stops sd on sd.stop_id = d.stop_id
-    where r.route_type in ({rail})
+    where r.route_type in ({RAIL_ROUTE_TYPES_SQL})
       and so.stop_name = :origin
       and {scope}
       and {_boards("o")} and {_alights("d")}
