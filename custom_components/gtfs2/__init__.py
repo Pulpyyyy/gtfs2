@@ -8,7 +8,7 @@ from homeassistant.helpers import config_validation as cv
 
 from datetime import timedelta
 
-from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_FILE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM, id_of
+from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAULT_PATH_RT, CONF_KIND, ENTRY_KIND_DATASOURCE, CONF_FILE, CONF_URL, CONF_API_KEY, CONF_EXTRACT_FROM, ATTR_API_KEY_LOCATIONS, id_of
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
 from .departure_services import get_route_departures, get_route_arrivals, get_trip_stops
@@ -232,7 +232,12 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
     await async_notify_line_orphaned(hass, filename, route, label or route)
      
 
-_KEY_LOCATIONS = vol.In(["not_applicable", "header", "query_string"])
+# the key of a feed, static or realtime, and where it travels
+_KEY_FIELDS = {
+    vol.Optional(CONF_API_KEY): cv.string,
+    vol.Optional("api_key_name"): cv.string,
+    vol.Optional("api_key_location"): vol.In(ATTR_API_KEY_LOCATIONS),
+}
 # the fields services.yaml lists, checked before a handler reads them: a
 # missing one used to surface as a KeyError from deep inside. Extra keys
 # still pass, for the automations written against older field lists
@@ -240,9 +245,7 @@ _UPDATE_GTFS_SCHEMA = vol.Schema({
     vol.Required("file"): cv.string,
     vol.Optional(CONF_EXTRACT_FROM): vol.In(["url", "zip"]),
     vol.Optional(CONF_URL): cv.string,
-    vol.Optional(CONF_API_KEY): cv.string,
-    vol.Optional("api_key_name"): cv.string,
-    vol.Optional("api_key_location"): _KEY_LOCATIONS,
+    **_KEY_FIELDS,
     vol.Optional("clean_feed_info"): cv.boolean,
     vol.Optional("check_source_dates"): cv.boolean,
 }, extra=vol.ALLOW_EXTRA)
@@ -250,9 +253,7 @@ _UPDATE_GTFS_RT_SCHEMA = vol.Schema({
     vol.Required("file"): cv.string,
     vol.Required(CONF_URL): cv.string,
     vol.Required("rt_type"): vol.In(["trip_data", "vehicle_positions", "alerts"]),
-    vol.Optional(CONF_API_KEY): cv.string,
-    vol.Optional("api_key_name"): cv.string,
-    vol.Optional("api_key_location"): _KEY_LOCATIONS,
+    **_KEY_FIELDS,
     vol.Optional("accept"): cv.boolean,
     vol.Optional("entity_for_siri"): cv.entity_id,
     vol.Optional("debug_output"): cv.boolean,
