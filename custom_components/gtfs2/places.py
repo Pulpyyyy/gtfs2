@@ -941,16 +941,35 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     return stops
 
 
-def _shortest_ride(seq, origin, destination):
+def _closed_calls(conn, route_id):
+    """{(trip_id, stop_sequence): (boards, alights)} of the calls of the
+    trips _STOP_ROWS samples where no trip of the pattern takes riders on,
+    or none sets them down; every other call is open both ways."""
+    return {(row[0], row[1]): (bool(row[2]), bool(row[3])) for row in _line_rows(conn, f"""
+        with {_RIDES}, sample as (
+            select trip_id, min(trip_id) over (partition by stops) as sample_id from ride
+        )
+        select sample.sample_id, st.stop_sequence,
+               max({_boards("st")}) as boards, max({_alights("st")}) as alights
+        from sample
+        inner join stop_times st on st.trip_id = sample.trip_id
+        group by sample.sample_id, st.stop_sequence
+        having boards = 0 or alights = 0""", {"route_id": route_id, "direction": None})}  # noqa: S608
+
+
+def _shortest_ride(calls, origin, destination):
     """(where the ride boards, where it alights) of the trip's shortest ride
-    from origin to destination, seq being its places in call order; None
-    when it rides none."""
+    from origin to destination, calls being its (place, boards, alights) in
+    call order; None when it rides none. Only a call the rider can use is
+    an end, or in the way, as in the departure query: Kennington on a loop,
+    the terminus passed again with no way on or off, made the ride look
+    one stop long."""
     best = None
     last_origin = None
-    for i, p in enumerate(seq):
-        if p == origin:
+    for i, (p, boards, alights) in enumerate(calls):
+        if p == origin and boards:
             last_origin = i
-        elif p == destination and last_origin is not None:
+        elif p == destination and alights and last_origin is not None:
             if best is None or i - last_origin < best[1] - best[0]:
                 best = (last_origin, i)
             last_origin = None
@@ -987,6 +1006,7 @@ def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, 
             {"route_id": route_id}).fetchall())
         boarding = (_origin_boarding(conn, route_id, origin_stop_id)
                     if towards is not None else None)
+        closed = _closed_calls(conn, route_id)
     origin = place.get(origin_stop_id, origin_stop_id)
     destination = place.get(destination_stop_id, destination_stop_id)
     termini = _loop_termini(trips, place)
@@ -1003,7 +1023,8 @@ def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, 
             return direction
     rides = []
     for trip_id, trip_stops in trips.items():
-        best = _shortest_ride([place[s] for s, _ in trip_stops], origin, destination)
+        best = _shortest_ride([(place[s], *closed.get((trip_id, seq), (True, True)))
+                               for s, seq in trip_stops], origin, destination)
         if best:
             rides.append((best[1] - best[0], labels.get(trip_id)))
     if len({label for _length, label in rides}) < 2:

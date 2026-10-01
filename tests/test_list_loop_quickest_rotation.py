@@ -5,7 +5,8 @@ round (TAO 22 at Zenith); when both rotations take as many stops, the
 median ride time decides. A call nobody may leave by is no end of a ride,
 as in the departure query (tests/test_departure_shortest_ride.py): timed
 as one, it made its rotation look the quicker, and the entry kept a
-direction whose departures never reach the destination that fast.
+direction whose departures never reach the destination that fast. The
+stops are counted over the same calls: one nobody may use is passed by.
 """
 from __future__ import annotations
 
@@ -44,6 +45,25 @@ FEED = {
 
 def _schedule(tmp_path):
     return feed_db.build(tmp_path, FEED)
+
+
+def test_a_call_nobody_can_use_does_not_shorten_a_rotation(tmp_path):
+    # Kennington on a loop: the other way round passes the terminus a second
+    # time with no way on or off, then reaches Mairie in one stop. Counted
+    # from that call, it was the shorter rotation; the rider boards at the
+    # first call, three stops away, where the first way round takes two
+    schedule = feed_db.build(tmp_path, {**FEED, "stop_times.txt": HEAD + (
+        "CLOCK,10:00:00,10:00:00,Z,1,0,0\nCLOCK,10:05:00,10:05:00,P,2,0,0\n"
+        "CLOCK,10:10:00,10:10:00,M,3,0,0\nCLOCK,10:15:00,10:15:00,Q,4,0,0\n"
+        "CLOCK,10:20:00,10:20:00,Z,5,0,0\n"
+        "ANTI,11:00:00,11:00:00,Z,1,0,0\nANTI,11:04:00,11:04:00,Q,2,0,0\n"
+        "ANTI,11:06:00,11:06:00,Z,3,1,1\nANTI,11:12:00,11:12:00,M,4,0,0\n"
+        "ANTI,11:18:00,11:18:00,P,5,0,0\nANTI,11:24:00,11:24:00,Z,6,0,0\n"),
+        "trips.txt": "route_id,service_id,trip_id,direction_id\nR,D,CLOCK,0\nR,D,ANTI,1\n"})
+    try:
+        assert places.get_pair_direction(schedule, "R", "Z", "M") == "0"
+    finally:
+        schedule.engine.dispose()
 
 
 def test_a_call_nobody_can_leave_by_does_not_time_a_rotation(tmp_path):
