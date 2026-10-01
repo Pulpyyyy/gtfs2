@@ -139,16 +139,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
 
     @callback
     def async_remove(self) -> None:
-        """Let the datasource the flow opened go, however the flow ended.
-
-        The flow opens the source's schedule to list its lines and stops,
-        and held it to the end: never closed, the file stayed open until
-        garbage collection, long enough on Windows to refuse the swap of a
-        refresh started meanwhile.
-        """
-        if self._pygtfs and hasattr(self._pygtfs, "session"):
-            self.hass.async_add_executor_job(close_schedule, self._pygtfs)
-        self._pygtfs = ""
+        """Let the datasource the flow opened go (_let_schedule_go)."""
+        _let_schedule_go(self)
 
     async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
         """Handle the source."""
@@ -746,16 +738,8 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
 
     @callback
     def async_remove(self) -> None:
-        """Let the datasource the flow opened go, however the flow ended.
-
-        The flow opens the source's schedule to list its lines and stops,
-        and held it to the end: never closed, the file stayed open until
-        garbage collection, long enough on Windows to refuse the swap of a
-        refresh started meanwhile.
-        """
-        if self._pygtfs and hasattr(self._pygtfs, "session"):
-            self.hass.async_add_executor_job(close_schedule, self._pygtfs)
-        self._pygtfs = ""
+        """Let the datasource the flow opened go (_let_schedule_go)."""
+        _let_schedule_go(self)
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -812,6 +796,19 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
                 data_schema=vol.Schema(opt1_schema),
                 description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             )
+
+
+def _let_schedule_go(self):
+    """Let the datasource the flow opened go, however the flow ended.
+
+    The flow opens the source's schedule to list its lines and stops,
+    and held it to the end: never closed, the file stayed open until
+    garbage collection, long enough on Windows to refuse the swap of a
+    refresh started meanwhile.
+    """
+    if self._pygtfs and hasattr(self._pygtfs, "session"):
+        self.hass.async_add_executor_job(close_schedule, self._pygtfs)
+    self._pygtfs = ""
 
 
 async def _reopen_schedule(self, data):
