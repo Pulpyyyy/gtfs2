@@ -208,13 +208,17 @@ def rt_window_gate(hass: HomeAssistant, file: str, schedule: Schedule,
     the gate only silences what it positively knows is asleep.
     """
     try:
-        return _gate(hass, file, schedule, trip_update_url, now)
+        paused = _gate(hass, file, schedule, trip_update_url, now)
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning(
             "Realtime window for %s could not be derived, leaving realtime on: %s",
             file, ex)
         _STATE.setdefault(file, {})["paused"] = None
         return None
+    if paused:
+        _LOGGER.debug("GTFS RT: %s is outside its service window (%s), feeds not read",
+                      file, paused)
+    return paused
 
 
 def _forget_envelopes(file: str, edition: _Edition, cutoff: str) -> None:

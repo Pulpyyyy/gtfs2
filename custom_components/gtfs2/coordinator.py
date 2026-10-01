@@ -305,8 +305,6 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             rt_window_gate, self.hass, self._data["file"], self._pygtfs,
             with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg))
         if rt_paused:
-            _LOGGER.debug("GTFS RT: %s is outside its service window (%s), feeds not read",
-                          self._data["file"], rt_paused)
             if rt_cfg.get(CONF_VEHICLE_POSITION_URL):
                 # nothing will refresh the positions until the window
                 # opens again, so the map is told rather than left on
@@ -564,8 +562,6 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
                 rt_window_gate, self.hass, data["file"], self._pygtfs,
                 self._trip_update_url)
             if rt_paused:
-                _LOGGER.debug("GTFS RT: %s is outside its service window (%s), feeds not read",
-                              data["file"], rt_paused)
                 self._realtime = False
         try:
             self._data["local_stops_next_departures"] = await self.hass.async_add_executor_job(
