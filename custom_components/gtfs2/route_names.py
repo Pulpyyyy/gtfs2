@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Collection, Container, Iterable, Mapping, Sequence
 import csv
+import json
 import logging
 import os
 import re
@@ -629,16 +630,15 @@ def _route_endpoints(schedule: Schedule, route_ids: list[str]) -> dict[str, str]
     if not route_ids:
         return {}
     route_ids = sorted(route_ids)
-    placeholders = ", ".join(f":e{i}" for i in range(len(route_ids)))
     # the longest trips of each line, direction 0 first: every one of them,
     # for the choice between them is made on their stops below. Left to
     # max(n), SQLite picked whichever tied trip it met first, and the label
     # turned round, A > B, then B > A, after a rebuild
-    sql = f"""
+    sql = """
     with calls as (
         select t.route_id, t.trip_id, coalesce(t.direction_id, 0) as d, count(*) as n
         from trips t inner join stop_times st on st.trip_id = t.trip_id
-        where t.route_id in ({placeholders}) group by t.trip_id
+        where t.route_id in (select value from json_each(:routes)) group by t.trip_id
     ), picked as (
         select route_id, trip_id from (
             select route_id, trip_id,
@@ -650,11 +650,10 @@ def _route_endpoints(schedule: Schedule, route_ids: list[str]) -> dict[str, str]
     from picked p
     inner join stop_times st on st.trip_id = p.trip_id
     inner join stops s on s.stop_id = st.stop_id
-    """  # noqa: S608
+    """
     try:
         with schedule.engine.connect() as conn:
-            rows = conn.execute(
-                text(sql), {f"e{i}": r for i, r in enumerate(route_ids)}).fetchall()
+            rows = conn.execute(text(sql), {"routes": json.dumps(route_ids)}).fetchall()
     except Exception as ex:  # pylint: disable=broad-except
         # without this the label falls back to the route_id, which is what it
         # did before: ugly, but never empty
@@ -782,13 +781,11 @@ def get_route_labels(schedule: Schedule, route_ids: Sequence[str], gtfs_dir: str
     if not route_ids:
         return {}
     out: dict[str, str] = {}
-    placeholders = ", ".join(f":r{i}" for i in range(len(route_ids)))
     sql = ("select route_id, route_short_name, route_long_name from routes "
-           f"where route_id in ({placeholders})")  # noqa: S608
+           "where route_id in (select value from json_each(:routes))")
     try:
         with schedule.engine.connect() as conn:
-            rows = conn.execute(
-                text(sql), {f"r{i}": r for i, r in enumerate(route_ids)}).fetchall()
+            rows = conn.execute(text(sql), {"routes": json.dumps(list(route_ids))}).fetchall()
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not read route names: %s", ex)
         return {r: r for r in route_ids}
@@ -838,8 +835,8 @@ def get_route_list(schedule: Schedule, data: Mapping[str, Any], with_trips_only:
                 pruned = in_zip - loaded
         trips_where = with_trips
         if pruned:
-            placeholders = ", ".join(f":pr{i}" for i in range(len(pruned)))
-            trips_where = f"and (exists (select 1 from trips t where t.route_id = r.route_id) or r.route_id in ({placeholders}))"
+            trips_where = ("and (exists (select 1 from trips t where t.route_id = r.route_id) "
+                           "or r.route_id in (select value from json_each(:pruned)))")
     picked_where, params = _routes_where(data)
     sql_routes = f"""
     SELECT r.route_type, r.route_id, r.route_short_name, r.route_long_name, a.agency_name
@@ -853,7 +850,7 @@ def get_route_list(schedule: Schedule, data: Mapping[str, Any], with_trips_only:
     routes_list: list[list[Any]] = []
     routes: list[str] = []
     with schedule.engine.connect() as conn:
-        params.update({f"pr{i}": r for i, r in enumerate(sorted(pruned))})
+        params["pruned"] = json.dumps(sorted(pruned))
         rows = conn.execute(text(sql_routes), params).fetchall()
     for row_cursor in rows:
         routes_list.append(list(row_cursor))

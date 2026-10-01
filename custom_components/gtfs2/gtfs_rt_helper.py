@@ -570,18 +570,17 @@ def _trip_destinations(schedule: Schedule | str | None, trip_ids: Iterable[str])
     if not trip_ids or schedule is None or isinstance(schedule, str):
         return {}
     from .route_names import _names_a_place
-    marks = ", ".join(f":t{i}" for i in range(len(trip_ids)))
-    sql = f"""
+    sql = """
     SELECT t.trip_id, t.trip_headsign,
            (SELECT s.stop_name FROM stop_times st
             INNER JOIN stops s ON s.stop_id = st.stop_id
             WHERE st.trip_id = t.trip_id
             ORDER BY st.stop_sequence DESC LIMIT 1) AS last_stop
-    FROM trips t WHERE t.trip_id IN ({marks})
-    """  # noqa: S608
+    FROM trips t WHERE t.trip_id IN (SELECT value FROM json_each(:trips))
+    """
     try:
         with schedule.engine.connect() as conn:
-            rows = conn.execute(sql_text(sql), {f"t{i}": t for i, t in enumerate(trip_ids)}).fetchall()
+            rows = conn.execute(sql_text(sql), {"trips": json.dumps(trip_ids)}).fetchall()
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.debug("Could not read where the vehicles go: %s", ex)
         return {}
@@ -599,12 +598,12 @@ def _trip_directions(schedule: Schedule | str | None, trip_ids: Iterable[str]) -
     trip_ids = sorted({str(t) for t in trip_ids if t})
     if not trip_ids or schedule is None or isinstance(schedule, str):
         return {}
-    marks = ", ".join(f":t{i}" for i in range(len(trip_ids)))
     try:
         with schedule.engine.connect() as conn:
             rows = conn.execute(
-                sql_text(f"SELECT trip_id, direction_id FROM trips WHERE trip_id IN ({marks})"),  # noqa: S608
-                {f"t{i}": t for i, t in enumerate(trip_ids)}).fetchall()
+                sql_text("SELECT trip_id, direction_id FROM trips "
+                         "WHERE trip_id IN (SELECT value FROM json_each(:trips))"),
+                {"trips": json.dumps(trip_ids)}).fetchall()
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.debug("Could not read the directions of the vehicles' trips: %s", ex)
         return {}

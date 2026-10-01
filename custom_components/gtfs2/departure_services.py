@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 import datetime
+import json
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -191,16 +192,15 @@ def _trip_stops(schedule: Schedule, trips: list[str],
     """
     if not trips:
         return {}
-    marks = ", ".join(f":t{i}" for i in range(len(trips)))
-    sql_stops = f"""
+    sql_stops = """
     SELECT st.trip_id, s.stop_name, time(st.departure_time), s.stop_id
     from stop_times st
     inner join stops s on s.stop_id = st.stop_id
-    where st.trip_id in ({marks})
+    where st.trip_id in (select value from json_each(:trips))
     order by st.trip_id, st.stop_sequence
-    """  # noqa: S608
+    """
     with schedule.engine.connect() as conn:
-        rows = conn.execute(text(sql_stops), {f"t{i}": trip for i, trip in enumerate(trips)}).fetchall()
+        rows = conn.execute(text(sql_stops), {"trips": json.dumps(trips)}).fetchall()
     calls: dict[str, list[tuple[str, str]]] = {}
     for trip_id, name, time_of_day, stop_id in rows:
         calls.setdefault(str(trip_id), []).append((str(stop_id), f"{name} - {time_of_day}"))

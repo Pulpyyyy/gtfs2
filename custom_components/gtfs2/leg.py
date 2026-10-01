@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Container, Mapping, Sequence
 import datetime
 import glob
+import json
 import logging
 import os
 from typing import TYPE_CHECKING, Any
@@ -127,18 +128,17 @@ def _read_trip_calls(schedule: Schedule, trip_ids: Sequence[str],
     stops_by_trip: dict[str, list[_Call]] = {}
     if not trip_ids:
         return stops_by_trip, None
-    params = {f"t{i}": t for i, t in enumerate(trip_ids)}
-    sql = f"""
+    sql = """
     SELECT st.trip_id, st.stop_id, s.stop_name, s.stop_lat, s.stop_lon,
            st.stop_sequence, st.arrival_time, st.departure_time, s.parent_station,
            st.pickup_type, st.drop_off_type
     FROM stop_times st
     JOIN stops s ON s.stop_id = st.stop_id
-    WHERE st.trip_id IN ({", ".join(":" + k for k in params)})
+    WHERE st.trip_id IN (SELECT value FROM json_each(:trips))
     ORDER BY st.trip_id, st.stop_sequence
-    """  # noqa: S608
+    """
     with schedule.engine.connect() as conn:
-        for row in conn.execute(text(sql), params).fetchall():
+        for row in conn.execute(text(sql), {"trips": json.dumps(list(trip_ids))}).fetchall():
             stops_by_trip.setdefault(str(row[0]), []).append(row)
         parent = conn.execute(text("SELECT parent_station FROM stops WHERE stop_id = :s"),
                               {"s": origin_id}).fetchone()
