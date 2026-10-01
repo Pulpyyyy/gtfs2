@@ -1,0 +1,24 @@
+name: Types
+
+on:
+  push:
+  pull_request:
+
+# What each function takes and returns, written in its signature and held
+# to the code by mypy, module by module as they are annotated (mypy.ini
+# lists them). mypy is pinned so the check holds still.
+jobs:
+  types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install mypy
+        run: pip install mypy==2.3.1
+
+      - name: Hold the annotations
+        run: mypy custom_components/gtfs2

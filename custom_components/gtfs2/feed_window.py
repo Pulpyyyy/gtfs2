@@ -21,6 +21,7 @@ well under a second even there.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 import csv
 import datetime
 import logging
@@ -36,7 +37,7 @@ WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", 
 ENDING_DAYS = 7
 
 
-def _iso(value):
+def _iso(value: str | None) -> str | None:
     """A GTFS date, YYYYMMDD, as YYYY-MM-DD; None for anything else."""
     value = (value or "").strip()
     if len(value) == 8 and value.isdigit():
@@ -46,17 +47,17 @@ def _iso(value):
     return None
 
 
-def _earliest(day, other):
+def _earliest(day: str | None, other: str | None) -> str | None:
     """The earlier of two ISO days, either one standing alone."""
     return min(day, other) if day and other else day or other
 
 
-def _latest(day, other):
+def _latest(day: str | None, other: str | None) -> str | None:
     """The later of two ISO days, either one standing alone."""
     return max(day, other) if day and other else day or other
 
 
-def _feed_info(rows):
+def _feed_info(rows: Iterable[Mapping[str, str | None]]) -> dict[str, str | None]:
     """The publisher, version, start and end of the feed_info rows: its
     first row says them, None each when the feed leaves them out."""
     for row in rows:
@@ -69,13 +70,14 @@ def _feed_info(rows):
     return {}
 
 
-def runs_some_day(row):
+def runs_some_day(row: Mapping[str, str | None]) -> bool:
     """Whether a calendar.txt row runs on some weekday: a row with every
     flag off runs on none, whatever its dates say."""
     return any((row.get(day) or "").strip() == "1" for day in WEEKDAYS)
 
 
-def _service_days(calendar, calendar_dates):
+def _service_days(calendar: Iterable[Mapping[str, str | None]],
+                  calendar_dates: Iterable[Mapping[str, str | None]]) -> tuple[str | None, str | None]:
     """(first, last) service day of the calendars: the windows of calendar
     rows whose weekdays are not all off, and the additions of the
     calendar_dates rows."""
@@ -93,7 +95,7 @@ def _service_days(calendar, calendar_dates):
     return first, last
 
 
-def read_feed_window(zip_path):
+def read_feed_window(zip_path: str) -> dict[str, str | None]:
     """What the zip says of its validity, as ISO dates, {} without a zip.
 
     feed_publisher_name, feed_version, feed_start_date and feed_end_date
@@ -103,7 +105,7 @@ def read_feed_window(zip_path):
     additions of calendar_dates.txt. A removal narrows nothing, it only
     takes one day out of a window.
     """
-    window = {
+    window: dict[str, str | None] = {
         "feed_publisher_name": None, "feed_version": None,
         "feed_start_date": None, "feed_end_date": None,
         "first_service_day": None, "last_service_day": None,
@@ -123,7 +125,8 @@ def read_feed_window(zip_path):
     return window
 
 
-def timetable_state(window, today):
+def timetable_state(window: Mapping[str, str | None] | None,
+                    today: datetime.date) -> tuple[str, int | None]:
     """(state, days_left) of a timetable on a given day.
 
     valid while the last service day is more than ENDING_DAYS away,
@@ -148,10 +151,10 @@ def timetable_state(window, today):
 
 # the last service day of each zip, read once per edition: every entry of
 # a source asks, and a national zip takes a second to read
-_LAST_SERVICE_DAY = {}
+_LAST_SERVICE_DAY: dict[str, tuple[tuple[int, int, int], str | None]] = {}
 
 
-def last_service_day(zip_path):
+def last_service_day(zip_path: str) -> str | None:
     """read_feed_window's last_service_day, cached per edition of the zip;
     None without a zip."""
     edition = file_edition(zip_path)
