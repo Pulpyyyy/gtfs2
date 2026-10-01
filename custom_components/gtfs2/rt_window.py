@@ -22,11 +22,14 @@ early.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable
 import logging
 import threading
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, tzinfo
 
+from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
+from pygtfs import Schedule
 from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH
@@ -42,19 +45,22 @@ TRAIL = timedelta(minutes=20)
 EXTEND = timedelta(minutes=10)
 OVERTIME_CAP = timedelta(hours=2)
 
+# what a source's database is, as file_edition says it, or "unknown"
+type _Edition = tuple[int, int, int] | str
+
 # (file, edition, date) -> (first, last) gtfs seconds of the service day, or
 # None when nothing runs; the gate only ever reads yesterday and today, older
 # keys are dropped as it goes. The edition is what the database was when the
 # envelope was read (see _edition_of): a refresh, a line added in the flow or
 # a prune changes the hours the source runs, and the answer kept from this
 # morning would hold the realtime shut on the line added this afternoon.
-_ENVELOPES: dict[tuple[str, str, str], tuple[int, int] | None] = {}
+_ENVELOPES: dict[tuple[str, _Edition, str], tuple[int, int] | None] = {}
 # every coordinator runs the gate in an executor thread, on the first cycle
 # of the day all at once: one walking the cache to clean it while another
 # added to it raised, and each read the same envelope for itself
 _ENVELOPES_LOCK = threading.Lock()
 # per file: what the gate last decided, read back by the diagnostic entity
-_STATE: dict[str, dict] = {}
+_STATE: dict[str, dict[str, str | None]] = {}
 
 # Both calendar shapes are read, like get_next_service_date: calendar holds
 # weekday flags over a validity window, calendar_dates explicit additions and
@@ -108,7 +114,7 @@ _FREQUENCIES_SQL = _ACTIVE_TRIPS_SQL + """
 """
 
 
-def _service_envelope(schedule, date_str):
+def _service_envelope(schedule: Schedule, date_str: str) -> tuple[int, int] | None:
     """(first, last) gtfs second of the service day, or None when it rests."""
     with schedule.engine.connect() as conn:
         interned = conn.execute(text(
@@ -128,7 +134,7 @@ def _service_envelope(schedule, date_str):
     return min(bounds), max(bounds)
 
 
-def _edition_of(hass, file):
+def _edition_of(hass: HomeAssistant, file: str) -> _Edition:
     """What the source's database is right now, as far as a cache cares.
 
     Which file it is, its size and the moment it was last written
@@ -150,10 +156,10 @@ def _edition_of(hass, file):
 
 # the zone a source's clocks are written in, by (file, edition): one small
 # query per source, asked again when the database is rebuilt
-_ZONES: dict[tuple[str, str], object] = {}
+_ZONES: dict[tuple[str, _Edition], tzinfo | None] = {}
 
 
-def _feed_zone(hass, file, schedule):
+def _feed_zone(hass: HomeAssistant, file: str, schedule: Schedule) -> tzinfo | None:
     """The zone the source's timetable is written in: its agency's.
 
     The envelope is made of the feed's own clocks, so the moment to
@@ -170,7 +176,8 @@ def _feed_zone(hass, file, schedule):
     return _ZONES[key]
 
 
-def _window_for(hass, file, schedule, day):
+def _window_for(hass: HomeAssistant, file: str, schedule: Schedule,
+                day: date) -> tuple[datetime, datetime] | None:
     """The polling window of one service day, in naive local time, or None."""
     key = (file, _edition_of(hass, file), day.isoformat())
     with _ENVELOPES_LOCK:
@@ -184,12 +191,13 @@ def _window_for(hass, file, schedule, day):
             midnight + timedelta(seconds=envelope[1]) + TRAIL)
 
 
-def window_state(file):
+def window_state(file: str) -> dict[str, str | None] | None:
     """What the gate last decided for a source, for the diagnostic entity."""
     return _STATE.get(file)
 
 
-def rt_window_gate(hass, file, schedule, trip_update_url, now=None):
+def rt_window_gate(hass: HomeAssistant, file: str, schedule: Schedule,
+                   trip_update_url: str | None, now: datetime | None = None) -> str | None:
     """None when the realtime feeds should be read now, else the pause reason.
 
     Reasons: out_of_window (today has service, but not now), no_service_today,
@@ -209,7 +217,7 @@ def rt_window_gate(hass, file, schedule, trip_update_url, now=None):
         return None
 
 
-def _forget_envelopes(file, edition, cutoff):
+def _forget_envelopes(file: str, edition: _Edition, cutoff: str) -> None:
     """Drop the envelopes of a day gone, and those of this source read from
     a database it no longer has."""
     with _ENVELOPES_LOCK:
@@ -219,7 +227,9 @@ def _forget_envelopes(file, edition, cutoff):
             del _ENVELOPES[key]
 
 
-def _after_close(hass, file, trip_update_url, state, now_aware, now_local, last_close):
+def _after_close(hass: HomeAssistant, file: str, trip_update_url: str | None,
+                 state: dict[str, str | None], now_aware: datetime, now_local: datetime,
+                 last_close: datetime) -> str | None:
     """Past the last window's close: None while a vehicle still under way,
     or the tail of the last stretch, keeps the feeds read; "overtime_cap"
     once the stretches ran out their budget; "closed" when nothing keeps
@@ -252,7 +262,8 @@ def _after_close(hass, file, trip_update_url, state, now_aware, now_local, last_
     return "closed"
 
 
-def _gate(hass, file, schedule, trip_update_url, now=None):
+def _gate(hass: HomeAssistant, file: str, schedule: Schedule,
+          trip_update_url: str | None, now: datetime | None = None) -> str | None:
     now_aware = now or dt_util.now()
     zone = _feed_zone(hass, file, schedule)
     if zone is not None:
@@ -293,7 +304,8 @@ def _gate(hass, file, schedule, trip_update_url, now=None):
     return reason
 
 
-def cached_feed_has_future_stop(owner, url, routes, now_epoch):
+def cached_feed_has_future_stop(owner: str, url: str, routes: Iterable[str],
+                                now_epoch: float) -> bool:
     """Whether the last cached trip-updates fetch still announces a stop time
     in the future for one of the routes (any route, when none are named).
 
