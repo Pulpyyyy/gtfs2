@@ -120,7 +120,6 @@ class JourneyScreens:
         """Name the sensor, now that both stops are known."""
         origin = self._user_inputs.get(CONF_ORIGIN, "")
         destination = self._user_inputs.get(CONF_DESTINATION, "")
-        line = self._route_label
         trip = f"{_base_name(origin)} → {_base_name(destination)}"
         if _base_name(origin) == _base_name(destination):
             # circular line: both ends read the same, so name the journey by
@@ -129,12 +128,16 @@ class JourneyScreens:
                 get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE]
             )
             trip = labels.get(str(self._user_inputs.get(CONF_LOOP_DIRECTION)), "") or trip
-        # the source leads, so the entity id tells line 1 of one network
-        # from line 1 of another: sensor.gtfs_idfm_14_...
-        suggested = " ".join(filter(None, (self._user_inputs.get(CONF_FILE), line, trip)))
         if self._return_trip is None:
             await self._find_return_trip(origin, destination)
-        return await self._name_and_create("sensor", user_input, suggested, trip, add_return=True)
+        return await self._name_and_create("sensor", user_input, self._suggested_name(trip),
+                                           trip, add_return=True)
+
+    def _suggested_name(self, trip):
+        """The name offered for a sensor of this trip: source, line, trip."""
+        # the source leads, so the entity id tells line 1 of one network
+        # from line 1 of another: sensor.gtfs_idfm_14_...
+        return " ".join(filter(None, (self._user_inputs.get(CONF_FILE), self._route_label, trip)))
 
     async def _name_and_create(self, step_id, user_input, suggested, trip, add_return):
         """The naming screen of a journey, bus or train: the name, and the
@@ -329,8 +332,7 @@ class JourneyScreens:
             labels = await self.hass.async_add_executor_job(
                 get_direction_labels, self._pygtfs, route)
             trip = labels.get(str(loop_direction), "") or trip
-        line = self._route_label
-        self._return_name = " ".join(filter(None, (self._user_inputs.get(CONF_FILE), line, trip)))
+        self._return_name = self._suggested_name(trip)
         # only what differs: this runs when the screen opens, before the
         # options on it are answered, so the rest is merged at creation time
         self._return_trip = {

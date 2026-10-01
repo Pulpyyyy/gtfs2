@@ -19,7 +19,6 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_DESTINATION,
     CONF_DIRECTION,
-    CONF_FILE,
     CONF_NAME,
     CONF_ORIGIN,
     CONF_ROUTE,
@@ -128,17 +127,14 @@ class TrainScreens:
         # the outward keeps the line picked in the flow; the return may run
         # under its own code (SNCF: K8+ out, P8 back), so its line is read
         # from the schedule for that very direction
-        line = self._route_label
         trip = f"{origin} → {destination}"
         # the source leads, like the other sensors' names
-        source = self._user_inputs.get(CONF_FILE)
-        suggested = " ".join(filter(None, (source, line, trip)))
+        suggested = self._suggested_name(trip)
         if self._return_trip is None:
             # trains rarely run one way only, but check before offering.
             # A train sensor covers the station pair, not one line, so the
             # return wears the same label as the outward.
-            back = f"{destination} → {origin}"
-            self._return_name = " ".join(filter(None, (source, line, back)))
+            self._return_name = self._suggested_name(f"{destination} → {origin}")
             exists = await self.hass.async_add_executor_job(
                 has_train_trip_between, self._pygtfs, destination, origin,
                 self._user_inputs.get("line"),
