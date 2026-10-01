@@ -1,10 +1,13 @@
 """Data Update coordinator for the GTFS integration."""
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Mapping
 import datetime
 from datetime import timedelta
 import logging
 import re
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -40,10 +43,15 @@ from .refresh_steps import drop_struck_trips, next_service_date_for
 from .departure_attributes import departure_records
 from .exports import export_leg, export_route_shape, export_timetable
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
 
 
-async def _still_unpacking(coordinator, previous_data):
+async def _still_unpacking(coordinator: GTFSUpdateCoordinator | GTFSLocalStopUpdateCoordinator,
+                           previous_data: dict[str, Any]) -> bool:
     """Whether the source is still being unpacked; its last reading is then
     kept, marked extracting, for the entry to show meanwhile."""
     data = coordinator._data
@@ -58,7 +66,7 @@ async def _still_unpacking(coordinator, previous_data):
     return True
 
 
-def _database_edition(hass, file):
+def _database_edition(hass: HomeAssistant, file: str) -> tuple[int, int, int] | None:
     """The source's database as far as reopening it goes: which file, its size, its last write.
 
     The file first: a refresh swaps another one in under the same name, and
@@ -71,7 +79,8 @@ def _database_edition(hass, file):
     return file_edition(path)
 
 
-async def schedule_for(coordinator, data):
+async def schedule_for(coordinator: GTFSUpdateCoordinator | GTFSLocalStopUpdateCoordinator,
+                       data: Mapping[str, Any]) -> Schedule | str | None:
     """The source's schedule, reopened only when its database changed.
 
     Opening one is an engine, a create_all over every table and a query of
@@ -95,7 +104,7 @@ async def schedule_for(coordinator, data):
     return schedule
 
 
-def shown_departure_left(previous, now) -> bool:
+def shown_departure_left(previous: Mapping[str, Any], now: datetime.datetime) -> bool:
     """Whether the departure the sensor shows has left, and nothing says otherwise.
 
     The departures are read again at the static refresh interval, 15
@@ -107,7 +116,7 @@ def shown_departure_left(previous, now) -> bool:
     4 kept a 09:17:56 departure on the board at 09:27.
     """
     departure = previous.get("next_departure") or {}
-    shown = departure.get("departure_time")
+    shown: Any = departure.get("departure_time")
     if not (hasattr(shown, "tzinfo") and shown.tzinfo is not None) or shown > now:
         return False
     realtime = previous.get("next_departure_realtime_attr") or {}
@@ -133,26 +142,28 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self.config_entry = entry
         self.hass = hass
 
-        self._pygtfs = ""
+        self._pygtfs: Schedule | str | None = ""
         # what the database file was when the schedule was opened (see schedule_for)
-        self._pygtfs_edition = None
-        self._data: dict[str, str] = {}
+        self._pygtfs_edition: tuple[int, int, int] | None = None
+        self._data: dict[str, Any] = {}
         # the trip picked to draw the route, and what it was picked for (see
         # export_route_shape): picked again when the stops or the database change
-        self._representative_pick = None
-        self._representative_trip = None
+        self._representative_pick: tuple[str, str, str, str, tuple[int, int, int] | None] | None = None
+        self._representative_trip: str | None = None
         # the trip whose stops are already exported, so the geojson is
         # rewritten when the journey changes and not on every refresh
-        self._route_export_trip = None
+        self._route_export_trip: tuple[str, str, tuple[int, int, int] | None,
+                                       tuple[int, int, int] | None] | None = None
         # the writing of the route file under way, if any (see _export_route_shape)
-        self._route_task = None
+        self._route_task: asyncio.Task[None] | None = None
         # the service day, zip and database editions the timetable file was written for
-        self._timetable_export = None
+        self._timetable_export: tuple[str, tuple[int, int, int] | None,
+                                      tuple[int, int, int] | None] | None = None
         # the writing of it under way, if any (see _export_timetable)
-        self._timetable_task = None
+        self._timetable_task: asyncio.Task[None] | None = None
         self._stale_markers_cleaned = False
 
-    async def _async_update_data(self) -> dict[str, str]:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Get the latest data from GTFS and GTFS relatime, depending refresh interval"""
         data = self.config_entry.data
         options = self.config_entry.options
@@ -223,7 +234,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         await self._read_records()
         return self._data
 
-    def _entry_data(self, data, options) -> dict:
+    def _entry_data(self, data: Mapping[str, Any], options: Mapping[str, Any]) -> dict[str, Any]:
         """What a refresh starts from: the entry's own fields, no departure yet."""
         return {
             **journey_data(self._pygtfs, data, options),
@@ -233,7 +244,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             "alert": {}
         }
 
-    def _static_refresh_due(self, previous_data, options, name) -> bool:
+    def _static_refresh_due(self, previous_data: dict[str, Any], options: Mapping[str, Any],
+                            name: str) -> bool:
         """Whether the departures are read again from the timetable this minute."""
         # determine static + rt or only static (refresh schedule depending)
         #1. sensor exists with data but refresh interval not yet reached, use existing data
@@ -253,7 +265,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Run static refresh: sensor without gtfs data OR refresh for name: %s", name)
         return True
 
-    async def _read_timetable(self, data) -> None:
+    async def _read_timetable(self, data: Mapping[str, Any]) -> None:
         """Read the departures from the timetable, and write the files drawn from it."""
         if self._pygtfs is None or isinstance(self._pygtfs, str):
             # a sentinel of get_gtfs: no database to read. The index check,
@@ -296,7 +308,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             self._data["next_service_date"] = await next_service_date_for(
                 self.hass, self._pygtfs, data, self._data.get("offset", 0))
 
-    async def _realtime_paused(self, data, rt_cfg):
+    async def _realtime_paused(self, data: Mapping[str, Any], rt_cfg: Mapping[str, Any]) -> str | None:
         """Why the realtime feeds are not read now, None when they are."""
         # the polling window is derived from the timetable: outside it
         # the feeds are left alone and the static screen carries on
@@ -314,7 +326,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                     clear_vehicle_file, self.hass, route_id, direction)
         return rt_paused
 
-    def _realtime_targets(self, data, rt_cfg) -> None:
+    def _realtime_targets(self, data: Mapping[str, Any], rt_cfg: Mapping[str, Any]) -> None:
         """Set what the realtime readers read off the coordinator: the feeds,
         and the route, stop and trip of the departure shown."""
         # No next_departure does NOT mean no bus: the last scheduled
@@ -327,8 +339,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         # .get, which is what the KeyError actually required.
         if not self._data.get("next_departure"):
             _LOGGER.debug("GTFS RT: no scheduled departure left, realtime runs on config-entry fallbacks")
-        self._get_next_service = {}
-        self._route_delimiter = None
+        self._get_next_service: dict[str, Any] = {}
+        self._route_delimiter: str | None = None
         self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
         self._vehicle_position_url = with_query_key(rt_cfg.get(CONF_VEHICLE_POSITION_URL), rt_cfg)
         self._vehicle_max_age = rt_cfg.get(CONF_VEHICLE_MAX_AGE, DEFAULT_VEHICLE_MAX_AGE)
@@ -339,7 +351,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._follow_departure(data)
         self._relative = False
 
-    def _follow_departure(self, data) -> None:
+    def _follow_departure(self, data: Mapping[str, Any]) -> None:
         """Point the realtime readers at the departure shown: its route,
         stop, trip and direction, the entry's own where it names none."""
         departure = self._data.get("next_departure") or {}
@@ -349,7 +361,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._trip_short_name = departure.get('trip_short_name', None)
         self._trip_list = departure.get("next_departures_trip_id", [])[:10]
 
-    async def _read_realtime(self, data, rt_cfg, run_static) -> bool:
+    async def _read_realtime(self, data: Mapping[str, Any], rt_cfg: Mapping[str, Any],
+                             run_static: bool) -> bool:
         """Read the alerts, then the trip updates; False when the trip
         updates could not be read, the timetable standing alone."""
         self._realtime_targets(data, rt_cfg)
@@ -459,12 +472,12 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         self.config_entry = entry
         self.hass = hass
 
-        self._pygtfs = ""
+        self._pygtfs: Schedule | str | None = ""
         # what the database file was when the schedule was opened (see schedule_for)
-        self._pygtfs_edition = None
-        self._data: dict[str, str] = {}
+        self._pygtfs_edition: tuple[int, int, int] | None = None
+        self._data: dict[str, Any] = {}
 
-    def _read_lately(self, previous_data, options) -> bool:
+    def _read_lately(self, previous_data: dict[str, Any], options: Mapping[str, Any]) -> bool:
         """Whether the stops were read from this very database within the
         entry's pace, and nothing is being written."""
         if not previous_data.get("gtfs_updated_at") or previous_data.get("extracting"):
@@ -476,7 +489,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         read = datetime.datetime.fromisoformat(previous_data["gtfs_updated_at"])
         return read + pace > dt_util.utcnow() + timedelta(seconds=1)
 
-    def _without_gone(self, previous_data):
+    def _without_gone(self, previous_data: dict[str, Any]) -> dict[str, Any]:
         """The last answer without the departures gone since; the very
         same answer when none has, so the sensors are not updated."""
         listed = previous_data.get("local_stops_next_departures") or []
@@ -487,7 +500,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Local stops of %s: departures gone taken out", previous_data.get("name"))
         return {**previous_data, "local_stops_next_departures": left}
 
-    async def _async_update_data(self) -> dict[str, str]:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Get the latest data from GTFS and GTFS relatime, depending refresh interval"""
         data = self.config_entry.data
         options = self.config_entry.options
@@ -531,9 +544,9 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         rt_cfg, rt_active = rt_feed_config(self.hass, self.config_entry)
         if rt_active:
             self._realtime = True
-            self._get_next_service = {}
+            self._get_next_service: dict[str, Any] = {}
             """Initialize the info object."""
-            self._route_delimiter = None
+            self._route_delimiter: str | None = None
             self._headers = rt_headers(rt_cfg) or {}
             self._rt_group = "trip"
             self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
@@ -541,7 +554,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             # position, so it owns no route to draw: reading the vehicle
             # feed here would fetch it once per listed line and write the
             # map file of a route this entry does not speak for
-            self._vehicle_position_url = None
+            self._vehicle_position_url: str | None = None
             self._alerts_url = rt_cfg.get(CONF_ALERTS_URL, None)
             if not self._trip_update_url:
                 # local stops read nothing but trip updates: a source living on
@@ -569,7 +582,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         #_LOGGER.debug("Data from coordinator: %s", self._data)
         return self._data
 
-    def _no_schedule(self, file) -> bool:
+    def _no_schedule(self, file: str) -> bool:
         """Whether get_gtfs answered a word, no database to read, said once.
 
         The index check and the stops each warned at every refresh. The
@@ -579,7 +592,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         and gone again.
         """
         if self._pygtfs is not None and not isinstance(self._pygtfs, str):
-            self._nothing_said = None
+            self._nothing_said: str | None = None
             return False
         reason = self._pygtfs or "empty"
         if reason != getattr(self, "_nothing_said", None):
