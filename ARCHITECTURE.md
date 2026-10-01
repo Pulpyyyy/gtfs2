@@ -530,8 +530,8 @@ Registered once, in `setup()`. Four answer with a service response
 
 ```
 update_gtfs              refresh a datasource from its own url and key, or
-                         create one; runs the write paths above under the
-                         source's lock
+                         from an address given this once, or create one;
+                         runs the write paths above under the source's lock
 update_gtfs_rt_local     download one realtime feed to a local file (trip
                          updates, vehicles, alerts, or SIRI)
 update_gtfs_local_stops  reload the local stops entries of one tracker

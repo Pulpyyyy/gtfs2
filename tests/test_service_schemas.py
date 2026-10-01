@@ -5,10 +5,14 @@ a KeyError from inside the handler (update_gtfs_local_stops without its
 entity, update_gtfs_rt_local without its url), and a mistyped value as
 whatever the code reading it raised. Each service now declares the
 fields services.yaml lists; extra keys still pass, for the automations
-written against older field lists.
+written against older field lists. update_gtfs drops the extract_from it
+no longer reads, as Home Assistant's cv.removed does, and the "na" it
+once defaulted its address to, read as none, saying so for both, and
+takes an address with a scheme the source screen takes.
 """
 from __future__ import annotations
 
+import logging
 import types
 
 import pytest
@@ -46,22 +50,34 @@ def _refused(schema, data):
 def test_update_gtfs():
     schema = _registered()["update_gtfs"]
     _refused(schema, {})
-    _refused(schema, {"file": "tao", "extract_from": "ftp"})
+    _refused(schema, {"file": "tao", "url": "ftp://feeds.example/tao.zip"})
     _refused(schema, {"file": "tao", "api_key_location": "cookie"})
     assert schema({"file": "tao", "clean_feed_info": "yes", "older_field": 1}) == {
         "file": "tao", "clean_feed_info": True, "older_field": 1}
     # nothing is added: the handler keeps its own defaults
     assert schema({"file": "tao"}) == {"file": "tao"}
+    for url in ("https://h/tao.zip", "file:///config/gtfs2/tao.zip"):
+        assert schema({"file": "tao", "url": url}) == {"file": "tao", "url": url}
+
+
+def test_update_gtfs_drops_extract_from_and_the_old_na(caplog):
+    schema = _registered()["update_gtfs"]
+    with caplog.at_level(logging.WARNING):
+        assert schema({"file": "tao", "extract_from": "zip", "url": "na",
+                       "api_key": "na"}) == {"file": "tao"}
+    said = " ".join(r.getMessage() for r in caplog.records)
+    assert "'extract_from' option has been removed" in said
+    assert "url and api_key given as \"na\"" in said
 
 
 def test_update_gtfs_rt_local():
     schema = _registered()["update_gtfs_rt_local"]
-    _refused(schema, {"file": "tao", "url": "na"})
+    _refused(schema, {"file": "tao", "url": "https://rt.example/trips"})
     _refused(schema, {"file": "tao", "rt_type": "alerts"})
-    _refused(schema, {"file": "tao", "url": "na", "rt_type": "siri"})
-    _refused(schema, {"file": "tao", "url": "na", "rt_type": "alerts",
+    _refused(schema, {"file": "tao", "url": "https://rt.example/trips", "rt_type": "siri"})
+    _refused(schema, {"file": "tao", "url": "https://rt.example/trips", "rt_type": "alerts",
                       "entity_for_siri": "not an entity"})
-    assert schema({"file": "tao", "url": "na", "rt_type": "alerts"})["rt_type"] == "alerts"
+    assert schema({"file": "tao", "url": "https://rt.example/trips", "rt_type": "alerts"})["rt_type"] == "alerts"
 
 
 def test_the_entity_services():

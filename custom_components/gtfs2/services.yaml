@@ -7,20 +7,6 @@ update_gtfs:
     configuration screen shows: only its name is needed here. The address
     and key fields are read to create a datasource that does not exist yet.
   fields:
-    extract_from:
-      name: Indicate source of the data
-      description: >-
-        Download the feed again (url), or rebuild from the zip already in the
-        gtfs2 folder (zip)
-      required: true
-      example: "url"
-      default: "url"
-      selector:
-        select:
-          translation_key: "extract_from"
-          options:
-            - "url"
-            - "zip"
     file:
       name: Name of the transport service, without .zip
       description: >-
@@ -33,9 +19,11 @@ update_gtfs:
     url:
       name: URL
       description: >-
-        The full path to the zip file itself. Only read when creating a
-        datasource: an existing one keeps the address of its configuration
-        screen, and a different one given here is ignored with a warning
+        The address of the feed, http://, https:// or file://. Creates a
+        datasource that does not exist yet, left out for the zip of that
+        name in the gtfs2 folder. For one that exists, its feed is fetched
+        from this address this once, the datasource keeping its own: the
+        zip already in the folder while the host is down
       required: false
       example: "https://path-to-my-zip-file-location/filename.zip"
       selector:
@@ -43,8 +31,9 @@ update_gtfs:
     api_key:
       name: api_key
       description: >-
-        API key, if the provider requires one. Only read when creating a
-        datasource, like the address
+        API key, if the provider requires one: read to create a datasource,
+        and sent with an address given for one that exists, never the
+        datasource's own
       required: false
       selector:
         text:
@@ -99,7 +88,6 @@ update_gtfs_rt_local:
       name: URL
       description: provide the full path to the zip file itself
       required: true
-      default: "na"
       example: "https://path-to-my-realttime-data"
       selector:
         text:

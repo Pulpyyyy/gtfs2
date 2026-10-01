@@ -20,6 +20,9 @@ for fetch. The promises:
                  is no zip answers None and leaves the kept zip whole
     key trio     the static key is stored as three fields behind a real key,
                  the location alone without one, a blank key being none
+    once         a refresh fetched from an address given this once reads the
+                 key that came with it and no other: the source's own stays
+                 with its own address, which the next refresh asks again
     resolution   a source that has not taken the key over yet reads it from
                  the journey entry that carries one, a keyless journey never
                  stripping it, and its own url wins; the refresh data carries
@@ -301,3 +304,27 @@ def test_the_mirror_writes_nothing_when_nothing_changes():
     hass = _hass(untouched, _entry("tao", DROPPED))
     asyncio.run(rt_source.async_mirror_rt_to_entries(hass, hass.config_entries.entries[1]))
     assert hass.config_entries.updated == []
+
+
+# --- once ---------------------------------------------------------------------
+
+def test_a_refresh_from_an_address_given_once_keeps_the_source_s_key_home(monkeypatch):
+    built = []
+
+    async def build(hass, file, data):
+        built.append(dict(data))
+        return True
+
+    own = {"file": "tao", "url": URL, "extract_from": "url", "api_key": "secret",
+           "api_key_name": "apikey", "api_key_location": "query_string"}
+    monkeypatch.setattr(source_refresh, "refresh_data_for", lambda hass, entry: dict(own))
+    monkeypatch.setattr(source_refresh, "async_refresh_source_data", build)
+    entry = types.SimpleNamespace(data={"file": "tao"})
+    asyncio.run(source_refresh.async_refresh_source(
+        None, entry, fetch={"url": "file:///config/gtfs2/tao.zip",
+                            "api_key_location": "not_applicable"}))
+    asyncio.run(source_refresh.async_refresh_source(None, entry))
+    assert built[0] == {"file": "tao", "url": "file:///config/gtfs2/tao.zip",
+                        "extract_from": "url", "api_key_location": "not_applicable"}
+    # the next refresh is the source's own again
+    assert built[1] == own

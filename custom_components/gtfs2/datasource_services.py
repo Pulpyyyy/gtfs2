@@ -17,7 +17,7 @@ from homeassistant.helpers import entity_registry as er
 from .const import DOMAIN, DEFAULT_PATH, CONF_API_KEY, CONF_EXTRACT_FROM, CONF_URL
 from .gtfs_db import on_a_copy, prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
 from .key_mask import note_key
-from .rt_source import async_ensure_datasource_entry, datasource_entry, source_readers
+from .rt_source import async_ensure_datasource_entry, datasource_entry, source_readers, static_key_fields
 from .source_refresh import (
     async_refresh_source, async_refresh_source_data, refresh_data_for, source_lock,
     source_zip_url,
@@ -171,11 +171,15 @@ async def async_update_gtfs(hass: HomeAssistant, call_data):
     call creates included, is built whole the same way.
 
     A source that exists is refreshed from what it knows about itself,
-    exactly like the update entity and the scheduled check: its own
-    address and key apply, the call only says whether to rebuild from
-    the kept zip and sets the per-import flags. The address and key in
-    the call are only read to create a source that does not exist yet,
-    and the new source keeps them from then on.
+    exactly like the update entity and the scheduled check: its own url,
+    http(s) or file alike, and its key, and the call sets the per-import
+    flags. An address the call gives that is not the source's own is
+    fetched from this once, with the key the call gives and no other:
+    the zip already in the folder, file://, while the host is down. The
+    source keeps its own address for the next refreshes. A source that
+    does not exist yet is created from the call's address and key, and
+    keeps them; without an address, it is the zip of that name in the
+    gtfs2 folder, by its file:// url.
     """
     note_key(call_data.get(CONF_API_KEY))
     _LOGGER.debug("Updating GTFS with: %s", call_data)
@@ -184,25 +188,27 @@ async def async_update_gtfs(hass: HomeAssistant, call_data):
     entry = datasource_entry(hass, file)
     if entry is not None:
         stored = refresh_data_for(hass, entry)
-        for key in (CONF_URL, CONF_API_KEY):
-            given = (data.get(key) or "").strip()
-            if given and given != "na" and given != (stored.get(key) or ""):
-                _LOGGER.warning(
-                    "update_gtfs: the %s given for %s differs from the "
-                    "source's own, which applies; change it on the "
-                    "source's configuration screen", key, file)
+        url = (data.get(CONF_URL) or "").strip()
+        key = (data.get(CONF_API_KEY) or "").strip()
+        fetch = None
+        if url and url != (stored.get(CONF_URL) or ""):
+            # the source's key never goes to another address
+            fetch = {CONF_URL: url, **static_key_fields(data)}
+            _LOGGER.info("update_gtfs: %s fetched from the address given, this "
+                         "once; the source keeps its own", file)
+        elif key and key != (stored.get(CONF_API_KEY) or ""):
+            _LOGGER.warning(
+                "update_gtfs: the api_key given for %s differs from the "
+                "source's own, which applies; change it on the "
+                "source's configuration screen", file)
         return await async_refresh_source(
-            hass, entry,
-            use_zip=data.get(CONF_EXTRACT_FROM) == "zip",
+            hass, entry, fetch=fetch,
             flags={k: data[k] for k in ("clean_feed_info", "check_source_dates")
                    if k in data})
-    # a source to create: the legacy fields apply, absent ones read as
-    # the service always defaulted them. Without a url, or with the "na"
-    # it once defaulted to, the source is the zip in the folder, fetched
-    # from by its file:// url
-    if data.get(CONF_URL) in (None, "", "na"):
-        data[CONF_URL] = source_zip_url(hass, file)
-    data.setdefault(CONF_EXTRACT_FROM, "url")
+    # a source to create, from the address the call gives, else from the
+    # zip of its name in the folder; fetched from its url either way
+    data[CONF_URL] = (data.get(CONF_URL) or "").strip() or source_zip_url(hass, file)
+    data[CONF_EXTRACT_FROM] = "url"
     ok = await async_refresh_source_data(hass, file, data)
     if ok:
         # the source is born with the address and key it was created

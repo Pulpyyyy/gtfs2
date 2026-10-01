@@ -464,12 +464,6 @@
     }
   },
   "selector": {
-    "extract_from": {
-      "options": {
-        "zip": "ZIP: attend un fichier dans dossier 'gtfs2' avec le même nom, sans extension .zip",
-        "url": "URL: utilise l'URL, laisse 'na' si zip"
-      }
-    },
     "api_key_location": {
       "options": {
         "not_applicable": "Aucune clé nécessaire (la plupart des sources)",
@@ -497,17 +491,13 @@
       "name": "Mettre à jour ou créer une source GTFS2",
       "description": "Rafraîchit une source depuis son fichier, ou la crée. Une source qui existe est rafraîchie avec sa propre adresse et sa propre clé, celles de son écran de configuration : seul son nom est nécessaire ici. Les champs adresse et clé servent à créer une source qui n'existe pas encore.",
       "fields": {
-        "extract_from": {
-          "name": "Collecte des données depuis",
-          "description": "Retélécharger le fichier (url), ou reconstruire depuis le zip déjà dans le dossier gtfs2 (zip)"
-        },
         "file": {
           "name": "Nom de la source, sans .zip",
           "description": "La source à rafraîchir. Un nom qui existe est rafraîchi en place ; un nouveau nom crée une source depuis les champs ci-dessous"
         },
         "url": {
           "name": "URL",
-          "description": "Le chemin complet vers le fichier zip. Lu seulement à la création d'une source : une source existante garde l'adresse de son écran de configuration, et une adresse différente donnée ici est ignorée avec un avertissement"
+          "description": "L'adresse du fichier, http://, https:// ou file://. Crée une source qui n'existe pas encore, omise pour le zip de ce nom dans le dossier gtfs2. Pour une source existante, son fichier est récupéré à cette adresse cette fois seulement, la source gardant la sienne : le zip déjà dans le dossier pendant que l'hôte est en panne"
         },
         "clean_feed_info": {
           "name": "Ignorer feed_info",
@@ -515,7 +505,7 @@
         },
         "api_key": {
           "name": "Clé d'API",
-          "description": "Seulement si le fournisseur en exige une, et lue seulement à la création d'une source, comme l'adresse"
+          "description": "Seulement si le fournisseur en exige une : lue pour créer une source, et envoyée avec une adresse donnée pour une source existante, jamais celle de la source"
         },
         "api_key_name": {
           "name": "Nom du paramètre",

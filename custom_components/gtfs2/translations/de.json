@@ -464,12 +464,6 @@
     }
   },
   "selector": {
-    "extract_from": {
-      "options": {
-        "zip": "ZIP: erwartet eine Datei im GTFS2-Ordner mit dem folgenden Namen, ohne Erweiterung .zip",
-        "url": "URL: verwendet Ihre URL unten, lassen Sie ‚na‘, wenn Sie zip verwenden"
-      }
-    },
     "api_key_location": {
       "options": {
         "not_applicable": "Kein Schlüssel nötig (die meisten Quellen)",
@@ -497,17 +491,13 @@
       "name": "GTFS2-Datenquelle aktualisieren/erstellen",
       "description": "Entweder per Link oder durch Platzieren einer Zip-Datei im GTFS2-Ordner",
       "fields": {
-        "extract_from": {
-          "name": "Quelle angeben, um ZIP oder URL zu verwenden",
-          "description": "zip (lokal) oder URL"
-        },
         "file": {
           "name": "Name des Transportdienstes, ohne .zip",
           "description": "Wenn Sie denselben Namen wie einen vorhandenen verwenden, wird der vorhandene überschrieben"
         },
         "url": {
           "name": "URL",
-          "description": "Geben Sie den vollständigen Pfad zur ZIP-Datei selbst an."
+          "description": "Die Adresse des Feeds, http://, https:// oder file://. Erstellt eine noch nicht vorhandene Datenquelle, weggelassen für die gleichnamige Zip-Datei im GTFS2-Ordner. Bei einer vorhandenen wird ihr Feed dieses eine Mal von dieser Adresse geholt, die Datenquelle behält ihre eigene: die Zip-Datei, die schon im Ordner liegt, solange der Server ausfällt"
         },
         "clean_feed_info": {
           "name": "Feed-Info entfernen",
@@ -515,7 +505,7 @@
         },
         "api_key": {
           "name": "API-Schlüssel",
-          "description": "Nur wenn der Anbieter einen verlangt"
+          "description": "Nur wenn der Anbieter einen verlangt: gelesen, um eine Datenquelle zu erstellen, und mit einer für eine vorhandene angegebenen Adresse gesendet, nie der eigene der Datenquelle"
         },
         "api_key_name": {
           "name": "Parametername",

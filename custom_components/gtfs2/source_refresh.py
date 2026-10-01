@@ -66,7 +66,7 @@ from .file_url import file_url
 from .gtfs_db import feed_zip, real_path
 from .source_zip import refresh_datasource
 from .notifications import async_notify_refresh
-from .rt_source import journey_entries, source_readers, static_feed_config
+from .rt_source import STATIC_KEY_KEYS, journey_entries, source_readers, static_feed_config
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -339,17 +339,25 @@ async def async_refresh_source_data(hass: HomeAssistant, file, data) -> bool:
 
 async def async_refresh_source(hass: HomeAssistant, entry: ConfigEntry,
                                *, use_zip: bool = False,
-                               flags: dict | None = None) -> bool:
+                               flags: dict | None = None,
+                               fetch: dict | None = None) -> bool:
     """Refresh one source from what the source itself says.
 
     use_zip says the fresh feed already sits in the kept zip (a check that
-    had to download to know, or a service call asking for it), so the
-    rebuild reads it instead of downloading the same bytes again. flags
-    are the per-import switches a service call may set for this one run.
+    had to download to know), so the rebuild reads it instead of
+    downloading the same bytes again. flags are the per-import switches a
+    service call may set for this one run. fetch is the address, and the
+    key, a service call gives this run the feed from instead of the
+    source's own, which the source keeps for the next ones: a file:// zip
+    while its host is down. The source's key stays with its own address.
     """
     data = refresh_data_for(hass, entry)
     if use_zip:
         data[CONF_EXTRACT_FROM] = "zip"
+    if fetch:
+        for key in STATIC_KEY_KEYS:
+            data.pop(key, None)
+        data.update(fetch)
     for key in _JOURNEY_REFRESH_KEYS:
         if flags and key in flags:
             data[key] = flags[key]

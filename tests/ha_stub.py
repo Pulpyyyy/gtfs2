@@ -87,6 +87,7 @@ from __future__ import annotations
 import datetime
 import enum
 import importlib.util
+import logging
 import re
 import sys
 import types
@@ -322,6 +323,20 @@ def _cv_time(value):
         return datetime.time(*(int(part) for part in parts))
     except ValueError:
         raise _invalid(f"Invalid time specified: {value}") from None
+
+
+def _cv_removed(key, default=None, raise_if_present=True):
+    """cv.removed as Home Assistant 2026.3 reads it: a key that is there is
+    said at error level and taken out, or refused when raise_if_present."""
+    def validator(config):
+        if key in config:
+            warning = "The '%s' option has been removed, please remove it from your configuration"
+            if raise_if_present:
+                raise _invalid(warning % key)
+            logging.getLogger("homeassistant.helpers.config_validation").error(warning, key)
+            config.pop(key)
+        return config
+    return validator
 
 
 _OBJECT_ID = r"(?!_)[\da-z_]+(?<!_)"
@@ -911,7 +926,8 @@ def install() -> None:
     )
     _module("homeassistant.helpers")
     _module("homeassistant.helpers.config_validation", string=_cv_string,
-            boolean=_cv_boolean, time=_cv_time, entity_id=_cv_entity_id)
+            boolean=_cv_boolean, time=_cv_time, entity_id=_cv_entity_id,
+            removed=_cv_removed)
     _module("homeassistant.helpers.entity", Entity=object)
     _module("homeassistant.helpers.entity_registry",
             async_get=_Unreached("entity_registry.async_get"))

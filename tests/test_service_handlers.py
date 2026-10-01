@@ -1,10 +1,12 @@
 """What each service does with a call, once its schema let it through.
 
 update_gtfs refreshes a source that exists from what the source knows of
-itself: its own address and key apply, whatever the call says, and a
-call that gives others is told so in the log rather than silently
-obeyed or refused. The call only picks the kept zip and sets the
-per-import flags. A source that does not exist yet is created from the
+itself: its own address and key apply. An address the call gives that is
+not the source's own is fetched from this once, with the call's key
+alone; a key given without one is told so in the log rather than
+silently obeyed or refused. The call sets the per-import flags; where the feed
+is read from is the source's url's to say, and the schema drops the
+extract_from an older call names (test_service_schemas). A source that does not exist yet is created from the
 call's fields, and only one that was built gets its datasource entry,
 born with the address and key it came from; without an address, it is
 the zip in the gtfs2 folder, by its file:// url.
@@ -50,8 +52,8 @@ def test_update_gtfs_refreshes_a_source_from_its_own_settings(monkeypatch, caplo
     entry = types.SimpleNamespace(entry_id="d", data={"file": "tao"})
     refreshes = []
 
-    async def refresh(hass, entry_, *, use_zip=False, flags=None):
-        refreshes.append((entry_, use_zip, flags))
+    async def refresh(hass, entry_, *, use_zip=False, flags=None, fetch=None):
+        refreshes.append((entry_, use_zip, flags, fetch))
         return True
 
     monkeypatch.setattr(services, "datasource_entry", lambda hass, file: entry)
@@ -61,19 +63,47 @@ def test_update_gtfs_refreshes_a_source_from_its_own_settings(monkeypatch, caplo
     _, handlers = _handlers()
     with caplog.at_level(logging.WARNING):
         assert _run(handlers["update_gtfs"], _call(
-            file="tao", extract_from="zip", url="https://other/gtfs.zip",
-            api_key="k2", clean_feed_info=True, older_field=1)) is True
-    assert refreshes == [(entry, True, {"clean_feed_info": True})]
-    # the source's own address and key applied: the call is told both differ
+            file="tao", extract_from="zip", api_key="k2", clean_feed_info=True,
+            older_field=1)) is True
+    # fetched from its url: the zip the call names is not read instead,
+    # and a key alone is the source's to hold, which the call is told
+    assert refreshes == [(entry, False, {"clean_feed_info": True}, None)]
     warned = [r.getMessage() for r in caplog.records if "differs" in r.getMessage()]
-    assert len(warned) == 2 and "url" in warned[0] and "api_key" in warned[1]
+    assert len(warned) == 1 and "api_key" in warned[0]
+
+
+def test_update_gtfs_fetches_once_from_an_address_given(monkeypatch, caplog):
+    entry = types.SimpleNamespace(entry_id="d", data={"file": "tao"})
+    refreshes = []
+
+    async def refresh(hass, entry_, *, use_zip=False, flags=None, fetch=None):
+        refreshes.append(fetch)
+        return True
+
+    monkeypatch.setattr(services, "datasource_entry", lambda hass, file: entry)
+    monkeypatch.setattr(services, "refresh_data_for",
+                        lambda hass, e: {"url": "https://tao/gtfs.zip", "api_key": "k1"})
+    monkeypatch.setattr(services, "async_refresh_source", refresh)
+    _, handlers = _handlers()
+    with caplog.at_level(logging.WARNING):
+        # the host down: the zip already in the folder, and no key with it
+        _run(handlers["update_gtfs"], _call(file="tao", url="file:///config/gtfs2/tao.zip"))
+        # a mirror that wants a key of its own
+        _run(handlers["update_gtfs"], _call(file="tao", url="https://mirror/gtfs.zip",
+                                            api_key="m", api_key_location="header"))
+    assert refreshes == [
+        {"url": "file:///config/gtfs2/tao.zip", "api_key_location": "not_applicable"},
+        {"url": "https://mirror/gtfs.zip", "api_key": "m", "api_key_name": "api_key",
+         "api_key_location": "header"}]
+    # an address of the call's own is no mistake to warn about
+    assert not [r for r in caplog.records if "differs" in r.getMessage()]
 
 
 def test_update_gtfs_is_quiet_when_the_call_repeats_the_source(monkeypatch, caplog):
     refreshes = []
 
-    async def refresh(hass, entry_, *, use_zip=False, flags=None):
-        refreshes.append((use_zip, flags))
+    async def refresh(hass, entry_, *, use_zip=False, flags=None, fetch=None):
+        refreshes.append((use_zip, flags, fetch))
         return False
 
     monkeypatch.setattr(services, "datasource_entry", lambda hass, file: object())
@@ -82,12 +112,13 @@ def test_update_gtfs_is_quiet_when_the_call_repeats_the_source(monkeypatch, capl
     monkeypatch.setattr(services, "async_refresh_source", refresh)
     _, handlers = _handlers()
     with caplog.at_level(logging.WARNING):
-        # the same url, the "na" placeholder and a blank key say nothing new
+        # the same url and a blank key say nothing new (the "na" an older
+        # call sends is the schema's to drop: test_service_schemas)
         assert _run(handlers["update_gtfs"], _call(
-            file="tao", url=" https://tao/gtfs.zip ", api_key="na",
+            file="tao", url=" https://tao/gtfs.zip ",
             check_source_dates=False)) is False
         _run(handlers["update_gtfs"], _call(file="tao", api_key=" "))
-    assert refreshes == [(False, {"check_source_dates": False}), (False, {})]
+    assert refreshes == [(False, {"check_source_dates": False}, None), (False, {}, None)]
     assert not [r for r in caplog.records if "differs" in r.getMessage()]
 
 

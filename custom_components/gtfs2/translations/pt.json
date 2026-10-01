@@ -464,12 +464,6 @@
     }
   },
   "selector": {
-    "extract_from": {
-      "options": {
-        "zip": "ZIP: espera um ficheiro na pasta gtfs2 com o nome abaixo, sem a extensão .zip",
-        "url": "URL: usa o seu URL abaixo, deixe 'na' se usar zip"
-      }
-    },
     "api_key_location": {
       "options": {
         "not_applicable": "Nenhuma chave necessária (a maioria das fontes)",
@@ -497,17 +491,13 @@
       "name": "Atualizar/criar uma fonte de dados GTFS2",
       "description": "Através de um link ou colocando um Zip na pasta gtfs2",
       "fields": {
-        "extract_from": {
-          "name": "Indicar a origem para usar zip ou url",
-          "description": "zip (local) ou url"
-        },
         "file": {
           "name": "Nome do serviço de transporte, sem .zip",
           "description": "Se usar o mesmo nome de um existente, o existente será sobrescrito"
         },
         "url": {
           "name": "URL",
-          "description": "forneça o caminho completo para o ficheiro zip"
+          "description": "O endereço do feed, http://, https:// ou file://. Cria uma fonte de dados que ainda não existe, e é omitido para o zip com esse nome na pasta gtfs2. Para uma existente, o seu feed é obtido deste endereço só desta vez, e a fonte mantém o seu: o zip que já está na pasta enquanto o servidor não responde"
         },
         "clean_feed_info": {
           "name": "Remover feed-info",
@@ -515,7 +505,7 @@
         },
         "api_key": {
           "name": "Chave API",
-          "description": "Apenas se o fornecedor a exigir"
+          "description": "Apenas se o fornecedor a exigir: lida para criar uma fonte de dados, e enviada com um endereço dado para uma existente, nunca a própria da fonte"
         },
         "api_key_name": {
           "name": "Nome do parâmetro",

@@ -19,6 +19,7 @@ from .datasource_services import async_intern_datasources, async_prune_datasourc
 from .gtfs_db import real_path, routes_in, route_name_in, get_datasources, close_schedule
 from .gtfs_rt_helper import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
+from .flow_source import SOURCE_URL_SCHEMES
 from .rt_source import (
     source_readers,
     async_bootstrap_datasource_entries,
@@ -264,17 +265,40 @@ _KEY_FIELDS = {
     vol.Optional("api_key_name"): cv.string,
     vol.Optional("api_key_location"): vol.In(ATTR_API_KEY_LOCATIONS),
 }
+def _without_legacy_none(data: dict) -> dict:
+    """update_gtfs once defaulted its address to "na", meant as none, and
+    an automation written then still sends it, for the key too: read as
+    not given, and said, so the call can be mended."""
+    legacy = [key for key in (CONF_URL, CONF_API_KEY) if data.get(key) == "na"]
+    if legacy:
+        _LOGGER.warning("update_gtfs: %s given as \"na\", read as not given; "
+                        "leave the field out instead", " and ".join(legacy))
+    return {key: value for key, value in data.items() if key not in legacy}
+
+
+def _source_url(value: str) -> str:
+    """An address a source can be fetched from, as the source screen takes it."""
+    if not value.strip().startswith(SOURCE_URL_SCHEMES):
+        raise vol.Invalid("the address must start with " + ", ".join(SOURCE_URL_SCHEMES))
+    return value
+
+
 # the fields services.yaml lists, checked before a handler reads them: a
 # missing one used to surface as a KeyError from deep inside. Extra keys
 # still pass, for the automations written against older field lists
-_UPDATE_GTFS_SCHEMA = vol.Schema({
-    vol.Required("file"): cv.string,
-    vol.Optional(CONF_EXTRACT_FROM): vol.In(["url", "zip"]),
-    vol.Optional(CONF_URL): cv.string,
-    **_KEY_FIELDS,
-    vol.Optional("clean_feed_info"): cv.boolean,
-    vol.Optional("check_source_dates"): cv.boolean,
-}, extra=vol.ALLOW_EXTRA)
+_UPDATE_GTFS_SCHEMA = vol.All(
+    # where the feed is read from is its url's to say, http(s) or file
+    # alike: a call still naming it is told the option is gone
+    cv.removed(CONF_EXTRACT_FROM, raise_if_present=False),
+    _without_legacy_none,
+    vol.Schema({
+        vol.Required("file"): cv.string,
+        vol.Optional(CONF_URL): vol.All(cv.string, _source_url),
+        **_KEY_FIELDS,
+        vol.Optional("clean_feed_info"): cv.boolean,
+        vol.Optional("check_source_dates"): cv.boolean,
+    }, extra=vol.ALLOW_EXTRA),
+)
 _UPDATE_GTFS_RT_SCHEMA = vol.Schema({
     vol.Required("file"): cv.string,
     vol.Required(CONF_URL): cv.string,
