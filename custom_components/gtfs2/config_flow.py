@@ -688,7 +688,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
     async def _check_data(self, data):
         await _reopen_schedule(self, data)
         _LOGGER.debug("Checkdata pygtfs: %s with data: %s", self._pygtfs, data)
-        if self._pygtfs in ['no_data_file', 'no_zip_file', 'not_built', 'extracting'] :
+        if isinstance(self._pygtfs, str):
+            # a sentinel of get_gtfs, whichever: not a schedule to index
             return self._pygtfs
         # a datasource imported before the indexes existed never crosses the
         # import path again, so make sure of them here: costs a handful of
