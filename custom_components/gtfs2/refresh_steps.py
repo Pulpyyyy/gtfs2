@@ -9,20 +9,29 @@ _async_update_data, after the static and the realtime readings.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import timedelta
 from functools import partial
 import logging
+from typing import TYPE_CHECKING, Any
 
+from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
 from .const import ATTR_RT_CANCELLED, ATTR_RT_SKIPPED, id_of
 from .gtfs_helper import departure_query_args, drop_departure_trips, get_next_service_date
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+    from .coordinator import GTFSUpdateCoordinator
+
 _LOGGER = logging.getLogger(__name__)
 
 
-async def next_service_date_for(hass, schedule, data, offset):
+async def next_service_date_for(hass: HomeAssistant, schedule: Schedule | str | None,
+                                data: Mapping[str, Any], offset: int | None) -> str | None:
     """The next day this journey runs, as YYYY-MM-DD, or None.
 
     The search starts today, not tomorrow. A line can run today
@@ -49,7 +58,8 @@ async def next_service_date_for(hass, schedule, data, offset):
         return None
 
 
-async def drop_struck_trips(coordinator, data, run_static):
+async def drop_struck_trips(coordinator: GTFSUpdateCoordinator, data: Mapping[str, Any],
+                            run_static: bool) -> None:
     """Read the departures again without the trips the feed struck.
 
     A trip the feed cancelled, or that skips the origin, is
