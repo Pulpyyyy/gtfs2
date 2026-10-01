@@ -120,18 +120,24 @@ class JourneyScreens:
         """Name the sensor, now that both stops are known."""
         origin = self._user_inputs.get(CONF_ORIGIN, "")
         destination = self._user_inputs.get(CONF_DESTINATION, "")
-        trip = f"{_base_name(origin)} → {_base_name(destination)}"
-        if _base_name(origin) == _base_name(destination):
-            # circular line: both ends read the same, so name the journey by
-            # where its rotation heads first, exactly like the return offer
-            labels = await self.hass.async_add_executor_job(
-                get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE]
-            )
-            trip = labels.get(str(self._user_inputs.get(CONF_LOOP_DIRECTION)), "") or trip
+        trip = await self._trip_name(origin, destination,
+                                     self._user_inputs.get(CONF_LOOP_DIRECTION))
         if self._return_trip is None:
             await self._find_return_trip(origin, destination)
         return await self._name_and_create("sensor", user_input, self._suggested_name(trip),
                                            trip, add_return=True)
+
+    async def _trip_name(self, origin, destination, loop_direction):
+        """origin → destination by their base names. A circular line reads
+        the same at both ends, and the return's plain ends would collide
+        with the outward sensor's name: its rotation is named by where it
+        heads first."""
+        trip = f"{_base_name(origin)} → {_base_name(destination)}"
+        if _base_name(origin) == _base_name(destination) and loop_direction is not None:
+            labels = await self.hass.async_add_executor_job(
+                get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE])
+            trip = labels.get(str(loop_direction), "") or trip
+        return trip
 
     def _suggested_name(self, trip):
         """The name offered for a sensor of this trip: source, line, trip."""
@@ -325,13 +331,7 @@ class JourneyScreens:
         if not exists:
             _LOGGER.debug("Return journey: no trip runs it")
             return
-        trip = f"{_base_name(destination)} → {_base_name(origin)}"
-        if _base_name(origin) == _base_name(destination) and loop_direction is not None:
-            # circular line: the plain ends would collide with the outward
-            # sensor's name, so tell the rotations apart by where each heads
-            labels = await self.hass.async_add_executor_job(
-                get_direction_labels, self._pygtfs, route)
-            trip = labels.get(str(loop_direction), "") or trip
+        trip = await self._trip_name(destination, origin, loop_direction)
         self._return_name = self._suggested_name(trip)
         # only what differs: this runs when the screen opens, before the
         # options on it are answered, so the rest is merged at creation time
