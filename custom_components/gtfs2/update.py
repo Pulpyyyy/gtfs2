@@ -103,9 +103,9 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
     async def async_load_versions(self) -> None:
         """Re-read the sidecars; they are files, so never on the loop."""
         def _read() -> tuple[dict[str, Any], dict[str, Any], dict[str, str | None]]:
+            zip_path = source_zip_path(self.hass, self._file)
             return (installed_meta(self.hass, self._file),
-                    source_meta(source_zip_path(self.hass, self._file)),
-                    read_feed_window(source_zip_path(self.hass, self._file)))
+                    source_meta(zip_path), read_feed_window(zip_path))
         self._installed_meta, self._zip_meta, self._window = (
             await self.hass.async_add_executor_job(_read))
         self._installed = version_label(self._installed_meta)
