@@ -88,10 +88,10 @@ class OptionsScreens:
                 errors=errors,
             )
 
-        if user_input.pop(CONF_NEEDS_API_KEY, False):
-            self._user_inputs.update(user_input)
-            return await self.async_step_real_time_key()
+        needs_key = user_input.pop(CONF_NEEDS_API_KEY, False)
         self._user_inputs.update(user_input)
+        if needs_key:
+            return await self.async_step_real_time_key()
         _LOGGER.debug(f"UserInput Source realtime: {self._user_inputs}")
         return self._save_source(
             _collect_source_rt_options(

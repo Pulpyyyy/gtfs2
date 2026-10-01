@@ -262,7 +262,6 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             # "extracting" is not a user error: the datasource is being unpacked,
             # there is nothing to correct, so it keeps its own abort message.
             if check_data == "extracting":
-                self._user_inputs.update(user_input)
                 return await self.async_step_extracting()
             errors["base"] = check_data
             return await _show(errors, user_input)
