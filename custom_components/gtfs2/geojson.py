@@ -22,6 +22,8 @@ import threading
 import time
 import unicodedata
 from collections import Counter
+from collections.abc import Collection, Container, Mapping, Sequence
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import text
 
@@ -31,10 +33,15 @@ from .gtfs_helper import gtfs_seconds, shown_ends
 from .places import _call_type, _line_ways
 from .gtfs_shape import read_shape, trip_shape_id
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from homeassistant.core import HomeAssistant
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
 
 
-def _fmt_gtfs_time(value):
+def _fmt_gtfs_time(value: object) -> str | None:
     """Render a stored stop time as the clock the feed wrote in stop_times.txt:
     HH:MM:SS, past 24:00 after midnight (SNCF writes 24:36:00 there). The
     line file has no service day to pin a date on, so it keeps the feed's
@@ -48,19 +55,19 @@ def _fmt_gtfs_time(value):
 
 
 
-def route_geojson_name(route_id, direction):
+def route_geojson_name(route_id: str, direction: str | int | None) -> str:
     """File name of the route export, in one place because three callers need
     the same answer: the writer, the sensor attribute and the removal on entry
     deletion. A file nobody can name again is a file nobody can delete."""
     return f"{safe_file_part(route_id)}_{safe_file_part(direction)}_route.json"
 
 
-def vehicle_positions_name(route_id, direction):
+def vehicle_positions_name(route_id: str, direction: str | int | None) -> str:
     """Same, for the realtime positions file written by get_rt_vehicle_positions."""
     return f"{safe_file_part(route_id)}_{safe_file_part(direction)}.json"
 
 
-def clear_vehicle_file(hass, route_id, direction) -> bool:
+def clear_vehicle_file(hass: HomeAssistant, route_id: str, direction: str | int | None) -> bool:
     """Take the vehicles off the map, the feeds not being read any more.
 
     The positions file is the last thing the map was told, and nothing
@@ -87,7 +94,7 @@ def clear_vehicle_file(hass, route_id, direction) -> bool:
     return True
 
 
-def _calls_in_order(stops, origin_id, destination_id):
+def _calls_in_order(stops: Sequence[str], origin_id: str | None, destination_id: str | None) -> bool:
     """Whether a trip's ordered stop_ids call at origin_id, then at
     destination_id further on; either one may be None. The first call at the
     origin is the earliest boarding, so a line that loops back through it is
@@ -100,7 +107,8 @@ def _calls_in_order(stops, origin_id, destination_id):
     return not destination_id or destination_id in stops[start:]
 
 
-def _route_trip_calls(schedule, route_id, direction):
+def _route_trip_calls(schedule: Schedule, route_id: str, direction: str | int | None,
+                      ) -> tuple[set[str], dict[str, tuple[str, ...]]] | None:
     """(shaped, stops) for a route and direction: the trips that have a
     shape, and {trip_id: its stop ids in riding order}. None when the
     database cannot be read; an empty dict when the line has no trip."""
@@ -124,7 +132,7 @@ def _route_trip_calls(schedule, route_id, direction):
     FROM stop_times st
     WHERE st.trip_id IN (SELECT t.trip_id FROM trips t WHERE {where})
     """
-    calls = {}
+    calls: dict[str, list[tuple[int, str]]] = {}
     try:
         with schedule.engine.connect() as conn:
             shaped = {row[0] for row in conn.execute(text(sql_shaped), params)}
@@ -137,7 +145,8 @@ def _route_trip_calls(schedule, route_id, direction):
                     for trip_id, rows in calls.items()}
 
 
-def _rank_representative(stops, shaped, origin_id, destination_id):
+def _rank_representative(stops: Mapping[str, tuple[str, ...]], shaped: Container[str],
+                         origin_id: str | None, destination_id: str | None) -> str:
     """The trip get_representative_trip draws, out of {trip_id: its stops}
     and the trips with a shape, by the ranking its docstring gives."""
     trips = list(stops)
@@ -155,7 +164,9 @@ def _rank_representative(stops, shaped, origin_id, destination_id):
     return min(trips, key=lambda trip_id: (-followed[stops[trip_id]], trip_id))
 
 
-def get_representative_trip(schedule, route_id, direction, origin_id=None, destination_id=None):
+def get_representative_trip(schedule: Schedule | str | None, route_id: str | None, direction: str | int | None,
+                            origin_id: str | None = None,
+                            destination_id: str | None = None) -> str | None:
     """The trip that stands for a route and direction on the map.
 
     The route file draws its stops, and a card places the sensor's boarding
@@ -202,7 +213,8 @@ def get_representative_trip(schedule, route_id, direction, origin_id=None, desti
     return trip_id
 
 
-def write_route_file(hass, data, route_id, direction, trip_id=None):
+def write_route_file(hass: HomeAssistant, data: Mapping[str, Any], route_id: str,
+                     direction: str | int | None, trip_id: str | None = None) -> None:
     """Write the line's ordered stops to www/gtfs2/<route>_<direction>_route.json.
 
     Companion file to the vehicle-positions geojson. The stops as Points,
@@ -263,7 +275,7 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
                      "two editions of the feed; the zip's is drawn",
                      route_id, direction, trip_id, db_shape, shape_id or "none")
     shape = read_shape(zip_path, shape_id) if shape_id else None
-    features = []
+    features: list[dict[str, Any]] = []
     if shape and len(shape) >= 2:
         features.append({
             "type": "Feature",
@@ -333,7 +345,7 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
 _WRITTEN: dict[str, str] = {}
 
 
-def write_json_if_changed(file, doc, stable) -> bool:
+def write_json_if_changed(file: str, doc: object, stable: object) -> bool:
     """Write doc to file as json, unless it already says the same thing.
 
     stable is what the comparison reads: doc without the moment it was
@@ -351,7 +363,7 @@ def write_json_if_changed(file, doc, stable) -> bool:
     return True
 
 
-def entry_file_part(name) -> str:
+def entry_file_part(name: object) -> str:
     """An entry's name, made a readable file name part: accents dropped to
     their base letter (Orléans reads orleans, not orl_ans), then the same
     rule as the ids, then the stray dashes an arrow or a long dash leaves
@@ -369,7 +381,7 @@ def entry_file_part(name) -> str:
     return part
 
 
-def name_in_use(name, taken) -> bool:
+def name_in_use(name: str, taken: Collection[str | None]) -> bool:
     """Whether an entry name is taken, as a name or as the file part the
     timetable and leg files are named with: "Orléans" and "Orleans", or
     "Bus 1 Gare > Centre" and "bus-1 gare - centre", are two names and one
@@ -381,7 +393,7 @@ def name_in_use(name, taken) -> bool:
 _UNSAFE_FILE_PART = re.compile(r"[^a-z0-9._-]+")
 
 
-def safe_file_part(value) -> str:
+def safe_file_part(value: object) -> str:
     """A route or direction id, made safe to put in a file name.
 
     Both geojson files are named after ids that come out of the datasource,
@@ -397,7 +409,7 @@ def safe_file_part(value) -> str:
     return re.sub(r"\.\.+", "_", _UNSAFE_FILE_PART.sub("_", str(value).lower()))
 
 
-def write_json_file(file, doc):
+def write_json_file(file: str, doc: object) -> None:
     """Write a json file the way a reader can never catch it half written.
 
     The map cards fetch these files while the sensors rewrite them, every
