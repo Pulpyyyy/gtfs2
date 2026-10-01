@@ -47,6 +47,7 @@ from .const import (
 )
 from .flow_reload import _database_size
 from .freshness import source_meta
+from .file_url import FILE_SCHEME
 from .gtfs_db import feed_zip, real_path, get_zipfiles
 from .gtfs_helper import check_extracting
 from .key_mask import KEY_MASK, note_key
@@ -58,6 +59,10 @@ _LOGGER = logging.getLogger(__name__)
 
 # what a source may be called: letters, digits, spaces, dashes, underscores.
 # No separator, no dot, nothing a file name on Linux or Windows refuses
+# what an address typed for a source may start with: a host, or a file
+# on this machine, which fetch reads as a host (file_url)
+SOURCE_URL_SCHEMES = ("http://", "https://", FILE_SCHEME)
+
 _SOURCE_NAME = re.compile(r"\w[\w\- ]*")
 
 
@@ -285,7 +290,7 @@ class SourceScreens:
         errors = {}
         if not _SOURCE_NAME.fullmatch(name):
             errors[CONF_FILE] = "invalid_source_name"
-        if not url.startswith(("http://", "https://")):
+        if not url.startswith(SOURCE_URL_SCHEMES):
             errors[CONF_URL] = "invalid_source_url"
         if not errors and await self._name_taken_elsewhere(name, url):
             errors[CONF_FILE] = "source_exists"

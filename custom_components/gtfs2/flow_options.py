@@ -33,6 +33,7 @@ from .const import (
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
 from .flow_source import (
+    SOURCE_URL_SCHEMES,
     _collect_source_rt_options, _source_key_schema, _source_rt_key_schema, _source_rt_schema,
     _typed_key,
 )
@@ -140,7 +141,7 @@ class OptionsScreens:
         current = static_feed_config(self.hass, self._source())
         if user_input is not None:
             new_url = (user_input.get(CONF_URL) or "").strip()
-            if new_url and not new_url.startswith(("http://", "https://")):
+            if new_url and not new_url.startswith(SOURCE_URL_SCHEMES):
                 errors[CONF_URL] = "invalid_source_url"
             else:
                 self._user_inputs = {**user_input, CONF_URL: new_url}

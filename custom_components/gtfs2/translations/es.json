@@ -320,7 +320,7 @@
       "return_name_taken": "Un sensor ya tiene el nombre que tomaría el trayecto de vuelta: desmarque la vuelta o cambie antes el nombre de ese sensor.",
       "source_exists": "Ya existe una fuente con este nombre y otra dirección: elíjala entre las fuentes existentes o dé otro nombre a esta.",
       "invalid_source_name": "Solo letras, cifras, espacios, guiones y guiones bajos: el nombre pasa a ser el del archivo de la fuente.",
-      "invalid_source_url": "La dirección debe empezar por http:// o https://",
+      "invalid_source_url": "La dirección debe empezar por http://, https:// o file://",
       "route_not_listed": "No es una de las líneas de esta fuente: elija una de la lista, escribir parte de su nombre la encuentra.",
       "no_destination": "Ninguna parada es alcanzable desde el origen seleccionado en esta dirección",
       "unknown": "Error inesperado",
@@ -460,7 +460,7 @@
       "stop_limit_reached": "Se detectó una gran cantidad de paradas para este radio, \nlo que posiblemente afecte el rendimiento del sistema. \nPuedes cambiar el límite bajo tu propia responsabilidad antes de cambiar el radio"
     },
     "error": {
-      "invalid_source_url": "La dirección debe empezar por http:// o https://"
+      "invalid_source_url": "La dirección debe empezar por http://, https:// o file://"
     }
   },
   "selector": {

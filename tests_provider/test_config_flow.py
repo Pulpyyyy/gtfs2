@@ -1570,6 +1570,12 @@ def test_a_source_s_options_hold_its_realtime_feeds_and_its_static_refresh(world
         again = shown(await submit(hass, refresh, options, url="ftp://feeds.example/tao.zip"),
                       FORM, "static_refresh")
         assert again["errors"] == {"url": "invalid_source_url"}
+        # a feed on this machine is an address like any other
+        shared = "file:///share/feeds/tao.zip"
+        shown(await submit(hass, again, options, url=shared), CREATE)
+        assert source.data["url"] == shared
+        again = await choose(hass, await options_of(hass, source), "static_refresh", options)
+        assert default(again, "url") == shared
         shown(await submit(hass, again, options, url=URL, static_refresh_mode="auto",
                            static_check_interval=12), CREATE)
         assert dict(source.options) == {**realtime, "static_refresh_mode": "auto",
