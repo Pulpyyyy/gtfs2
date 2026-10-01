@@ -23,11 +23,13 @@ database, which is what keeps it loadable by the test harness on its own.
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Container, Iterable, Iterator
 import csv
 import io
 import logging
 import os
 import time
+from typing import IO, Any, Literal, Self
 import zipfile
 
 _LOGGER = logging.getLogger(__name__)
@@ -38,13 +40,13 @@ KEPT_WHOLE = ("agency.txt", "routes.txt", "feed_info.txt")
 # write into it: output always goes to a separate file
 
 
-def _member(zin, name):
+def _member(zin: zipfile.ZipFile, name: str) -> str | None:
     """The archive member for a table, wherever the feed nested it."""
     return next((n for n in zin.namelist()
                  if n.rsplit("/", 1)[-1] == name), None)
 
 
-def _rows(zin, member):
+def _rows(zin: zipfile.ZipFile, member: str) -> Iterator[list[str]]:
     """Stream a member as csv rows, header first, byte order mark eaten.
 
     Blank lines are left out: a table ending with one, which plenty of
@@ -56,7 +58,7 @@ def _rows(zin, member):
     return (row for row in reader if row)
 
 
-def table_reader(raw):
+def table_reader(raw: IO[bytes]) -> csv.DictReader[str]:
     """csv.DictReader over a feed table, its columns named as pygtfs names them.
 
     pygtfs strips every cell it imports, the header included. Renfe pads
@@ -69,7 +71,7 @@ def table_reader(raw):
     return reader
 
 
-def table_rows(zin, name):
+def table_rows(zin: zipfile.ZipFile, name: str) -> Iterator[dict[str, str | None]]:
     """The rows of a table of an open feed, wherever the feed nested it,
     read by table_reader; a table the feed leaves out reads as no row."""
     member = _member(zin, name)
@@ -79,7 +81,7 @@ def table_rows(zin, name):
         yield from table_reader(raw)
 
 
-def _header(rows, name):
+def _header(rows: Iterator[list[str]], name: str) -> list[str]:
     """The header row of a table, or the end of the filtering.
 
     A table with not one line has no columns to filter on. Saying so as a
@@ -104,17 +106,17 @@ class _Writer:
     stop_times never sits in memory: rows go straight through.
     """
 
-    def __init__(self, zout, name, header):
+    def __init__(self, zout: zipfile.ZipFile, name: str, header: list[str]) -> None:
         self._handle = zout.open(name, "w")
         self._wrapper = io.TextIOWrapper(
             self._handle, encoding="utf-8", newline="")
         self._csv = csv.writer(self._wrapper, lineterminator="\n")
         self._csv.writerow(header)
 
-    def row(self, row):
+    def row(self, row: list[str]) -> None:
         self._csv.writerow(row)
 
-    def close(self):
+    def close(self) -> None:
         self._wrapper.flush()
         self._wrapper.detach()
         self._handle.close()
@@ -122,15 +124,16 @@ class _Writer:
     # used as a context manager so that a table breaking halfway still
     # closes its handle: a zip cannot even be closed, let alone deleted,
     # while one is open on it
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *exc):
+    def __exit__(self, *exc: object) -> Literal[False]:
         self.close()
         return False
 
 
-def _copy_filtered(zin, zout, member, name, keep):
+def _copy_filtered(zin: zipfile.ZipFile, zout: zipfile.ZipFile, member: str, name: str,
+                   keep: Callable[..., bool]) -> tuple[int, int]:
     """Copy one table keeping the rows keep() accepts. Returns (kept, total)."""
     rows = _rows(zin, member)
     header = _header(rows, name)
@@ -144,7 +147,8 @@ def _copy_filtered(zin, zout, member, name, keep):
     return kept, total
 
 
-def _filter_trips(zin, zout, member, route_ids):
+def _filter_trips(zin: zipfile.ZipFile, zout: zipfile.ZipFile, member: str,
+                  route_ids: Container[str]) -> tuple[set[str], set[str], int]:
     """Copy the trips of the chosen routes: it decides everything else that
     survives. Returns (their trip_ids, their service_ids, trips read)."""
     trip_ids, service_ids = set(), set()
@@ -164,7 +168,8 @@ def _filter_trips(zin, zout, member, route_ids):
     return trip_ids, service_ids, total
 
 
-def _filter_stop_times(zin, zout, member, trip_ids):
+def _filter_stop_times(zin: zipfile.ZipFile, zout: zipfile.ZipFile, member: str,
+                       trip_ids: Container[str]) -> tuple[set[str], int, int]:
     """Copy the calls of the kept trips. stop_times is the weight of the
     feed: one pass, collecting the stops they call at. Returns (those
     stop_ids, calls kept, calls read)."""
@@ -184,7 +189,7 @@ def _filter_stop_times(zin, zout, member, trip_ids):
     return stop_ids, kept, total
 
 
-def _filter_stops(zin, zout, stop_ids):
+def _filter_stops(zin: zipfile.ZipFile, zout: zipfile.ZipFile, stop_ids: Container[str]) -> None:
     """Copy the stops called at, and their parent stations: a first pass
     finds the parents, so a platform never loses the station above it."""
     member = _member(zin, "stops.txt")
@@ -204,7 +209,8 @@ def _filter_stops(zin, zout, stop_ids):
                      or row[i_stop].strip() in parents))
 
 
-def _filter_by_column(zin, zout, trip_ids, service_ids):
+def _filter_by_column(zin: zipfile.ZipFile, zout: zipfile.ZipFile, trip_ids: Container[str],
+                      service_ids: Container[str]) -> None:
     """Copy the calendars of the kept services and the frequencies of the
     kept trips; a table without the column is left out."""
     for name, column, wanted in (
@@ -220,7 +226,7 @@ def _filter_by_column(zin, zout, trip_ids, service_ids):
                            lambda row, i=index, w=wanted: row[i].strip() in w)
 
 
-def _copy_whole(zin, zout, drop_feed_info):
+def _copy_whole(zin: zipfile.ZipFile, zout: zipfile.ZipFile, drop_feed_info: bool) -> None:
     """Copy the tables that describe the network as they are."""
     for name in KEPT_WHOLE:
         if name == "feed_info.txt" and drop_feed_info:
@@ -229,7 +235,8 @@ def _copy_whole(zin, zout, drop_feed_info):
             zout.writestr(name, zin.read(member))
 
 
-def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
+def filter_gtfs_zip(src: str, dst: str, route_ids: Iterable[str],
+                    drop_feed_info: bool = False) -> dict[str, Any] | None:
     """Write to dst the part of the feed src that the chosen routes use.
 
     Returns {"trips": (kept, total), "stop_times": (kept, total),
@@ -247,10 +254,14 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
                 _LOGGER.error("Cannot filter %s: no %s in the feed",
                               src, ", ".join(missing))
                 raise ValueError("not a usable GTFS feed")
+            trips, stop_times = required["trips.txt"], required["stop_times.txt"]
+            if trips is None or stop_times is None:
+                # said just above, written again for the type checker
+                raise ValueError("not a usable GTFS feed")
             trip_ids, service_ids, trips_total = _filter_trips(
-                zin, zout, required["trips.txt"], route_ids)
+                zin, zout, trips, route_ids)
             stop_ids, st_kept, st_total = _filter_stop_times(
-                zin, zout, required["stop_times.txt"], trip_ids)
+                zin, zout, stop_times, trip_ids)
             _filter_stops(zin, zout, stop_ids)
             _filter_by_column(zin, zout, trip_ids, service_ids)
             _copy_whole(zin, zout, drop_feed_info)
@@ -277,12 +288,12 @@ def filter_gtfs_zip(src, dst, route_ids, drop_feed_info=False):
     return stats
 
 
-def _skip_header(rows):
+def _skip_header(rows: Iterator[list[str]]) -> Iterator[list[str]]:
     next(rows)
     return rows
 
 
-def feed_info_unreadable(zip_path):
+def feed_info_unreadable(zip_path: str) -> bool:
     """Whether pygtfs would stop the whole import on feed_info.txt.
 
     feed_start_date and feed_end_date are optional in GTFS, and a feed may
@@ -309,7 +320,7 @@ def feed_info_unreadable(zip_path):
     return False
 
 
-def zip_only_future_dates(zip_path):
+def zip_only_future_dates(zip_path: str) -> bool:
     """Whether every service date of the feed lies in the future.
 
     The update service refuses such a feed: replacing today's timetable with
@@ -320,7 +331,7 @@ def zip_only_future_dates(zip_path):
     Returns False when the dates cannot be read: an unreadable feed should
     fail the import loudly, not be silently kept out on a guess.
     """
-    earliest = None
+    earliest: str | None = None
     try:
         with zipfile.ZipFile(zip_path) as zin:
             for name, column in (("calendar.txt", "start_date"),
@@ -346,7 +357,7 @@ def zip_only_future_dates(zip_path):
     return earliest > time.strftime("%Y%m%d")
 
 
-def read_zip_routes(zip_path):
+def read_zip_routes(zip_path: str) -> list[dict[str, str | None]]:
     """The routes.txt rows of a feed, as dicts, or [] when unreadable.
 
     What the config flow needs to offer lines before any database exists:
@@ -364,7 +375,7 @@ def read_zip_routes(zip_path):
         return []
 
 
-def read_zip_agencies(zip_path):
+def read_zip_agencies(zip_path: str) -> list[dict[str, str | None]]:
     """The agency.txt rows of a feed, as dicts, or [] when unreadable."""
     try:
         with zipfile.ZipFile(zip_path) as zin:
