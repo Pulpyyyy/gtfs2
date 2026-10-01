@@ -5,8 +5,8 @@ on:
   pull_request:
 
 # What each function takes and returns, written in its signature and held
-# to the code by mypy, module by module as they are annotated (mypy.ini
-# lists them). mypy is pinned so the check holds still.
+# to the code by mypy, every module of the component (mypy.ini). mypy is
+# pinned so the check holds still.
 jobs:
   types:
     runs-on: ubuntu-latest

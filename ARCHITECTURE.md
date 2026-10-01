@@ -1141,7 +1141,7 @@ complexity        each function at 10 or under, or at its recorded
 layers            the import-linter contract (.importlinter)
                                                   CI: Imports
 types             what a function takes and returns, in its signature,
-                  checked by mypy in the modules mypy.ini lists
+                  checked by mypy in every module (mypy.ini)
                                                   CI: Types
 hassfest, HACS    manifest, strings, services     CI: Validate
 ```
