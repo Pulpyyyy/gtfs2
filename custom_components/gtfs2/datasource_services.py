@@ -9,6 +9,8 @@ way is never undone (_rewrite_source). Registered by __init__.setup.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Mapping
+from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -26,7 +28,7 @@ from .source_refresh import (
 _LOGGER = logging.getLogger(__name__)
 
 
-def _wanted_files(hass: HomeAssistant, raw):
+def _wanted_files(hass: HomeAssistant, raw: str | list[str] | None) -> list[str]:
     """The datasource names a service call designates.
 
     The field is a device picker in the UI, so it usually carries the
@@ -38,9 +40,9 @@ def _wanted_files(hass: HomeAssistant, raw):
         raw = [raw] if raw else []
     devices = dr.async_get(hass)
     entities = er.async_get(hass)
-    files = []
+    files: list[str] = []
     for item in raw or []:
-        entry_ids = []
+        entry_ids: list[str] = []
         if device := devices.async_get(item):
             entry_ids = list(device.config_entries)
         elif (entity := entities.async_get(item)) and entity.config_entry_id:
@@ -56,7 +58,7 @@ def _wanted_files(hass: HomeAssistant, raw):
     return files
 
 
-def _known_sources(hass: HomeAssistant):
+def _known_sources(hass: HomeAssistant) -> set[str]:
     """Every datasource name the integration knows.
 
     The datasource entries are the authoritative list - the bootstrap gives
@@ -67,7 +69,8 @@ def _known_sources(hass: HomeAssistant):
             if e.data.get("file")}
 
 
-def _service_targets(hass, data):
+def _service_targets(hass: HomeAssistant,
+                     data: Mapping[str, Any]) -> tuple[list[str], list[str]]:
     """The known sources a service call names, sorted, every known one when
     it names none; and the names it gave that are no known source."""
     wanted = _wanted_files(hass, data.get("file"))
@@ -80,7 +83,9 @@ def _service_targets(hass, data):
     return sorted(set(wanted) & known), unknown
 
 
-async def _rewrite_source(hass, gtfs_dir, filename, dry_run, work, *args):
+async def _rewrite_source(hass: HomeAssistant, gtfs_dir: str, filename: str, dry_run: bool,
+                          work: Callable[..., dict[str, Any] | None],
+                          *args: object) -> tuple[dict[str, Any] | None, str | None]:
     """(what work returned, None), or (None, "refresh_running") when a
     refresh holds the source.
 
@@ -99,7 +104,7 @@ async def _rewrite_source(hass, gtfs_dir, filename, dry_run, work, *args):
             on_a_copy, gtfs_dir, filename, work, *args, False), None
 
 
-async def async_prune_datasources(hass: HomeAssistant, data):
+async def async_prune_datasources(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[str, list]:
     """Prune the picked datasources, or every one, down to the routes in use.
 
     A source nothing reads, or one a train or local stops sensor needs whole,
@@ -109,7 +114,8 @@ async def async_prune_datasources(hass: HomeAssistant, data):
     dry_run = data.get("dry_run", False)
     gtfs_dir = hass.config.path(DEFAULT_PATH)
     targets, unknown = _service_targets(hass, data)
-    pruned, skipped = [], []
+    pruned: list[dict[str, Any]] = []
+    skipped: list[dict[str, str]] = []
     for filename in targets:
         routes, unrestricted = source_readers(hass, filename)
         if unrestricted:
@@ -129,13 +135,13 @@ async def async_prune_datasources(hass: HomeAssistant, data):
             continue
         if stats:
             pruned.append(stats)
-    result = {"pruned": pruned, "skipped": skipped}
+    result: dict[str, list] = {"pruned": pruned, "skipped": skipped}
     if unknown:
         result["unknown"] = unknown
     return result
 
 
-async def async_intern_datasources(hass: HomeAssistant, data):
+async def async_intern_datasources(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[str, list]:
     """Intern the identifiers of the picked datasources, or every one.
 
     Same field contract as async_prune_datasources; interning has no route
@@ -144,7 +150,8 @@ async def async_intern_datasources(hass: HomeAssistant, data):
     dry_run = data.get("dry_run", False)
     gtfs_dir = hass.config.path(DEFAULT_PATH)
     targets, unknown = _service_targets(hass, data)
-    interned, skipped = [], []
+    interned: list[dict[str, Any]] = []
+    skipped: list[dict[str, str]] = []
     for filename in targets:
         stats, busy = await _rewrite_source(hass, gtfs_dir, filename, dry_run,
                                             intern_gtfs_datasource)
@@ -153,7 +160,7 @@ async def async_intern_datasources(hass: HomeAssistant, data):
             continue
         if stats:
             interned.append(stats)
-    result = {"interned": interned}
+    result: dict[str, list] = {"interned": interned}
     if skipped:
         result["skipped"] = skipped
     if unknown:
@@ -161,7 +168,7 @@ async def async_intern_datasources(hass: HomeAssistant, data):
     return result
 
 
-async def async_update_gtfs(hass: HomeAssistant, call_data):
+async def async_update_gtfs(hass: HomeAssistant, call_data: Mapping[str, Any]) -> bool:
     """The update_gtfs service.
 
     Refreshes the datasource through the scratch database: the fresh
@@ -217,7 +224,7 @@ async def async_update_gtfs(hass: HomeAssistant, call_data):
     return ok
 
 
-async def async_prune_line(hass: HomeAssistant, filename, route):
+async def async_prune_line(hass: HomeAssistant, filename: str, route: str) -> str | None:
     """Drop one line's timetable from a datasource, every other line kept:
     the fix of a line no sensor reads any more. None once done (or when
     the line is already gone), else why it was not: a sensor reads the
