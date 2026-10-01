@@ -19,7 +19,6 @@ from .const import (
     DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
     DEFAULT_LOCAL_STOP_TIMERANGE,
     DEFAULT_LOCAL_STOP_RADIUS,
-    CONF_API_KEY_LOCATION,
     CONF_TRIP_UPDATE_URL,
     CONF_VEHICLE_POSITION_URL,
     CONF_VEHICLE_MAX_AGE,
@@ -536,7 +535,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             self._get_next_service = {}
             """Initialize the info object."""
             self._route_delimiter = None
-            self._headers = {}
+            self._headers = rt_headers(rt_cfg) or {}
             self._rt_group = "trip"
             self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
             # a local stops sensor lists departures of every line around a
@@ -551,8 +550,6 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
                 # get_local_stops_next_departures would otherwise try to
                 # download the missing feed and drop every departure with it
                 self._realtime = False
-            if rt_cfg.get(CONF_API_KEY_LOCATION, None) == "header":
-                self._headers = rt_headers(rt_cfg)
                 
 
         if self._realtime:
