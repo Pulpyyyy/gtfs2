@@ -294,7 +294,7 @@ def static_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any
 
 
 async def async_ensure_datasource_entry(
-        hass: HomeAssistant, file: str, url: str | None = None,
+        hass: HomeAssistant, file: str | None, url: str | None = None,
         api: Mapping[str, Any] | None = None, inner_zip: str | None = None) -> None:
     """Create the datasource entry of a source, unless it already exists.
 

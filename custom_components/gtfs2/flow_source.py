@@ -14,10 +14,13 @@ import asyncio
 import logging
 import os
 import re
+from collections.abc import Callable, Mapping
+from typing import Any
 
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
@@ -45,6 +48,7 @@ from .const import (
     DEFAULT_PATH,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
+from .flow_journey import _Step
 from .flow_reload import _database_size
 from .freshness import source_meta
 from .file_url import FILE_SCHEME
@@ -66,7 +70,7 @@ SOURCE_URL_SCHEMES = ("http://", "https://", FILE_SCHEME)
 _SOURCE_NAME = re.compile(r"\w[\w\- ]*")
 
 
-def _source_rt_schema(opts):
+def _source_rt_schema(opts: Mapping[str, Any]) -> dict[vol.Marker, Any]:
     """The realtime feeds screen of a source, prefilled with what it has.
 
     Shared between the creation flow and the datasource entry's options so
@@ -91,7 +95,7 @@ def _source_rt_schema(opts):
     }
 
 
-def _source_key_schema(previous):
+def _source_key_schema(previous: Mapping[str, Any]) -> dict[vol.Marker, Any]:
     """The api key trio, prefilled with what a feed already has.
 
     One screen for every feed that needs a key: the static feed at creation
@@ -121,7 +125,8 @@ def _source_key_schema(previous):
     }
 
 
-def _typed_key(key_fields, previous):
+def _typed_key(key_fields: Mapping[str, Any],
+               previous: Mapping[str, Any] | None) -> dict[str, Any]:
     """The key screen's fields, the mask swapped back for the key it stands for.
 
     The key is noted on the way, so the logs hide it from the moment it is
@@ -134,7 +139,7 @@ def _typed_key(key_fields, previous):
     return {**key_fields, CONF_API_KEY: key}
 
 
-def _source_rt_key_schema(opts):
+def _source_rt_key_schema(opts: Mapping[str, Any]) -> dict[vol.Marker, Any]:
     """The realtime api key screen, shown only when the source needs one."""
     return {
         **_source_key_schema(opts),
@@ -146,7 +151,8 @@ def _source_rt_key_schema(opts):
     }
 
 
-def _collect_source_rt_options(url_fields, key_fields, previous=None):
+def _collect_source_rt_options(url_fields: Mapping[str, Any], key_fields: Mapping[str, Any],
+                               previous: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """The options a datasource entry stores: what was typed, nothing empty.
 
     An emptied field means removal, so blanks and stray spaces never make it
@@ -155,7 +161,7 @@ def _collect_source_rt_options(url_fields, key_fields, previous=None):
     fields survive either. The rt_enabled switch is not on these screens,
     so its position rides through an edit untouched.
     """
-    options = {}
+    options: dict[str, Any] = {}
     for key in (CONF_TRIP_UPDATE_URL, CONF_VEHICLE_POSITION_URL, CONF_ALERTS_URL):
         value = (url_fields.get(key) or "").strip()
         if value:
@@ -183,6 +189,25 @@ def _collect_source_rt_options(url_fields, key_fields, previous=None):
 class SourceScreens:
     """The screens that name a source: url or zip, its key, its realtime feeds, and the unpacking."""
 
+    # what these screens use of the flow they are mixed in (ConfigFlow)
+    hass: HomeAssistant
+    _user_inputs: dict
+    _pending_error: str | None
+    _source_step: str | None
+    _inner_zips: list
+    _source_rt_inputs: dict
+    _extract_job: asyncio.Task | None
+    _extract_task: asyncio.Task | None
+    _extract_size: str
+    _extract_next_step: str | None
+    async_show_form: Callable[..., FlowResult]
+    async_show_progress: Callable[..., FlowResult]
+    async_show_progress_done: Callable[..., FlowResult]
+    async_abort: Callable[..., FlowResult]
+    async_step_user: _Step
+    async_step_start_end: _Step
+    async_step_agency: _Step
+
     async def async_step_user_empty(self, user_input: dict | None = None) -> FlowResult:
         """The first-run menu, when no datasource exists yet.
 
@@ -194,7 +219,7 @@ class SourceScreens:
         """
         return await self.async_step_user(user_input)
 
-    async def _name_taken_elsewhere(self, name, url) -> bool:
+    async def _name_taken_elsewhere(self, name: str, url: str) -> bool:
         """Whether another source already goes by this name.
 
         The zip and the entry of a source are found by its name alone, so a
@@ -220,7 +245,7 @@ class SourceScreens:
         """Download the feed from a url."""
         errors: dict[str, str] = {}
 
-        def _show(errors, previous=None):
+        def _show(errors: dict[str, str], previous: dict | None = None) -> FlowResult:
             previous = previous or {}
             return self.async_show_form(
                 step_id="source_url",
@@ -284,10 +309,10 @@ class SourceScreens:
         _LOGGER.debug(f"UserInputs Source url: {self._user_inputs}")
         return await self.async_step_source_rt()
 
-    async def _source_url_errors(self, name, url):
+    async def _source_url_errors(self, name: str, url: str) -> dict[str, str]:
         """What is wrong with a typed source name and address, by field;
         empty when nothing is."""
-        errors = {}
+        errors: dict[str, str] = {}
         if not _SOURCE_NAME.fullmatch(name):
             errors[CONF_FILE] = "invalid_source_name"
         if not url.startswith(SOURCE_URL_SCHEMES):
@@ -336,7 +361,7 @@ class SourceScreens:
         """Ask for the api key, only when the source needs one."""
         errors: dict[str, str] = {}
 
-        def _show(errors, previous=None):
+        def _show(errors: dict[str, str], previous: dict | None = None) -> FlowResult:
             previous = previous or {}
             return self.async_show_form(
                 step_id="source_key",
@@ -404,7 +429,8 @@ class SourceScreens:
         await self._store_source_rt(self._source_rt_inputs, _typed_key(user_input, opts))
         return await self.async_step_agency()
 
-    async def _store_source_rt(self, url_fields, key_fields):
+    async def _store_source_rt(self, url_fields: Mapping[str, Any],
+                               key_fields: Mapping[str, Any]) -> None:
         """Put what the realtime screens collected onto the datasource entry."""
         inputs = self._user_inputs
         await async_ensure_datasource_entry(
@@ -423,7 +449,7 @@ class SourceScreens:
         """Use a zip the user already dropped in the gtfs2 folder."""
         errors: dict[str, str] = {}
 
-        async def _show(errors):
+        async def _show(errors: dict[str, str]) -> FlowResult:
             zipfiles = await get_zipfiles(self.hass, DEFAULT_PATH)
             if not zipfiles:
                 return self.async_abort(
@@ -469,7 +495,7 @@ class SourceScreens:
         _LOGGER.debug(f"UserInputs Source zip: {self._user_inputs}")
         return await self.async_step_source_rt()
 
-    async def _fresh_source(self):
+    async def _fresh_source(self) -> bool:
         """Whether the source picked in this flow has no database yet.
 
         A fresh source is served from its zip: operators and lines are read
@@ -533,7 +559,7 @@ class SourceScreens:
         return self.async_show_progress_done(
             next_step_id=self._extract_next_step or "agency")
 
-    async def _wait_for_extraction(self):
+    async def _wait_for_extraction(self) -> None:
         """Poll until nothing writes to the datasource any more."""
         gtfs_dir = self.hass.config.path(DEFAULT_PATH)
         file = self._user_inputs.get(CONF_FILE, "")
@@ -542,7 +568,7 @@ class SourceScreens:
         ):
             await asyncio.sleep(5)
 
-    async def _back_to_source(self, reason):
+    async def _back_to_source(self, reason: str) -> FlowResult:
         """Return to the step that picked the datasource, carrying the error.
 
         The screen is the one the flow remembers picking the source. Worked
