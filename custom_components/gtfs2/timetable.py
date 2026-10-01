@@ -5,10 +5,13 @@ background.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 import datetime
 import logging
 import os
+from typing import Any
 
+from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON, id_of
@@ -29,7 +32,7 @@ TIMETABLE_DAYS = 3
 TIMETABLE_ROWS_MAX = 5000
 
 
-def timetable_name(name):
+def timetable_name(name: str) -> str:
     """File name of an entry's timetable. The entry's name alone: unlike the
     route and positions files it is this sensor's, and a train entry's
     departures may ride several routes. Kept in one place, like the others,
@@ -37,7 +40,7 @@ def timetable_name(name):
     return f"timetable_{entry_file_part(name)}.json"
 
 
-def _local(stamp, zone):
+def _local(stamp: object, zone: datetime.tzinfo) -> str | None:
     """A naive 'YYYY-MM-DD HH:MM:SS' of the query, in the line's zone, as an
     ISO datetime with its offset; None when unreadable."""
     try:
@@ -49,7 +52,10 @@ def _local(stamp, zone):
     return moment.astimezone(zone).isoformat()
 
 
-def timetable_doc(name, rows, service_dates, zone, next_departure=None, until=None, generated=None):
+def timetable_doc(name: str, rows: Iterable[Mapping[str, Any]], service_dates: Iterable[str],
+                  zone: datetime.tzinfo, next_departure: str | None = None,
+                  until: str | None = None,
+                  generated: datetime.datetime | None = None) -> dict[str, Any]:
     """The timetable file's content, from the departure rows of a window.
 
     service_dates are the days the file stands for, each listed even when
@@ -66,7 +72,7 @@ def timetable_doc(name, rows, service_dates, zone, next_departure=None, until=No
     it nothing can be known, so an empty window with no next departure
     says "nothing published until then" rather than "never".
     """
-    days = {d: [] for d in service_dates}
+    days: dict[str, list[dict[str, str | None]]] = {d: [] for d in service_dates}
     for row in rows:
         day = str(row.get("origin_depart_date") or "")[:10]
         dep = _local(row.get("origin_depart_dt"), zone)
@@ -88,7 +94,7 @@ def timetable_doc(name, rows, service_dates, zone, next_departure=None, until=No
     }
 
 
-def write_timetable_file(hass, data, today, zip_path):
+def write_timetable_file(hass: HomeAssistant, data: Mapping[str, Any], today: str, zip_path: str) -> str:
     """Write www/gtfs2/timetable_<entry>.json: every departure of the entry
     from now to the end of the third service day, today's included.
 
