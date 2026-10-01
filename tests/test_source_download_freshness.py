@@ -71,8 +71,10 @@ def _zip_bytes(marker):
 
 
 def _response(content=b"", headers=None, status=200):
+    # its body read as requests hands it, whether streamed or not
     return types.SimpleNamespace(
         content=content, headers=headers or {}, url=URL, status_code=status,
+        iter_content=lambda chunk_size: iter([content]),
         raise_for_status=lambda: None, close=lambda: None)
 
 

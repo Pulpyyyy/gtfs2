@@ -44,8 +44,10 @@ def feed_bytes(edition):
 
 def answering(body, **headers):
     def fetch(method, url, **kwargs):
+        # its body read as requests hands it, whether streamed or not
         return types.SimpleNamespace(
             status_code=200, url=url, headers=headers, content=body,
+            iter_content=lambda chunk_size: iter([body]),
             raise_for_status=lambda: None, close=lambda: None)
     return fetch
 

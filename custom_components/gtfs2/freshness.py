@@ -14,11 +14,13 @@ and touches nothing but the source's zip and its sidecar.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 import hashlib
 import json
 import logging
 import os
 import time
+from typing import Any
 import zipfile
 
 import homeassistant.util.dt as dt_util
@@ -32,10 +34,14 @@ from .const import (
     DEFAULT_API_KEY_NAME,
 )
 from .key_mask import fetch, hide_keys
-from .zip_peek import inner_zips_in_file, member_out_of, open_member
+from .zip_peek import _MemberResponse, inner_zips_in_file, member_out_of, open_member
 from .rt_source import with_query_key
 
 _LOGGER = logging.getLogger(__name__)
+
+# what a feed is read from: the host's response, or the member of an
+# envelope zip_peek shapes like one
+type FeedResponse = requests.Response | _MemberResponse
 
 PROBE_UNCHANGED = "unchanged"
 PROBE_CHANGED = "changed"
@@ -43,29 +49,31 @@ PROBE_UNKNOWN = "unknown"
 PROBE_ERROR = "error"
 
 
-def source_request(data):
-    """The url and headers a source's feed is asked with, api key included."""
-    url = data["url"]
+def source_request(data: Mapping[str, Any]) -> tuple[str, dict[str, str]]:
+    """The url and headers a source's feed is asked with, api key included.
+    Every source has a url; one that has none is said, not asked for."""
+    url = with_query_key(data["url"], data)
+    if url is None:
+        raise ValueError(f"source {data.get('file')} has no url to fetch its feed from")
     headers = {"User-Agent": "home-assistant-gtfs2"}
     key = data.get(CONF_API_KEY)
-    url = with_query_key(url, data)
     if key and data.get(CONF_API_KEY_LOCATION) == "header":
         headers[data.get(CONF_API_KEY_NAME) or DEFAULT_API_KEY_NAME] = key
     return url, headers
 
 
-def _comparable(validator):
+def _comparable(validator: str | None) -> str | None:
     """An ETag stripped of its weak marker, so W/"x" and "x" can meet."""
     if validator and validator.startswith("W/"):
         return validator[2:]
     return validator
 
 
-def _same_validator(sent, kept):
+def _same_validator(sent: str | None, kept: str | None) -> bool:
     return bool(sent) and bool(kept) and _comparable(sent) == _comparable(kept)
 
 
-def probe_source(data, zip_path):
+def probe_source(data: Mapping[str, Any], zip_path: str) -> dict[str, str | None]:
     """One cheap question to the host: has the feed changed since this zip?
 
     Returns {"result", "etag", "last_modified"}. The result is "unchanged",
@@ -78,7 +86,7 @@ def probe_source(data, zip_path):
     the caller.
     """
     meta = source_meta(zip_path)
-    conditions = {}
+    conditions: dict[str, str] = {}
     if meta.get("etag"):
         conditions["If-None-Match"] = meta["etag"]
     if meta.get("last_modified"):
@@ -90,9 +98,9 @@ def probe_source(data, zip_path):
         result = PROBE_UNKNOWN if meta.get("sha256") else PROBE_CHANGED
         return {"result": result, "etag": None, "last_modified": None}
 
-    url, headers = source_request(data)
-    headers.update(conditions)
     try:
+        url, headers = source_request(data)
+        headers.update(conditions)
         response = fetch("head", url, headers=headers, allow_redirects=True,
                                  timeout=15)
         if response.status_code in (405, 501):
@@ -124,12 +132,12 @@ def probe_source(data, zip_path):
     return {"result": PROBE_CHANGED, **answer}
 
 
-def probe_source_freshness(data, zip_path):
+def probe_source_freshness(data: Mapping[str, Any], zip_path: str) -> str | None:
     """The probe's verdict alone, for callers with no use for the details."""
     return probe_source(data, zip_path)["result"]
 
 
-def open_source(data, url, headers):
+def open_source(data: Mapping[str, Any], url: str, headers: Mapping[str, str]) -> FeedResponse:
     """The response whose body is this source's feed.
 
     The url's own body, or the member of it the source was built from: one
@@ -148,7 +156,8 @@ def open_source(data, url, headers):
                  stream=True)
 
 
-def download_feed(data, zip_path, envelope_ok=False):
+def download_feed(data: Mapping[str, Any], zip_path: str,
+                  envelope_ok: bool = False) -> tuple[FeedResponse, str] | tuple[None, None]:
     """(response, staged path) of the source's feed, downloaded beside
     zip_path and checked to be a feed (stage_zip); (None, None) when the
     download failed or brought no feed, said in the log, with no part of
@@ -176,7 +185,7 @@ def download_feed(data, zip_path, envelope_ok=False):
     return (response, staged) if staged is not None else (None, None)
 
 
-def fetch_if_new(data, zip_path, adopt=True):
+def fetch_if_new(data: Mapping[str, Any], zip_path: str, adopt: bool = True) -> bool | str | None:
     """Download the feed and keep it only when it really is new.
 
     The hash decides, not the validators: this is the fallback for hosts
@@ -196,7 +205,7 @@ def fetch_if_new(data, zip_path, adopt=True):
     so a line added from the zip meanwhile comes from the same edition.
     """
     response, staged = download_feed(data, zip_path)
-    if staged is None:
+    if response is None or staged is None:
         return None
     # compared once on disk: the body is not in memory to hash beforehand
     meta = source_meta(zip_path)
@@ -218,7 +227,7 @@ def fetch_if_new(data, zip_path, adopt=True):
     return True
 
 
-def _record_validators(response, zip_path, meta):
+def _record_validators(response: FeedResponse, zip_path: str, meta: Mapping[str, Any]) -> None:
     """Keep the validators the host sent for the bytes the zip already holds."""
     fresh = {"etag": response.headers.get("ETag"),
              "last_modified": response.headers.get("Last-Modified")}
@@ -227,7 +236,7 @@ def _record_validators(response, zip_path, meta):
     write_meta(source_meta_path(zip_path), {**meta, **fresh}, "validators", zip_path)
 
 
-def note_checked(zip_path):
+def note_checked(zip_path: str) -> None:
     """Record in the sidecar that the host was asked about this zip, now.
 
     The last look lived in memory only, so after a restart nothing said
@@ -243,19 +252,19 @@ def note_checked(zip_path):
                {**meta, "checked_at": dt_util.utcnow().isoformat()}, "check", zip_path)
 
 
-def file_digest(path):
+def file_digest(path: str) -> tuple[str, int]:
     """The sha256 and the size of a file, read a chunk at a time."""
     with open(path, "rb") as handle:
         digest = hashlib.file_digest(handle, "sha256")
         return digest.hexdigest(), os.fstat(handle.fileno()).st_size
 
 
-def source_meta_path(zip_path):
+def source_meta_path(zip_path: str) -> str:
     """Where the sidecar of a source zip lives: right beside it."""
     return zip_path + ".meta.json"
 
 
-def read_meta(path):
+def read_meta(path: str) -> dict[str, Any]:
     """The record a sidecar holds, or {}.
 
     A sidecar is a cache of derived facts, never primary data: deleting
@@ -270,7 +279,7 @@ def read_meta(path):
         return {}
 
 
-def write_meta(path, meta, what, name):
+def write_meta(path: str, meta: Mapping[str, Any], what: str, name: str) -> None:
     """Write a sidecar; one that cannot be written is said, as the record
     of what (the download, the check...) of name, not raised."""
     try:
@@ -280,7 +289,7 @@ def write_meta(path, meta, what, name):
         _LOGGER.warning("Could not record the %s of %s: %s", what, name, ex)
 
 
-def source_meta(zip_path):
+def source_meta(zip_path: str) -> dict[str, Any]:
     """What the sidecar remembers of the last successful download, or {}."""
     return read_meta(source_meta_path(zip_path))
 
@@ -294,7 +303,7 @@ FEED_DOWNLOAD_DEADLINE = 30 * 60
 _CHUNK = 1024 * 1024
 
 
-def _write_body(response, staged):
+def _write_body(response: FeedResponse, staged: str) -> int | str:
     """Write the body to disk as it comes, never whole in memory.
 
     Returns the byte count, or a sentence saying why the transfer was cut:
@@ -303,10 +312,8 @@ def _write_body(response, staged):
     """
     written = 0
     started = time.monotonic()
-    chunks = (response.iter_content(chunk_size=_CHUNK)
-              if hasattr(response, "iter_content") else [response.content])
     with open(staged, "wb") as out:
-        for chunk in chunks:
+        for chunk in response.iter_content(chunk_size=_CHUNK):
             if not chunk:
                 continue
             written += len(chunk)
@@ -318,7 +325,8 @@ def _write_body(response, staged):
     return written
 
 
-def stage_zip(response, zip_path, inner=None, envelope_ok=False):
+def stage_zip(response: FeedResponse, zip_path: str, inner: str | None = None,
+              envelope_ok: bool = False) -> str | None:
     """Write a downloaded feed beside its target and verify it is a zip.
 
     A moved or renumbered url often keeps answering HTTP 200 with whatever
@@ -377,7 +385,7 @@ def stage_zip(response, zip_path, inner=None, envelope_ok=False):
 _REQUIRED_TABLES = ("routes.txt", "trips.txt", "stop_times.txt")
 
 
-def _missing_tables(path):
+def _missing_tables(path: str) -> list[str]:
     """The required tables a zip lacks, wherever the feed nested them."""
     try:
         with zipfile.ZipFile(path) as zin:
@@ -387,7 +395,7 @@ def _missing_tables(path):
     return [table for table in _REQUIRED_TABLES if table not in names]
 
 
-def adopt_zip(response, staged, zip_path):
+def adopt_zip(response: FeedResponse, staged: str, zip_path: str) -> None:
     """Swap the verified download in and record what it was.
 
     The sidecar keeps the validators the host sent, so the next check can
