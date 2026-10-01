@@ -13,10 +13,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from collections.abc import Callable
 from functools import partial
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
@@ -31,6 +34,7 @@ from .const import (
 )
 from .gtfs_db import (close_schedule, import_routes, on_a_copy, optimise_datasource, real_path,
                       routes_in, scratch_path)
+from .flow_journey import _Step
 from .gtfs_helper import check_datasource_index
 from .notifications import async_notify_import
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
@@ -38,10 +42,14 @@ from .rt_source import source_readers
 from .source_refresh import source_lock
 from .source_zip import build_scratch_database, open_datasource
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
 
 
-def _database_size(gtfs_dir, filename):
+def _database_size(gtfs_dir: str, filename: str) -> str:
     """How big the datasource is right now, as a readable string.
 
     An extraction only ever adds rows, so the file grows steadily and its size
@@ -57,7 +65,7 @@ def _database_size(gtfs_dir, filename):
     return "0 MB"
 
 
-def _scratch_size(gtfs_dir, filename):
+def _scratch_size(gtfs_dir: str, filename: str) -> str:
     """How big the import database has grown, as a readable string.
 
     Only the scratch file: the real datasource is not being written during an
@@ -72,6 +80,26 @@ def _scratch_size(gtfs_dir, filename):
 
 class ReloadScreens:
     """The import screens: which lines to load, the progress, the outcome, and the optimise screen."""
+
+    # what these screens use of the flow they are mixed in (ConfigFlow)
+    hass: HomeAssistant
+    _pygtfs: Schedule | str | None
+    _user_inputs: dict
+    _route_label: str
+    _pending_error: str | None
+    _stops_error: str | None
+    _return_trip: dict | None
+    _extract_size: str
+    _import_job: asyncio.Task | None
+    _import_task: asyncio.Task | None
+    _import_routes: list
+    _import_missing: str
+    async_show_form: Callable[..., FlowResult]
+    async_show_progress: Callable[..., FlowResult]
+    async_show_progress_done: Callable[..., FlowResult]
+    async_abort: Callable[..., FlowResult]
+    async_step_route: _Step
+    async_step_direction: _Step
 
     async def async_step_route_reload_only(self, user_input: dict | None = None) -> FlowResult:
         """The reload screen when no other line is missing.
@@ -119,7 +147,7 @@ class ReloadScreens:
                 # a fresh source has no database to ask yet
                 labels = await self.hass.async_add_executor_job(
                     get_route_labels_from_zip, gtfs_dir, filename, missing)
-            schema = {}
+            schema: dict[vol.Marker, Any] = {}
             if labels:
                 # checkboxes read well for a handful of missing lines; a
                 # national feed leaves thousands, which only a searchable
@@ -165,7 +193,7 @@ class ReloadScreens:
             clean = self._user_inputs.get("clean_feed_info", False)
             routes = list(self._import_routes)
 
-            def _build(scratch_file):
+            def _build(scratch_file: str) -> bool:
                 # the feed is filtered down to the wanted lines before pygtfs
                 # sees it: on a national feed this is what turns the import
                 # from an hour into a minute
@@ -177,16 +205,16 @@ class ReloadScreens:
             # this window, but nobody would hear about it once the flow is
             # abandoned. A background task outlives the flow and reports the
             # outcome, which is what the screen promises.
-            async def _watch():
+            async def _watch(job: asyncio.Task) -> None:
                 try:
-                    added = await self._import_job
+                    added = await job
                 except Exception:  # pylint: disable=broad-except
                     # said by the step when it reads the job; the rider who
                     # closed the window hears it here, as a failed import
                     added = None
                 await async_notify_import(self.hass, filename, routes, added)
 
-            async def _import():
+            async def _import() -> dict[str, int] | None:
                 # behind the source's own lock: a refresh rebuilds the file
                 # beside this one and swaps it in, which would take the lines
                 # added here with it. The wait shows as the progress screen.
@@ -196,7 +224,7 @@ class ReloadScreens:
 
             self._import_job = self.hass.async_create_task(_import())
             self.hass.async_create_background_task(
-                _watch(), name=f"gtfs2 watch import {filename}")
+                _watch(self._import_job), name=f"gtfs2 watch import {filename}")
 
         if not self._import_job.done():
             # Home Assistant redraws a progress screen only when its
