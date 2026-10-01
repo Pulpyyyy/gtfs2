@@ -12,9 +12,11 @@ and removal) and from source_refresh.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 import logging
 
 from homeassistant.components import persistent_notification
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.translation import async_get_translations
 
@@ -23,7 +25,8 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_notify_import(hass, filename, routes, added):
+async def async_notify_import(hass: HomeAssistant, filename: str, routes: Iterable[str],
+                              added: Mapping[str, int] | None) -> None:
     """Report how an import went, for a user who closed the progress window.
 
     The import runs in the executor and reaches its end whatever happens to the
@@ -52,11 +55,12 @@ async def async_notify_import(hass, filename, routes, added):
                         file=filename, lines=lines)
 
 
-def line_orphaned_issue(filename, route):
+def line_orphaned_issue(filename: str, route: str) -> str:
     return f"line_orphaned_{filename}_{route}"
 
 
-async def async_notify_line_orphaned(hass, filename, route, line):
+async def async_notify_line_orphaned(hass: HomeAssistant, filename: str, route: str,
+                                     line: str) -> None:
     """Say that a line's last sensor is gone while its timetable remains.
 
     Raised by the entry removal hook. Deliberately not a prune: the user may
@@ -75,12 +79,13 @@ async def async_notify_line_orphaned(hass, filename, route, line):
         data={"file": filename, "route": route, "line": line})
 
 
-def clear_line_orphaned(hass, filename, route):
+def clear_line_orphaned(hass: HomeAssistant, filename: str, route: str) -> None:
     """A sensor reads the line again: it is no dead weight any more."""
     ir.async_delete_issue(hass, DOMAIN, line_orphaned_issue(filename, route))
 
 
-async def async_notify_lines_missing(hass, filename, routes):
+async def async_notify_lines_missing(hass: HomeAssistant, filename: str,
+                                     routes: Iterable[str]) -> None:
     """Say that a refresh was refused: the new edition lost lines sensors read.
 
     The current timetable stays, so the sensors keep running on it; what
@@ -97,7 +102,8 @@ async def async_notify_lines_missing(hass, filename, routes):
         translation_placeholders={"file": filename, "lines": lines})
 
 
-async def async_notify_refresh(hass, filename, ok, lines_missing=None):
+async def async_notify_refresh(hass: HomeAssistant, filename: str, ok: bool,
+                               lines_missing: Iterable[str] | None = None) -> None:
     """Say how a rebuild of a source ended, when it did not go through.
 
     A refresh started by the nightly check has nobody watching: failed, it
@@ -120,7 +126,8 @@ async def async_notify_refresh(hass, filename, ok, lines_missing=None):
             data={"file": filename})
 
 
-async def _async_notify(hass, key, notification_id, **values):
+async def _async_notify(hass: HomeAssistant, key: str, notification_id: str,
+                        **values: object) -> None:
     """Raise a notification in the user's language.
 
     A notification is read outside any config flow, so it cannot lean on the
@@ -139,7 +146,7 @@ async def _async_notify(hass, key, notification_id, **values):
         notification_id=notification_id)
 
 
-async def _async_text(hass, name, default, **values):
+async def _async_text(hass: HomeAssistant, name: str, default: str, **values: object) -> str:
     """One notification string, in the user's language, placeholders filled."""
     try:
         strings = await async_get_translations(
