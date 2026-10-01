@@ -200,8 +200,7 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         state = probe_state(self.hass, self._file)
         meta = self._installed_meta
         built_at = meta.get("built_at")
-        next_check = next_check_at(self.hass, self._entry,
-                                   fallback_last=meta.get("downloaded_at"))
+        next_check = next_check_at(self.hass, self._entry, self._zip_meta)
         return {
             "file": self._file,
             "last_check": state.get("checked_at"),

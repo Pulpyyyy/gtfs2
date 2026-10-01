@@ -114,9 +114,13 @@ def last_look(hass: HomeAssistant, file):
     survives a restart, then the download itself. Reads a file: for the
     executor.
     """
-    meta = source_meta(source_zip_path(hass, file))
-    last = (probe_state(hass, file).get("checked_at") or meta.get("checked_at")
-            or meta.get("downloaded_at"))
+    return _last_look_in(hass, file, source_meta(source_zip_path(hass, file)))
+
+
+def _last_look_in(hass: HomeAssistant, file, zip_meta):
+    """last_look, the zip's sidecar already read: zip_meta."""
+    last = (probe_state(hass, file).get("checked_at") or zip_meta.get("checked_at")
+            or zip_meta.get("downloaded_at"))
     return dt_util.parse_datetime(last) if last else None
 
 
@@ -161,16 +165,15 @@ def check_hours(interval: int, file) -> tuple[list[int], int, int]:
     return hours, minute, second
 
 
-def next_check_at(hass: HomeAssistant, entry: ConfigEntry,
-                  fallback_last=None):
+def next_check_at(hass: HomeAssistant, entry: ConfigEntry, zip_meta):
     """When the next scheduled look at this source is due, or None.
 
     The tick pattern is check_hours'; for the cadences slower than daily the
     elapsed-time gate of async_check_source decides which of those ticks
     counts, so the same gate is replayed here rather than promising a look
-    that would be skipped. The caller passes the zip's downloaded_at as
-    fallback_last, exactly as the gate falls back on it, because this runs
-    on the loop and must not read a file to find out.
+    that would be skipped. The caller passes the zip's sidecar as zip_meta,
+    the gate's own last look then read from it (_last_look_in), because
+    this runs on the loop and must not read a file to find out.
 
     Indicative to the hour across a DST boundary: the real schedule is
     async_track_time_change's, which handles the fold itself.
@@ -187,8 +190,7 @@ def next_check_at(hass: HomeAssistant, entry: ConfigEntry,
     now = dt_util.now()
     earliest = now
     if interval > 24:
-        last = probe_state(hass, file).get("checked_at") or fallback_last
-        last_dt = dt_util.parse_datetime(last) if last else None
+        last_dt = _last_look_in(hass, file, zip_meta)
         if last_dt:
             earliest = max(
                 now, dt_util.as_local(last_dt + timedelta(hours=interval - 12)))
