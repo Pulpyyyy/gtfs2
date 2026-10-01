@@ -245,6 +245,14 @@ def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_
     return str(result)[:10] if result else None
 
 
+def zone_of(*names: str | None) -> datetime.tzinfo | None:
+    """The zone of the first name given that is not empty: the agency's
+    before a stop's, each caller keeping its own fallback; None when none
+    is given or Home Assistant does not know it."""
+    name = next((name for name in names if name), None)
+    return dt_util.get_time_zone(name) if name else None
+
+
 def agency_zone(schedule: Schedule, route: str | None = None) -> datetime.tzinfo | None:
     """The time zone the feed writes its clocks in: the route's agency's,
     else the first agency that names one; None when the feed names none or
@@ -266,7 +274,7 @@ def agency_zone(schedule: Schedule, route: str | None = None) -> datetime.tzinfo
             name = row[0] if row else None
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.debug("Could not read the agency's zone, using Home Assistant's: %s", ex)
-    return dt_util.get_time_zone(name) if name else None
+    return zone_of(name)
 
 
 def _feed_now(schedule: Schedule, route: str | None = None) -> str:
@@ -552,8 +560,7 @@ def _departure_timetable(rows: Iterable[Mapping[str, Any]], now: datetime.dateti
         # in the network's zone before it is compared: read naive against
         # Home Assistant's clock, a network in another zone lost or kept
         # the wrong hour of departures
-        row_zone_name = row.get("agency_timezone") or row.get("origin_stop_timezone")
-        row_zone = dt_util.get_time_zone(row_zone_name) if row_zone_name else None
+        row_zone = zone_of(row.get("agency_timezone"), row.get("origin_stop_timezone"))
         if row_zone is not None:
             if depart_dt.replace(tzinfo=row_zone) <= now_local_tz:
                 continue
@@ -587,8 +594,8 @@ def _departure_zones(hass: HomeAssistant,
     nothing is said."""
     if hass.config.time_zone is None:
         _LOGGER.error("Timezone is not set in Home Assistant configuration")
-    timezone = dt_util.get_time_zone(
-        item["agency_timezone"] or item["origin_stop_timezone"] or hass.config.time_zone or "UTC")
+    timezone = zone_of(
+        item["agency_timezone"], item["origin_stop_timezone"], hass.config.time_zone, "UTC")
     if item["dest_stop_timezone"] is not None and item["agency_timezone"] is None:
         timezone_dest = dt_util.get_time_zone(item["dest_stop_timezone"])
     else:

@@ -18,7 +18,7 @@ from homeassistant.helpers import entity_registry as er
 from .const import DEFAULT_PATH, id_of
 from .feed_window import last_service_day
 from .gtfs_db import close_schedule, feed_zip
-from .gtfs_helper import _fetch_departure_rows, _row_instant, departure_query_args, get_gtfs, get_next_service_date, journey_data
+from .gtfs_helper import _fetch_departure_rows, _row_instant, departure_query_args, get_gtfs, get_next_service_date, journey_data, zone_of
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -54,9 +54,8 @@ def _route_departures_between(data: Mapping[str, Any], first: str, last: str, li
         seen.add(key)
         # an arrival with no zone of its end is read in the origin's, as
         # the sensor reads it (_departure_zones); Home Assistant's else
-        zone_name = (row.get("agency_timezone") or row.get(stop_zone)
-                     or row.get("origin_stop_timezone"))
-        zone = (dt_util.get_time_zone(zone_name) if zone_name else None) or dt_util.DEFAULT_TIME_ZONE
+        zone = (zone_of(row.get("agency_timezone"), row.get(stop_zone), row.get("origin_stop_timezone"))
+                or dt_util.DEFAULT_TIME_ZONE)
         try:
             instants.append(dt_util.as_utc(_row_instant(row[at], zone)))
         except ValueError:

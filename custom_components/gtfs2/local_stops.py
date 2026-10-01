@@ -24,7 +24,7 @@ from .const import (
     TIME_STR_FORMAT,
 )
 from .gtfs_helper import (_boards, _day_offset, _on_service_day, _removed_on, _row_instant, _runs_on,
-                          check_extracting)
+                          check_extracting, zone_of)
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
 from .rt_feed import FeedEntities, get_gtfs_feed_entities, on_service_day
 
@@ -347,9 +347,8 @@ def _local_row_zones(row: Mapping[str, Any], timezone_local: datetime.tzinfo | N
     """(agency zone, stop zone) a local stop row is read in: the agency's,
     else the stop's, for the first; the stop's for the second; Home
     Assistant's when the feed names none."""
-    agency_zone = row["agency_timezone"] if row["agency_timezone"] is not None else row["stop_timezone"]
-    return (dt_util.get_time_zone(agency_zone) if agency_zone is not None else timezone_local,
-            dt_util.get_time_zone(row["stop_timezone"]) if row["stop_timezone"] is not None else timezone_local)
+    return (zone_of(row["agency_timezone"], row["stop_timezone"]) or timezone_local,
+            zone_of(row["stop_timezone"]) or timezone_local)
 
 
 def _interpret_local_stop_rows(self: GTFSLocalStopUpdateCoordinator,

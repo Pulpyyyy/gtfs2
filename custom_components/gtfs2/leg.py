@@ -19,7 +19,7 @@ import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
 from .geojson import entry_file_part, safe_file_part, write_json_if_changed
-from .gtfs_helper import agency_zone, gtfs_seconds, shown_ends
+from .gtfs_helper import agency_zone, gtfs_seconds, shown_ends, zone_of
 from .places import _call_type
 from .rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, delay_of, stop_relationship, stop_update_clock,
@@ -100,8 +100,7 @@ def _leg_timezone(schedule: Schedule, route_id: str | None, departure: Mapping[s
     zone = agency_zone(schedule, route_id)
     if zone is not None:
         return zone
-    name = departure.get("origin_stop_timezone") or hass.config.time_zone
-    return dt_util.get_time_zone(name) or datetime.timezone.utc
+    return zone_of(departure.get("origin_stop_timezone"), hass.config.time_zone) or datetime.timezone.utc
 
 
 def _listed_trips(departure: Mapping[str, Any]) -> tuple[str | None, list[str], dict[str, str]]:
