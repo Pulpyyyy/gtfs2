@@ -5,11 +5,14 @@ automation that asked. Registered by __init__.setup.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 import datetime
 import logging
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from .const import DEFAULT_PATH, id_of
@@ -17,10 +20,15 @@ from .feed_window import last_service_day
 from .gtfs_db import close_schedule, feed_zip
 from .gtfs_helper import _fetch_departure_rows, _row_instant, departure_query_args, get_gtfs, get_next_service_date, journey_data
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
 
 
-def _route_departures_between(data, first, last, limit=5000, at="origin_depart_dt"):
+def _route_departures_between(data: Mapping[str, Any], first: str, last: str, limit: int = 5000,
+                              at: str = "origin_depart_dt") -> list[datetime.datetime]:
     """Every departure of an entry over two service days, as UTC instants.
 
     The window read the timetable export makes, rather than the sensor's
@@ -56,7 +64,8 @@ def _route_departures_between(data, first, last, limit=5000, at="origin_depart_d
     return sorted(instants)
 
 
-def _route_departure_from(data, first_day, at="origin_depart_dt"):
+def _route_departure_from(data: Mapping[str, Any], first_day: str,
+                          at: str = "origin_depart_dt") -> datetime.datetime | None:
     """The entry's first departure on the service day first_day or after,
     as a UTC instant, or None when the calendar has none in its horizon;
     with at="dest_arrival_dt", that ride's arrival."""
@@ -70,13 +79,13 @@ def _route_departure_from(data, first_day, at="origin_depart_dt"):
     return instants[0] if instants else None
 
 
-async def get_route_departures(hass, data):
+async def get_route_departures(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[str, Any]:
     """The entry's departures today and tomorrow, from from_time on, and
     what lies past them (_route_times)."""
     return await _route_times(hass, data, "origin_depart_dt")
 
 
-async def get_route_arrivals(hass, data):
+async def get_route_arrivals(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[str, Any]:
     """The arrivals at the destination of the entry's rides still to leave,
     today and tomorrow, from from_time on, and what lies past them: the
     departures service read at the other end of the ride. Every arrival
@@ -84,7 +93,7 @@ async def get_route_arrivals(hass, data):
     return await _route_times(hass, data, "dest_arrival_dt")
 
 
-async def _route_times(hass, data, at):
+async def _route_times(hass: HomeAssistant, data: Mapping[str, Any], at: str) -> dict[str, Any]:
     """The entry's rides today and tomorrow, from from_time on, and what
     lies past them, each ride read at `at` (_route_departures_between).
 
@@ -96,7 +105,7 @@ async def _route_times(hass, data, at):
     """
     _LOGGER.debug("Getting route %s with data: %s", at, data)
     config_entry = hass.config_entries.async_get_entry(data.get("config_entry",""))
-    empty = {"today": [], "tomorrow": [], "next": None, "until": None}
+    empty: dict[str, Any] = {"today": [], "tomorrow": [], "next": None, "until": None}
     if config_entry is None:
         # a service call naming an entry that is not there, or not gtfs2's
         _LOGGER.error("No gtfs2 entry %s to read the departures of", data.get("config_entry"))
@@ -172,7 +181,8 @@ async def _route_times(hass, data, at):
     _LOGGER.debug("Route %s returned: %s", at, _departures)
     return _departures
     
-def _trip_stops(schedule, trips, origin_ids):
+def _trip_stops(schedule: Schedule, trips: list[str],
+                origin_ids: list[str]) -> dict[str, list[str]]:
     """The stops each trip calls at from the origin on, "name - HH:MM:SS".
 
     Read in stop_sequence order, one bound parameter per trip. The origin
@@ -192,7 +202,7 @@ def _trip_stops(schedule, trips, origin_ids):
     """  # noqa: S608
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql_stops), {f"t{i}": trip for i, trip in enumerate(trips)}).fetchall()
-    calls = {}
+    calls: dict[str, list[tuple[str, str]]] = {}
     for trip_id, name, time_of_day, stop_id in rows:
         calls.setdefault(str(trip_id), []).append((str(stop_id), f"{name} - {time_of_day}"))
     origins = {str(stop_id) for stop_id in origin_ids}
@@ -207,13 +217,13 @@ def _trip_stops(schedule, trips, origin_ids):
     return stopslist
 
 
-async def get_trip_stops(hass, data):
+async def get_trip_stops(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[str, Any]:
     _LOGGER.debug("Getting stoptimes for trip with: %s", data)
     entity_id = data.get("entity_id", "")
     state = hass.states.get(entity_id)
     entry = er.async_get(hass).async_get(entity_id)
     config_entry = hass.config_entries.async_get_entry(entry.config_entry_id) if entry else None
-    nothing = {"entity": entity_id or "entity-not-found", "origin_station_id": "",
+    nothing: dict[str, Any] = {"entity": entity_id or "entity-not-found", "origin_station_id": "",
                "origin_station_name": "", "trip_stops": {}}
     if state is None or config_entry is None:
         # a service call naming an entity that is not a gtfs2 sensor
