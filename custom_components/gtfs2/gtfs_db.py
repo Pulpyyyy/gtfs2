@@ -47,9 +47,16 @@ Measured on the Orleans feed (43 routes, 82 962 trips):
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Collection, Iterable, Sequence
 import logging
 import os
 import sqlite3
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    # for the annotations only: this module runs without either
+    from homeassistant.core import HomeAssistant
+    from pygtfs import Schedule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,21 +78,23 @@ SHARED_TABLES = ("_feed", "agency", "stops", "calendar", "calendar_dates",
                  "fare_attributes", "fare_rules", "translations")
 
 
-def real_path(gtfs_dir, filename):
+def real_path(gtfs_dir: str, filename: str) -> str:
     """The database the sensors read."""
     return os.path.join(gtfs_dir, filename + ".sqlite")
 
 
-def feed_zip(gtfs_dir, filename):
+def feed_zip(gtfs_dir: str, filename: str) -> str:
     """The feed a source was built from, kept beside its database."""
     return os.path.join(gtfs_dir, filename + ".zip")
 
 
-def file_edition(path):
+def file_edition(path: str | None) -> tuple[int, int, int] | None:
     """Which file stands at path and as what, for a cache kept on it: its
     inode, its last write to the nanosecond, its size; None when there is
     none. A refresh swaps another file in under the same name, which the
     inode tells even when size and time come out the same."""
+    if path is None:
+        return None
     try:
         stat = os.stat(path)
     except (OSError, TypeError, ValueError):
@@ -93,29 +102,29 @@ def file_edition(path):
     return (stat.st_ino, stat.st_mtime_ns, stat.st_size)
 
 
-def staging_name(filename):
+def staging_name(filename: str) -> str:
     """The name a rebuilt database takes until it is swapped in."""
     return filename + ".refresh"
 
 
-def scratch_path(gtfs_dir, filename):
+def scratch_path(gtfs_dir: str, filename: str) -> str:
     """The database an import builds, and which does not outlive it."""
     return os.path.join(gtfs_dir, filename + IMPORT_SUFFIX + ".sqlite")
 
 
-def _tables(cur):
+def _tables(cur: sqlite3.Cursor) -> set[str]:
     return {r[0] for r in cur.execute(
         "select name from sqlite_master where type = 'table'")}
 
 
-def _is_interned(cur):
+def _is_interned(cur: sqlite3.Cursor) -> bool:
     """Whether this database keeps its stop_times interned behind a view."""
     return bool(cur.execute(
         "select 1 from sqlite_master where type = 'view' and name = 'stop_times'"
     ).fetchone())
 
 
-def create_real_from(scratch_file, real_file):
+def create_real_from(scratch_file: str, real_file: str) -> bool:
     """Build an empty real database carrying the scratch one's schema.
 
     Only the schema is taken: the point is a file the sensors can open and
@@ -146,7 +155,7 @@ def create_real_from(scratch_file, real_file):
     return True
 
 
-def remove_files(*paths):
+def remove_files(*paths: str) -> None:
     """Remove each of these files that exists; one that cannot go is said,
     not raised."""
     for path in paths:
@@ -158,7 +167,7 @@ def remove_files(*paths):
                 _LOGGER.warning("Could not remove %s: %s", path, ex)
 
 
-def _drop_side_files(real_file):
+def _drop_side_files(real_file: str) -> None:
     """Remove what SQLite may have left beside a file just swapped out.
 
     Named after the file, not after the data: a journal still there once the
@@ -170,7 +179,7 @@ def _drop_side_files(real_file):
     remove_files(real_file + "-journal", real_file + "-wal", real_file + "-shm")
 
 
-def swap_in(new_file, real_file, timeout=SWAP_TIMEOUT):
+def swap_in(new_file: str, real_file: str, timeout: float = SWAP_TIMEOUT) -> bool:
     """Put a rebuilt database in place of the real one, no writer in between.
 
     A rename is invisible to SQLite: a writer holding a transaction on the
@@ -185,6 +194,7 @@ def swap_in(new_file, real_file, timeout=SWAP_TIMEOUT):
 
     Returns True when the swap happened.
     """
+    conn: sqlite3.Connection | None
     conn = sqlite3.connect(real_file, timeout=timeout)
     try:
         try:
@@ -222,7 +232,7 @@ def swap_in(new_file, real_file, timeout=SWAP_TIMEOUT):
             conn.close()
 
 
-def copy_route(real_file, scratch_file, route_id, shared=True):
+def copy_route(real_file: str, scratch_file: str, route_id: str, shared: bool = True) -> int | None:
     """Copy one route from the scratch database into the real one.
 
     Runs entirely in SQLite, through ATTACH: no round trip through pygtfs and
@@ -329,7 +339,7 @@ def copy_route(real_file, scratch_file, route_id, shared=True):
 
 
 
-def routes_in(db_file):
+def routes_in(db_file: str) -> set[str] | None:
     """The route_ids a database actually carries trips for.
 
     An empty set means the file holds no trip; None means it could not be
@@ -348,7 +358,7 @@ def routes_in(db_file):
         conn.close()
 
 
-def route_name_in(db_file, route_id):
+def route_name_in(db_file: str, route_id: str) -> str | None:
     """The name riders know a route by, its short name, else its long name,
     as the database lists it; None when the file does not say. routes.txt
     is kept whole, so a line with no trip left is still named."""
@@ -366,7 +376,8 @@ def route_name_in(db_file, route_id):
     return next((str(name).strip() for name in row or () if name and str(name).strip()), None)
 
 
-def import_routes(gtfs_dir, filename, route_ids, build_scratch):
+def import_routes(gtfs_dir: str, filename: str, route_ids: Iterable[str],
+                  build_scratch: Callable[[str], object]) -> dict[str, int] | None:
     """Bring routes into the real database, through the scratch one.
 
     The whole point of the two file model lives here: the feed is unpacked into
@@ -398,7 +409,7 @@ def import_routes(gtfs_dir, filename, route_ids, build_scratch):
             return None
         _index_scratch(scratch)
 
-        added = {}
+        added: dict[str, int] = {}
         for position, route_id in enumerate(route_ids):
             count = copy_route(real, scratch, route_id, shared=position == 0)
             if count is None:
@@ -417,7 +428,7 @@ def import_routes(gtfs_dir, filename, route_ids, build_scratch):
         discard_scratch(gtfs_dir, filename)
 
 
-def _index_scratch(scratch_file):
+def _index_scratch(scratch_file: str) -> None:
     """Index the scratch database for the copy, which reads it by route.
 
     pygtfs keys stop_times on (feed_id, trip_id, stop_sequence) and leaves
@@ -438,7 +449,7 @@ def _index_scratch(scratch_file):
         conn.close()
 
 
-def discard_scratch(gtfs_dir, filename):
+def discard_scratch(gtfs_dir: str, filename: str) -> None:
     """Delete the scratch database and whatever SQLite left beside it.
 
     Called when an import ends, whether it worked or not: the real database is
@@ -475,7 +486,8 @@ _ORPHAN_SERVICE = """not exists (
     where s.feed_id = {table}.{feed_col} and s.service_id = {table}.service_id)"""
 
 
-def on_a_copy(gtfs_dir, filename, work, *args, done=bool):
+def on_a_copy[T](gtfs_dir: str, filename: str, work: Callable[..., T], *args: object,
+                 done: Callable[[T], object] = bool) -> T | None:
     """Run a rewrite of a datasource on a copy of it, then swap the copy in.
 
     Prune and intern delete rows by the million and VACUUM, and on the live
@@ -522,7 +534,8 @@ def on_a_copy(gtfs_dir, filename, work, *args, done=bool):
     return result
 
 
-def optimise_datasource(gtfs_dir, filename, keep_routes=None):
+def optimise_datasource(gtfs_dir: str, filename: str,
+                        keep_routes: Collection[str] | None = None) -> dict[str, dict[str, Any] | None]:
     """Shrink a datasource: drop what is not followed, then intern the rest.
 
     Two steps that only make sense together, and in this order. Pruning first
@@ -539,7 +552,7 @@ def optimise_datasource(gtfs_dir, filename, keep_routes=None):
 
     Returns {"pruned": stats or None, "interned": stats or None}.
     """
-    out = {"pruned": None, "interned": None}
+    out: dict[str, dict[str, Any] | None] = {"pruned": None, "interned": None}
     if keep_routes:
         out["pruned"] = prune_gtfs_datasource(gtfs_dir, filename, keep_routes)
     out["interned"] = intern_gtfs_datasource(gtfs_dir, filename)
@@ -549,7 +562,8 @@ def optimise_datasource(gtfs_dir, filename, keep_routes=None):
     return out
 
 
-def prune_gtfs_datasource(gtfs_dir, filename, keep_routes, dry_run=False):
+def prune_gtfs_datasource(gtfs_dir: str, filename: str, keep_routes: Collection[str],
+                          dry_run: bool = False) -> dict[str, Any] | None:
     """Trim a datasource down to the routes actually in use.
 
     pygtfs loads the complete feed, so a datasource holds every route of the
@@ -594,7 +608,7 @@ def prune_gtfs_datasource(gtfs_dir, filename, keep_routes, dry_run=False):
                           filename, keep_routes)
             return None
 
-        stats = {"file": filename, "routes": sorted(keep_routes), "dry_run": dry_run,
+        stats: dict[str, Any] = {"file": filename, "routes": sorted(keep_routes), "dry_run": dry_run,
                  "trips_before": total_trips, "trips_after": kept_trips,
                  "size_before_mb": round(size_before / 1048576, 1)}
         _prune_dependents(cur, filename, dry_run, stats)
@@ -625,7 +639,7 @@ def prune_gtfs_datasource(gtfs_dir, filename, keep_routes, dry_run=False):
     return stats
 
 
-def _collect_keep(cur, filename, keep_routes):
+def _collect_keep(cur: sqlite3.Cursor, filename: str, keep_routes: Collection[str]) -> tuple[int, int]:
     """Fill the temp tables gtfs2_keep, the trips of keep_routes, and
     gtfs2_keep_services, the services they run on. Returns (trips kept,
     trips in the datasource)."""
@@ -657,7 +671,7 @@ def _collect_keep(cur, filename, keep_routes):
     return kept_trips, total_trips
 
 
-def _prune_dependents(cur, filename, dry_run, stats):
+def _prune_dependents(cur: sqlite3.Cursor, filename: str, dry_run: bool, stats: dict[str, Any]) -> None:
     """Keep, of each table hanging off a trip or a service, the rows of the
     kept ones (only count them on a dry run), their counts put in stats."""
     for table, feed_col in PRUNE_TRIP_DEPENDENTS:
@@ -678,7 +692,7 @@ def _prune_dependents(cur, filename, dry_run, stats):
             dry_run)
 
 
-def _prune_interned(cur, dry_run, stats):
+def _prune_interned(cur: sqlite3.Cursor, dry_run: bool, stats: dict[str, Any]) -> None:
     """The same for an interned datasource's stop_times and key tables.
 
     An interned datasource keeps its stop_times in gtfs2_stop_times, keyed
@@ -700,7 +714,7 @@ def _prune_interned(cur, dry_run, stats):
                       "src.sk in (select sk from gtfs2_stop_times)")
 
 
-def _keep_rows(cur, table, keep_where, dry_run):
+def _keep_rows(cur: sqlite3.Cursor, table: str, keep_where: str, dry_run: bool) -> tuple[int, int]:
     """(rows before, rows after) of a table keeping the rows keep_where
     accepts, aliased as src: kept by _rebuild_keep, or only counted on a
     dry run, the same condition either way."""
@@ -714,7 +728,7 @@ def _keep_rows(cur, table, keep_where, dry_run):
     return before, after
 
 
-def _rebuild_keep(cur, table, keep_where, params=()):
+def _rebuild_keep(cur: sqlite3.Cursor, table: str, keep_where: str, params: Sequence[object] = ()) -> None:
     """Rebuild a table with only the rows keep_where accepts, aliased as src.
 
     A prune drops almost every row of the big tables, and a DELETE pays for
@@ -753,7 +767,7 @@ def _rebuild_keep(cur, table, keep_where, params=()):
         cur.execute(sql)
 
 
-def _table_has_columns(cur, table, *columns):
+def _table_has_columns(cur: sqlite3.Cursor, table: str, *columns: str) -> bool:
     """Return True when a real table exists and carries every one of columns.
 
     Views are rejected on purpose: pragma table_info answers for them too, so
@@ -771,7 +785,7 @@ def _table_has_columns(cur, table, *columns):
     return bool(present) and set(columns) <= present
 
 
-def intern_gtfs_datasource(gtfs_dir, filename, dry_run=False):
+def intern_gtfs_datasource(gtfs_dir: str, filename: str, dry_run: bool = False) -> dict[str, Any] | None:
     """Replace the repeated trip_id/stop_id strings of stop_times by integer keys.
 
     GTFS sources routinely emit very long identifiers - 75 characters is common
@@ -822,7 +836,7 @@ def intern_gtfs_datasource(gtfs_dir, filename, dry_run=False):
                           "several feeds", filename, rows, unique)
             return None
 
-        stats = {"file": filename, "dry_run": dry_run, "rows": rows,
+        stats: dict[str, Any] = {"file": filename, "dry_run": dry_run, "rows": rows,
                  "size_before_mb": round(size_before / 1048576, 1),
                  "trip_ids": cur.execute("select count(distinct trip_id) from stop_times").fetchone()[0],
                  "stop_ids": cur.execute("select count(distinct stop_id) from stop_times").fetchone()[0]}
@@ -892,7 +906,7 @@ def intern_gtfs_datasource(gtfs_dir, filename, dry_run=False):
     return stats
 
 
-def _column_type(cur, table, column):
+def _column_type(cur: sqlite3.Cursor, table: str, column: str) -> str:
     """Return the declared type of a column, defaulting to no affinity."""
     for row in cur.execute(f"pragma table_info({table})"):
         if row[1] == column:
@@ -906,12 +920,12 @@ def _column_type(cur, table, column):
 _WORK_FILE_PARTS = (".refresh", ".import")
 
 
-def _list_gtfs_dir(gtfs_dir):
+def _list_gtfs_dir(gtfs_dir: str) -> list[str]:
     os.makedirs(gtfs_dir, exist_ok=True)
     return os.listdir(gtfs_dir)
 
 
-async def get_datasources(hass, path) -> dict[str]:
+async def get_datasources(hass: HomeAssistant, path: str) -> list[str]:
     """The datasources in the gtfs2 folder, by name.
 
     The whole name before ".sqlite": cut at the first dot, a name holding
@@ -930,7 +944,7 @@ async def get_datasources(hass, path) -> dict[str]:
     return datasources
 
 
-async def get_zipfiles(hass, path) -> list[str]:
+async def get_zipfiles(hass: HomeAssistant, path: str) -> list[str]:
     """List the zip files sitting in the gtfs2 folder, without their extension.
 
     get_datasources lists datasources that were already extracted (.sqlite);
@@ -950,7 +964,7 @@ async def get_zipfiles(hass, path) -> list[str]:
     return zipfiles
 
 
-def remove_datasource(hass, path, filename, include_sqlite):
+def remove_datasource(hass: HomeAssistant, path: str, filename: str, include_sqlite: bool) -> str:
     """Remove the files of a datasource."""
     gtfs_dir = hass.config.path(path)
     _LOGGER.info(f"Removing datasource: {os.path.join(gtfs_dir, filename)}.*")
@@ -976,7 +990,7 @@ def remove_datasource(hass, path, filename, include_sqlite):
     return "removed"
 
 
-def close_schedule(schedule) -> None:
+def close_schedule(schedule: Schedule | None) -> None:
     """Let a schedule go: its session, then its engine's connections."""
     if schedule and hasattr(schedule, "session"):
         try:
