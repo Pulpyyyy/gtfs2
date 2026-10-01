@@ -878,15 +878,20 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
 
 
     for entity in feed_entities:
+        journey = entity['MonitoredVehicleJourney']
+        call = journey['MonitoredCall']
+        trip_id = journey['FramedVehicleJourneyRef']['DatedVehicleJourneyRef']
+        # expected when the host knows it, aimed otherwise
+        departs = datetime.fromisoformat(call.get('ExpectedDepartureTime', call.get('AimedDepartureTime'))).timestamp()
         entity_dict = {
-            "id": entity['MonitoredVehicleJourney']['FramedVehicleJourneyRef']['DatedVehicleJourneyRef'],
+            "id": trip_id,
             "trip_update": {
                 "trip": {
-                    "trip_id": entity['MonitoredVehicleJourney']['FramedVehicleJourneyRef']['DatedVehicleJourneyRef'],
-                    "start_time": datetime.fromisoformat(entity['MonitoredVehicleJourney']['MonitoredCall'].get('ExpectedDepartureTime',entity['MonitoredVehicleJourney']['MonitoredCall'].get('AimedDepartureTime',None))).timestamp(),
-                    "start_date": datetime.fromisoformat(entity['MonitoredVehicleJourney']['MonitoredCall'].get('ExpectedDepartureTime',entity['MonitoredVehicleJourney']['MonitoredCall'].get('AimedDepartureTime',None))).timestamp(),
-                    "route_id": entity['MonitoredVehicleJourney']['LineRef'],
-                    "direction_id": str(entity['MonitoredVehicleJourney']['DirectionRef'])
+                    "trip_id": trip_id,
+                    "start_time": departs,
+                    "start_date": departs,
+                    "route_id": journey['LineRef'],
+                    "direction_id": str(journey['DirectionRef'])
                 },
                 "stop_time_update": [{
                     "stop_sequence": "n.a",
@@ -896,11 +901,11 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
                         # ExpectedArrivalTime, the real one: spelt without
                         # its "a" this never matched, so every arrival was
                         # read as the timetable's and no delay ever showed
-                        "time": datetime.fromisoformat(entity['MonitoredVehicleJourney']['MonitoredCall'].get('ExpectedArrivalTime',entity['MonitoredVehicleJourney']['MonitoredCall'].get('AimedArrivalTime',None))).timestamp()
+                        "time": datetime.fromisoformat(call.get('ExpectedArrivalTime', call.get('AimedArrivalTime'))).timestamp()
                     },
                     "departure": {
                         "delay": '',
-                        "time": datetime.fromisoformat(entity['MonitoredVehicleJourney']['MonitoredCall'].get('ExpectedDepartureTime',entity['MonitoredVehicleJourney']['MonitoredCall'].get('AimedDepartureTime',None))).timestamp()
+                        "time": departs
                     }
                 }]
             }
