@@ -11,9 +11,11 @@ source_refresh.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 import gc
 import logging
 import os
+from typing import TYPE_CHECKING, Any
 import zipfile
 
 import pygtfs
@@ -28,11 +30,16 @@ from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes
                           zip_only_future_dates)
 from .gtfs_helper import IMPORT_IGNORED, drop_import_indexes
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from homeassistant.core import HomeAssistant
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
 
 
-def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
-                           only_routes=None):
+def build_scratch_database(gtfs_dir: str, file: str, scratch_file: str, clean_feed_info: bool = False,
+                           only_routes: Iterable[str] | None = None) -> bool:
     """Unpack a zip into the scratch database, synchronously.
 
     The counterpart of extract_from_zip, minus the fork: the caller is already
@@ -66,7 +73,7 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
         else:
             _LOGGER.warning(
                 "Could not filter %s, importing the whole feed instead", file)
-    ignored = ()
+    ignored: tuple[str, ...] = ()
     if filtered is None:
         # the whole feed, read from the kept zip itself: pygtfs skips what
         # the filter would have left out, and the zip stays as it came
@@ -104,7 +111,7 @@ def build_scratch_database(gtfs_dir, file, scratch_file, clean_feed_info=False,
     return ok
 
 
-def _offer_or_take(data, zip_path):
+def _offer_or_take(data: dict[str, Any], zip_path: str) -> str | None:
     """Handle a zip on disk that holds zips: offer its networks, or take one.
 
     Returns an error code for the flow, or None when the file is usable as
@@ -128,7 +135,7 @@ def _offer_or_take(data, zip_path):
     return None
 
 
-def _holds_a_feed(zip_path):
+def _holds_a_feed(zip_path: str) -> str | None:
     """None when the zip is a GTFS feed, else why it cannot be one.
 
     Some publishers answer a perfectly valid zip that holds other zips:
@@ -153,7 +160,7 @@ def _holds_a_feed(zip_path):
     return "no_data_file"
 
 
-def ensure_source_zip(hass, path, data):
+def ensure_source_zip(hass: HomeAssistant, path: str, data: dict[str, Any]) -> str | None:
     """Make sure the source zip is in place, without starting any import.
 
     The front half of get_gtfs: same checks, same download, same error codes,
@@ -191,7 +198,7 @@ def ensure_source_zip(hass, path, data):
     return _offer_or_take(data, zip_path) or _holds_a_feed(zip_path)
 
 
-def open_datasource(gtfs_dir, filename):
+def open_datasource(gtfs_dir: str, filename: str) -> Schedule | None:
     """Open a datasource that is known to exist, with no extracting gate.
 
     get_gtfs refuses to answer while anything writes to the file, because a
@@ -211,7 +218,7 @@ def open_datasource(gtfs_dir, filename):
     return pygtfs.Schedule(f"{sqlite_file}?check_same_thread=False&timeout=60")
 
 
-def _stale_staging_gone(new_real, filename):
+def _stale_staging_gone(new_real: str, filename: str) -> bool:
     """Clear the new database an earlier refresh left, before building one.
 
     Left by a crash or a restart mid-refresh. One that cannot go, held
@@ -230,7 +237,8 @@ def _stale_staging_gone(new_real, filename):
     return True
 
 
-def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
+def _refresh_whole_feed(gtfs_dir: str, filename: str, zip_name: str, zip_path: str,
+                        data: dict[str, Any]) -> dict[str, None] | bool:
     """Rebuild a source some sensor reads whole: every line of the new edition.
 
     A train or a local stops sensor matches across the whole feed, so its
@@ -243,7 +251,7 @@ def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
     database itself, no copy between two. Swapped in the same way as the
     route by route one.
     """
-    routes = sorted({row["route_id"] for row in read_zip_routes(zip_path)})
+    routes = sorted({row["route_id"] for row in read_zip_routes(zip_path) if row["route_id"]})
     if not routes:
         _LOGGER.error("Refresh of %s aborted, the new edition names no line, "
                       "the current data stays", filename)
@@ -287,7 +295,7 @@ def _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data):
     return {route: None for route in sorted(loaded)}
 
 
-def _fetch_zip(data, zip_path, envelope_ok=False):
+def _fetch_zip(data: Mapping[str, Any], zip_path: str, envelope_ok: bool = False) -> bool:
     """Download a source's feed into zip_path, for its creation or a refresh.
 
     Downloaded beside the current zip and swapped in only once complete
@@ -299,7 +307,7 @@ def _fetch_zip(data, zip_path, envelope_ok=False):
     a copy of this of its own, and left one when a download broke off.
     """
     response, staged = download_feed(data, zip_path, envelope_ok)
-    if staged is None:
+    if response is None or staged is None:
         return False
     try:
         adopt_zip(response, staged, zip_path)
@@ -310,7 +318,8 @@ def _fetch_zip(data, zip_path, envelope_ok=False):
     return True
 
 
-def _refresh_route_by_route(gtfs_dir, filename, zip_name, routes, data):
+def _refresh_route_by_route(gtfs_dir: str, filename: str, zip_name: str, routes: list[str],
+                            data: dict[str, Any]) -> dict[str, int] | bool:
     """Rebuild a source line by line: the routes its database follows now.
 
     The fresh feed is filtered down to those routes, unpacked into the
@@ -324,7 +333,7 @@ def _refresh_route_by_route(gtfs_dir, filename, zip_name, routes, data):
     staging = staging_name(filename)
     new_real = real_path(gtfs_dir, staging)
 
-    def _build(scratch_file):
+    def _build(scratch_file: str) -> bool:
         return build_scratch_database(
             gtfs_dir, zip_name, scratch_file,
             data.get("clean_feed_info", False), only_routes=routes)
@@ -362,7 +371,8 @@ def _refresh_route_by_route(gtfs_dir, filename, zip_name, routes, data):
     return added
 
 
-def refresh_datasource(hass, path, data):
+def refresh_datasource(hass: HomeAssistant, path: str,
+                       data: dict[str, Any]) -> dict[str, int] | dict[str, None] | bool:
     """Refresh a datasource from its source, keeping the sensors served.
 
     The legacy update rebuilt the real database in place: on a large feed
