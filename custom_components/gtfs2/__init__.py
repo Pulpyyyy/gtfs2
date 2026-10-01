@@ -216,9 +216,8 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
         # the line is still read (a return sensor, often), or the datasource
         # must stay whole for a local stops entry
         return
-    gtfs_dir = hass.config.path(DEFAULT_PATH)
-    loaded = await hass.async_add_executor_job(
-        routes_in, real_path(gtfs_dir, filename))
+    database = real_path(hass.config.path(DEFAULT_PATH), filename)
+    loaded = await hass.async_add_executor_job(routes_in, database)
     if not loaded or route not in loaded:
         # the timetable is already gone, or the database would not say:
         # either way there is nothing worth saying
@@ -227,7 +226,7 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
     # names it as riders do, by the name the database lists for it; an
     # older entry wrote its label after the id
     label = await hass.async_add_executor_job(
-        route_name_in, real_path(gtfs_dir, filename), route)
+        route_name_in, database, route)
     label = label or (entry.data.get("route") or "").split(": ", 1)[-1]
     await async_notify_line_orphaned(hass, filename, route, label or route)
      
