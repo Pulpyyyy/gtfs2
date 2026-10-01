@@ -14,6 +14,7 @@ from pathlib import Path
 import feed_db
 import ha_stub
 
+freshness = ha_stub.load("freshness")
 source_zip = ha_stub.load("source_zip")
 
 FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "boarding" / "static.zip"
@@ -123,7 +124,7 @@ def test_a_url_source_with_no_database_comes_in_with_its_download(tmp_path, monk
     gtfs_dir.mkdir()
     (gtfs_dir / "src.zip").write_bytes(b"an older edition")
     feed = FEED.read_bytes()
-    monkeypatch.setattr(source_zip, "open_source", lambda data, url, headers: _Download(feed))
+    monkeypatch.setattr(freshness, "open_source", lambda data, url, headers: _Download(feed))
     hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(gtfs_dir)))
     got = source_zip.refresh_datasource(hass, "gtfs2", {"file": "src", "url": "https://h/src.zip",
                                                          "extract_from": "url"})

@@ -148,6 +148,34 @@ def open_source(data, url, headers):
                  stream=True)
 
 
+def download_feed(data, zip_path, envelope_ok=False):
+    """(response, staged path) of the source's feed, downloaded beside
+    zip_path and checked to be a feed (stage_zip); (None, None) when the
+    download failed or brought no feed, said in the log, with no part of
+    it left beside the zip."""
+    try:
+        url, headers = source_request(data)
+        response = open_source(data, url, headers)
+        response.raise_for_status()
+        # a body cut off half way fails here, as a host that does not answer
+        staged = stage_zip(response, zip_path, data.get(CONF_INNER_ZIP),
+                           envelope_ok=envelope_ok)
+    except Exception as ex:  # pylint: disable=broad-except
+        # a host that does not answer, at every check it fails: one line
+        # says it, the stack deep in requests adds nothing; an error of our
+        # own keeps its stack
+        log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
+        log("Could not download %s: %s", data.get("url"), ex)
+        fresh = zip_path + ".new"
+        if os.path.exists(fresh):
+            try:
+                os.remove(fresh)
+            except OSError:
+                pass
+        return None, None
+    return (response, staged) if staged is not None else (None, None)
+
+
 def fetch_if_new(data, zip_path, adopt=True):
     """Download the feed and keep it only when it really is new.
 
@@ -167,26 +195,7 @@ def fetch_if_new(data, zip_path, adopt=True):
     source that only notifies keeps the zip its database was built from,
     so a line added from the zip meanwhile comes from the same edition.
     """
-    url, headers = source_request(data)
-    inner = data.get(CONF_INNER_ZIP)
-    try:
-        response = open_source(data, url, headers)
-        response.raise_for_status()
-        # a body cut off half way fails here, as a host that does not answer
-        staged = stage_zip(response, zip_path, inner)
-    except Exception as ex:  # pylint: disable=broad-except
-        # a host that does not answer, at every check it fails: one line
-        # says it, the stack deep in requests adds nothing; an error of our
-        # own keeps its stack
-        log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
-        log("Could not download %s: %s", data.get("url"), ex)
-        fresh = zip_path + ".new"
-        if os.path.exists(fresh):
-            try:
-                os.remove(fresh)
-            except OSError:
-                pass
-        return None
+    response, staged = download_feed(data, zip_path)
     if staged is None:
         return None
     # compared once on disk: the body is not in memory to hash beforehand

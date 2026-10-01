@@ -17,11 +17,10 @@ import os
 import zipfile
 
 import pygtfs
-import requests
 
 from .const import CONF_INNER_ZIP
 from .direction_repair import repair_trip_directions
-from .freshness import adopt_zip, open_source, source_request, stage_zip
+from .freshness import adopt_zip, download_feed, source_request
 from .gtfs_db import (feed_zip, import_routes, optimise_datasource, real_path, remove_files,
                       routes_in, staging_name, swap_in)
 from .zip_peek import extract_member, inner_zips, inner_zips_in_file
@@ -299,19 +298,13 @@ def _fetch_zip(data, zip_path, envelope_ok=False):
     as it was and no half-written copy left: the creation of a source had
     a copy of this of its own, and left one when a download broke off.
     """
+    response, staged = download_feed(data, zip_path, envelope_ok)
+    if staged is None:
+        return False
     try:
-        url, headers = source_request(data)
-        r = open_source(data, url, headers)
-        r.raise_for_status()
-        staged = stage_zip(r, zip_path, data.get(CONF_INNER_ZIP), envelope_ok=envelope_ok)
-        if staged is None:
-            return False
-        adopt_zip(r, staged, zip_path)
+        adopt_zip(response, staged, zip_path)
     except Exception as ex:  # pylint: disable=broad-except
-        # a host that does not answer says so in one line; the stack is
-        # kept for anything else, an error of our own
-        log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
-        log("Could not download %s: %s", data.get("url"), ex)
+        _LOGGER.exception("Could not keep the download of %s: %s", data.get("url"), ex)
         remove_files(zip_path + ".new")
         return False
     return True

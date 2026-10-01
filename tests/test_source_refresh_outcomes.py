@@ -23,6 +23,7 @@ import requests
 import feed_db
 import ha_stub
 
+freshness = ha_stub.load("freshness")
 source_zip = ha_stub.load("source_zip")
 
 FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "boarding" / "static.zip"
@@ -237,7 +238,7 @@ def test_a_database_that_does_not_answer_is_left_alone(tmp_path, monkeypatch):
     conn.commit()
     conn.close()
     asked = []
-    monkeypatch.setattr(source_zip, "open_source", lambda *a: asked.append(a))
+    monkeypatch.setattr(freshness, "open_source", lambda *a: asked.append(a))
     assert _refresh(gtfs_dir, extract_from="url", url="https://h/src.zip") is False
     # not even downloaded: the host is not asked for a feed nothing can take
     assert asked == []
@@ -278,7 +279,7 @@ def _download_fails(tmp_path, monkeypatch, caplog, error):
     def fail(data, url, headers):
         raise error
 
-    monkeypatch.setattr(source_zip, "open_source", fail)
+    monkeypatch.setattr(freshness, "open_source", fail)
     with caplog.at_level(logging.ERROR, logger=source_zip.__name__):
         got = _refresh(gtfs_dir, extract_from="url", url="https://h/src.zip")
     assert got is False
@@ -323,7 +324,7 @@ def test_a_source_created_on_a_download_that_breaks_off_leaves_nothing(tmp_path,
     # refresh; its own copy of it left the half-written .new behind
     gtfs_dir = tmp_path / "gtfs2"
     monkeypatch.setattr(source_zip, "inner_zips", lambda url, headers: [])
-    monkeypatch.setattr(source_zip, "open_source", lambda data, url, headers: _BrokenOff())
+    monkeypatch.setattr(freshness, "open_source", lambda data, url, headers: _BrokenOff())
     data = {"file": "src", "extract_from": "url", "url": "https://h/src.zip", source_zip.CONF_INNER_ZIP: None}
     with caplog.at_level(logging.ERROR, logger=source_zip.__name__):
         assert source_zip.ensure_source_zip(_hass(gtfs_dir), "gtfs2", data) == "no_data_file"
@@ -337,7 +338,7 @@ def test_an_error_status_is_a_failed_download(tmp_path, monkeypatch):
     def refused():
         raise requests.HTTPError("403 Forbidden")
 
-    monkeypatch.setattr(source_zip, "open_source", lambda data, url, headers:
+    monkeypatch.setattr(freshness, "open_source", lambda data, url, headers:
                         types.SimpleNamespace(raise_for_status=refused))
     assert _refresh(gtfs_dir, extract_from="url", url="https://h/src.zip") is False
     assert _routes(gtfs_dir / "src.sqlite") == ["B1"]
@@ -393,7 +394,7 @@ def test_a_partial_download_that_cannot_go_is_left(tmp_path, monkeypatch):
     def fail(data, url, headers):
         raise requests.ConnectionError("no route to host")
 
-    monkeypatch.setattr(source_zip, "open_source", fail)
+    monkeypatch.setattr(freshness, "open_source", fail)
     assert _refresh(gtfs_dir, extract_from="url", url="https://h/src.zip") is False
 
 

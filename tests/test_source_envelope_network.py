@@ -17,6 +17,7 @@ from pathlib import Path
 import ha_stub
 
 rt_source = ha_stub.load("rt_source")
+freshness = ha_stub.load("freshness")
 source_zip = ha_stub.load("source_zip")
 
 
@@ -59,10 +60,10 @@ def test_the_refresh_download_takes_the_member_out(tmp_path, monkeypatch):
     gtfs_dir.mkdir()
     staged_with = []
     monkeypatch.setattr(source_zip, "routes_in", lambda path: {"R1"})
-    monkeypatch.setattr(source_zip, "open_source",
+    monkeypatch.setattr(freshness, "open_source",
                         lambda data, url, headers: types.SimpleNamespace(raise_for_status=lambda: None))
     # a refresh never keeps an envelope: the source already named its network
-    monkeypatch.setattr(source_zip, "stage_zip",
+    monkeypatch.setattr(freshness, "stage_zip",
                         lambda response, path, inner=None, envelope_ok=False:
                         staged_with.append(inner) if not envelope_ok else None)
     hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
@@ -109,7 +110,7 @@ class _Whole:
 def test_a_host_without_ranges_still_offers_the_networks(tmp_path, monkeypatch):
     body = _envelope(tmp_path / "envelope.zip").read_bytes()
     monkeypatch.setattr(source_zip, "inner_zips", lambda url, headers: [])
-    monkeypatch.setattr(source_zip, "open_source", lambda data, url, headers: _Whole(body))
+    monkeypatch.setattr(freshness, "open_source", lambda data, url, headers: _Whole(body))
     hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
     data = {"file": "septa", "url": "https://h/gtfs_public.zip", "extract_from": "url"}
     assert source_zip.ensure_source_zip(hass, "gtfs2", data) == "zip_holds_zips"
