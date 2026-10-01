@@ -58,10 +58,12 @@ from .freshness import (
     fetch_if_new,
     note_checked,
     probe_source,
+    read_meta,
+    source_meta,
+    write_meta,
 )
 from .gtfs_db import feed_zip, real_path
 from .source_zip import refresh_datasource
-from .freshness import read_meta, source_meta, write_meta
 from .notifications import async_notify_refresh
 from .rt_source import journey_entries, source_readers, static_feed_config
 
@@ -286,7 +288,7 @@ def refresh_source(hass: HomeAssistant, path, data) -> bool:
     result = refresh_datasource(hass, path, data)
     if not isinstance(result, dict):
         return False
-    _record_installed(hass, data.get(CONF_FILE) or data.get("file"))
+    _record_installed(hass, data.get(CONF_FILE))
     return True
 
 
