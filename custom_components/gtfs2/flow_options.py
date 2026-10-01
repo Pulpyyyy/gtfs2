@@ -12,10 +12,13 @@ menu's way to them, which names the source and saves it its own way
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Mapping
 from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
@@ -45,12 +48,21 @@ _LOGGER = logging.getLogger(__name__)
 class OptionsScreens:
     """The datasource options: menu, realtime key, static refresh and its key."""
 
-    def _source(self):
+    # what these screens use of the flow they are mixed in
+    # (GTFSOptionsFlowHandler, ConfigFlow)
+    hass: HomeAssistant
+    config_entry: ConfigEntry
+    _user_inputs: dict
+    async_show_form: Callable[..., FlowResult]
+    async_show_menu: Callable[..., FlowResult]
+    async_create_entry: Callable[..., FlowResult]
+
+    def _source(self) -> ConfigEntry:
         """The datasource entry these screens set: here, the one whose
         options are open."""
         return self.config_entry
 
-    def _save_source(self, options) -> FlowResult:
+    def _save_source(self, options: dict[str, Any]) -> FlowResult:
         """Keep the source's new options: an options flow stores the ones
         it returns, and the entry's listeners follow."""
         return self.async_create_entry(title="", data=options)
@@ -206,7 +218,7 @@ class OptionsScreens:
         return self._finish_static_refresh(_typed_key(
             user_input, static_feed_config(self.hass, self._source())))
 
-    def _finish_static_refresh(self, key_fields) -> FlowResult:
+    def _finish_static_refresh(self, key_fields: Mapping[str, Any]) -> FlowResult:
         """Store what the static feed screens collected.
 
         The address and the key go on the datasource entry's data, the
