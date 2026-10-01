@@ -30,11 +30,21 @@ other holds no majority to recover a sense from, and is logged.
 
 import logging
 from collections import defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from itertools import groupby
+from typing import TYPE_CHECKING, Any, Literal
 
 from sqlalchemy.sql import text
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
+
+# the trips of one direction, by the stations they call at in riding
+# order; a direction is the direction_id pygtfs stores, 0 or 1
+type _Patterns = dict[tuple[str, ...], list[str]]
 
 # a trip is judged only on stops it shares with a canonical chain: at least
 # 4 of them (or the whole trip when shorter), at least 30 percent of the
@@ -55,7 +65,7 @@ MAX_PASSES = 4
 CANONICAL_LENGTH_RATIO = 0.9
 
 
-def _canonical(patterns):
+def _canonical(patterns: _Patterns) -> tuple[str, ...]:
     """The stop pattern the route is ridden along: among the patterns nearly
     as long as the longest, the one most trips follow.
 
@@ -71,7 +81,7 @@ def _canonical(patterns):
     )
 
 
-def _fit(seq, pos):
+def _fit(seq: Sequence[str], pos: Mapping[str, int]) -> tuple[int, float]:
     """(shared stops, monotonicity) of a trip against a chain's positions."""
     hits = [pos[s] for s in seq if s in pos]
     if len(hits) < 2:
@@ -80,7 +90,7 @@ def _fit(seq, pos):
     return len(hits), inc / (len(hits) - 1)
 
 
-def _fits(seq, pos):
+def _fits(seq: Sequence[str], pos: Mapping[str, int]) -> bool:
     hits, monotony = _fit(seq, pos)
     return (
         hits >= min(MIN_SHARED, len(seq))
@@ -89,7 +99,7 @@ def _fits(seq, pos):
     )
 
 
-def _same_order(chain_a, chain_b):
+def _same_order(chain_a: Sequence[str], chain_b: Sequence[str]) -> bool:
     """Whether two canonical chains mostly share their stops, in one order."""
     pos_b = {sid: i for i, sid in enumerate(chain_b)}
     shared = [s for s in chain_a if s in pos_b]
@@ -99,7 +109,8 @@ def _same_order(chain_a, chain_b):
     return monotony > CIRCULAR_MONOTONY
 
 
-def canonical_pair(patterns_by_dir):
+def canonical_pair(patterns_by_dir: Mapping[int, _Patterns],
+                   ) -> tuple[tuple[int, tuple[str, ...]], tuple[int, tuple[str, ...]]]:
     """((direction, chain), (direction, chain)), directions in stable order."""
     (dir_a, pat_a), (dir_b, pat_b) = sorted(
         patterns_by_dir.items(), key=lambda kv: str(kv[0])
@@ -107,7 +118,7 @@ def canonical_pair(patterns_by_dir):
     return (dir_a, _canonical(pat_a)), (dir_b, _canonical(pat_b))
 
 
-def plan_repairs(patterns_by_dir):
+def plan_repairs(patterns_by_dir: Mapping[int, _Patterns]) -> dict[str, int]:
     """Trips to move to the opposite direction, for one route.
 
     patterns_by_dir: {direction: {stop_tuple: [trip_id, ...]}} with exactly
@@ -135,7 +146,7 @@ def plan_repairs(patterns_by_dir):
     return flips
 
 
-def plan_until_stable(patterns_by_dir):
+def plan_until_stable(patterns_by_dir: dict[int, _Patterns]) -> dict[str, int]:
     """plan_repairs applied to the in-memory patterns until it finds nothing.
 
     SNCF: a second pass over the repaired patterns moved 3 to 5 more trips
@@ -168,7 +179,8 @@ def plan_until_stable(patterns_by_dir):
     return {t: d for t, d in flips.items() if d != origin[t]}
 
 
-def same_order_report(patterns_by_dir, station_name):
+def same_order_report(patterns_by_dir: Mapping[int, _Patterns], station_name: Mapping[str, str],
+                      ) -> tuple[Literal["loop"]] | tuple[Literal["no_sense"], int, int, str, str] | None:
     """Why a two-direction route whose directions follow one stop order was
     left alone: ("loop",) or ("no_sense", against, total, first, last).
 
@@ -194,7 +206,7 @@ def same_order_report(patterns_by_dir, station_name):
     return ("no_sense", against, total, first, last)
 
 
-def repair_trip_directions(schedule):
+def repair_trip_directions(schedule: Schedule) -> int:
     """Rewrite mislabeled direction_id values in the imported database.
 
     Returns the number of repaired trips. Never raises: a failed repair must
@@ -207,7 +219,7 @@ def repair_trip_directions(schedule):
         return 0
 
 
-def _stations(schedule):
+def _stations(schedule: Schedule) -> tuple[dict[str, str], dict[str, str]]:
     """{stop_id: station}, {station: name}: the parent station when the feed
     publishes one, the stop itself otherwise."""
     try:
@@ -235,7 +247,8 @@ def _stations(schedule):
     return station_of, station_name
 
 
-def _trips_by_route(schedule):
+def _trips_by_route(schedule: Schedule,
+                    ) -> tuple[dict[str, tuple[str, int]], set[str], dict[str, str | None]]:
     """{trip_id: (route_id, direction)} of the trips that carry a direction,
     the routes whose trips carry two, and {route_id: its short name}."""
     trip_meta = {}
@@ -257,11 +270,11 @@ def _trips_by_route(schedule):
     return trip_meta, eligible, route_labels
 
 
-def _station_pattern(calls, station_of):
+def _station_pattern(calls: Iterable[Sequence[Any]], station_of: Mapping[str, str]) -> tuple[str, ...]:
     """The stations a trip calls at, in riding order, out of its
     (trip_id, stop_id, stop_sequence) rows: two platforms of one station
     in a row are one stop of the chain."""
-    pattern = []
+    pattern: list[str] = []
     for _, stop_id in sorted((stop_sequence, stop_id) for _, stop_id, stop_sequence in calls):
         station = station_of.get(stop_id, stop_id)
         if not pattern or pattern[-1] != station:
@@ -269,7 +282,8 @@ def _station_pattern(calls, station_of):
     return tuple(pattern)
 
 
-def _trip_patterns(schedule, trip_meta, station_of):
+def _trip_patterns(schedule: Schedule, trip_meta: Mapping[str, tuple[str, int]],
+                   station_of: Mapping[str, str]) -> dict[str, dict[int, _Patterns]]:
     """{route_id: {direction: {station pattern: [trip_id, ...]}}} of the
     trips of trip_meta, read in one streaming pass, the few stops of each
     trip sorted here.
@@ -280,7 +294,7 @@ def _trip_patterns(schedule, trip_meta, station_of):
     repair (drop_import_indexes), so ordered by trip_id alone SQLite
     sorted every call of the feed first (3 M calls: 11 s, 8 s now).
     """
-    patterns = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    patterns: dict[str, dict[int, _Patterns]] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(
             "SELECT trip_id, stop_id, stop_sequence FROM stop_times"
@@ -294,7 +308,7 @@ def _trip_patterns(schedule, trip_meta, station_of):
     return patterns
 
 
-def _route_flips(label, by_dir, station_name):
+def _route_flips(label: str, by_dir: dict[int, _Patterns], station_name: Mapping[str, str]) -> dict[str, int]:
     """{trip_id: new direction} for one route's patterns, said in the log,
     and why nothing moved when its directions follow one stop order."""
     total = sum(len(t) for d in by_dir.values() for t in d.values())
@@ -324,7 +338,7 @@ def _route_flips(label, by_dir, station_name):
     return route_flips
 
 
-def _repair(schedule):
+def _repair(schedule: Schedule) -> int:
     trip_meta, eligible, route_labels = _trips_by_route(schedule)
     if not eligible:
         _LOGGER.debug("Direction repair: no route with two directions, nothing to do")
