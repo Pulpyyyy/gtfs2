@@ -3,7 +3,7 @@
 A source used to exist only as files on disk plus N journey entries, each
 carrying its own copy of the realtime urls and api key. The datasource entry
 makes the source a real Home Assistant object: entry.data is the identity
-(kind, file, url, extract_from) plus the key the static feed is fetched
+(kind, file, url) plus the key the static feed is fetched
 with, entry.options are the realtime feeds, and the file name makes the
 unique_id (datasource_unique_id) so a source can never have two.
 
@@ -67,7 +67,6 @@ RT_FEED_URL_KEYS = (CONF_TRIP_UPDATE_URL, CONF_VEHICLE_POSITION_URL, CONF_ALERTS
 # data next to the url and mirrored onto the journey entries. Distinct from
 # the realtime key in the options: one key per feed, the provider may differ
 STATIC_KEY_KEYS = (CONF_API_KEY, CONF_API_KEY_NAME, CONF_API_KEY_LOCATION)
-
 
 def has_rt_feed(cfg: Mapping[str, Any]) -> bool:
     """Whether a config carries at least one realtime feed url.
@@ -280,7 +279,9 @@ def static_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any
     cfg = {
         CONF_FILE: data.get(CONF_FILE),
         CONF_URL: data.get(CONF_URL),
-        CONF_EXTRACT_FROM: data.get(CONF_EXTRACT_FROM, "url"),
+        # fetched from its url; a refresh that reads the kept zip instead
+        # says so itself (use_zip)
+        CONF_EXTRACT_FROM: "url",
     }
     if data.get(CONF_INNER_ZIP):
         # the network picked inside an envelope: every refresh asks for it
@@ -294,8 +295,7 @@ def static_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any
 
 async def async_ensure_datasource_entry(
         hass: HomeAssistant, file: str, url: str | None = None,
-        extract_from: str | None = None, api: Mapping[str, Any] | None = None,
-        inner_zip: str | None = None) -> None:
+        api: Mapping[str, Any] | None = None, inner_zip: str | None = None) -> None:
     """Create the datasource entry of a source, unless it already exists.
 
     Called by the bootstrap and by the flow steps that bring a new source in.
@@ -309,17 +309,11 @@ async def async_ensure_datasource_entry(
         return
     entries = journey_entries(hass, file)
     if url is None:
-        # the entries carry the url the source was downloaded from; "na" is
-        # what the zip-based paths store, and stays the last resort
+        # the entries carry the url the source was downloaded from; a
+        # source made from a zip in the folder has none, and the import
+        # step gives it the file:// url of its kept zip
         url = next((e.data.get(CONF_URL) for e in entries
-                    if e.data.get(CONF_URL) not in (None, "", "na")), "na")
-    if extract_from is None:
-        # prefer "url" the moment any entry has it, like the url pick above:
-        # a zip-created first entry must not turn a hosted source into a zip
-        # source, which would silently keep its checks from ever arming
-        values = [e.data.get(CONF_EXTRACT_FROM) for e in entries]
-        extract_from = ("url" if "url" in values
-                        else next((v for v in values if v), "zip"))
+                    if e.data.get(CONF_URL)), None)
     _LOGGER.info("Creating datasource entry for source: %s", file)
     await hass.config_entries.flow.async_init(
         DOMAIN,
@@ -328,7 +322,6 @@ async def async_ensure_datasource_entry(
             CONF_KIND: ENTRY_KIND_DATASOURCE,
             CONF_FILE: file,
             CONF_URL: url,
-            CONF_EXTRACT_FROM: extract_from,
             **({CONF_INNER_ZIP: inner_zip} if inner_zip else {}),
             **(static_key_fields(api) if api is not None
                else _static_seed(entries)),
@@ -359,15 +352,6 @@ async def async_bootstrap_datasource_entries(hass: HomeAssistant,
         if entry.data.get(CONF_KIND) != ENTRY_KIND_DATASOURCE:
             continue
         new_data = {**entry.data}
-        # heal what the first-entry pick miscreated: a source that carries a
-        # real url is checkable, and an inherited extract_from "zip" was
-        # silently keeping notify/auto from ever arming. The update fires
-        # the entry's rearm listener, so the check arms right away.
-        if (new_data.get(CONF_EXTRACT_FROM) == "zip"
-                and new_data.get(CONF_URL) not in (None, "", "na")):
-            _LOGGER.info("Datasource %s carries a url, extract_from zip -> url",
-                         new_data.get(CONF_FILE))
-            new_data[CONF_EXTRACT_FROM] = "url"
         # the static key used to live on the journey entries only: an entry
         # from before takes it over once, and says so by carrying the
         # location even when there is no key, so the fallback never runs
@@ -432,7 +416,7 @@ def _mirrored_options(options: Mapping[str, Any], cfg: Mapping[str, Any], active
 def _mirrored_data(data: Mapping[str, Any], src: Mapping[str, Any]) -> dict[str, Any]:
     """A journey entry's data with the source's static address and key."""
     new_data = {**data}
-    if src.get(CONF_URL) not in (None, "", "na"):
+    if src.get(CONF_URL):
         new_data[CONF_URL] = src[CONF_URL]
     if CONF_API_KEY_LOCATION in src:
         if src.get(CONF_API_KEY):

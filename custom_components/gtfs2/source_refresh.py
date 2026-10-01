@@ -62,6 +62,7 @@ from .freshness import (
     source_meta,
     write_meta,
 )
+from .file_url import file_url
 from .gtfs_db import feed_zip, real_path
 from .source_zip import refresh_datasource
 from .notifications import async_notify_refresh
@@ -183,9 +184,6 @@ def next_check_at(hass: HomeAssistant, entry: ConfigEntry, zip_meta):
     mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
     if mode == STATIC_REFRESH_OFF:
         return None
-    if entry.data.get(CONF_EXTRACT_FROM, "url") != "url":
-        # a zip source has no host to ask, so nothing is ever scheduled
-        return None
     file = entry.data.get(CONF_FILE)
     interval = check_interval(entry)
     hours, minute, second = check_hours(interval, file)
@@ -210,6 +208,13 @@ def next_check_at(hass: HomeAssistant, entry: ConfigEntry, zip_meta):
 
 def source_zip_path(hass: HomeAssistant, file) -> str:
     return feed_zip(hass.config.path(DEFAULT_PATH), file)
+
+
+def source_zip_url(hass: HomeAssistant, file: str) -> str:
+    """The file:// url of a source's zip in the gtfs2 folder: the url of a
+    source made from that zip, fetched from it as a hosted one is from
+    its host."""
+    return file_url(source_zip_path(hass, file))
 
 
 def _installed_meta_path(hass: HomeAssistant, file) -> str:
@@ -463,8 +468,6 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
     mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
     if mode == STATIC_REFRESH_OFF:
         return
-    if entry.data.get(CONF_EXTRACT_FROM, "url") != "url":
-        return
     file = entry.data.get(CONF_FILE)
     if source_lock(hass, file).locked():
         # a rebuild is running right now; next tick will know more
@@ -523,10 +526,6 @@ def async_arm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
         previous()
     mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
     if mode not in (STATIC_REFRESH_NOTIFY, STATIC_REFRESH_AUTO):
-        return
-    if entry.data.get(CONF_EXTRACT_FROM, "url") != "url":
-        _LOGGER.info("Source %s is fed from a zip, there is no host to ask "
-                     "about new versions", entry.data.get(CONF_FILE))
         return
     interval = check_interval(entry)
     hours, minute, second = check_hours(interval, entry.data.get(CONF_FILE))

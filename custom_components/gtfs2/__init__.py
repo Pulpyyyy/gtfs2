@@ -26,6 +26,7 @@ from .rt_source import (
     datasource_unique_id,
 )
 from .source_refresh import (
+    source_zip_url,
     async_arm_source_check,
     async_disarm_source_check,
     async_rearm_source_check,
@@ -42,6 +43,36 @@ def _unique_id_at_1_2(config_entry: ConfigEntry):
     if config_entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
         return datasource_unique_id(config_entry.data[CONF_FILE])
     return config_entry.unique_id
+
+
+def _data_at_1_3(hass: HomeAssistant, config_entry: ConfigEntry) -> dict:
+    """An entry's data from minor version 3 on: the url "na" a source made
+    from a zip in the folder held, and the journeys on it, becomes the
+    file:// url of that zip, read as any other url from then on. A
+    datasource entry drops extract_from: it is fetched from its url."""
+    data = {**config_entry.data}
+    if data.get(CONF_FILE) and data.get(CONF_URL) in (None, "", "na"):
+        data[CONF_URL] = source_zip_url(hass, data[CONF_FILE])
+    if data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
+        data.pop(CONF_EXTRACT_FROM, None)
+    return data
+
+
+def _migrate_minor(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    """The minor versions of version 10, in turn."""
+    if config_entry.minor_version < 2:
+        # a datasource entry's unique_id takes its own prefix: the bare file
+        # name could be the gtfs-<name> of a journey. A minor version, so an
+        # install going back to upstream still loads the entry
+        hass.config_entries.async_update_entry(
+            config_entry, unique_id=_unique_id_at_1_2(config_entry), minor_version=2)
+    if config_entry.minor_version < 3:
+        # every source is fetched from a url, a zip in the folder by its
+        # file:// one. A minor version, so an install going back to
+        # upstream still loads the entry, whose extract_from tells it the
+        # zip is where it lies
+        hass.config_entries.async_update_entry(
+            config_entry, data=_data_at_1_3(hass, config_entry), minor_version=3)
 
 
 async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
@@ -100,12 +131,8 @@ async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(
             config_entry, data=new_data, options=new_options, version=10)
 
-    if config_entry.version == 10 and config_entry.minor_version < 2:
-        # a datasource entry's unique_id takes its own prefix: the bare file
-        # name could be the gtfs-<name> of a journey. A minor version, so an
-        # install going back to upstream still loads the entry
-        hass.config_entries.async_update_entry(
-            config_entry, unique_id=_unique_id_at_1_2(config_entry), minor_version=2)
+    if config_entry.version == 10:
+        _migrate_minor(hass, config_entry)
 
     _LOGGER.warning("Migration to version %s successful", config_entry.version)
 

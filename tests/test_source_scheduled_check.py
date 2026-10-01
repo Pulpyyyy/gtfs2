@@ -2,8 +2,8 @@
 
 async_check_source is the only caller that turns the host's answers into
 a rebuild or a word to the user by itself, at night, with nobody
-watching. Each path is pinned here: the modes and sources that never
-look, the slow cadences that skip a night, a probe that could not ask, a
+watching. Each path is pinned here: the modes that never look, a
+source fed from a file looked at as a hosted one, the slow cadences that skip a night, a probe that could not ask, a
 feed the download proved unchanged or new, and what notify mode tells:
 an event for the automations, once per version, named as the host said
 (the update entity shows it; the notification it also raised is gone).
@@ -32,13 +32,13 @@ def _probe(result, last_modified=None, etag=None):
     return {"result": result, "last_modified": last_modified, "etag": etag}
 
 
-def _entry(mode, extract_from="url", interval=None):
+def _entry(mode, url="https://h/src.zip", interval=None):
     options = {"static_refresh_mode": mode}
     if interval is not None:
         options["static_check_interval"] = interval
     return types.SimpleNamespace(
         entry_id="e1", options=options,
-        data={"file": "src", "extract_from": extract_from, "url": "https://h/src.zip"})
+        data={"file": "src", "url": url})
 
 
 def _hass(calls, taken_by_probe=False):
@@ -105,11 +105,13 @@ def test_off_never_looks(monkeypatch):
     assert calls == []
 
 
-def test_a_zip_source_has_no_host_to_ask(monkeypatch):
+def test_a_source_fed_from_a_file_is_looked_at_as_a_hosted_one(monkeypatch):
+    # the zip in the gtfs2 folder, by its file:// url: it once held "na"
+    # and was never looked at, it is checked and refreshed as any source
     calls = []
-    _stub(monkeypatch, calls, probe=_probe(CHANGED))
-    _check(_hass(calls), _entry(AUTO, extract_from="zip"))
-    assert calls == []
+    _stub(monkeypatch, calls, probe=_probe(CHANGED), fetched=True)
+    _check(_hass(calls), _entry(AUTO, url="file:///config/gtfs2/src.zip"))
+    assert calls == [("probe",), ("noted",), ("fetch", True), ("told",), ("refresh", True)]
 
 
 def test_a_rebuild_running_puts_the_look_off(monkeypatch):

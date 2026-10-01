@@ -34,14 +34,14 @@ def test_the_entry_keeps_the_network_picked():
     created = []
     asyncio.run(rt_source.async_ensure_datasource_entry(
         _hass(created), "septa", url="https://h/gtfs_public.zip",
-        extract_from="url", api={}, inner_zip="google_bus.zip"))
+        api={}, inner_zip="google_bus.zip"))
     assert created[0]["inner_zip"] == "google_bus.zip"
 
 
 def test_a_plain_source_names_no_network():
     created = []
     asyncio.run(rt_source.async_ensure_datasource_entry(
-        _hass(created), "tao", url="https://h/tao.zip", extract_from="url", api={}))
+        _hass(created), "tao", url="https://h/tao.zip", api={}))
     assert "inner_zip" not in created[0]
 
 

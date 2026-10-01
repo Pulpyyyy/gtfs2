@@ -21,7 +21,6 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_API_KEY,
-    CONF_EXTRACT_FROM,
     CONF_NEEDS_API_KEY,
     CONF_STATIC_CHECK_INTERVAL,
     CONF_STATIC_REFRESH_MODE,
@@ -154,7 +153,7 @@ class OptionsScreens:
             data_schema=vol.Schema({
                 vol.Optional(
                     CONF_URL,
-                    default="" if url in (None, "na") else url,
+                    default=url,
                 ): str,
                 # the three key fields only matter for the few sources that
                 # need one, so they live behind this toggle
@@ -211,9 +210,7 @@ class OptionsScreens:
 
         The address and the key go on the datasource entry's data, the
         refresh policy in its options. Untoggling the key drops it: the
-        mirror listener takes it off the journey entries too. An address
-        given to a zip source makes it a hosted one, checkable from now on,
-        which is what the bootstrap would have done at the next start.
+        mirror listener takes it off the journey entries too.
         """
         fields = self._user_inputs
         entry = self._source()
@@ -223,8 +220,6 @@ class OptionsScreens:
         new_data.update(static_key_fields(key_fields))
         if fields.get(CONF_URL):
             new_data[CONF_URL] = fields[CONF_URL]
-            if new_data.get(CONF_EXTRACT_FROM) == "zip":
-                new_data[CONF_EXTRACT_FROM] = "url"
         if new_data != dict(entry.data):
             self.hass.config_entries.async_update_entry(entry, data=new_data)
         return self._save_source(

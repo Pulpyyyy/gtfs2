@@ -194,7 +194,7 @@ def test_the_url_set_is_shown_beside_the_one_last_fetched():
     attributes = entity.extra_state_attributes
     assert attributes["source_url"] == "https://tao/gtfs.zip"
     assert attributes["configured_url"] == "https://tao/wrong.zip?key=" + key_mask.KEY_MASK
-    # a source fed from a zip has none
+    # an entry holding no url says none
     entry.data.pop("url")
     assert entity.extra_state_attributes["configured_url"] is None
 

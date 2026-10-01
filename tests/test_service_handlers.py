@@ -6,7 +6,8 @@ call that gives others is told so in the log rather than silently
 obeyed or refused. The call only picks the kept zip and sets the
 per-import flags. A source that does not exist yet is created from the
 call's fields, and only one that was built gets its datasource entry,
-born with the address and key it came from.
+born with the address and key it came from; without an address, it is
+the zip in the gtfs2 folder, by its file:// url.
 
 The other services hand their call on, untouched, to the function that
 does the work, and give back what it answers: the departures, arrivals,
@@ -98,18 +99,22 @@ def test_update_gtfs_creates_a_source_it_does_not_know(monkeypatch):
             refreshed.append((file, data))
             return built
 
-        async def ensure(hass, file, *, url, extract_from, api):
-            created.append((file, url, extract_from))
+        async def ensure(hass, file, *, url, api):
+            created.append((file, url))
 
         monkeypatch.setattr(services, "datasource_entry", lambda hass, file: None)
+        monkeypatch.setattr(services, "source_zip_url",
+                            lambda hass, file: "file:///config/gtfs2/new.zip")
         monkeypatch.setattr(services, "async_refresh_source_data", refresh_data)
         monkeypatch.setattr(services, "async_ensure_datasource_entry", ensure)
         _, handlers = _handlers()
         assert _run(handlers["update_gtfs"], _call(file="new")) is built
-        # the fields the service always defaulted, for the legacy import
-        assert refreshed == [("new", {"file": "new", "url": "na", "extract_from": "url"})]
+        # the fields the service always defaulted, for the legacy import;
+        # the url is the zip in the folder, where "na" stood before
+        url = "file:///config/gtfs2/new.zip"
+        assert refreshed == [("new", {"file": "new", "url": url, "extract_from": "url"})]
         # only a source that was built gets its entry
-        assert created == ([("new", "na", "url")] if built else [])
+        assert created == ([("new", url)] if built else [])
 
 
 def test_a_created_source_keeps_the_address_it_came_from(monkeypatch):
@@ -118,8 +123,8 @@ def test_a_created_source_keeps_the_address_it_came_from(monkeypatch):
     async def refresh_data(hass, file, data):
         return True
 
-    async def ensure(hass, file, *, url, extract_from, api):
-        created.append((file, url, extract_from, api.get("api_key")))
+    async def ensure(hass, file, *, url, api):
+        created.append((file, url, api.get("api_key")))
 
     monkeypatch.setattr(services, "datasource_entry", lambda hass, file: None)
     monkeypatch.setattr(services, "async_refresh_source_data", refresh_data)
@@ -127,7 +132,7 @@ def test_a_created_source_keeps_the_address_it_came_from(monkeypatch):
     _, handlers = _handlers()
     _run(handlers["update_gtfs"], _call(file="new", url="https://new/gtfs.zip",
                                         extract_from="zip", api_key="k"))
-    assert created == [("new", "https://new/gtfs.zip", "zip", "k")]
+    assert created == [("new", "https://new/gtfs.zip", "k")]
 
 
 def test_the_realtime_service_reads_into_the_rt_folder(monkeypatch):

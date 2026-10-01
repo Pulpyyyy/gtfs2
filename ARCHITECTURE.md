@@ -487,7 +487,8 @@ sensors of one source carried ten copies that drifted apart (issue #180,
 d771cba).
 
 **Datasource entry.** Runs no coordinator. It carries the url and key of the
-static feed, the realtime feeds and their keys, the refresh mode and check
+static feed (`http(s)://`, or `file://` for a zip in the folder), the
+realtime feeds and their keys, the refresh mode and check
 interval. Its platforms are `DATASOURCE_PLATFORMS`: the update entity and
 the refresh button, the switch that silences realtime, and two diagnostic
 sensors (whether realtime runs, how long the timetable is good for). It
@@ -503,7 +504,10 @@ the fork adds a kind of entry, it does not change the schema of the others.
 Every edit on a datasource entry is mirrored back onto the journey entries
 of the source (`async_mirror_rt_to_entries`), so a downgrade to upstream,
 which knows no datasource entry, finds current values rather than those
-frozen at bootstrap. Coordinators resolve realtime through the datasource
+frozen at bootstrap. Minor version 3 turns the url `"na"` a source made
+from a zip held, and its journeys, into the `file://` url of that zip;
+upstream reads a journey's url only when its `extract_from` is `url`,
+which theirs is not. Coordinators resolve realtime through the datasource
 entry first and fall back on the entry's own options, which is also what a
 pre-bootstrap start reads.
 
@@ -763,7 +767,9 @@ auto     same check, and the rebuild runs at the first check that finds a
          change
 ```
 
-Only sources fetched from a url are checked: a zip source has no host.
+Every source is checked, a zip in the gtfs2 folder too: it is fetched by
+its `file://` url, which `file_url.py` answers as a host would, the file's
+own time standing for Last-Modified.
 
 **When.** The user picks a frequency (1 to 360 hours, 24 by default), never
 a moment. Each source gets its own night slot between 03:00 and 05:59

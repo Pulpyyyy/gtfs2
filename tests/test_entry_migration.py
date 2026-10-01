@@ -1,7 +1,7 @@
-"""An entry of every version async_migrate_entry has a rule for reaches 10.2.
+"""An entry of every version async_migrate_entry has a rule for reaches 10.3.
 
 Home Assistant calls async_migrate_entry for an entry older than the
-flow's VERSION, 10, or its MINOR_VERSION, 2, and keeps what the function
+flow's VERSION, 10, or its MINOR_VERSION, 3, and keeps what the function
 hands async_update_entry: the data, the options, the unique_id and the
 versions, which it sets on the entry before the next rule reads it. The
 rules, as __init__ writes them:
@@ -20,7 +20,13 @@ rules, as __init__ writes them:
     10.1     a datasource entry's unique_id becomes gtfs2-source-<file>,
              every other entry keeps its own; the entry is then at 10.2.
              Every entry brought to 10 above goes through this one too
-    10.2     left as it is
+    10.2     an entry whose url is no feed url (the "na" a source made
+             from a zip in the folder held, and its journeys) takes the
+             file:// url of the source's kept zip; a datasource entry
+             drops extract_from, its url says where its feed comes from;
+             an http url stays. Every entry brought to 10.2 goes through
+             this one too
+    10.3     left as it is
 
 What the entry holds besides is carried through untouched. A version
 below 4 has no rule, and is not checked here.
@@ -28,6 +34,7 @@ below 4 has no rule, and is not checked here.
 from __future__ import annotations
 
 import asyncio
+import os
 import types
 
 import pytest
@@ -35,6 +42,9 @@ import pytest
 import ha_stub
 
 integration = ha_stub.load("__init__")
+source_refresh = ha_stub.load("source_refresh")
+
+CONFIG = os.path.abspath("config")
 
 JOURNEY = {"file": "tao", "name": "to work", "url": "na", "extract_from": "zip",
            "route": "ORLEANS:Line:40", "route_type": "3", "direction": "0",
@@ -47,6 +57,10 @@ class _Entries:
 
     def __init__(self):
         self.updates = 0
+
+    def async_entries(self, domain=None):
+        # no datasource entry to take a url from: the kept zip's
+        return []
 
     def async_update_entry(self, entry, *, data=None, options=None, version=None,
                            minor_version=None, unique_id=None):
@@ -64,38 +78,53 @@ class _Entries:
         return True
 
 
+def _hass(entries):
+    return types.SimpleNamespace(
+        config_entries=entries,
+        config=types.SimpleNamespace(path=lambda *parts: os.path.join(CONFIG, *parts)))
+
+
+def _zip_url(file):
+    """The file:// url of a source's kept zip, as the component names it."""
+    return source_refresh.source_zip_url(_hass(None), file)
+
+
+# the journey once it reaches 10.3: fetched from its source's kept zip
+JOURNEY_FED = {**JOURNEY, "url": _zip_url("tao")}
+
+
 def _migrated(version, data, options):
     """(version, data, options) of an entry once migrated."""
     entry = types.SimpleNamespace(
         entry_id="e1", title="to work", version=version, minor_version=1,
         unique_id="gtfs-to work",
         data=types.MappingProxyType(dict(data)), options=types.MappingProxyType(dict(options)))
-    hass = types.SimpleNamespace(config_entries=_Entries())
+    hass = _hass(_Entries())
     assert asyncio.run(integration.async_migrate_entry(hass, entry)) is True
-    assert (entry.minor_version, entry.unique_id) == (2, "gtfs-to work")
+    assert (entry.minor_version, entry.unique_id) == (3, "gtfs-to work")
     return entry.version, dict(entry.data), dict(entry.options)
 
 
 def test_version_4_moves_the_offset_to_the_options_and_opens_every_line_and_operator():
     assert _migrated(4, {**JOURNEY, "offset": 5}, {"api_key": "k"}) == (
-        10, {**JOURNEY, "route_type": "99", "agency": "0: ALL"},
+        10, {**JOURNEY_FED, "route_type": "99", "agency": "0: ALL"},
         {"offset": 5, "api_key": "k", "api_key_name": "Authorization"})
 
 
 def test_version_4_without_an_offset_gets_one_of_0():
     assert _migrated(4, JOURNEY, {}) == (
-        10, {**JOURNEY, "route_type": "99", "agency": "0: ALL"}, {"offset": 0})
+        10, {**JOURNEY_FED, "route_type": "99", "agency": "0: ALL"}, {"offset": 0})
 
 
 def test_version_5_opens_every_line_and_operator():
     assert _migrated(5, JOURNEY, {"x_api_key": "x", "refresh_interval": 5}) == (
-        10, {**JOURNEY, "route_type": "99", "agency": "0: ALL"},
+        10, {**JOURNEY_FED, "route_type": "99", "agency": "0: ALL"},
         {"api_key": "x", "api_key_name": "x_api_key", "refresh_interval": 5})
 
 
 def test_version_6_opens_every_operator_and_keeps_the_line_filter():
     assert _migrated(6, JOURNEY, {"ocp_apim_subscription_key": "o"}) == (
-        10, {**JOURNEY, "agency": "0: ALL"},
+        10, {**JOURNEY_FED, "agency": "0: ALL"},
         {"api_key": "o", "api_key_name": "ocp_apim_subscription_key"})
 
 
@@ -103,13 +132,13 @@ def test_version_6_opens_every_operator_and_keeps_the_line_filter():
 def test_versions_7_to_9_keep_the_realtime_key_under_its_new_name(version):
     # both old names at once: x_api_key is read after api_key, and wins
     assert _migrated(version, JOURNEY, {"api_key": "k", "x_api_key": "x"}) == (
-        10, JOURNEY, {"api_key": "x", "api_key_name": "x_api_key"})
+        10, JOURNEY_FED, {"api_key": "x", "api_key_name": "x_api_key"})
 
 
 @pytest.mark.parametrize("version", [7, 8, 9])
 def test_versions_7_to_9_drop_an_empty_old_key_and_touch_nothing_else(version):
     assert _migrated(version, JOURNEY, {"x_api_key": "", "offset": 2}) == (
-        10, JOURNEY, {"offset": 2})
+        10, JOURNEY_FED, {"offset": 2})
 
 
 def _at_10(minor_version, data, unique_id):
@@ -117,26 +146,43 @@ def _at_10(minor_version, data, unique_id):
     entry = types.SimpleNamespace(entry_id="e1", title="x", version=10, minor_version=minor_version,
                                   unique_id=unique_id, data=types.MappingProxyType(dict(data)),
                                   options=types.MappingProxyType({"api_key": "k"}))
-    hass = types.SimpleNamespace(config_entries=entries)
+    hass = _hass(entries)
     assert asyncio.run(integration.async_migrate_entry(hass, entry)) is True
     return (entry.version, entry.minor_version, entry.unique_id, dict(entry.data),
             dict(entry.options), entries.updates)
 
 
-def test_version_10_2_is_left_as_it_is():
-    assert _at_10(2, JOURNEY, "gtfs-to work") == (
-        10, 2, "gtfs-to work", JOURNEY, {"api_key": "k"}, 0)
+def test_version_10_3_is_left_as_it_is():
+    assert _at_10(3, JOURNEY, "gtfs-to work") == (
+        10, 3, "gtfs-to work", JOURNEY, {"api_key": "k"}, 0)
 
 
 SOURCE = {"kind": "datasource", "file": "gtfs-home", "url": "na", "extract_from": "zip"}
+SOURCE_FED = {"kind": "datasource", "file": "gtfs-home", "url": _zip_url("gtfs-home")}
+
+
+def test_version_10_2_gives_a_zip_source_and_its_journeys_the_url_of_its_kept_zip():
+    assert _at_10(2, JOURNEY, "gtfs-to work") == (
+        10, 3, "gtfs-to work", JOURNEY_FED, {"api_key": "k"}, 1)
+    assert _at_10(2, SOURCE, "gtfs2-source-gtfs-home") == (
+        10, 3, "gtfs2-source-gtfs-home", SOURCE_FED, {"api_key": "k"}, 1)
+
+
+def test_version_10_2_keeps_an_http_url_and_drops_a_datasource_s_extract_from():
+    hosted = {"kind": "datasource", "file": "tao", "url": "https://h/tao.zip",
+              "extract_from": "url"}
+    journey = {**JOURNEY, "url": "https://h/tao.zip", "extract_from": "url"}
+    assert _at_10(2, hosted, "gtfs2-source-tao")[3] == {
+        "kind": "datasource", "file": "tao", "url": "https://h/tao.zip"}
+    assert _at_10(2, journey, "gtfs-to work")[3] == journey
 
 
 def test_version_10_1_gives_a_datasource_entry_its_prefix():
     # a source named gtfs-home held the unique_id a journey named home is given
     assert _at_10(1, SOURCE, "gtfs-home") == (
-        10, 2, "gtfs2-source-gtfs-home", SOURCE, {"api_key": "k"}, 1)
+        10, 3, "gtfs2-source-gtfs-home", SOURCE_FED, {"api_key": "k"}, 2)
 
 
 def test_version_10_1_keeps_any_other_entry_s_unique_id():
     assert _at_10(1, JOURNEY, "gtfs-to work") == (
-        10, 2, "gtfs-to work", JOURNEY, {"api_key": "k"}, 1)
+        10, 3, "gtfs-to work", JOURNEY_FED, {"api_key": "k"}, 2)

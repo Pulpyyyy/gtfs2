@@ -120,6 +120,7 @@ flow_reload = ha_stub.load("flow_reload")
 rt_source = ha_stub.load("rt_source")
 gtfs_db = ha_stub.load("gtfs_db")
 key_mask = ha_stub.load("key_mask")
+source_refresh = ha_stub.load("source_refresh")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 COMPONENT = Path(config_flow.__file__).parent
@@ -131,6 +132,12 @@ FORM, MENU, ABORT, CREATE = _T.FORM, _T.MENU, _T.ABORT, _T.CREATE_ENTRY
 PROGRESS, PROGRESS_DONE = _T.SHOW_PROGRESS, _T.SHOW_PROGRESS_DONE
 _UNFINISHED = {FORM, MENU, PROGRESS, PROGRESS_DONE, _T.EXTERNAL_STEP, _T.EXTERNAL_STEP_DONE}
 _UNSET = object()
+
+
+def _zip_url(hass, file):
+    """The url a source made from a zip in the folder is fetched from, as
+    the component names it: the file:// one of its kept zip."""
+    return source_refresh.source_zip_url(hass, file)
 
 
 # --- Home Assistant's side of a flow ---------------------------------------------
@@ -580,7 +587,7 @@ async def install_source(hass, fixture, name):
         copy.close()
         built.close()
     await rt_source.async_ensure_datasource_entry(
-        hass, name, url="na", extract_from="zip", api={})
+        hass, name, api={})
 
 
 @pytest.fixture
@@ -717,7 +724,7 @@ def test_a_bus_journey_holds_what_the_sensor_reads(world):
         [entry] = hass.journeys()
         # what was answered, and nothing of the screens' own switches
         assert dict(entry.data) == {
-            "file": "tao", "url": "na", "extract_from": "zip", "agency": "0: ALL",
+            "file": "tao", "url": _zip_url(hass, "tao"), "extract_from": "zip", "agency": "0: ALL",
             "route_type": route_type, "route": route_id, "direction": None,
             "origin": origin, "destination": destination, "loop_direction": None,
             "name": name}
@@ -790,7 +797,7 @@ def test_a_train_journey_and_its_return_hold_the_stations_and_the_line(world):
                         MENU, "finished")
         outward, ride_back = hass.journeys()
         assert dict(outward.data) == {
-            "file": "sncf", "url": "na", "extract_from": "zip", "agency": "0: ALL",
+            "file": "sncf", "url": _zip_url(hass, "sncf"), "extract_from": "zip", "agency": "0: ALL",
             "route_type": "2", "route": "train", "direction": "0", "line": line,
             "origin": origin, "destination": destination, "name": default(naming, "name")}
         assert dict(ride_back.data) == {**outward.data, "origin": destination,
@@ -839,7 +846,7 @@ def test_a_train_line_with_no_short_name_leads_somewhere(world, tmp_path):
             copy.close()
             built.close()
         await rt_source.async_ensure_datasource_entry(
-            hass, "rail", url="na", extract_from="zip", api={})
+            hass, "rail", api={})
         lines = shown(await to_lines(hass, "rail"), FORM, "route")
         (route,) = [r for r in offered(lines, "route") if r.split("##")[2].startswith("Dole - St Claude")]
         label = route.split("##")[2]
@@ -916,8 +923,11 @@ def test_a_new_source_imports_only_the_lines_picked(world, monkeypatch):
         feeds = shown(await submit(hass, folder, file="tao"), FORM, "source_rt")
         lines = shown(await submit(hass, feeds), FORM, "route")
         source = hass.datasource("tao")
-        assert dict(source.data) == {"kind": "datasource", "file": "tao", "url": "na",
-                                     "extract_from": "zip", "api_key_location": "not_applicable"}
+        # fetched from the zip in the folder, by its file:// url
+        assert dict(source.data) == {
+            "kind": "datasource", "file": "tao",
+            "url": _zip_url(hass, "tao"),
+            "api_key_location": "not_applicable"}
         assert dict(source.options) == {} and source.unique_id == "gtfs2-source-tao"
         # read from the zip: every line still has its timetable to import
         routes = offered(lines, "route")
@@ -1186,7 +1196,7 @@ def test_a_source_downloaded_from_a_url_keeps_its_address_and_its_realtime_feeds
               FORM, "route")
         source = hass.datasource("tao")
         assert dict(source.data) == {"kind": "datasource", "file": "tao", "url": URL,
-                                     "extract_from": "url", "api_key_location": "not_applicable"}
+                                     "api_key_location": "not_applicable"}
         # typed as given, stray spaces trimmed, nothing empty
         assert dict(source.options) == {
             "trip_update_url": "https://rt.example/trips", "api_key": "rt-secret",
@@ -1224,7 +1234,7 @@ def test_a_source_behind_a_key_asks_for_it_and_sends_it(world):
         source = hass.datasource("tao")
         # the address is kept without its key, the key beside it
         assert dict(source.data) == {
-            "kind": "datasource", "file": "tao", "url": URL, "extract_from": "url",
+            "kind": "datasource", "file": "tao", "url": URL,
             "api_key": "static-secret", "api_key_name": "api_key",
             "api_key_location": "query_string"}
     walk(world, scenario)
@@ -1297,7 +1307,7 @@ def test_the_flow_waits_for_an_unpacking_and_goes_on_with_what_was_typed(world, 
         created = shown(await flows.async_finish_progress(form["flow_id"]), CREATE)
         assert dict(created["result"].data) == {
             "file": "tao", "device_tracker_id": "person.me", "name": "around me",
-            "url": "na", "extract_from": "zip"}
+            "url": _zip_url(hass, "tao"), "extract_from": "zip"}
     walk(world, scenario)
 
 
@@ -1339,7 +1349,7 @@ def test_local_stops_take_a_person_or_a_zone_once_per_source(world):
                                      name="around me"), CREATE)
         assert dict(created["result"].data) == {
             "file": "tao", "device_tracker_id": "person.me", "name": "around me",
-            "url": "na", "extract_from": "zip"}
+            "url": _zip_url(hass, "tao"), "extract_from": "zip"}
         assert created["result"].unique_id == "gtfs-local-tao-person.me"
         form = await choose(hass, await start(hass), "local_stops")
         again = shown(await submit(hass, form, file="tao", device_tracker_id="zone.work",
@@ -1392,7 +1402,7 @@ def test_a_source_s_settings_are_reached_from_the_main_menu_too(world):
                                   api_key_location="header"), ABORT)
         assert done["reason"] == "source_saved"
         assert dict(source.data) == {
-            "kind": "datasource", "file": "tao", "url": URL, "extract_from": "url",
+            "kind": "datasource", "file": "tao", "url": URL,
             "api_key": "static-secret", "api_key_name": "token", "api_key_location": "header"}
         assert dict(source.options) == {"alerts_url": "https://rt.example/alerts",
                                         "rt_enabled": False, "static_refresh_mode": "notify",
@@ -1551,7 +1561,7 @@ def test_a_source_s_options_hold_its_realtime_feeds_and_its_static_refresh(world
         refresh = shown(await choose(hass, await options_of(hass, source), "static_refresh", options),
                         FORM, "static_refresh")
         assert {key: default(refresh, key) for key in fields(refresh)} == {
-            "url": "", "needs_api_key": False, "static_refresh_mode": "off",
+            "url": _zip_url(hass, "tao"), "needs_api_key": False, "static_refresh_mode": "off",
             "static_check_interval": const.DEFAULT_STATIC_CHECK_INTERVAL}
         assert offered(refresh, "static_refresh_mode") == const.STATIC_REFRESH_MODES
         for wrong in ({"static_check_interval": 0}, {"static_refresh_mode": "weekly"}):
@@ -1567,7 +1577,7 @@ def test_a_source_s_options_hold_its_realtime_feeds_and_its_static_refresh(world
         assert type(source.options["static_check_interval"]) is int
         # an address given to a zip source makes it a hosted one
         assert dict(source.data) == {"kind": "datasource", "file": "tao", "url": URL,
-                                     "extract_from": "url", "api_key_location": "not_applicable"}
+                                     "api_key_location": "not_applicable"}
 
         refresh = await choose(hass, await options_of(hass, source), "static_refresh", options)
         assert (default(refresh, "url"), default(refresh, "needs_api_key")) == (URL, False)
@@ -1577,7 +1587,7 @@ def test_a_source_s_options_hold_its_realtime_feeds_and_its_static_refresh(world
         shown(await submit(hass, key, options, api_key="static-secret", api_key_name="token",
                            api_key_location="header"), CREATE)
         assert dict(source.data) == {
-            "kind": "datasource", "file": "tao", "url": URL, "extract_from": "url",
+            "kind": "datasource", "file": "tao", "url": URL,
             "api_key": "static-secret", "api_key_name": "token", "api_key_location": "header"}
         assert dict(source.options) == {**realtime, "static_refresh_mode": "notify",
                                         "static_check_interval": 6}

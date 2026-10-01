@@ -20,6 +20,7 @@ from .key_mask import note_key
 from .rt_source import async_ensure_datasource_entry, datasource_entry, source_readers
 from .source_refresh import (
     async_refresh_source, async_refresh_source_data, refresh_data_for, source_lock,
+    source_zip_url,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -196,16 +197,17 @@ async def async_update_gtfs(hass: HomeAssistant, call_data):
             flags={k: data[k] for k in ("clean_feed_info", "check_source_dates")
                    if k in data})
     # a source to create: the legacy fields apply, absent ones read as
-    # the service always defaulted them
-    data.setdefault(CONF_URL, "na")
+    # the service always defaulted them. Without a url, or with the "na"
+    # it once defaulted to, the source is the zip in the folder, fetched
+    # from by its file:// url
+    if data.get(CONF_URL) in (None, "", "na"):
+        data[CONF_URL] = source_zip_url(hass, file)
     data.setdefault(CONF_EXTRACT_FROM, "url")
     ok = await async_refresh_source_data(hass, file, data)
     if ok:
         # the source is born with the address and key it was created
         # from, so the next refresh needs nothing but its name
-        await async_ensure_datasource_entry(
-            hass, file, url=data.get(CONF_URL) or "na",
-            extract_from=data.get(CONF_EXTRACT_FROM) or "url", api=data)
+        await async_ensure_datasource_entry(hass, file, url=data[CONF_URL], api=data)
     return ok
 
 

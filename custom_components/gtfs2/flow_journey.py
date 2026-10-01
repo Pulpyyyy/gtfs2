@@ -44,6 +44,7 @@ from .const import (
 )
 from .geojson import name_in_use
 from .rt_source import datasource_unique_id
+from .source_refresh import source_zip_url
 from .places import get_direction_labels, get_pair_direction, has_trip_between
 
 _LOGGER = logging.getLogger(__name__)
@@ -295,6 +296,10 @@ class JourneyScreens:
             # so a second creation aborts here instead of duplicating
             await self.async_set_unique_id(datasource_unique_id(import_data[CONF_FILE]))
             self._abort_if_unique_id_configured()
+            if not import_data.get(CONF_URL):
+                # a zip in the folder no entry knew of: fetched from it, by
+                # its file:// url, as a hosted source is by its own
+                import_data[CONF_URL] = source_zip_url(self.hass, import_data[CONF_FILE])
             options = import_data.pop("options", None) or {}
             return self.async_create_entry(
                 title=import_data[CONF_FILE], data=import_data, options=options

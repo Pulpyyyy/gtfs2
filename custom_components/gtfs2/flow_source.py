@@ -51,6 +51,7 @@ from .gtfs_db import feed_zip, real_path, get_zipfiles
 from .gtfs_helper import check_extracting
 from .key_mask import KEY_MASK, note_key
 from .rt_source import async_ensure_datasource_entry, datasource_entry
+from .source_refresh import source_zip_url
 from .source_zip import ensure_source_zip
 
 _LOGGER = logging.getLogger(__name__)
@@ -198,7 +199,7 @@ class SourceScreens:
         """
         entry = datasource_entry(self.hass, name)
         if entry is not None:
-            return (entry.data.get(CONF_URL) or "na") != url
+            return entry.data.get(CONF_URL) != url
         zip_path = feed_zip(self.hass.config.path(DEFAULT_PATH), name)
         if not await self.hass.async_add_executor_job(os.path.exists, zip_path):
             return False
@@ -403,9 +404,7 @@ class SourceScreens:
         inputs = self._user_inputs
         await async_ensure_datasource_entry(
             self.hass, inputs.get(CONF_FILE),
-            url=inputs.get(CONF_URL) or "na",
-            extract_from=inputs.get(CONF_EXTRACT_FROM) or "zip",
-            api=inputs, inner_zip=inputs.get(CONF_INNER_ZIP))
+            url=inputs.get(CONF_URL), api=inputs, inner_zip=inputs.get(CONF_INNER_ZIP))
         source = datasource_entry(self.hass, inputs.get(CONF_FILE))
         if source is None:
             _LOGGER.error("No datasource entry to store the realtime config on: %s",
@@ -445,10 +444,11 @@ class SourceScreens:
                 errors["base"] = self._pending_error
                 self._pending_error = None
             return await _show(errors)
-        # the url is unused here, but get_gtfs still reads the key
+        # built from the zip where it lies, and fetched from it from then on,
+        # by its file:// url, as a hosted source is by its own
         user_input[CONF_EXTRACT_FROM] = "zip"
         self._source_step = "source_zip"
-        user_input[CONF_URL] = "na"
+        user_input[CONF_URL] = source_zip_url(self.hass, user_input[CONF_FILE])
         check_data = await self.hass.async_add_executor_job(
             ensure_source_zip, self.hass, DEFAULT_PATH, user_input)
         if check_data:

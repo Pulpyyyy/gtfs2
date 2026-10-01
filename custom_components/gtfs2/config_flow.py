@@ -52,7 +52,7 @@ from .places import get_destination_stop_list, get_pair_direction, get_stop_list
 from .stations import get_station_list, get_station_modes
 from .route_names import get_route_options_from_zip, get_agencies_in_zip, LINE_MODES, with_modes
 from .notifications import _async_text
-from .source_refresh import source_lock
+from .source_refresh import source_lock, source_zip_url
 
 from .rt_source import (
     RT_OPTION_KEYS,
@@ -88,7 +88,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
 
     VERSION = 10
     # 2: a datasource entry's unique_id is gtfs2-source-<file>
-    MINOR_VERSION = 2
+    # 3: a source made from a zip has the file:// url of its kept zip, not "na"
+    MINOR_VERSION = 3
 
     def __init__(self) -> None:
         """Init ConfigFlow."""
@@ -192,7 +193,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
                 errors=errors,
             )
 
-        user_input[CONF_URL] = "na"
+        user_input[CONF_URL] = source_zip_url(self.hass, user_input[CONF_FILE])
         user_input[CONF_EXTRACT_FROM] = "zip"
         self._source_step = "start_end"
         self._user_inputs.update(user_input)
@@ -238,7 +239,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             # on, instead of an empty screen asking for all of it again
             user_input = {key: self._user_inputs.get(key)
                           for key in (CONF_FILE, CONF_DEVICE_TRACKER_ID, CONF_NAME)}
-        user_input[CONF_URL] = "na"
+        user_input[CONF_URL] = source_zip_url(self.hass, user_input[CONF_FILE])
         user_input[CONF_EXTRACT_FROM] = "zip"    
         # the stop sensors are named after the stop and the tracker, so a
         # second entry for the same tracker on the same source made sensors
