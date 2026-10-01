@@ -26,7 +26,7 @@ from .gtfs_filter import _member
 _LOGGER = logging.getLogger(__name__)
 
 
-def trip_shape_id(zip_path, trip_id):
+def trip_shape_id(zip_path: str | None, trip_id: str | None) -> str | None:
     """The shape_id the zip's own trips.txt gives a trip.
 
     The number and the points have to come from one edition. A shape_id is
@@ -67,7 +67,7 @@ def trip_shape_id(zip_path, trip_id):
     return None
 
 
-def read_shape(zip_path, shape_id):
+def read_shape(zip_path: str | None, shape_id: str | None) -> list[list[float]] | None:
     """The points of one shape, as [lon, lat] pairs in shape_pt_sequence
     order, geojson's way round.
 
