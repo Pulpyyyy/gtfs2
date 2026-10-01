@@ -42,7 +42,7 @@ from .const import (
     id_of,
 )
 from .alerts import journey_alerts
-from .geojson import safe_file_part, write_json_file
+from .geojson import vehicle_positions_name, write_json_file
 from .key_mask import fetch
 from .rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, _same_route, _with_user_agent,
@@ -736,8 +736,6 @@ def get_rt_vehicle_positions(self):
 
     self.geojson = {"features": geojson_body, "type": "FeatureCollection"}
     _LOGGER.debug("Vehicle geojson: %s", json.dumps(self.geojson))
-    # named the same way as the route file next to it, see safe_file_part
-    self._route_dir = safe_file_part(self._route_id) + "_" + safe_file_part(self._direction)
     update_geojson(self)
     return geojson_body
     
@@ -757,7 +755,7 @@ def get_rt_alerts(self):
 def update_geojson(self):
     geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)
     os.makedirs(geojson_dir, exist_ok=True)
-    file = os.path.join(geojson_dir, self._route_dir + ".json")
+    file = os.path.join(geojson_dir, vehicle_positions_name(self._route_id, self._direction))
     _LOGGER.debug("Creating geojson file: %s", file)
     write_json_file(file, self.geojson)
     
