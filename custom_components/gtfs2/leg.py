@@ -368,7 +368,6 @@ def write_leg_file(hass, data, feed_entities=None):
             features = _leg_features(rows, midnight, trip_id, route_id, direction)
     realtime = _time_leg_trips(trips, called_twice, feed_entities)
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
-    os.makedirs(geojson_dir, exist_ok=True)
     file = os.path.join(geojson_dir, leg_geojson_name(route_id, direction, name))
     _LOGGER.debug("Creating leg geojson file: %s", file)
     properties = {

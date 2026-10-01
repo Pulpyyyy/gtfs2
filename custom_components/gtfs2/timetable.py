@@ -135,7 +135,6 @@ def write_timetable_file(hass: HomeAssistant, data: Mapping[str, Any], today: st
             next_departure = _local(later[0].get("origin_depart_dt"), zone)
     doc = timetable_doc(name, rows, service_dates, zone, next_departure, last_service_day(zip_path))
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
-    os.makedirs(geojson_dir, exist_ok=True)
     file = timetable_name(name)
     _LOGGER.debug("Creating timetable file: %s, %s departures", file, sum(len(d["departures"]) for d in doc["days"]))
     write_json_if_changed(os.path.join(geojson_dir, file), doc,

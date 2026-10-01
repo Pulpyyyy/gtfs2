@@ -740,7 +740,6 @@ def get_rt_alerts(self):
 
 def update_geojson(self):
     geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)
-    os.makedirs(geojson_dir, exist_ok=True)
     file = os.path.join(geojson_dir, vehicle_positions_name(self._route_id, self._direction))
     _LOGGER.debug("Creating geojson file: %s", file)
     write_json_file(file, self.geojson)

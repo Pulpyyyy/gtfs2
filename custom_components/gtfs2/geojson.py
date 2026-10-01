@@ -306,7 +306,6 @@ def write_route_file(hass, data, route_id, direction, trip_id=None):
             },
         })
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
-    os.makedirs(geojson_dir, exist_ok=True)
     # the ids come out of the datasource, so they are not file names until
     # they are made ones: see safe_file_part
     file = os.path.join(geojson_dir, route_geojson_name(route_id, direction))
@@ -410,6 +409,8 @@ def write_json_file(file, doc):
     # file in the same second, and a shared staging name had each rename
     # the other's half-written file, or find it gone
     staged = f"{file}.{os.getpid()}.{threading.get_ident()}.tmp"
+    # the folder too: www/gtfs2 emptied or never made by hand
+    os.makedirs(os.path.dirname(file) or ".", exist_ok=True)
     try:
         with open(staged, "w") as outfile:
             json.dump(doc, outfile)
