@@ -81,17 +81,17 @@ async def async_setup_entry(
                 )
         
     else:
-        coordinator: GTFSUpdateCoordinator = config_entry.runtime_data
+        journey_coordinator: GTFSUpdateCoordinator = config_entry.runtime_data
         # The first refresh reads the departures, and at startup every entry
         # reads them at once: waiting for it held the sensor platform past
         # Home Assistant's ten seconds (IDFM metro lines, 5 to 9 s each). The
         # sensor is added now, empty, and fills in when its first refresh
         # is done; a failed one is retried at the next interval.
         config_entry.async_create_background_task(
-            hass, coordinator.async_refresh(), f"gtfs2 first refresh {config_entry.title}")
+            hass, journey_coordinator.async_refresh(), f"gtfs2 first refresh {config_entry.title}")
         
         sensors = [
-            GTFSDepartureSensor(coordinator),
+            GTFSDepartureSensor(journey_coordinator),
         ]
 
     async_add_entities(sensors, False)
@@ -118,7 +118,7 @@ class GTFSDatasourceRTSensor(SensorEntity):
         self._attr_device_info = source_device(self._file)
 
     @property
-    def native_value(self):
+    def native_value(self) -> str:
         if not has_rt_feed(self._entry.options):
             return "off"
         if not self._entry.options.get(CONF_RT_ENABLED, True):
@@ -131,7 +131,7 @@ class GTFSDatasourceRTSensor(SensorEntity):
         return "paused" if state.get("paused") else "active"
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         state = window_state(self._file) or {}
         return {
             "rt_paused": state.get("paused"),
@@ -163,7 +163,7 @@ class GTFSDatasourceTimetableSensor(SensorEntity):
         self.hass = hass
         self._entry = entry
         self._file = entry.data.get(CONF_FILE)
-        self._window = {}
+        self._window: dict[str, str | None] = {}
         self._attr_unique_id = f"gtfs2_datasource_timetable_{self._file}"
         self._attr_device_info = source_device(self._file)
 
@@ -183,7 +183,7 @@ class GTFSDatasourceTimetableSensor(SensorEntity):
         self.async_write_ha_state()
 
     @property
-    def native_value(self):
+    def native_value(self) -> date | None:
         last = self._window.get("last_service_day")
         try:
             return date.fromisoformat(last) if last else None
@@ -191,7 +191,7 @@ class GTFSDatasourceTimetableSensor(SensorEntity):
             return None
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         state, days_left = timetable_state(self._window, dt_util.now().date())
         return {
             "timetable": state,
@@ -204,7 +204,7 @@ class GTFSDatasourceTimetableSensor(SensorEntity):
         }
 
 
-def _entry_device(name):
+def _entry_device(name: str) -> DeviceInfo:
     """The device of a journey or local stops entry, named after it."""
     return DeviceInfo(
         name=f"GTFS - {name}",
@@ -242,7 +242,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         ATTR_RT_UPDATED_AT, "gtfs_updated_at",
     })
 
-    def __init__(self, coordinator) -> None:
+    def __init__(self, coordinator: GTFSUpdateCoordinator) -> None:
         """Initialize the GTFSsensor."""
         super().__init__(coordinator)
         # the entry knows the name before the first refresh has run
@@ -253,7 +253,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         # serves must already exist here, or adding the entity raises and the
         # sensor never appears at all
         self._icon = ICON
-        self._state: datetime.datetime | None = None
+        self._state: datetime | None = None
 
         self._attr_unique_id = f"gtfs-{self._name}"
         self._attr_device_info = _entry_device(self._name)
@@ -298,7 +298,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         """Icon to use in the frontend, if any."""
         return self._icon
 
-    def _say_once(self, message, *args):
+    def _say_once(self, message: str, *args: Any) -> None:
         """Log why the sensor shows nothing, when the reason is new.
 
         The sensor is updated every minute, and saying the same thing every
@@ -308,9 +308,9 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         text = message % args if args else message
         if text != getattr(self, "_nothing_said", None):
             _LOGGER.warning(text)
-            self._nothing_said = text
+            self._nothing_said: str | None = text
 
-    def _show_nothing(self, message, *args):
+    def _show_nothing(self, message: str, *args: Any) -> dict[str, Any]:
         """Clear the sensor rather than leave the last departure it showed.
 
         An early return used to keep the state and the attributes of the
@@ -322,7 +322,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._say_once(message, *args)
         return self._attributes
 
-    def _clear(self, attributes):
+    def _clear(self, attributes: dict[str, Any]) -> dict[str, Any]:
         """No departure shown, no agency named, only these attributes."""
         self._attr_native_value = None
         self._attr_attribution = None
@@ -330,7 +330,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._attr_extra_state_attributes = attributes
         return attributes
 
-    def _update_attrs(self):  # noqa: PLR0911
+    def _update_attrs(self) -> dict[str, Any]:  # noqa: PLR0911
         _LOGGER.debug("SENSOR update attr data: %s", self.coordinator.data)
         self._icon = ICON
         if self.coordinator.data is None:
@@ -393,7 +393,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
             )
 
         # the state is the departure the helper read, in its own zone
-        self._state: datetime.datetime | None = self._departure.get("departure_time") if self._departure else None
+        self._state = self._departure.get("departure_time") if self._departure else None
         _LOGGER.debug("Self._departure time from helper: %s", self._state)
         self._attr_native_value = self._state
         self._attr_attribution = self._agency.agency_name if self._agency else None
@@ -446,7 +446,7 @@ class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
     # limit on a busy one, and the refresh stamp that changes each time
     _unrecorded_attributes = frozenset({"next_departures_lines", "gtfs_updated_at"})
 
-    def __init__(self, stop, coordinator, name) -> None:
+    def __init__(self, stop: dict[str, Any], coordinator: GTFSLocalStopUpdateCoordinator, name: str) -> None:
         """Initialize the GTFSsensor."""
         super().__init__(coordinator)
         self._stop = stop
@@ -472,7 +472,7 @@ class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
         self._update_attrs()
         super()._handle_coordinator_update()
 
-    def _update_attrs(self):  # noqa: C901 PLR0911
+    def _update_attrs(self) -> dict[str, Any]:  # noqa: C901 PLR0911
         _LOGGER.debug("SENSOR: %s, update with attr data: %s", self._name, self.coordinator.data)
         self._departure = self.coordinator.data.get("local_stops_next_departures",None) 
         self._state: str | None = None
