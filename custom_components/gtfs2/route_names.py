@@ -799,8 +799,6 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     the pruned lines are simply not offered, as before.
     """
     _LOGGER.debug("Getting routes with data: %s", data)
-    route_type_where = ""
-    agency_where = ""
     trips_where = ""
     pruned = set()
     if with_trips_only:
@@ -818,27 +816,19 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
         if pruned:
             placeholders = ", ".join(f":pr{i}" for i in range(len(pruned)))
             trips_where = f"and (exists (select 1 from trips t where t.route_id = r.route_id) or r.route_id in ({placeholders}))"
-    # bound, not written into the query: an agency_id holding a quote
-    # broke the list, and what the flow hands in is the user's pick
-    agency_id = data["agency"].split(': ', 1)[0]
-    if agency_id != "0":
-        agency_where = "and r.agency_id = :agency_id"
-    if data["route_type"] != "99":
-        route_type_where = "and route_type = :route_type"
+    picked_where, params = _routes_where(data)
     sql_routes = f"""
     SELECT r.route_type, r.route_id, r.route_short_name, r.route_long_name, a.agency_name
     from routes r
     left join agency a on a.agency_id = r.agency_id
     where 1=1
-    {route_type_where}
-    {agency_where}
+    {picked_where}
     {trips_where}
     order by agency_name
     """  # noqa: S608
     routes_list = []
     routes = []
     with schedule.engine.connect() as conn:
-        params = {"agency_id": agency_id, "route_type": data["route_type"]}
         params.update({f"pr{i}": r for i, r in enumerate(sorted(pruned))})
         rows = conn.execute(text(sql_routes), params).fetchall()
     for row_cursor in rows:
@@ -876,13 +866,23 @@ def get_route_count(schedule, data):
     stop_times: IDFM with every operator, 1837 lines, 25 to 47 s once many
     lines are imported, and the screen waited for it.
     """
-    agency_id = data["agency"].split(': ', 1)[0]
-    agency_where = "and agency_id = :agency_id" if agency_id != "0" else ""
-    route_type_where = "and route_type = :route_type" if data["route_type"] != "99" else ""
-    sql = f"select count(*) from routes where 1=1 {agency_where} {route_type_where}"  # noqa: S608
+    picked_where, params = _routes_where(data)
+    sql = f"select count(*) from routes r where 1=1 {picked_where}"  # noqa: S608
     with schedule.engine.connect() as conn:
-        return conn.execute(
-            text(sql), {"agency_id": agency_id, "route_type": data["route_type"]}).scalar()
+        return conn.execute(text(sql), params).scalar()
+
+
+def _routes_where(data):
+    """(SQL, params) of the routes, aliased r, of the entry's agency and
+    mode: "0" stands for every agency, "99" for every mode. The list and
+    its count ask the same, so the count is the list's length."""
+    # bound, not written into the query: an agency_id holding a quote
+    # broke the list, and what the flow hands in is the user's pick
+    agency_id = data["agency"].split(': ', 1)[0]
+    where = "and r.agency_id = :agency_id" if agency_id != "0" else ""
+    if data["route_type"] != "99":
+        where += " and r.route_type = :route_type"
+    return where, {"agency_id": agency_id, "route_type": data["route_type"]}
 
 
 def get_agency_list(schedule, data):
