@@ -1,5 +1,7 @@
 import logging
-from datetime import datetime, timedelta
+from collections.abc import Iterable, Mapping
+from datetime import datetime, timedelta, tzinfo
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 import json
 import os
@@ -7,6 +9,7 @@ import os
 import homeassistant.util.dt as dt_util
 import requests
 from sqlalchemy.sql import text as sql_text
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 import time
 import binascii
@@ -41,14 +44,29 @@ from .alerts import journey_alerts
 from .geojson import vehicle_positions_name, write_json_file
 from .key_mask import fetch
 from .rt_feed import (
-    CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, _same_route, _with_user_agent,
+    CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, FeedEntities, _same_route, _with_user_agent,
     delay_of, get_gtfs_feed_entities, stop_relationship, stop_update_clock,
     trip_relationship,
 )
 from .rt_source import rt_headers, with_query_key
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+    from .coordinator import GTFSLocalStopUpdateCoordinator, GTFSUpdateCoordinator
 
-def due_in_minutes(timestamp):
+# the coordinator a realtime reader runs on: a journey's, or the local stops'
+type _Coordinator = GTFSUpdateCoordinator | GTFSLocalStopUpdateCoordinator
+# the departures, delays and trips listed at one stop, in the same order
+type _Slot = dict[str, list[Any]]
+# {route_id: {direction_id: {stop_id: _Slot}}}
+type _DepartureTimes = dict[str, dict[str, dict[str, _Slot]]]
+# a vehicle's feature and what its title is made of:
+# (feature, trip_id, vehicle id, crc, direction)
+type _Title = tuple[dict[str, Any], str, str, str, str]
+
+
+def due_in_minutes(timestamp: datetime) -> int:
     """Get the remaining minutes from now until a given (aware, UTC) datetime object."""
     if timestamp.tzinfo is None:
         timestamp = dt_util.utc_from_timestamp(timestamp.timestamp())
@@ -56,14 +74,14 @@ def due_in_minutes(timestamp):
     _LOGGER.debug("GTFS RT due in minutes, timestamp: %s, now_utc: %s", timestamp, dt_util.utcnow())
     return int(diff.total_seconds() / 60)
 
-def _read_feed(self, url, label):
+def _read_feed(self: _Coordinator, url: str, label: str) -> FeedEntities | None:
     """The entities of one of the entity's realtime feeds, read with its
     headers through its source's cache."""
     return get_gtfs_feed_entities(url=url, headers=self._headers, label=label,
                                   owner=self._data.get("file", ""))
 
 
-def get_next_services(self):
+def get_next_services(self: GTFSUpdateCoordinator) -> dict[str, Any]:
     self._stop = self._stop_id
     self._destination = self._destination_id
     self._route = self._route_id
@@ -129,7 +147,7 @@ def get_next_services(self):
     return attrs
 
 
-def _as_epoch(value):
+def _as_epoch(value: object) -> int | None:
     """A departure time, as the coordinator publishes it, in epoch seconds."""
     if hasattr(value, "timestamp"):
         return int(value.timestamp())
@@ -139,7 +157,7 @@ def _as_epoch(value):
         return None
 
 
-def _scheduled_departures(self):
+def _scheduled_departures(self: _Coordinator) -> dict[str, int]:
     """When the board's trips are due at the entity's stop, by trip id.
 
     Read off the departure the coordinator already holds: the next one and
@@ -147,7 +165,7 @@ def _scheduled_departures(self):
     time at all, which the spec allows and plenty of them do; laid on the
     time the timetable announces, that delay is a departure like any other.
     """
-    due = {}
+    due: dict[str, int] = {}
     departure = (getattr(self, "_data", None) or {}).get("next_departure") or {}
     for trip, when in zip(departure.get("next_departures_trip_id") or [],
                           departure.get("next_departures") or []):
@@ -160,7 +178,8 @@ def _scheduled_departures(self):
     return due
 
 
-def _off_board_times(self, feed_entities, scheduled):
+def _off_board_times(self: _Coordinator, feed_entities: FeedEntities,
+                     scheduled: Mapping[str, int]) -> dict[str, tuple[str | None, int]]:
     """{trip_id: (the service day the feed names or None, the time it
     gives at this entity's stop)} of the followed trips the board does not
     list."""
@@ -183,7 +202,7 @@ def _off_board_times(self, feed_entities, scheduled):
     return found
 
 
-def _due_on_its_day(start_date, seconds, near, zone):
+def _due_on_its_day(start_date: str | None, seconds: int, near: int, zone: tzinfo) -> int:
     """Epoch seconds of a stop time `seconds` past its service day's
     midnight, on the day the feed names (YYYYMMDD), else on the day before,
     the day or the day after `near` that puts it nearest to `near`."""
@@ -202,7 +221,8 @@ def _due_on_its_day(start_date, seconds, near, zone):
     return min(due, key=lambda when: abs(when - near))
 
 
-def _scheduled_off_board(self, feed_entities, scheduled):
+def _scheduled_off_board(self: _Coordinator, feed_entities: FeedEntities,
+                         scheduled: Mapping[str, int]) -> dict[str, int]:
     """When the timetable has the followed trips the board does not list,
     at this entity's stop, by trip id, epoch seconds.
 
@@ -213,7 +233,7 @@ def _scheduled_off_board(self, feed_entities, scheduled):
     """
     realtime = _off_board_times(self, feed_entities, scheduled)
     schedule = (getattr(self, "_data", None) or {}).get("schedule")
-    if not realtime or not hasattr(schedule, "engine"):
+    if not realtime or schedule is None or not hasattr(schedule, "engine"):
         return {}
     sql = """
     SELECT trip_id, (julianday(departure_time) - julianday('1970-01-01')) * 86400
@@ -238,7 +258,7 @@ def _scheduled_off_board(self, feed_entities, scheduled):
     return found
 
 
-def _names_trip(watched, seen):
+def _names_trip(watched: str | None, seen: str | None) -> bool:
     """Whether a realtime trip id names the trip being watched.
 
     Exact, or the watched id standing whole inside a longer one, between
@@ -263,7 +283,7 @@ def _names_trip(watched, seen):
     return False
 
 
-def _feed_route_id(self, trip):
+def _feed_route_id(self: _Coordinator, trip: Mapping[str, Any]) -> str:
     ''' The line a trip update names, cut at the source's delimiter '''
     # a json feed leaves out what it does not know, where the
     # protobuf reader writes every field: the line, the stop, the
@@ -280,7 +300,7 @@ def _feed_route_id(self, trip):
     return feed_route_id
 
 
-def _trip_group_route_direction(self, trip):
+def _trip_group_route_direction(self: _Coordinator, trip: Mapping[str, Any]) -> tuple[str, str, str]:
     ''' How a trip update is matched (route or trip), its line and direction '''
     route_id = _feed_route_id(self, trip)
 
@@ -309,7 +329,8 @@ def _trip_group_route_direction(self, trip):
     return group, route_id, direction_id
 
 
-def _follows_trip(self, group, route_id, direction_id, trip_id, entity_id):
+def _follows_trip(self: _Coordinator, group: str, route_id: str, direction_id: str,
+                  trip_id: str, entity_id: str) -> bool:
     ''' Whether a trip update is one of the trips this entity follows '''
     # first part covers start/end and thus multiple RT are possible for the same stop, also, for SIRI route_id do not match so a 'in' is used
     # the second part covers local stops, i.e. per trip, so only one RT possible for that stop
@@ -331,8 +352,10 @@ def _follows_trip(self, group, route_id, direction_id, trip_id, entity_id):
             or trip_id in (getattr(self, "_trip_list", None) or ()))
 
 
-def _stop_time_and_delay(stop, trip_id, scheduled):
+def _stop_time_and_delay(stop: Mapping[str, Any], trip_id: str,
+                         scheduled: Mapping[str, int]) -> tuple[int, int | None]:
     ''' When the vehicle leaves the stop, and its delay '''
+    delay: int | None
     stop_time, delay = stop_update_clock(stop)
 
     if not stop_time and delay and scheduled.get(trip_id):
@@ -349,7 +372,8 @@ def _stop_time_and_delay(stop, trip_id, scheduled):
     return stop_time, delay
 
 
-def _departure_slot(departure_times, route_id, direction_id, stop_id):
+def _departure_slot(departure_times: _DepartureTimes, route_id: str, direction_id: str,
+                    stop_id: str) -> _Slot:
     ''' The departures, delays and trips listed for one stop '''
     if route_id not in departure_times:
         departure_times[route_id] = {}
@@ -366,7 +390,9 @@ def _departure_slot(departure_times, route_id, direction_id, stop_id):
     return slot
 
 
-def _read_stop_updates(self, entity, trip_id, direction_id, start_date, departure_times, scheduled):
+def _read_stop_updates(self: _Coordinator, entity: Mapping[str, Any], trip_id: str, direction_id: str,
+                       start_date: str | None, departure_times: _DepartureTimes,
+                       scheduled: Mapping[str, int]) -> None:
     ''' Add the departures a trip update gives at this entity's stop '''
     entity_id = entity.get("id") or ""
     for stop in entity["trip_update"].get("stop_time_update") or []:
@@ -412,7 +438,7 @@ def _read_stop_updates(self, entity, trip_id, direction_id, start_date, departur
             _LOGGER.debug("Not using realtime stop data for old due-in-minutes: %s", due_in_minutes(departure_dt))
 
 
-def _sort_departure_slots(departure_times):
+def _sort_departure_slots(departure_times: _DepartureTimes) -> None:
     ''' Sort by time, carrying each delay and trip with its own departure '''
     # the three lists are appended together (_read_stop_updates): sorting
     # them apart breaks the pairing
@@ -427,7 +453,8 @@ def _sort_departure_slots(departure_times):
                 slot["trips"] = [p[2] for p in paired]
 
 
-def get_rt_route_trip_statuses(self, feed_entities=None):
+def get_rt_route_trip_statuses(self: _Coordinator,
+                               feed_entities: FeedEntities | None = None) -> _DepartureTimes:
     ''' Get next rt departure for route (multiple) or trip (single) '''
     # explanatory logic
     # sources can provide trip_id with or without route, route with or without direction hence a lot of conditions as the resultset has (!) to include the direction
@@ -435,7 +462,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
     # if response does not provide a direction_id then use trip_id, make directon temporarily nn and when the stop is identified make it equal to the requesting direction
     # in this case the trip still covers the direction
 
-    departure_times = {}
+    departure_times: _DepartureTimes = {}
     # what the feed struck out among the trips this entity follows:
     # {trip_id: start_date or None}, the day being the service day the
     # feed names (YYYYMMDD) when it names one. A trip cancelled today may
@@ -509,7 +536,7 @@ def get_rt_route_trip_statuses(self, feed_entities=None):
     return departure_times
 
 
-def struck_trips(self):
+def struck_trips(self: _Coordinator) -> dict[str, set[str | None]]:
     """{trip_id: start_date or None} of the trips the feed struck out among
     the ones this entity follows, as the last get_rt_route_trip_statuses
     read them: cancelled, or skipping the entity's origin. The day is the
@@ -518,7 +545,8 @@ def struck_trips(self):
                         getattr(self, "_rt_cancelled", None))
 
 
-def merge_struck(*sources):
+def merge_struck(*sources: Mapping[str, set[str | None] | str | None] | None
+                 ) -> dict[str, set[str | None]]:
     """Fold several {trip_id: days} together, keeping every day named.
 
     A trip can be cancelled one day and skip the origin another, and one
@@ -526,7 +554,7 @@ def merge_struck(*sources):
     departure. A day of None means the feed named none, which stands for
     every day the trip runs.
     """
-    merged = {}
+    merged: dict[str, set[str | None]] = {}
     for source in sources:
         for trip, days in (source or {}).items():
             merged.setdefault(trip, set()).update(
@@ -534,7 +562,7 @@ def merge_struck(*sources):
     return merged
 
 
-def _trip_destinations(schedule, trip_ids):
+def _trip_destinations(schedule: Schedule | str | None, trip_ids: Iterable[str]) -> dict[str, str]:
     """{trip_id: where it goes}: its headsign, or its last stop when the
     headsign is empty or a code (a train number, a mission code). Read for
     the vehicles on the map, which each go where their own trip goes."""
@@ -566,7 +594,7 @@ def _trip_destinations(schedule, trip_ids):
     return found
 
 
-def _trip_directions(schedule, trip_ids):
+def _trip_directions(schedule: Schedule | str | None, trip_ids: Iterable[str]) -> dict[str, str]:
     """{trip_id: direction_id} as the database has them, repairs included."""
     trip_ids = sorted({str(t) for t in trip_ids if t})
     if not trip_ids or schedule is None or isinstance(schedule, str):
@@ -583,7 +611,7 @@ def _trip_directions(schedule, trip_ids):
     return {str(trip): str(direction) for trip, direction in rows if direction is not None}
 
 
-def _left_standing(vehicle, max_age, now):
+def _left_standing(vehicle: Mapping[str, Any], max_age: int, now: float) -> bool:
     """Whether a vehicle's position is older than max_age minutes.
 
     A position without a timestamp, absent or 0, is kept: a feed served as
@@ -597,7 +625,8 @@ def _left_standing(vehicle, max_age, now):
     return bool(max_age and stamp and now - stamp > max_age * 60)
 
 
-def _vehicle_way(vehicle, route_id, trip_id, direction, board, static_direction):
+def _vehicle_way(vehicle: Mapping[str, Any], route_id: str, trip_id: str, direction: str,
+                 board: set[str], static_direction: Mapping[str, str]) -> tuple[str | int | None, bool]:
     """(the direction the vehicle is seen on, whether it goes on this map).
 
     The database's direction for its trip first, see get_rt_vehicle_positions,
@@ -614,7 +643,8 @@ def _vehicle_way(vehicle, route_id, trip_id, direction, board, static_direction)
     return seen, wanted
 
 
-def _vehicle_feature(vehicle, route_id, seen, direction):
+def _vehicle_feature(vehicle: Mapping[str, Any], route_id: str, seen: str | int | None,
+                     direction: str) -> tuple[dict[str, Any], _Title]:
     """A vehicle's point on the map, and what its title is made of later:
     (feature, (feature, trip_id, vehicle id, crc, direction)).
 
@@ -648,7 +678,7 @@ def _vehicle_feature(vehicle, route_id, seen, direction):
     return feature, (feature, str(trip_id), veh, crc, way)
 
 
-def _candidate_trips(feed_entities, board, route_id):
+def _candidate_trips(feed_entities: FeedEntities, board: set[str], route_id: str) -> list[str]:
     """The trips of the vehicles that may be this entry's: listed on its
     board, or on its line."""
     return [e["vehicle"]["trip"]["trip_id"] for e in feed_entities
@@ -657,7 +687,7 @@ def _candidate_trips(feed_entities, board, route_id):
                  or _same_route(route_id, e["vehicle"]["trip"]["route_id"]))]
 
 
-def _title_vehicles(self, schedule, titles):
+def _title_vehicles(self: _Coordinator, schedule: Schedule | str | None, titles: list[_Title]) -> None:
     """Title each vehicle kept on the map."""
     # each vehicle titled after where its own trip goes, read for all of
     # them at once: the entry's destination was used, which is where the
@@ -674,9 +704,12 @@ def _title_vehicles(self, schedule, titles):
             element["properties"]["title"] = str(self._route_id) + "(" + direction + ")" + crc + "_" + icon
 
 
-def get_rt_vehicle_positions(self):
+def get_rt_vehicle_positions(self: _Coordinator) -> list[dict[str, Any]]:
+    if not self._vehicle_position_url:
+        # read only for a source with a vehicle feed (get_rt_route_trip_statuses)
+        return []
     feed_entities = _read_feed(self, self._vehicle_position_url, "vehicle_positions")
-    geojson_body = []
+    geojson_body: list[dict[str, Any]] = []
     titles = []
     if feed_entities is None:
         # a failed fetch returns None: iterating it raises, and the caller's
@@ -727,24 +760,25 @@ def get_rt_vehicle_positions(self):
     
 
 
-def get_rt_alerts(self):
+def get_rt_alerts(self: GTFSUpdateCoordinator) -> dict[str, Any]:
     rt_alerts = {}
     # an entry created before this option existed has no alerts_url at all, and
     # subscripting None raised, which cost that entry its whole realtime block
-    if str(self._alerts_url or "")[:4] == "http":
-        feed_entities = _read_feed(self, self._alerts_url, "alerts")
+    url = str(self._alerts_url or "")
+    if url[:4] == "http":
+        feed_entities = _read_feed(self, url, "alerts")
         rt_alerts = journey_alerts(self, feed_entities)
 
     return rt_alerts
 
 
-def update_geojson(self):
+def update_geojson(self: _Coordinator) -> None:
     geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)
     file = os.path.join(geojson_dir, vehicle_positions_name(self._route_id, self._direction))
     _LOGGER.debug("Creating geojson file: %s", file)
     write_json_file(file, self.geojson)
     
-def get_gtfs_rt(hass, path, data):
+def get_gtfs_rt(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> str:
     """Get gtfs rt data."""
     _LOGGER.debug("Getting gtfs rt locally with data: %s", data)
     _headers = data.get('headers','')
@@ -754,6 +788,10 @@ def get_gtfs_rt(hass, path, data):
     url = data["url"]
     file = data["file"] + ".rt"
     url = with_query_key(url, data)
+    if url is None:
+        # an empty url, which the service lets through: nothing to download
+        _LOGGER.error("No GTFS RT url to download %s from", data["file"])
+        return "no_rt_data_file"
     # NOTE: Accept asks the server for a response format and the api key
     # authenticates, so they are unrelated, yet the header is only sent when
     # the key travels in a header. A feed that needs the header and takes its
@@ -776,8 +814,8 @@ def get_gtfs_rt(hass, path, data):
         _LOGGER.debug("config entry data: %s, options: %s", cf_data, cf_options)
         file = data["file"] + "_rt.json"
         try:
-            r = convert_realtime_siri_trips_to_json(url,_headers,_stop_id)
-            open(os.path.join(gtfs_dir, file), "w").write(json.dumps(r))
+            siri_json = convert_realtime_siri_trips_to_json(url,_headers,_stop_id)
+            open(os.path.join(gtfs_dir, file), "w").write(json.dumps(siri_json))
             return "ok"
         except Exception as ex:  # pylint: disable=broad-except
             # a host that does not answer, at every refresh it fails: one
@@ -823,7 +861,8 @@ def get_gtfs_rt(hass, path, data):
             _LOGGER.info("Issues with converting GTFS RT data to JSON, output to string") 
     return "ok"   
         
-def convert_realtime_siri_trips_to_json(url,headers,stop_id):
+def convert_realtime_siri_trips_to_json(url: str, headers: Mapping[str, str | None] | None,
+                                        stop_id: str) -> dict[str, Any] | str:
     
     #Used for Strasbourg, but they differ on output too
     ##the Basic token is a base64 conversion of: d6452e5d-4894-4ee1-8d5b-11ce235eeef6	
@@ -856,7 +895,7 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
         
     _LOGGER.debug("Feed entities: %s", feed_entities)
 
-    json_data = {
+    json_data: dict[str, Any] = {
         "header": {
             "gtfs_realtime_version": feed['ServiceDelivery']['StopMonitoringDelivery'][0].get('version','not_provided'),
             "timestamp": feed['ServiceDelivery']['ResponseTimestamp'],
