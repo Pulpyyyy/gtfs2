@@ -366,7 +366,7 @@ TRANSLATION_DESCRIPTION_PLACEHOLDERS = {
 }
 
 
-def id_of(value):
+def id_of(value: str | None) -> str:
     """The id of an entry field stored as "id: name" (its route, origin or
     destination): what stands before the first ": ". An empty field is ""."""
     return (value or "").split(": ")[0]
