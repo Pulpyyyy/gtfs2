@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 
@@ -66,10 +66,14 @@ from .flow_options import OptionsScreens
 from .flow_journey import _stop_id, _stop_name, _base_name
 from .flow_journey import JourneyScreens
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
 
 
-def _stop_options(stops):
+def _stop_options(stops: list[str]) -> list[selector.SelectOptionDict]:
     """Picker options for "stop_id: Name (sequence)" entries.
 
     The value must stay the entry, get_next_departure cuts the id back out of
@@ -98,12 +102,12 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         # the way the rider leaves the origin, when it was asked: it narrows
         # the destination screen and picks a loop's rotation, the entry does
         # not keep it
-        self._towards = None
+        self._towards: str | None = None
         self._pending_error: str | None = None
         # a source's settings reached from the main menu: the source picked
         # and the screen asked for
-        self._picked_source = None
-        self._source_screen = None
+        self._picked_source: config_entries.ConfigEntry | None = None
+        self._source_screen: str | None = None
         # the screen that picked the source, where an error about the source
         # sends the rider back to (see _back_to_source)
         self._source_step: str | None = None
@@ -206,7 +210,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         self._extract_next_step = "local_stops"
         errors: dict[str, str] = {}       
 
-        async def _show(errors, previous=None):
+        async def _show(errors: dict[str, str], previous: dict | None = None) -> FlowResult:
             """Render the form, keeping what the user already typed."""
             previous = previous or {}
             tracker = previous.get(CONF_DEVICE_TRACKER_ID)
@@ -318,11 +322,11 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             return await self.async_step_real_time()
         return await self.async_step_static_refresh()
 
-    def _source(self):
+    def _source(self) -> config_entries.ConfigEntry | None:
         """The source picked from the main menu."""
         return self._picked_source
 
-    def _save_source(self, options) -> FlowResult:
+    def _save_source(self, options: dict[str, Any]) -> FlowResult:
         """A config flow creates no entry here: it updates the source
         picked, whose listeners follow as from its CONFIGURE button, and
         says so."""
@@ -395,7 +399,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             options = {"0: ALL": await _async_text(self.hass, "agency_all", "All operators")}
             options.update({agency: name if names.count(name) == 1 else agency
                             for agency, name in zip(agencies, names)})
-            errors: dict[str, str] = {}
+            errors = {}
             if user_input is None:
                 return self.async_show_form(
                     step_id="agency",
@@ -685,7 +689,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         return await self.async_step_destination_train()
 
 
-    async def _check_data(self, data):
+    async def _check_data(self, data: dict) -> str | None:
         await _reopen_schedule(self, data)
         _LOGGER.debug("Checkdata pygtfs: %s with data: %s", self._pygtfs, data)
         if isinstance(self._pygtfs, str):
@@ -699,7 +703,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
                 )   
         return None
         
-    async def _check_config(self, data):
+    async def _check_config(self, data: dict) -> str | None:
         schedule = await self.hass.async_add_executor_job(
             get_gtfs, self.hass, DEFAULT_PATH, data
         )
@@ -734,7 +738,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
 class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        self._pygtfs = ""
+        self._pygtfs: Schedule | str | None = ""
         self._user_inputs: dict = {}
 
     @callback
@@ -799,7 +803,7 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
             )
 
 
-def _let_schedule_go(self):
+def _let_schedule_go(self: ConfigFlow | GTFSOptionsFlowHandler) -> None:
     """Let the datasource the flow opened go, however the flow ended.
 
     The flow opens the source's schedule to list its lines and stops,
@@ -812,7 +816,7 @@ def _let_schedule_go(self):
     self._pygtfs = ""
 
 
-async def _reopen_schedule(self, data):
+async def _reopen_schedule(self: ConfigFlow | GTFSOptionsFlowHandler, data: dict) -> None:
     """Let go of the schedule the flow holds and open the source's afresh:
     a refresh or an import may have put another file under its name."""
     close_schedule(self._pygtfs)
@@ -821,7 +825,7 @@ async def _reopen_schedule(self, data):
     )
 
 
-async def _check_stop_list(self, data):
+async def _check_stop_list(self: GTFSOptionsFlowHandler, data: dict) -> str | None:
     _LOGGER.debug("Checkstops option with data: %s", data)
     await _reopen_schedule(self, data)
     if isinstance(self._pygtfs, str):
