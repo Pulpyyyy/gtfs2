@@ -7,10 +7,12 @@ owns_leg_file). Written by exports.export_leg from the executor.
 """
 from __future__ import annotations
 
+from collections.abc import Container, Mapping, Sequence
 import datetime
 import glob
 import logging
 import os
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
@@ -21,10 +23,20 @@ from .gtfs_helper import agency_zone, gtfs_seconds, shown_ends
 from .places import _call_type
 from .rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, delay_of, stop_relationship, stop_update_clock,
-    trip_relationship,
+    FeedEntities, trip_relationship,
 )
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from homeassistant.core import HomeAssistant
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
+
+# a call of a trip, as _read_trip_calls selects it: trip_id, stop_id,
+# stop_name, stop_lat, stop_lon, stop_sequence, arrival_time,
+# departure_time, parent_station, pickup_type, drop_off_type
+type _Call = Sequence[Any]
 
 
 # how many of the listed departures the leg file times stop by stop: a board
@@ -33,7 +45,7 @@ _LOGGER = logging.getLogger(__name__)
 LEG_TRIPS_MAX = 20
 
 
-def leg_geojson_name(route_id, direction, name):
+def leg_geojson_name(route_id: str, direction: str | int | None, name: str) -> str:
     """File name of the leg export: the line and direction first, so a
     folder listing reads a line's files together, then the entry's name,
     since it describes what THIS sensor rides and two entries of one line
@@ -48,7 +60,7 @@ def leg_geojson_name(route_id, direction, name):
 LEG_DIRECTIONS = ("0", "1", "none")
 
 
-def leg_geojson_pattern(name) -> tuple[str, ...]:
+def leg_geojson_pattern(name: str) -> tuple[str, ...]:
     """The globs that find an entry's leg file whatever line it was written
     under: a train entry's departure may name a route the entry does not.
 
@@ -62,7 +74,7 @@ def leg_geojson_pattern(name) -> tuple[str, ...]:
     return tuple(f"*_{direction}_leg_{part}.json" for direction in LEG_DIRECTIONS)
 
 
-def owns_leg_file(path, name) -> bool:
+def owns_leg_file(path: str, name: str) -> bool:
     """Whether a file a leg glob found is this entry's own.
 
     The glob's star takes anything, another entry's name included: "Tram 1
@@ -81,7 +93,8 @@ def owns_leg_file(path, name) -> bool:
     return False
 
 
-def _leg_timezone(schedule, route_id, departure, hass):
+def _leg_timezone(schedule: Schedule, route_id: str | None, departure: Mapping[str, Any],
+                  hass: HomeAssistant) -> datetime.tzinfo:
     """The zone the line's clocks are written in: the agency's, as the
     departure query reads it, else the origin stop's, else Home Assistant's."""
     zone = agency_zone(schedule, route_id)
@@ -91,15 +104,15 @@ def _leg_timezone(schedule, route_id, departure, hass):
     return dt_util.get_time_zone(name) or datetime.timezone.utc
 
 
-def _listed_trips(departure):
+def _listed_trips(departure: Mapping[str, Any]) -> tuple[str | None, list[str], dict[str, str]]:
     """The trips a leg file times, the ridden one first, and when each
     leaves the origin, as the sensor says it."""
     trip_id = str(departure.get("trip_id") or "") or None
-    trip_ids = []
+    trip_ids: list[str] = []
     for t in [trip_id] + list(departure.get("next_departures_trip_id") or []):
         if t and str(t) not in trip_ids:
             trip_ids.append(str(t))
-    leaves = {}
+    leaves: dict[str, str] = {}
     for t, when in zip(departure.get("next_departures_trip_id") or [], departure.get("next_departures") or []):
         leaves.setdefault(str(t), when)
     if trip_id and departure.get("departure_time"):
@@ -108,10 +121,11 @@ def _listed_trips(departure):
     return trip_id, trip_ids[:LEG_TRIPS_MAX], leaves
 
 
-def _read_trip_calls(schedule, trip_ids, origin_id):
+def _read_trip_calls(schedule: Schedule, trip_ids: Sequence[str],
+                     origin_id: str | None) -> tuple[dict[str, list[_Call]], str | None]:
     """The calls of each trip, in their order, and the station the origin
     belongs to."""
-    stops_by_trip = {}
+    stops_by_trip: dict[str, list[_Call]] = {}
     if not trip_ids:
         return stops_by_trip, None
     params = {f"t{i}": t for i, t in enumerate(trip_ids)}
@@ -132,7 +146,8 @@ def _read_trip_calls(schedule, trip_ids, origin_id):
     return stops_by_trip, (parent[0] if parent and parent[0] else None)
 
 
-def _origin_call(rows, origin_id, origin_parent):
+def _origin_call(rows: Sequence[_Call], origin_id: str | None,
+                 origin_parent: str | None) -> _Call | None:
     """The trip's call at the origin: the entry's record, else a platform
     of the same station (the trip may serve a sibling record), else None."""
     origin_row = next((r for r in rows if str(r[1]) == origin_id), None)
@@ -141,7 +156,8 @@ def _origin_call(rows, origin_id, origin_parent):
     return origin_row
 
 
-def _service_midnight(when, rows, origin_row, zone):
+def _service_midnight(when: object, rows: Sequence[_Call], origin_row: _Call | None,
+                      zone: datetime.tzinfo) -> datetime.datetime | None:
     """The service day's midnight of a trip, in the line's zone: the
     origin's departure, as listed, minus the origin's stored clock. Without
     a call at the origin, the trip's first stop stands in."""
@@ -159,14 +175,14 @@ def _service_midnight(when, rows, origin_row, zone):
     return (local - datetime.timedelta(seconds=seconds)).replace(hour=0, minute=0, second=0, microsecond=0)
 
 
-def _leg_time(midnight, stored):
+def _leg_time(midnight: datetime.datetime | None, stored: object) -> str | None:
     seconds = gtfs_seconds(stored)
     if midnight is None or seconds is None:
         return None
     return (midnight + datetime.timedelta(seconds=seconds)).astimezone(datetime.timezone.utc).isoformat()
 
 
-def _boarding_first(rows, origin_row):
+def _boarding_first(rows: Sequence[_Call], origin_row: _Call | None) -> Sequence[_Call]:
     """The trip's calls, the ride's own first.
 
     A stop is a key here, so a trip calling twice at one stop can only
@@ -181,7 +197,7 @@ def _boarding_first(rows, origin_row):
     return sorted(rows, key=lambda r: (r[5] < origin_row[5], r[5]))
 
 
-def _leg_call(midnight, r):
+def _leg_call(midnight: datetime.datetime | None, r: _Call) -> dict[str, Any]:
     return {
         "sequence": r[5],
         "scheduled_arrival": _leg_time(midnight, r[6]),
@@ -194,9 +210,10 @@ def _leg_call(midnight, r):
     }
 
 
-def _leg_features(rows, midnight, trip_id, route_id, direction):
+def _leg_features(rows: Sequence[_Call], midnight: datetime.datetime | None, trip_id: str | None,
+                  route_id: str | None, direction: str | int | None) -> list[dict[str, Any]]:
     """The ridden trip's calls as map points."""
-    features = []
+    features: list[dict[str, Any]] = []
     for r in rows:
         # each point carries its own call, not the one the stop
         # keeps: on a loop the two differ
@@ -222,7 +239,8 @@ def _leg_features(rows, midnight, trip_id, route_id, direction):
     return features
 
 
-def _leg_runs(t, trips, trip_updates):
+def _leg_runs(t: str, trips: dict[str, dict[str, Any]],
+              trip_updates: Sequence[Mapping[str, Any]]) -> list[tuple[str, dict[str, Any], Mapping[str, Any]]]:
     """(key, run, trip update) of each run the feed reports for trip t: the
     trip itself for one, a copy keyed trip_id@start_time for each of
     several (a frequency-based trip)."""
@@ -237,7 +255,8 @@ def _leg_runs(t, trips, trip_updates):
     return keyed
 
 
-def _call_of(run, update, by_sequence, called_twice):
+def _call_of(run: Mapping[str, Any], update: Mapping[str, Any], by_sequence: Mapping[Any, str],
+             called_twice: Container[str]) -> dict[str, Any] | None:
     """The call of the run a stop update times, None when it names none of
     them, or names the pass of a stop called twice that the ride skips."""
     stop_id = str(update.get("stop_id") or "") or by_sequence.get(update.get("stop_sequence"))
@@ -255,7 +274,8 @@ def _call_of(run, update, by_sequence, called_twice):
     return stop
 
 
-def _time_call(run, update, by_sequence, called_twice):
+def _time_call(run: Mapping[str, Any], update: Mapping[str, Any], by_sequence: Mapping[Any, str],
+               called_twice: Container[str]) -> bool:
     """Lay one stop update on its call of the run; True when the call now
     carries realtime (a time, a delay, a skip)."""
     stop = _call_of(run, update, by_sequence, called_twice)
@@ -268,6 +288,7 @@ def _time_call(run, update, by_sequence, called_twice):
     if called == NO_DATA_STOP:
         stop["no_data"] = True
         return False
+    delay: int | None
     when, delay = stop_update_clock(update)
     if when:
         stop["expected"] = datetime.datetime.fromtimestamp(int(when), datetime.timezone.utc).isoformat()
@@ -282,10 +303,11 @@ def _time_call(run, update, by_sequence, called_twice):
     return False
 
 
-def _time_leg_trips(trips, called_twice, feed_entities):
+def _time_leg_trips(trips: dict[str, dict[str, Any]], called_twice: Mapping[str, Container[str]],
+                    feed_entities: FeedEntities | None) -> bool:
     """The realtime of every listed trip, at every stop the feed covers;
     True when the feed said anything of them."""
-    updates = {}
+    updates: dict[str, list[Mapping[str, Any]]] = {}
     for entity in feed_entities or []:
         trip_update = entity.get("trip_update") if isinstance(entity, dict) else None
         if not trip_update:
@@ -313,7 +335,7 @@ def _time_leg_trips(trips, called_twice, feed_entities):
     return realtime
 
 
-def write_leg_file(hass, data, feed_entities=None):
+def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: FeedEntities | None = None) -> None:
     """Write www/gtfs2/<entry>_leg.json: the trip the next departure rides,
     stop by stop, and for every listed departure when its trip calls at
     every stop, scheduled and, where the feed says, expected.
@@ -344,19 +366,19 @@ def write_leg_file(hass, data, feed_entities=None):
     stops_by_trip, origin_parent = _read_trip_calls(schedule, trip_ids, origin_id)
     zone = _leg_timezone(schedule, route_id, departure, hass)
 
-    trips = {}
-    features = []
+    trips: dict[str, dict[str, Any]] = {}
+    features: list[dict[str, Any]] = []
     # the stops a trip calls at twice, the only ones where the feed's own
     # stop_sequence has to be believed over the stop id
-    called_twice = {}
+    called_twice: dict[str, set[str]] = {}
     for t in trip_ids:
         rows = stops_by_trip.get(t)
         if not rows:
             continue
         origin_row = _origin_call(rows, origin_id, origin_parent)
         midnight = _service_midnight(leaves.get(t), rows, origin_row, zone)
-        stops = {}
-        seen = set()
+        stops: dict[str, dict[str, Any]] = {}
+        seen: set[str] = set()
         for r in _boarding_first(rows, origin_row):
             stop_id = str(r[1])
             if stop_id in seen:
@@ -370,7 +392,7 @@ def write_leg_file(hass, data, feed_entities=None):
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     file = os.path.join(geojson_dir, leg_geojson_name(route_id, direction, name))
     _LOGGER.debug("Creating leg geojson file: %s", file)
-    properties = {
+    properties: dict[str, Any] = {
         "name": name,
         "route_id": route_id,
         "direction_id": direction,
@@ -380,8 +402,8 @@ def write_leg_file(hass, data, feed_entities=None):
         "timezone": str(zone),
         "realtime": realtime,
     }
-    body = {"type": "FeatureCollection", "properties": properties,
-            "features": features, "trips": trips}
+    body: dict[str, Any] = {"type": "FeatureCollection", "properties": properties,
+                            "features": features, "trips": trips}
     write_json_if_changed(
         file,
         {**body, "properties": {**properties,
@@ -396,7 +418,7 @@ def write_leg_file(hass, data, feed_entities=None):
 _LEG_FILES: dict[str, str] = {}
 
 
-def _drop_other_legs(geojson_dir, name, kept):
+def _drop_other_legs(geojson_dir: str, name: str, kept: str) -> None:
     """Remove the entry's leg files other than the one just written.
 
     The leg file is named after the line and the direction of the departure
