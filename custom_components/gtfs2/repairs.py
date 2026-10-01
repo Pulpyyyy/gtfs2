@@ -11,6 +11,8 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant.components.repairs import ConfirmRepairFlow, RepairsFlow
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResult
 
 from .datasource_services import async_prune_line
 from .rt_source import datasource_entry
@@ -20,10 +22,10 @@ from .source_refresh import async_refresh_source
 class RetryRefreshFlow(RepairsFlow):
     """Try a source's failed update again, now."""
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
         return await self.async_step_confirm()
 
-    async def async_step_confirm(self, user_input=None):
+    async def async_step_confirm(self, user_input: dict | None = None) -> FlowResult:
         file = self.data["file"]
         if user_input is None:
             return self.async_show_form(step_id="confirm", data_schema=vol.Schema({}),
@@ -41,10 +43,10 @@ class RetryRefreshFlow(RepairsFlow):
 class DropLineFlow(RepairsFlow):
     """Drop the timetable of a line no sensor reads any more."""
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
         return await self.async_step_confirm()
 
-    async def async_step_confirm(self, user_input=None):
+    async def async_step_confirm(self, user_input: dict | None = None) -> FlowResult:
         file, route, line = self.data["file"], self.data["route"], self.data["line"]
         if user_input is None:
             return self.async_show_form(step_id="confirm", data_schema=vol.Schema({}),
@@ -55,7 +57,8 @@ class DropLineFlow(RepairsFlow):
         return self.async_create_entry(data={})
 
 
-async def async_create_fix_flow(hass, issue_id, data):
+async def async_create_fix_flow(hass: HomeAssistant, issue_id: str,
+                                data: dict[str, str | int | float | None] | None) -> RepairsFlow:
     """The fix of one issue, by its kind."""
     if issue_id.startswith("refresh_failed_"):
         return RetryRefreshFlow()
