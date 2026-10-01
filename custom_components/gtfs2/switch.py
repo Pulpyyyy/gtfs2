@@ -1,6 +1,8 @@
 """The switch that silences a source's realtime without losing its config."""
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
@@ -55,10 +57,10 @@ class GTFSDatasourceRTSwitch(SwitchEntity):
     def is_on(self) -> bool:
         return self._entry.options.get(CONF_RT_ENABLED, True)
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         self._set_enabled(True)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         self._set_enabled(False)
 
     def _set_enabled(self, value: bool) -> None:
