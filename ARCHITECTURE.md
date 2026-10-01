@@ -308,7 +308,7 @@ layer uses:
 │ Source & feed layer      │  where the data comes from
 └──────────────────────────┘
 
-  shared             const.py, key_mask.py, notifications.py
+  shared             const.py, key_mask.py, file_url.py, notifications.py
 ```
 
 **Dependency rule.** A module imports from its own layer, from a lower

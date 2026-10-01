@@ -19,6 +19,7 @@ from urllib.parse import quote
 import requests
 
 from .const import CONF_API_KEY
+from .file_url import FILE_SCHEME, FileAdapter
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -105,6 +106,8 @@ class _KeyStaysHome(requests.Session):
     def __init__(self, headers: Mapping[str, str | None] | None) -> None:
         super().__init__()
         self._given = {name.lower() for name in (headers or {})} - _SAFE_ON_REDIRECT
+        # a feed on this machine is fetched by its file:// url like any other
+        self.mount(FILE_SCHEME, FileAdapter())
 
     def rebuild_auth(self, prepared_request: requests.PreparedRequest,
                      response: requests.Response) -> None:
@@ -116,7 +119,8 @@ class _KeyStaysHome(requests.Session):
 
 
 def fetch(method: str, url: str, headers: Mapping[str, str | None] | None = None, **kwargs: Any) -> requests.Response:
-    """requests.request, with the caller's headers kept from other hosts."""
+    """requests.request, with the caller's headers kept from other hosts,
+    and a file:// url answered as a host would (file_url)."""
     with _KeyStaysHome(headers) as session:
         return session.request(method, url, headers=headers, **kwargs)
 
