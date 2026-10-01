@@ -10,19 +10,38 @@ and _journey_stops), which of the texts to show and in which language
 """
 from __future__ import annotations
 
+from collections.abc import Collection, Iterable, Mapping
 import logging
 import threading
+from typing import TYPE_CHECKING, Any
 
 import homeassistant.util.dt as dt_util
 from sqlalchemy.sql import text as sql_text
 
 from .gtfs_db import file_edition
-from .rt_feed import _same_route
+from .rt_feed import FeedEntities, _same_route
+
+if TYPE_CHECKING:
+    # for the annotations only
+    from google.transit import gtfs_realtime_pb2
+    from homeassistant.core import HomeAssistant
+
+    from .coordinator import GTFSUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
+# the fields of one informed entity, as _entity_fields reads them: stop,
+# route, trip, agency, route_type, direction, None for each one left out
+type _Fields = tuple[str | None, str | None, str | None, str | None, str | None, str | None]
 
-def _alert_kind(alert):
+# a feed's alerts as _prepared reads them once: each alert with its
+# entities' fields, then which alerts name a trip, a stop, a line with no
+# stop, and the ones as wide as an operator or a kind of line
+type _Prepared = tuple[list[tuple[gtfs_realtime_pb2.Alert, list[_Fields]]],
+                       dict[str, set[int]], dict[str, set[int]], dict[str, set[int]], set[int]]
+
+
+def _alert_kind(alert: gtfs_realtime_pb2.Alert) -> dict[str, str]:
     """The GTFS-RT cause and effect of an alert, as their spec names.
 
     The feed carries far more than the sentence gtfs2 keeps: a cause out of
@@ -34,7 +53,7 @@ def _alert_kind(alert):
     for a field the feed never set, so publishing them would put a value on an
     attribute that has nothing to say. Absent means "the feed did not say".
     """
-    out = {}
+    out: dict[str, str] = {}
     for field in ("cause", "effect"):
         value = getattr(alert, field, None)
         if value is None:
@@ -74,7 +93,7 @@ _ALERT_EFFECT_ORDER = (
 _ALERTS_KEPT = 5
 
 
-def _to_come(item, ride=None):
+def _to_come(item: Mapping[str, Any], ride: tuple[str, str] | None = None) -> bool:
     """Whether none of an alert's published periods covers the ride ahead,
     ride being (now, departure announced) as _stamp writes them. An alert
     whose every period is over is not published, so one none covers has a
@@ -87,7 +106,7 @@ def _to_come(item, ride=None):
                    for p in item["periods"])
 
 
-def _alert_severity(item, ride=None):
+def _alert_severity(item: Mapping[str, Any], ride: tuple[str, str] | None = None) -> tuple[int, int]:
     """Rank of one alert. What concerns the next departure comes before what
     names a later one only or starts after it; then the effect, and an effect
     the feed never stated comes last: _alert_kind drops UNKNOWN_EFFECT, so a
@@ -99,7 +118,7 @@ def _alert_severity(item, ride=None):
         return (later, len(_ALERT_EFFECT_ORDER))
 
 
-def _period_bound(period, field):
+def _period_bound(period: gtfs_realtime_pb2.TimeRange, field: str) -> int | None:
     """One end of an active_period, None when the feed left it open."""
     try:
         if not period.HasField(field):
@@ -112,7 +131,7 @@ def _period_bound(period, field):
     return int(value) or None
 
 
-def _alert_when(alert, now_ts, until_ts):
+def _alert_when(alert: gtfs_realtime_pb2.Alert, now_ts: int, until_ts: int) -> str:
     """Whether an alert covers the ride ahead: "now", "later" or "over".
 
     Networks publish works weeks in advance, so an alert says when it
@@ -137,12 +156,12 @@ def _alert_when(alert, now_ts, until_ts):
     return "later" if later else "over"
 
 
-def _stamp(ts):
+def _stamp(ts: int) -> str:
     """A period bound as the attributes write a time."""
     return dt_util.utc_from_timestamp(ts).isoformat()
 
 
-def _alert_periods(alert):
+def _alert_periods(alert: gtfs_realtime_pb2.Alert) -> list[dict[str, str]]:
     """Every period of an alert, in the feed's order, as
     [{"start": iso, "end": iso}], a bound the feed left open left out.
 
@@ -151,7 +170,7 @@ def _alert_periods(alert):
     """
     out = []
     for period in getattr(alert, "active_period", None) or []:
-        bounds = {}
+        bounds: dict[str, str] = {}
         for field in ("start", "end"):
             ts = _period_bound(period, field)
             if ts:
@@ -160,7 +179,7 @@ def _alert_periods(alert):
     return out
 
 
-def _rank_alerts(items, ride=None):
+def _rank_alerts(items: list[dict[str, Any]], ride: tuple[str, str] | None = None) -> list[dict[str, Any]]:
     """The alerts of one end of the journey, worst first and without repeats.
 
     SNCF publishes the same alert under two ids, word for word, and the reader
@@ -170,7 +189,7 @@ def _rank_alerts(items, ride=None):
     still decides, and the cap is applied last so what is kept is the worst.
     ride is (now, departure announced), see _to_come.
     """
-    seen = set()
+    seen: set[tuple[str, str | None, str | None, tuple[str, ...]]] = set()
     unique = []
     for item in items:
         key = (item.get("text", ""), item.get("cause"), item.get("effect"),
@@ -185,10 +204,10 @@ def _rank_alerts(items, ride=None):
 
 # the station of a stop does not change while the datasource does not, so the
 # lookup is done once per stop and kept, keyed by datasource
-_STOP_ALIASES = {}
+_STOP_ALIASES: dict[tuple[str | None, str], frozenset[str]] = {}
 
 
-def _same_trip(named, trip_id):
+def _same_trip(named: str | None, trip_id: str | None) -> bool:
     """Whether an alert trip selector names the trip being watched.
 
     Exact first. Then the truncated form: SNCF calls a train OCESN853603F in
@@ -210,12 +229,13 @@ def _same_trip(named, trip_id):
 # what each source's database was when its stops were last read: the two
 # caches above hold what a stop is called and which station it hangs from,
 # and a rebuild can rename a stop, move it under another station or drop it
-_EDITIONS: dict = {}
+_EDITIONS: dict[str, tuple[int, int, int] | str] = {}
 
 
-def _edition_of(schedule):
+def _edition_of(schedule: Any) -> tuple[int, int, int] | str:
     """The source's database as far as a cache cares: which file, its last
-    write, its size (file_edition)."""
+    write, its size (file_edition). The schedule is told by its engine: a
+    sentinel string or None has none."""
     try:
         path = schedule.engine.url.database
     except AttributeError:
@@ -223,7 +243,7 @@ def _edition_of(schedule):
     return file_edition(path) or "unknown"
 
 
-def forget_stale_stops(data):
+def forget_stale_stops(data: Mapping[str, Any] | None) -> None:
     """Drop what was read from an older edition of this source's database.
 
     The stop caches are keyed by the source's file name, which a rebuild
@@ -247,7 +267,7 @@ def forget_stale_stops(data):
     _LOGGER.debug("Stops of %s read afresh, its database has changed", file)
 
 
-def _stop_aliases(data, stop_id):
+def _stop_aliases(data: Mapping[str, Any] | None, stop_id: str | None) -> set[str] | frozenset[str]:
     """The ids a stop can be named by: its own, and the station above it.
 
     Feeds derived from NeTEx publish a station and each of its platforms as
@@ -286,16 +306,16 @@ def _stop_aliases(data, stop_id):
     # used to add the arrival's own aliases to it with |=, which grew the
     # entry of one stop with the platforms of another and handed those
     # alerts to every sensor departing from there
-    aliases = frozenset(aliases)
-    _STOP_ALIASES[key] = aliases
-    return aliases
+    frozen = frozenset(aliases)
+    _STOP_ALIASES[key] = frozen
+    return frozen
 
 
 # the agency and route_type of a line, per datasource, as _STOP_ALIASES
-_ROUTE_FACTS = {}
+_ROUTE_FACTS: dict[tuple[str | None, str], tuple[str | None, ...]] = {}
 
 
-def _route_facts(data, route_id):
+def _route_facts(data: Mapping[str, Any] | None, route_id: str | None) -> tuple[str | None, ...]:
     """(agency_id, route_type) of the line, as strings, None where unknown.
 
     An alert may name a whole agency, or every line of one kind, and
@@ -318,7 +338,7 @@ def _route_facts(data, route_id):
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.debug("Could not read line %s: %s", route_id, ex)
         return None, None
-    facts = (None, None)
+    facts: tuple[str | None, ...] = (None, None)
     if row is not None:
         facts = tuple(str(v) if v not in (None, "", "None") else None for v in row)
     _ROUTE_FACTS[key] = facts
@@ -326,10 +346,10 @@ def _route_facts(data, route_id):
 
 
 # the name a stop is shown by, per datasource, as _STOP_ALIASES
-_STOP_NAMES = {}
+_STOP_NAMES: dict[tuple[str | None, str], str] = {}
 
 
-def _stop_names(data, stop_ids):
+def _stop_names(data: Mapping[str, Any] | None, stop_ids: Iterable[str]) -> list[str]:
     """The names of the stops an alert names, their station's where they
     have one, each once.
 
@@ -341,7 +361,7 @@ def _stop_names(data, stop_ids):
     """
     data = data or {}
     schedule = data.get("schedule")
-    names = []
+    names: list[str] = []
     if schedule is None:
         return names
     for stop_id in stop_ids:
@@ -372,7 +392,7 @@ def _stop_names(data, stop_ids):
     return names
 
 
-def _journey_stops(data, trip_id=None):
+def _journey_stops(data: Mapping[str, Any] | None, trip_id: str | None = None) -> set[str]:
     """Every stop of the journey, from where you get on to where you get off.
 
     An alert can name a station in the middle of the run: a lift out of order
@@ -393,7 +413,7 @@ def _journey_stops(data, trip_id=None):
     last = (departure.get("destination_stop_time") or {}).get("Sequence")
     if schedule is None or not trip_id or first is None or last is None:
         return set()
-    stops = set()
+    stops: set[str] = set()
     try:
         with schedule.engine.connect() as conn:
             rows = conn.execute(
@@ -415,13 +435,13 @@ def _journey_stops(data, trip_id=None):
     return stops
 
 
-def _alert_language(hass):
+def _alert_language(hass: HomeAssistant | None) -> str:
     """The language to read an alert in: the one Home Assistant is set to."""
     config = getattr(hass, "config", None)
     return getattr(config, "language", None) or "en"
 
 
-def _alert_text(translated, language):
+def _alert_text(translated: gtfs_realtime_pb2.TranslatedString, language: str) -> str:
     """One TranslatedString, in the wanted language, as plain text.
 
     The order of the translations belongs to the feed, not to the reader: SNCF
@@ -447,7 +467,7 @@ def _alert_text(translated, language):
     return translations[0].text.strip()
 
 
-def _entity_fields(x):
+def _entity_fields(x: gtfs_realtime_pb2.EntitySelector) -> _Fields:
     """The fields of one informed entity, None for each one it leaves out:
     (stop, route, trip, agency, route_type, direction), the last two as
     text."""
@@ -459,7 +479,8 @@ def _entity_fields(x):
             str(x.direction_id) if x.HasField("direction_id") else None)
 
 
-def _about_something_else(fields, route_id, route_facts, direction):
+def _about_something_else(fields: _Fields, route_id: str, route_facts: tuple[str | None, ...],
+                          direction: str | None) -> bool:
     """Whether an entity names another line, operator, kind of line or way
     than the journey's. An unknown fact of the journey judges nothing; the
     line is compared the way the trip updates are (_same_route)."""
@@ -474,7 +495,8 @@ def _about_something_else(fields, route_id, route_facts, direction):
                 and e_direction != direction))                          # the other way
 
 
-def _read_trip_entity(fields, hits, trip_id, followed, journey_stops):
+def _read_trip_entity(fields: _Fields, hits: dict[str, Any], trip_id: str | None,
+                      followed: list[str], journey_stops: set[str]) -> bool:
     """Note the trips of the board an entity names; True when that is all
     it says of this journey, False when it names the next departure and its
     stop is still to be read as one of the journey's ends."""
@@ -499,7 +521,8 @@ def _read_trip_entity(fields, hits, trip_id, followed, journey_stops):
     return False
 
 
-def _read_stop_entity(fields, hits, origin_ids, destination_ids, journey_ids):
+def _read_stop_entity(fields: _Fields, hits: dict[str, Any], origin_ids: Collection[str],
+                      destination_ids: Collection[str], journey_ids: Collection[str]) -> None:
     """Which end of the journey an entity names, or the whole line: one
     naming a line, an operator or a kind of line and nothing narrower is
     about the whole line."""
@@ -521,8 +544,11 @@ def _read_stop_entity(fields, hits, origin_ids, destination_ids, journey_ids):
         hits["stops"].append(e_stop)
 
 
-def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
-                 journey_ids=None, trip_ids=(), route_facts=(None, None), direction=None):
+def _alert_scope(alert: gtfs_realtime_pb2.Alert, origin_ids: Collection[str],
+                 destination_ids: Collection[str], route_id: str, trip_id: str | None = None,
+                 journey_ids: Collection[str] | None = None, trip_ids: Iterable[str] = (),
+                 route_facts: tuple[str | None, ...] = (None, None),
+                 direction: str | int | None = None) -> dict[str, Any]:
     """Which end of this journey an alert names, over ALL its informed entities.
 
     The loop used to reassign stop_id and route_id on every turn and compare
@@ -557,14 +583,17 @@ def _alert_scope(alert, origin_ids, destination_ids, route_id, trip_id=None,
                      journey_ids, trip_ids, route_facts, direction)
 
 
-def _scope_of(entities, origin_ids, destination_ids, route_id, trip_id=None,
-              journey_ids=None, trip_ids=(), route_facts=(None, None), direction=None):
+def _scope_of(entities: list[_Fields], origin_ids: Collection[str],
+              destination_ids: Collection[str], route_id: str, trip_id: str | None = None,
+              journey_ids: Collection[str] | None = None, trip_ids: Iterable[str] = (),
+              route_facts: tuple[str | None, ...] = (None, None),
+              direction: str | int | None = None) -> dict[str, Any]:
     """_alert_scope over the fields of an alert's informed entities, read
     once for the feed (_prepared)."""
     journey_ids = journey_ids or set()
     direction = str(direction) if str(direction) in ("0", "1") else None
-    hits = {"origin": False, "destination": False, "route": False,
-            "trip": False, "journey": False, "trips": [], "stops": []}
+    hits: dict[str, Any] = {"origin": False, "destination": False, "route": False,
+                            "trip": False, "journey": False, "trips": [], "stops": []}
     followed = [str(t) for t in [trip_id, *trip_ids] if t]
     journey_stops = set(origin_ids) | set(destination_ids) | set(journey_ids)
     for fields in entities:
@@ -582,12 +611,12 @@ def _scope_of(entities, origin_ids, destination_ids, route_id, trip_id=None,
 # 10,404 entities. The fields are now read once per feed, with indexes a
 # sensor picks its candidates from. Kept for the last few feeds, each
 # with the feed itself so its id is not reused while it is here
-_PREPARED: dict[int, tuple] = {}
+_PREPARED: dict[int, tuple[FeedEntities, _Prepared]] = {}
 _PREPARED_GUARD = threading.Lock()
 _PREPARED_KEEP = 8
 
 
-def _prepared(feed_entities):
+def _prepared(feed_entities: FeedEntities) -> _Prepared:
     """(alerts, by_trip, by_stop, by_route, wide) of a feed: each alert
     with the fields of its informed entities (_entity_fields), in the
     feed's order, and which of them an entity names by trip, by stop, by
@@ -597,6 +626,11 @@ def _prepared(feed_entities):
         found = _PREPARED.get(id(feed_entities))
     if found is not None and found[0] is feed_entities:
         return found[1]
+    alerts: list[tuple[gtfs_realtime_pb2.Alert, list[_Fields]]]
+    by_trip: dict[str, set[int]]
+    by_stop: dict[str, set[int]]
+    by_route: dict[str, set[int]]
+    wide: set[int]
     alerts, by_trip, by_stop, by_route, wide = [], {}, {}, {}, set()
     for entity in feed_entities:
         if not entity.HasField("alert"):
@@ -621,7 +655,8 @@ def _prepared(feed_entities):
     return prepared
 
 
-def _candidates(prepared, followed, stops, route_id):
+def _candidates(prepared: _Prepared, followed: list[str], stops: Iterable[str],
+                route_id: str) -> list[int]:
     """The alerts of a prepared feed that can say anything of a journey, in
     the feed's order: every other one names none of its trips (by
     _same_trip, the id or the id an alert cuts before its agency), none of
@@ -640,35 +675,36 @@ def _candidates(prepared, followed, stops, route_id):
     return sorted(found)
 
 
-def _board_trips(coordinator):
+def _board_trips(coordinator: GTFSUpdateCoordinator) -> tuple[str | None, list[str]]:
     """(head, listed): the trip of the next departure, None when unknown,
     and the ones listed behind it, so an alert naming any of them is
     read."""
-    head = str(getattr(coordinator, "_trip_id", None) or "")
+    head: str | None = str(getattr(coordinator, "_trip_id", None) or "")
     head = head if head and head != "no_trip_information" else None
-    listed = []
+    listed: list[str] = []
     for t in getattr(coordinator, "_trip_list", None) or []:
         if t and str(t) != head and str(t) not in listed:
             listed.append(str(t))
     return head, listed
 
 
-def _ride_span(data):
+def _ride_span(data: Mapping[str, Any]) -> tuple[int, int]:
     """(now, until) as timestamps: from now to the departure the sensor
     announces, the span an alert has to cover to be about this journey."""
     now_ts = int(dt_util.utcnow().timestamp())
-    leaves = (data.get("next_departure") or {}).get("departure_time")
+    leaves: Any = (data.get("next_departure") or {}).get("departure_time")
     if hasattr(leaves, "timestamp"):
         return now_ts, max(now_ts, int(leaves.timestamp()))
     return now_ts, now_ts
 
 
-def _alert_item(alert, hits, data, language, head):
+def _alert_item(alert: gtfs_realtime_pb2.Alert, hits: dict[str, Any], data: Mapping[str, Any],
+                language: str, head: str | None) -> dict[str, Any]:
     """What a card gets of one alert about the journey."""
     # an alert with no readable header still carries its cause and its
     # effect, and it does not take a sentence to say that something is
     # going on
-    item = {"text": _alert_text(alert.header_text, language)}
+    item: dict[str, Any] = {"text": _alert_text(alert.header_text, language)}
     item.update(_alert_kind(alert))
     # when it applies: a later alert starts after the departure
     # announced, and is kept, since a rider wants to know, but ranked
@@ -691,10 +727,11 @@ def _alert_item(alert, hits, data, language, head):
     return item
 
 
-def _publish_alerts(origin_alerts, destination_alerts, ride):
+def _publish_alerts(origin_alerts: list[dict[str, Any]], destination_alerts: list[dict[str, Any]],
+                    ride: tuple[str, str]) -> dict[str, Any]:
     """The alert attributes: each end's list, ranked, its sentence and the
     cause and effect of the sentence shown."""
-    rt_alerts = {}
+    rt_alerts: dict[str, Any] = {}
     origin_alerts = _rank_alerts(origin_alerts, ride)
     destination_alerts = _rank_alerts(destination_alerts, ride)
     # A journey can be under several alerts at once and the strings hold one
@@ -727,7 +764,7 @@ def _publish_alerts(origin_alerts, destination_alerts, ride):
     return rt_alerts
 
 
-def journey_alerts(coordinator, feed_entities):
+def journey_alerts(coordinator: GTFSUpdateCoordinator, feed_entities: FeedEntities | None) -> dict[str, Any]:
     """What the alert feed says about this sensor's journey, as the
     coordinator publishes it: the worst sentence for each end, the whole
     stack behind it, and the cause and effect of the sentence shown.
@@ -756,8 +793,8 @@ def journey_alerts(coordinator, feed_entities):
     language = _alert_language(getattr(coordinator, "hass", None))
     head, listed = _board_trips(coordinator)
     now_ts, until_ts = _ride_span(data)
-    origin_alerts = []
-    destination_alerts = []
+    origin_alerts: list[dict[str, Any]] = []
+    destination_alerts: list[dict[str, Any]] = []
     prepared = _prepared(feed_entities)
     followed = [t for t in [head, *listed] if t]
     for n in _candidates(prepared, followed, origin_ids | destination_ids | journey_ids, route_id):
