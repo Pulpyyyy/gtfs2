@@ -15,7 +15,9 @@ realtime exactly as it was.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 import logging
+from typing import Any
 from urllib.parse import quote
 
 import homeassistant.util.dt as dt_util
@@ -67,7 +69,7 @@ RT_FEED_URL_KEYS = (CONF_TRIP_UPDATE_URL, CONF_VEHICLE_POSITION_URL, CONF_ALERTS
 STATIC_KEY_KEYS = (CONF_API_KEY, CONF_API_KEY_NAME, CONF_API_KEY_LOCATION)
 
 
-def has_rt_feed(cfg) -> bool:
+def has_rt_feed(cfg: Mapping[str, Any]) -> bool:
     """Whether a config carries at least one realtime feed url.
 
     Trip updates are the usual case, but a feed can also publish alerts or
@@ -79,7 +81,7 @@ def has_rt_feed(cfg) -> bool:
     return any(cfg.get(k) for k in RT_FEED_URL_KEYS)
 
 
-def datasource_unique_id(file) -> str:
+def datasource_unique_id(file: str) -> str:
     """The unique_id of a source's datasource entry.
 
     Its own prefix: the bare file name was the unique_id, and a source
@@ -89,7 +91,7 @@ def datasource_unique_id(file) -> str:
     return f"gtfs2-source-{file}"
 
 
-def source_device(file) -> DeviceInfo:
+def source_device(file: str) -> DeviceInfo:
     """The device a source's own entities share (realtime, timetable,
     switch, button, update), so the source reads as one."""
     return DeviceInfo(
@@ -101,7 +103,7 @@ def source_device(file) -> DeviceInfo:
     )
 
 
-def datasource_entry(hass: HomeAssistant, file) -> ConfigEntry | None:
+def datasource_entry(hass: HomeAssistant, file: str | None) -> ConfigEntry | None:
     """The datasource entry of a source, or None while it does not exist."""
     if not file:
         return None
@@ -117,7 +119,7 @@ def datasource_entry(hass: HomeAssistant, file) -> ConfigEntry | None:
     return None
 
 
-def journey_entries(hass: HomeAssistant, file) -> list[ConfigEntry]:
+def journey_entries(hass: HomeAssistant, file: str | None) -> list[ConfigEntry]:
     """Every non-datasource entry reading this source, local stops included."""
     return [
         entry for entry in hass.config_entries.async_entries(DOMAIN)
@@ -126,7 +128,8 @@ def journey_entries(hass: HomeAssistant, file) -> list[ConfigEntry]:
     ]
 
 
-def source_readers(hass: HomeAssistant, file, exclude=None) -> tuple[set[str], bool]:
+def source_readers(hass: HomeAssistant, file: str,
+                   exclude: str | None = None) -> tuple[set[str], bool]:
     """(the route_ids the source's sensors name, whether one reads it whole).
 
     A train sensor ("train" is its marker, not a route_id), a local stops
@@ -147,7 +150,7 @@ def source_readers(hass: HomeAssistant, file, exclude=None) -> tuple[set[str], b
     return routes, whole
 
 
-def rt_feed_config(hass: HomeAssistant, entry: ConfigEntry):
+def rt_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> tuple[Mapping[str, Any], bool]:
     """The realtime config an entry runs with, and whether realtime is on.
 
     The source's datasource entry is authoritative when it exists: its
@@ -169,7 +172,7 @@ def rt_feed_config(hass: HomeAssistant, entry: ConfigEntry):
     return entry.options, bool(entry.options.get(CONF_REAL_TIME, False))
 
 
-def with_query_key(url, cfg):
+def with_query_key(url: str | None, cfg: Mapping[str, Any]) -> str | None:
     """The url with the api key appended, when the key travels in the query.
 
     None-safe on purpose: the code this replaces concatenated onto every feed
@@ -190,7 +193,7 @@ def with_query_key(url, cfg):
     return url
 
 
-def rt_headers(cfg):
+def rt_headers(cfg: Mapping[str, Any]) -> dict[str, str | None] | None:
     """The request headers of a feed whose key travels in a header, else None."""
     if cfg.get(CONF_API_KEY_LOCATION) != "header":
         return None
@@ -200,7 +203,7 @@ def rt_headers(cfg):
     return headers
 
 
-def _rt_seed(entries: list[ConfigEntry]) -> dict:
+def _rt_seed(entries: list[ConfigEntry]) -> dict[str, Any]:
     """The realtime options to seed a new datasource entry with.
 
     Several journey entries can carry a copy and they can disagree: the most
@@ -232,7 +235,7 @@ def _rt_seed(entries: list[ConfigEntry]) -> dict:
     return seed
 
 
-def static_key_fields(fields) -> dict:
+def static_key_fields(fields: Mapping[str, Any]) -> dict[str, str]:
     """The static key trio as the datasource entry stores it.
 
     The three fields travel together behind a real key; without one the
@@ -251,7 +254,7 @@ def static_key_fields(fields) -> dict:
     }
 
 
-def _static_seed(entries: list[ConfigEntry]) -> dict:
+def _static_seed(entries: list[ConfigEntry]) -> dict[str, str]:
     """The static key a datasource entry takes over from its journey entries.
 
     From the first entry that actually carries a key: every flow stores
@@ -264,7 +267,7 @@ def _static_seed(entries: list[ConfigEntry]) -> dict:
     return static_key_fields({})
 
 
-def static_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
+def static_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     """How the source's static feed is fetched: address, origin and key.
 
     The datasource entry's data is authoritative once it has spoken for the
@@ -290,8 +293,9 @@ def static_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> dict:
 
 
 async def async_ensure_datasource_entry(
-        hass: HomeAssistant, file, url=None, extract_from=None, api=None,
-        inner_zip=None) -> None:
+        hass: HomeAssistant, file: str, url: str | None = None,
+        extract_from: str | None = None, api: Mapping[str, Any] | None = None,
+        inner_zip: str | None = None) -> None:
     """Create the datasource entry of a source, unless it already exists.
 
     Called by the bootstrap and by the flow steps that bring a new source in.
@@ -335,7 +339,8 @@ async def async_ensure_datasource_entry(
     )
 
 
-async def async_bootstrap_datasource_entries(hass: HomeAssistant, datasources) -> None:
+async def async_bootstrap_datasource_entries(hass: HomeAssistant,
+                                             datasources: Iterable[str]) -> None:
     """Give every known source its datasource entry, idempotently.
 
     Runs in the background at every start: the sources are collected from the
@@ -412,7 +417,7 @@ async def async_mirror_rt_to_entries(hass: HomeAssistant, source_entry: ConfigEn
             hass.config_entries.async_update_entry(entry, data=new_data)
 
 
-def _mirrored_options(options, cfg, active):
+def _mirrored_options(options: Mapping[str, Any], cfg: Mapping[str, Any], active: bool) -> dict[str, Any]:
     """A journey entry's options with the source's realtime feeds written over them."""
     new_options = {**options}
     for key in RT_OPTION_KEYS:
@@ -424,7 +429,7 @@ def _mirrored_options(options, cfg, active):
     return new_options
 
 
-def _mirrored_data(data, src):
+def _mirrored_data(data: Mapping[str, Any], src: Mapping[str, Any]) -> dict[str, Any]:
     """A journey entry's data with the source's static address and key."""
     new_data = {**data}
     if src.get(CONF_URL) not in (None, "", "na"):
