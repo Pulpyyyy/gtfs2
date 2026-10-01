@@ -209,10 +209,8 @@ class ReloadScreens:
             self._extract_size = await self.hass.async_add_executor_job(
                 _scratch_size, gtfs_dir, filename)
 
-            async def _tick():
-                await asyncio.wait({self._import_job}, timeout=3)
-
-            self._import_task = self.hass.async_create_task(_tick())
+            self._import_task = self.hass.async_create_task(
+                asyncio.wait({self._import_job}, timeout=3))
             return self.async_show_progress(
                 step_id="importing",
                 progress_action="importing",

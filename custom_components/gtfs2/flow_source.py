@@ -499,10 +499,8 @@ class SourceScreens:
             self._extract_size = await self.hass.async_add_executor_job(
                 _database_size, gtfs_dir, file)
 
-            async def _tick():
-                await asyncio.wait({self._extract_job}, timeout=3)
-
-            self._extract_task = self.hass.async_create_task(_tick())
+            self._extract_task = self.hass.async_create_task(
+                asyncio.wait({self._extract_job}, timeout=3))
             # The database file only grows while rows are written, so its size
             # is the one honest sign that something is happening. There is no
             # total to compare it against - it depends on the network - so it
