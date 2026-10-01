@@ -15,6 +15,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .const import DEFAULT_PATH, id_of
 from .feed_window import last_service_day
+from .gtfs_db import close_schedule
 from .gtfs_helper import _fetch_departure_rows, departure_query_args, get_gtfs, get_next_service_date, journey_data
 
 _LOGGER = logging.getLogger(__name__)
@@ -153,10 +154,7 @@ async def _route_times(hass, data, at):
             last_service_day, os.path.join(hass.config.path(DEFAULT_PATH), cf_data["file"] + ".zip"))
     finally:
         # released whatever happens: this schedule was opened for the call
-        try:
-            _pygtfs.engine.dispose()
-        except Exception:  # pylint: disable=broad-except
-            pass
+        close_schedule(_pygtfs)
 
     today_departures = []
     tomorrow_departures = []
@@ -251,7 +249,7 @@ async def get_trip_stops(hass, data):
         stopslist = await hass.async_add_executor_job(
             _trip_stops, schedule, trips, origin_station_ids)
     finally:
-        schedule.engine.dispose()
+        close_schedule(schedule)
 
     _tripstops = {
         "entity": entity_id or "entity-not-found",
