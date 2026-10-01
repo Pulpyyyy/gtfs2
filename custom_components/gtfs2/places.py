@@ -15,7 +15,7 @@ import statistics
 from sqlalchemy.sql import text
 
 from .gtfs_db import file_edition
-from .gtfs_helper import PLACE_LAT, PLACE_LON, _alights, _boards, _place_group, gtfs_seconds
+from .gtfs_helper import PLACE_LAT, PLACE_LON, _alights, _boards, _no_call_between, _place_group, gtfs_seconds
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -1057,13 +1057,7 @@ def _quickest_rotations(schedule, route_id, origin_stop_id, destination_stop_id,
       and d.stop_id in {destination_group}
       and o.stop_sequence < d.stop_sequence
       and {_boards("o")} and {_alights("d")}
-      and not exists (
-          select 1 from stop_times between_stop
-          where between_stop.trip_id = t.trip_id
-            and between_stop.stop_sequence > o.stop_sequence
-            and between_stop.stop_sequence < d.stop_sequence
-            and ((between_stop.stop_id in {origin_group} and {_boards("between_stop")})
-                 or (between_stop.stop_id in {destination_group} and {_alights("between_stop")})))
+      and {_no_call_between("t", "o", "d", origin_group, destination_group)}
     """  # noqa: S608
     minutes = {}
     try:

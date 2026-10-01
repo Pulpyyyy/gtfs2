@@ -335,13 +335,8 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
         # Only a call the rider could use counts: at Kennington a trip calls
         # twice, the second time with no way on or off, and counted as one it
         # lost the trip altogether
-        shortest_ride_where = f"""AND NOT EXISTS (
-                SELECT 1 FROM stop_times between_stop
-                WHERE between_stop.trip_id = trip.trip_id
-                  AND between_stop.stop_sequence > origin_stop_time.stop_sequence
-                  AND between_stop.stop_sequence < destination_stop_time.stop_sequence
-                  AND ((between_stop.stop_id IN {origin_group} AND {_boards("between_stop")})
-                       OR (between_stop.stop_id IN {end_group} AND {_alights("between_stop")})))"""
+        shortest_ride_where = "AND " + _no_call_between(
+            "trip", "origin_stop_time", "destination_stop_time", origin_group, end_group)
         direction_where = ("AND (trip.direction_id = :direction OR trip.direction_id IS NULL)"
                            if str(direction) in ("0", "1") else "")
         # a place is shared by every line calling at it: the entry's line only
@@ -932,6 +927,18 @@ def _runs_on(day, calendar=""):
             f" when 2 then {cal}tuesday when 3 then {cal}wednesday"
             f" when 4 then {cal}thursday when 5 then {cal}friday"
             f" else {cal}saturday end) = 1")
+
+
+def _no_call_between(trip, board, alight, origin_group, end_group):
+    """SQL: the ride from the board call to the alight call of the trip is
+    its shortest, no call the rider can use at either end in between."""
+    return f"""NOT EXISTS (
+                SELECT 1 FROM stop_times between_stop
+                WHERE between_stop.trip_id = {trip}.trip_id
+                  AND between_stop.stop_sequence > {board}.stop_sequence
+                  AND between_stop.stop_sequence < {alight}.stop_sequence
+                  AND ((between_stop.stop_id IN {origin_group} AND {_boards("between_stop")})
+                       OR (between_stop.stop_id IN {end_group} AND {_alights("between_stop")})))"""
 
 
 def _removed_on(service, day):
