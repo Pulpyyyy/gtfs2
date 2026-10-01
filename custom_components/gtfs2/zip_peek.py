@@ -25,11 +25,15 @@ dropped in the folder themselves.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable, Iterator, Mapping
 import logging
 import os
 import struct
+from typing import Literal, overload
 import zipfile
 import zlib
+
+import requests
 
 from .key_mask import fetch, hide_keys
 
@@ -47,7 +51,14 @@ _DIRECTORY_MAX = 16 * 1024 ** 2
 _STORED, _DEFLATED = 0, 8
 
 
-def _ranged(url, headers, span, stream=False):
+@overload
+def _ranged(url: str, headers: Mapping[str, str] | None, span: str,
+            stream: Literal[False] = False) -> tuple[bytes | None, requests.Response]: ...
+@overload
+def _ranged(url: str, headers: Mapping[str, str] | None, span: str,
+            stream: Literal[True]) -> tuple[requests.Response | None, requests.Response]: ...
+def _ranged(url: str, headers: Mapping[str, str] | None, span: str,
+            stream: bool = False) -> tuple[bytes | requests.Response | None, requests.Response]:
     """One ranged GET, or (None, response) when the host ignored the range.
 
     A 200 here means the host is sending the whole file: the body is left
@@ -71,8 +82,10 @@ def _ranged(url, headers, span, stream=False):
     return body, response
 
 
-def _directory(url, headers):
-    """{name: (offset, compressed size, method)} for a remote zip's members.
+def _directory(url: str, headers: Mapping[str, str] | None,
+               ) -> tuple[dict[str, tuple[int, int, int]], requests.Response]:
+    """({name: (offset, compressed size, method)}, the last response) for a
+    remote zip's members.
 
     Returns an empty mapping when the host refuses ranges, when the tail is
     not a zip, or when the envelope is large enough to carry a zip64
@@ -97,7 +110,7 @@ def _directory(url, headers):
     listing, response = _ranged(url, headers, f"{offset}-{offset + size - 1}")
     if listing is None:
         return {}, response
-    members = {}
+    members: dict[str, tuple[int, int, int]] = {}
     at = 0
     while at < len(listing) and listing[at:at + 4] == b"PK\x01\x02":
         method, = struct.unpack("<H", listing[at + 10:at + 12])
@@ -111,12 +124,12 @@ def _directory(url, headers):
     return members, response
 
 
-def _zips_among(names):
+def _zips_among(names: Iterable[str]) -> list[str]:
     """The members that are zips themselves, in the order a reader expects."""
     return sorted(name for name in names if name.lower().endswith(".zip"))
 
 
-def inner_zips(url, headers):
+def inner_zips(url: str, headers: Mapping[str, str] | None) -> list[str]:
     """The zips a remote zip holds, or [] when it is a feed or unreadable.
 
     [] is the answer that changes nothing: the caller downloads the url the
@@ -144,7 +157,7 @@ class _MemberResponse:
     member changes when the envelope does.
     """
 
-    def __init__(self, response, packed, method):
+    def __init__(self, response: requests.Response, packed: int, method: int) -> None:
         self._response = response
         self._packed = packed
         self._method = method
@@ -152,10 +165,10 @@ class _MemberResponse:
         self.headers = response.headers
         self.status_code = 200
 
-    def raise_for_status(self):
+    def raise_for_status(self) -> None:
         """Already raised on the ranged request that built this."""
 
-    def iter_content(self, chunk_size=_CHUNK):
+    def iter_content(self, chunk_size: int = _CHUNK) -> Iterator[bytes]:
         """The member's bytes, inflated as they arrive."""
         left = self._packed
         unzip = zlib.decompressobj(-15) if self._method == _DEFLATED else None
@@ -179,11 +192,11 @@ class _MemberResponse:
         if unzip:
             yield unzip.flush()
 
-    def close(self):
+    def close(self) -> None:
         self._response.close()
 
 
-def open_member(url, headers, name):
+def open_member(url: str, headers: Mapping[str, str] | None, name: str) -> _MemberResponse | None:
     """A response whose body is that member of the remote zip, or None.
 
     None when the member is gone from the envelope, when the host refuses
@@ -218,7 +231,7 @@ def open_member(url, headers, name):
         return None
 
 
-def inner_zips_in_file(path):
+def inner_zips_in_file(path: str) -> list[str]:
     """The zips a zip on disk holds, for an envelope the user supplied."""
     try:
         with zipfile.ZipFile(path) as zin:
@@ -231,7 +244,7 @@ def inner_zips_in_file(path):
     return _zips_among(names)
 
 
-def member_out_of(staged, name):
+def member_out_of(staged: str, name: str | None) -> str:
     """Leave the member alone in a staged file that holds the envelope.
 
     The path taken when a host that used to answer ranges stops: the
@@ -249,7 +262,7 @@ def member_out_of(staged, name):
     return staged
 
 
-def extract_member(path, name, staged):
+def extract_member(path: str, name: str, staged: str) -> bool:
     """Write one member of a zip on disk to staged. True when it landed;
     on a failure nothing is left behind, half a member being no feed."""
     try:
