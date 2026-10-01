@@ -11,11 +11,13 @@ removed, remove_entry_geojson takes its files away with it.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import timedelta
 import glob
 import json
 import logging
 import os
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -26,12 +28,17 @@ from .gtfs_db import feed_zip, file_edition, real_path, remove_files
 from .gtfs_helper import shown_ends, train_entry_routes
 from .geojson import write_route_file, route_geojson_name, get_representative_trip, vehicle_positions_name
 from .leg import write_leg_file, leg_geojson_name, leg_geojson_pattern, owns_leg_file
+from .rt_feed import FeedEntities
 from .timetable import write_timetable_file, timetable_name
+
+if TYPE_CHECKING:
+    # for the annotations only
+    from .coordinator import GTFSUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def _route_export_state(zip_path, file):
+def _route_export_state(zip_path: str, file: str) -> tuple[tuple[int, int, int] | None, bool]:
     """What decides whether the route file is written again: the edition of
     the zip it is drawn from (size and modification time, changed by a
     refresh and by an import that rewrites the zip in place) and whether
@@ -39,7 +46,7 @@ def _route_export_state(zip_path, file):
     return file_edition(zip_path), os.path.exists(file)
 
 
-def _what_changed(previous, key, parts):
+def _what_changed(previous: tuple[object, ...], key: tuple[object, ...], parts: tuple[str, ...]) -> str:
     """Which parts of an export key moved since the file was written, for
     the log line that says why it is written again."""
     changed = [part for part, old, new in zip(parts, previous, key) if old != new]
@@ -51,7 +58,8 @@ _ROUTE_KEY_PARTS = ("the line", "the trip", "the zip", "the database")
 _TIMETABLE_KEY_PARTS = ("the service day", "the zip", "the database")
 
 
-def _route_write_reason(present, previous, drawn, export_key):
+def _route_write_reason(present: bool, previous: tuple[object, ...] | None, drawn: str | None,
+                        export_key: tuple[object, ...]) -> str:
     """Why the route file is written again, for the log."""
     if not present:
         return "there is no file"
@@ -62,7 +70,7 @@ def _route_write_reason(present, previous, drawn, export_key):
     return _what_changed(previous, export_key, _ROUTE_KEY_PARTS)
 
 
-def _drawn_trip(zip_path, file, db_path):
+def _drawn_trip(zip_path: str, file: str, db_path: str) -> str | None:
     """The trip a route file already draws, when it is at least as new as
     the zip and the database it was drawn from; None when there is no such
     file, when either was replaced since, or when the file cannot be read.
@@ -86,7 +94,7 @@ def _drawn_trip(zip_path, file, db_path):
         return None
 
 
-async def export_route_shape(coordinator, data) -> None:
+async def export_route_shape(coordinator: GTFSUpdateCoordinator, data: Mapping[str, Any]) -> None:
     """Write the geojson of the line the sensor rides.
 
     Shape and stops are read from the schedule, so this owes nothing to
@@ -171,7 +179,10 @@ async def export_route_shape(coordinator, data) -> None:
         f"gtfs2 route {route_id} {direction}")
 
 
-async def _write_route(coordinator, source, route_id, direction, trip_id, export_key) -> None:
+async def _write_route(coordinator: GTFSUpdateCoordinator, source: Mapping[str, Any], route_id: str,
+                       direction: str, trip_id: str,
+                       export_key: tuple[str, str, tuple[int, int, int] | None,
+                                         tuple[int, int, int] | None]) -> None:
     """Write the route file off the refresh (see export_route_shape)."""
     try:
         await coordinator.hass.async_add_executor_job(write_route_file, coordinator.hass, source, route_id, direction, trip_id)
@@ -180,7 +191,7 @@ async def _write_route(coordinator, source, route_id, direction, trip_id, export
         _LOGGER.exception("Error writing route geojson: %s", ex)
 
 
-async def export_timetable(coordinator, data) -> None:
+async def export_timetable(coordinator: GTFSUpdateCoordinator, data: Mapping[str, Any]) -> None:
     """Write the timetable file: every departure of the entry over the
     service day under way and the two after it (see write_timetable_file).
 
@@ -231,7 +242,10 @@ async def export_timetable(coordinator, data) -> None:
         f"gtfs2 timetable {name}")
 
 
-async def _write_timetable(coordinator, source, name, today, zip_path, export_key) -> None:
+async def _write_timetable(coordinator: GTFSUpdateCoordinator, source: Mapping[str, Any], name: str,
+                           today: str, zip_path: str,
+                           export_key: tuple[str, tuple[int, int, int] | None,
+                                             tuple[int, int, int] | None]) -> None:
     """Write the timetable file off the refresh, then name it on the
     sensor without waiting for the next refresh."""
     try:
@@ -246,7 +260,8 @@ async def _write_timetable(coordinator, source, name, today, zip_path, export_ke
     coordinator.async_update_listeners()
 
 
-async def export_leg(coordinator, data, feed_entities) -> None:
+async def export_leg(coordinator: GTFSUpdateCoordinator, data: Mapping[str, Any],
+                     feed_entities: FeedEntities | None) -> None:
     """Write the leg file: the ride of the next departure, and the clocks
     of every listed departure at every stop, realtime included when the
     trip updates of this refresh carry it.
@@ -292,11 +307,11 @@ async def remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.async_add_executor_job(_remove_geojson_files, geojson_dir, leg_owner, names)
 
 
-def _other_entries(hass, entry):
+def _other_entries(hass: HomeAssistant, entry: ConfigEntry) -> list[ConfigEntry]:
     return [e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id]
 
 
-async def _train_line_files(hass, entry):
+async def _train_line_files(hass: HomeAssistant, entry: ConfigEntry) -> list[str]:
     """The map files of the lines a train entry rode that no other entry
     still reads."""
     # a train entry's departures ride whatever line serves its two
@@ -317,7 +332,7 @@ async def _train_line_files(hass, entry):
     return names
 
 
-def _line_files(hass, entry, route):
+def _line_files(hass: HomeAssistant, entry: ConfigEntry, route: str) -> list[str]:
     """The map files of an entry's line that no other entry still reads in
     that direction, those named before the ids were sanitised included."""
     # an entry set up without a direction wrote its files under the
@@ -347,13 +362,13 @@ def _line_files(hass, entry, route):
     return names
 
 
-def _remove_geojson_files(geojson_dir, leg_owner, names):
+def _remove_geojson_files(geojson_dir: str, leg_owner: str | None, names: list[str]) -> None:
     """Delete the leg files of the entry named leg_owner and the named files
     under geojson_dir, logging each removal. Blocking file work, made for
     the executor."""
     paths = [path for pattern in (leg_geojson_pattern(leg_owner) if leg_owner else ())
              for path in glob.glob(os.path.join(geojson_dir, pattern))
              # the glob can reach another entry's file, see owns_leg_file
-             if owns_leg_file(path, leg_owner)]
+             if leg_owner and owns_leg_file(path, leg_owner)]
     paths += [os.path.join(geojson_dir, name) for name in dict.fromkeys(names)]
     remove_files(*paths)
