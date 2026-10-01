@@ -31,10 +31,6 @@ from .const import (
     ATTR_RT_SKIPPED,
     ATTR_UNIT_OF_MEASUREMENT,
     ATTR_DEVICE_CLASS,
-    CONF_API_KEY,
-    CONF_API_KEY_NAME,
-    CONF_API_KEY_LOCATION,
-    CONF_ACCEPT_HEADER_PB,
     DEFAULT_VEHICLE_MAX_AGE,
     DEFAULT_PATH_GEOJSON,
 
@@ -49,7 +45,7 @@ from .rt_feed import (
     get_gtfs_feed_entities, stop_relationship, stop_update_clock,
     trip_relationship,
 )
-from .rt_source import with_query_key
+from .rt_source import rt_headers, with_query_key
 
 
 def due_in_minutes(timestamp):
@@ -774,10 +770,7 @@ def get_gtfs_rt(hass, path, data):
     # the key travels in a header. A feed that needs the header and takes its
     # key in the url, or one that needs it with no key at all, never gets it.
     # Left as is for now: changing it changes behaviour for existing setups.
-    if data.get(CONF_API_KEY_LOCATION, None) == "header":
-        _headers = {data.get(CONF_API_KEY_NAME, "api_key"): data[CONF_API_KEY]}
-        if data.get(CONF_ACCEPT_HEADER_PB, False):
-            _headers["Accept"] = "application/x-protobuf"
+    _headers = rt_headers(data) or _headers
     
     if data.get('entity_for_siri',None):
         _LOGGER.debug("Getting siri RT departures with data: %s", data)
