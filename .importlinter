@@ -1,5 +1,8 @@
 [importlinter]
 root_package = custom_components.gtfs2
+# the rule is about the code that runs: a type named for the annotations
+# only, under TYPE_CHECKING, may come from any layer (ARCHITECTURE.md)
+exclude_type_checking_imports = True
 
 # The dependency rule of ARCHITECTURE.md: a module imports from its own
 # layer, from a lower one and from the modules outside the layers, never

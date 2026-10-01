@@ -319,6 +319,11 @@ modules, with no exception either. A module sits above everything it
 needs: refreshing a source and importing its zip build the database, so
 they are in the data layer, beside what reads it.
 
+Both rules are about the code that runs. A type named only in the
+annotations, imported under `TYPE_CHECKING`, may come from any layer:
+the exports and the alerts are handed the coordinator they write for,
+and say so in their signatures without importing it.
+
 **Why these five.** The cut follows what changes together. The source layer
 changes with hosts and publishers (validators, ranges, envelopes); the data
 layer with SQLite and pygtfs; the domain layer with what a rider wants to
