@@ -28,7 +28,6 @@ from .const import (
     CONF_API_KEY,
     CONF_API_KEY_LOCATION,
     CONF_API_KEY_NAME,
-    CONF_DEVICE_TRACKER_ID,
     CONF_EXTRACT_FROM,
     CONF_FILE,
     CONF_INNER_ZIP,
@@ -549,13 +548,8 @@ class SourceScreens:
         zip screen, so a source picked there was sent to the zip screen.
         """
         self._pending_error = reason
-        step = getattr(self, "_source_step", None)
-        if step == "start_end":
-            return await self.async_step_start_end()
-        if self._user_inputs.get(CONF_DEVICE_TRACKER_ID, None):
-            return await self.async_step_local_stops()
-        if self._user_inputs.get(CONF_EXTRACT_FROM, None) == "url":
+        if self._source_step == "source_url":
             return await self.async_step_source_url()
-        if self._user_inputs.get(CONF_EXTRACT_FROM, None) == "zip" and self._user_inputs.get(CONF_URL, None) == "na":
+        if self._source_step == "source_zip":
             return await self.async_step_source_zip()
         return await self.async_step_start_end()
