@@ -28,7 +28,6 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
-import os
 from datetime import timedelta
 
 import homeassistant.util.dt as dt_util
@@ -60,6 +59,7 @@ from .freshness import (
     note_checked,
     probe_source,
 )
+from .gtfs_db import feed_zip, real_path
 from .source_zip import refresh_datasource
 from .freshness import read_meta, source_meta, write_meta
 from .notifications import async_notify_refresh
@@ -207,11 +207,11 @@ def next_check_at(hass: HomeAssistant, entry: ConfigEntry, zip_meta):
 
 
 def source_zip_path(hass: HomeAssistant, file) -> str:
-    return os.path.join(hass.config.path(DEFAULT_PATH), file + ".zip")
+    return feed_zip(hass.config.path(DEFAULT_PATH), file)
 
 
 def _installed_meta_path(hass: HomeAssistant, file) -> str:
-    return os.path.join(hass.config.path(DEFAULT_PATH), file + ".sqlite.meta.json")
+    return real_path(hass.config.path(DEFAULT_PATH), file) + ".meta.json"
 
 
 def installed_meta(hass: HomeAssistant, file) -> dict:

@@ -48,8 +48,7 @@ def _database_size(gtfs_dir, filename):
     is the one honest sign of progress available from outside the fork. There
     is no total to compare against, since it depends on the network.
     """
-    for suffix in (".import.sqlite", ".sqlite"):
-        path = os.path.join(gtfs_dir, filename + suffix)
+    for path in (scratch_path(gtfs_dir, filename), real_path(gtfs_dir, filename)):
         if os.path.exists(path):
             try:
                 return f"{os.path.getsize(path) / 1048576:.0f} MB"

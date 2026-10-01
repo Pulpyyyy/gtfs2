@@ -21,7 +21,7 @@ from .const import (
     DEFAULT_PATH,
     TIME_STR_FORMAT
     )
-from .gtfs_db import file_edition
+from .gtfs_db import feed_zip, file_edition, real_path
 from .rt_feed import on_service_day
 
 _LOGGER = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ def train_entry_routes(gtfs_dir, data):
     after those lines, and removing the entry has to find them. Blocking,
     made for the executor.
     """
-    db_file = os.path.join(gtfs_dir, (data.get("file") or "") + ".sqlite")
+    db_file = real_path(gtfs_dir, data.get("file") or "")
     if not data.get("file") or not os.path.exists(db_file):
         return []
     origin_in, params = station_names_in("origin", entry_stations(data, "origin"))
@@ -835,7 +835,7 @@ def get_gtfs(hass, path, data):
     if check_extracting(hass, gtfs_dir, filename):
         _LOGGER.debug("Cannot use this datasource as still unpacking: %s", filename)
         return "extracting"
-    sqlite = os.path.join(gtfs_dir, filename + ".sqlite")
+    sqlite = real_path(gtfs_dir, filename)
     # not opened when missing: opening creates an empty file, taken for a
     # datasource next time
     if os.path.exists(sqlite):
@@ -844,7 +844,7 @@ def get_gtfs(hass, path, data):
             return gtfs
         gtfs.engine.dispose()
     _LOGGER.debug("Datasource %s has no timetable: a refresh of the source builds it", filename)
-    if not os.path.exists(os.path.join(gtfs_dir, filename + ".zip")):
+    if not os.path.exists(feed_zip(gtfs_dir, filename)):
         return "no_zip_file"
     return "not_built"
 
@@ -1054,7 +1054,7 @@ def check_datasource_index(hass, schedule, gtfs_dir, file):
     if schedule is None or isinstance(schedule, str):
         _LOGGER.warning("Cannot check indexes: datasource %s has no usable schedule (%s)", file, schedule or "empty")
         return
-    db_file = os.path.join(hass.config.path(gtfs_dir), file + ".sqlite")
+    db_file = real_path(hass.config.path(gtfs_dir), file)
     edition = file_edition(db_file)
     if edition is not None and _INDEX_CHECKED.get(db_file) == edition:
         return

@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import datetime
 import logging
-import os
 
 from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
@@ -15,7 +14,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .const import DEFAULT_PATH, id_of
 from .feed_window import last_service_day
-from .gtfs_db import close_schedule
+from .gtfs_db import close_schedule, feed_zip
 from .gtfs_helper import _fetch_departure_rows, _row_instant, departure_query_args, get_gtfs, get_next_service_date, journey_data
 
 _LOGGER = logging.getLogger(__name__)
@@ -150,7 +149,7 @@ async def _route_times(hass, data, at):
             _route_departure_from, _data,
             (now + datetime.timedelta(days=3)).strftime(dt_util.DATE_STR_FORMAT), at)
         until = await hass.async_add_executor_job(
-            last_service_day, os.path.join(hass.config.path(DEFAULT_PATH), cf_data["file"] + ".zip"))
+            last_service_day, feed_zip(hass.config.path(DEFAULT_PATH), cf_data["file"]))
     finally:
         # released whatever happens: this schedule was opened for the call
         close_schedule(_pygtfs)
