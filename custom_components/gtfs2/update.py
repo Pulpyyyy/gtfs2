@@ -11,6 +11,7 @@ whatever window suits the install.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import homeassistant.util.dt as dt_util
 from homeassistant.components.update import UpdateEntity, UpdateEntityFeature
@@ -48,7 +49,7 @@ from .source_refresh import (
 _LOGGER = logging.getLogger(__name__)
 
 
-def _when(stamp):
+def _when(stamp: str | None) -> str | None:
     """An iso stamp as the local minute a human reads, or None."""
     moment = dt_util.parse_datetime(stamp) if stamp else None
     if not moment:
@@ -85,14 +86,14 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         self.hass = hass
         self._entry = entry
         self._file = entry.data.get(CONF_FILE)
-        self._installed = None
-        self._zip_version = None
+        self._installed: str | None = None
+        self._zip_version: str | None = None
         # the sidecars themselves, not just their labels: the attributes
         # answer from these, so a check costs the two reads it always did
-        self._installed_meta = {}
-        self._zip_meta = {}
+        self._installed_meta: dict[str, Any] = {}
+        self._zip_meta: dict[str, Any] = {}
         # what the kept zip says of its validity (feed_window)
-        self._window = {}
+        self._window: dict[str, str | None] = {}
         self._attr_unique_id = f"gtfs2_source_update_{self._file}"
         self._attr_title = f"GTFS static feed - {self._file}"
         # same device as the realtime diagnostic and switch, so the source
@@ -101,7 +102,7 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
 
     async def async_load_versions(self) -> None:
         """Re-read the sidecars; they are files, so never on the loop."""
-        def _read():
+        def _read() -> tuple[dict[str, Any], dict[str, Any], dict[str, str | None]]:
             return (installed_meta(self.hass, self._file),
                     source_meta(source_zip_path(self.hass, self._file)),
                     read_feed_window(source_zip_path(self.hass, self._file)))
@@ -135,11 +136,11 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         self.async_write_ha_state()
 
     @property
-    def installed_version(self):
+    def installed_version(self) -> str | None:
         return self._installed
 
     @property
-    def latest_version(self):
+    def latest_version(self) -> str | None:
         mode = self._entry.options.get(CONF_STATIC_REFRESH_MODE,
                                        STATIC_REFRESH_OFF)
         if mode == STATIC_REFRESH_OFF:
@@ -173,7 +174,7 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         return source_lock(self.hass, self._file).locked()
 
     @property
-    def release_summary(self):
+    def release_summary(self) -> str | None:
         """What the database is, and whether that is known or assumed.
 
         installed_meta falls back on the zip's sidecar when no build was
@@ -196,7 +197,7 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         return summary[:255]
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         state = probe_state(self.hass, self._file)
         meta = self._installed_meta
         built_at = meta.get("built_at")
@@ -232,7 +233,7 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
             "last_service_day": (self._window or {}).get("last_service_day"),
         }
 
-    async def async_install(self, version, backup: bool, **kwargs) -> None:
+    async def async_install(self, version: str | None, backup: bool, **kwargs: Any) -> None:
         """Rebuild the database from the source, sensors served throughout."""
         # when the zip is already ahead of the database, the feed is here:
         # rebuild from it instead of downloading the same bytes again
