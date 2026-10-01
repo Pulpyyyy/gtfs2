@@ -15,9 +15,10 @@ the values it reads, nothing of the entity itself.
 """
 from __future__ import annotations
 
-from datetime import date, timedelta
+from collections.abc import Mapping, Sequence
+from datetime import date, datetime, timedelta
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.util import slugify
 import homeassistant.util.dt as dt_util
@@ -71,10 +72,15 @@ from .const import (
     WHEELCHAIR_BOARDING_OPTIONS,
 )
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+    from pygtfs.gtfs_entities import Agency, Route, Stop, Trip
+
 _LOGGER = logging.getLogger(__name__)
 
 
-def departure_records(schedule, data):
+def departure_records(schedule: Schedule | str | None, data: Mapping[str, Any]) -> dict[str, Any]:
     """The rows the sensor describes its departure with, read in one go.
 
     The two stops, the trip, the route and its agency, which the sensor
@@ -88,7 +94,7 @@ def departure_records(schedule, data):
     pygtfs record or None; a train entry names its ends by station, so its
     two stops are the names as the entry holds them.
     """
-    records = {"origin": None, "destination": None, "trip": None,
+    records: dict[str, Any] = {"origin": None, "destination": None, "trip": None,
                "route": None, "agency": None}
     if schedule is None or isinstance(schedule, str) or data.get("extracting"):
         return records
@@ -122,13 +128,13 @@ def departure_records(schedule, data):
     return records
 
 
-def _days_from_today(day, offset):
+def _days_from_today(day: date, offset: int | None) -> int:
     """How many days a date lies after today, the sensor's minutes offset
     applied to what counts as today."""
     return (day - (dt_util.now() + timedelta(minutes=offset or 0)).date()).days
 
 
-def _resting_info(attributes, next_service, offset):
+def _resting_info(attributes: dict[str, Any], next_service: str | None, offset: int | None) -> None:
     """next_service_info with no departure to show.
 
     Three situations, and the user needs to tell them apart. In order of
@@ -170,7 +176,7 @@ def _resting_info(attributes, next_service, offset):
                              else f"No departures until {next_service}")
 
 
-def _departure_day_info(attributes, state, offset):
+def _departure_day_info(attributes: dict[str, Any], state: datetime | None, offset: int | None) -> None:
     """next_service_info with a departure to show.
 
     There is a departure, but is it today's? The query reaches past today,
@@ -200,7 +206,8 @@ def _departure_day_info(attributes, state, offset):
             attributes.pop(k, None)
 
 
-def next_service_info(attributes, state, next_service, offset):
+def next_service_info(attributes: dict[str, Any], state: datetime | None, next_service: str | None,
+                      offset: int | None) -> None:
     """When the line next runs, as a date, a count of days and a sentence.
 
     state is the sensor's next departure or None, next_service the date the
@@ -223,7 +230,7 @@ _FORK_DEPARTURE_LISTS = (
 )
 
 
-def next_departure_lists(attributes, departure, listed):
+def next_departure_lists(attributes: dict[str, Any], departure: Mapping[str, Any], listed: Sequence[Any] | None) -> None:
     """The fork's lists beside next_departures: durations, the stop each one
     leaves from, the route type of each. listed is the next_departures list,
     empty lists when there is none."""
@@ -231,7 +238,7 @@ def next_departure_lists(attributes, departure, listed):
         attributes[key] = departure.get(key, [])[:10] if listed else []
 
 
-def map_files(attributes, data):
+def map_files(attributes: dict[str, Any], data: Mapping[str, Any]) -> None:
     """The drawn line and the timed ride, exported with or without realtime;
     data is the coordinator's."""
     for key in ("route_geojson_file", "leg_geojson_file", "timetable_file",
@@ -240,7 +247,7 @@ def map_files(attributes, data):
             attributes[key] = data[key]
 
 
-def alert_details(attributes, alert):
+def alert_details(attributes: dict[str, Any], alert: Mapping[str, Any]) -> None:
     """The alert stack and its kind, beside the two sentences upstream
     publishes; alert is the coordinator's alert dict."""
     # The whole stack behind those two sentences, worst first: a journey can
@@ -269,7 +276,7 @@ def alert_details(attributes, alert):
             del attributes[key]
 
 
-def realtime_trips(attributes, departure_rt):
+def realtime_trips(attributes: dict[str, Any], departure_rt: Mapping[str, Any]) -> None:
     """The trip behind each realtime departure, and what the feed struck
     out: a cancelled trip is no longer in the departure lists, its id is
     here for a card to say so."""
@@ -280,7 +287,7 @@ def realtime_trips(attributes, departure_rt):
             attributes[attr] = departure_rt[key]
 
 
-def departure_times(attributes, departure):
+def departure_times(attributes: dict[str, Any], departure: Mapping[str, Any] | None) -> None:
     """When the departure arrives, how long it rides, and whether it is
     the day's first or last."""
     if not departure:
@@ -296,7 +303,9 @@ def departure_times(attributes, departure):
             attributes[key] = departure[key]
 
 
-def station_attributes(attributes, departure, agency, origin, destination, route_type):
+def station_attributes(attributes: dict[str, Any], departure: Mapping[str, Any], agency: Agency | bool | None,
+                       origin: Stop | str | None, destination: Stop | str | None,
+                       route_type: str | None) -> None:
     """The agency and the two ends, as the feed describes them."""
     if agency:
         append_keys(attributes, dict_for_table(agency), "Agency")
@@ -315,7 +324,8 @@ def station_attributes(attributes, departure, agency, origin, destination, route
                          ATTR_LOCATION_DESTINATION, ATTR_WHEELCHAIR_DESTINATION)
 
 
-def _end_attributes(attributes, stop, prefix, location_key, wheelchair_key):
+def _end_attributes(attributes: dict[str, Any], stop: Stop | None, prefix: str, location_key: str,
+                    wheelchair_key: str) -> None:
     """One end's stop record, its kind of place and its access."""
     if not stop:
         return
@@ -328,7 +338,7 @@ def _end_attributes(attributes, stop, prefix, location_key, wheelchair_key):
     )
 
 
-def route_and_trip_attributes(attributes, route, trip):
+def route_and_trip_attributes(attributes: dict[str, Any], route: Route | None, trip: Trip | None) -> None:
     """The line and the trip the departure rides."""
     if route:
         append_keys(attributes, dict_for_table(route), "Route")
@@ -345,7 +355,7 @@ def route_and_trip_attributes(attributes, route, trip):
         )
 
 
-def stop_time_attributes(attributes, departure):
+def stop_time_attributes(attributes: dict[str, Any], departure: Mapping[str, Any] | None) -> None:
     """The trip's call at each end: how a rider gets on and off there,
     whether the time is exact, and the zone it is written in."""
     if not departure:
@@ -380,13 +390,14 @@ _NEXT_DEPARTURE_LISTS = (
 )
 
 
-def next_departure_attributes(attributes, departure, next_departures):
+def next_departure_attributes(attributes: dict[str, Any], departure: Mapping[str, Any],
+                              next_departures: Sequence[Any] | None) -> None:
     for attribute, key in _NEXT_DEPARTURE_LISTS:
         attributes[attribute] = (
             departure[key][:10] if next_departures else [])
 
 
-def realtime_attributes(attributes, departure_rt):
+def realtime_attributes(attributes: dict[str, Any], departure_rt: Mapping[str, Any] | None) -> None:
     """What the realtime feed says of the next departures, or that it
     said nothing."""
     if not departure_rt:
@@ -415,7 +426,7 @@ def realtime_attributes(attributes, departure_rt):
 
 def dict_for_table(resource: Any) -> dict:
     """Return a dictionary for the SQLAlchemy resource given."""
-    _dict = {}
+    _dict: dict[str, str | None] = {}
     for column in resource.__table__.columns:
         value = getattr(resource, column.name)
         # a column the feed left empty stays None, which append_keys
@@ -424,7 +435,7 @@ def dict_for_table(resource: Any) -> dict:
     return _dict
 
 
-def append_keys(attributes, resource: dict, prefix: str | None = None) -> None:
+def append_keys(attributes: dict[str, Any], resource: dict, prefix: str | None = None) -> None:
     """Properly format key val pairs to append to attributes."""
     for attr, val in resource.items():
         if val == "" or val is None or attr == "feed_id":
