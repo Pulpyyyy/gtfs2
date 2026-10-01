@@ -20,7 +20,8 @@ from .const import (
     ICONS,
     TIME_STR_FORMAT,
 )
-from .gtfs_helper import _boards, _day_offset, _on_service_day, _removed_on, _runs_on, check_extracting
+from .gtfs_helper import (_boards, _day_offset, _on_service_day, _removed_on, _row_instant, _runs_on,
+                          check_extracting)
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
 from .rt_feed import get_gtfs_feed_entities, on_service_day
 
@@ -110,9 +111,8 @@ def _build_local_stop_element(self, row, base_datetime,
     #_LOGGER.debug("base_datetime / datetime_label: %s", base_datetime)
 
     # collect departure time from row, using agency timezone as basis, then transforming it to the stop-specific timezone (based on Amtrak)
-    self._departure_datetime = datetime.datetime.strptime(
-        base_datetime, "%Y-%m-%d %H:%M:%S"
-    ).replace(tzinfo=timezone_agency).astimezone(tz=timezone_stop)
+    scheduled = _row_instant(base_datetime, timezone_agency)
+    self._departure_datetime = scheduled.astimezone(tz=timezone_stop)
     self._departure_datetime_utc = dt_util.as_utc(self._departure_datetime)
     #_LOGGER.debug("Self._departure datetime in agency_tz: %s", self._departure_datetime)
     self._departure_time = self._departure_datetime.replace(tzinfo=None).strftime(TIME_STR_FORMAT)
@@ -158,7 +158,7 @@ def _build_local_stop_element(self, row, base_datetime,
         # base_datetime is the agency's wall clock, as the departure above
         # reads it: labelled with the stop's zone, a stop west of the agency
         # (Amtrak, Los Angeles against New York) kept departures already gone
-        depart_time_corrected_time = dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_agency)
+        depart_time_corrected_time = scheduled
     #_LOGGER.debug("Departure time corrected based on realtime-time: %s", depart_time_corrected_time)
 
     if departure_rt != "-":
@@ -169,8 +169,7 @@ def _build_local_stop_element(self, row, base_datetime,
     if delay_rt == 0:
         delay_rt = "-"
     depart_time_corrected = local_departure_leaves(
-        dt_util.parse_datetime(base_datetime).replace(tzinfo=timezone_agency),
-        depart_time_corrected_time, delay_rt)
+        scheduled, depart_time_corrected_time, delay_rt)
     #_LOGGER.debug("Departure time corrected: %s", depart_time_corrected)
 
     if apply_now_filter and not (depart_time_corrected > now_tz):
@@ -184,7 +183,7 @@ def _build_local_stop_element(self, row, base_datetime,
         "departure_realtime_datetime": departure_rt_datetime,
         "delay_realtime_derived": delay_rt_derived,
         "delay_realtime": delay_rt,
-        "date": datetime.datetime.strptime(base_datetime, "%Y-%m-%d %H:%M:%S").date().isoformat(),
+        "date": scheduled.date().isoformat(),
         "stop_name": row["stop_name"],
         "stop_id": row["stop_id"],
         "route": row["route_short_name"],

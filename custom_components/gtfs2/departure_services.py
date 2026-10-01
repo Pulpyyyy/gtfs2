@@ -16,7 +16,7 @@ from homeassistant.helpers import entity_registry as er
 from .const import DEFAULT_PATH, id_of
 from .feed_window import last_service_day
 from .gtfs_db import close_schedule
-from .gtfs_helper import _fetch_departure_rows, departure_query_args, get_gtfs, get_next_service_date, journey_data
+from .gtfs_helper import _fetch_departure_rows, _row_instant, departure_query_args, get_gtfs, get_next_service_date, journey_data
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,10 +51,9 @@ def _route_departures_between(data, first, last, limit=5000, at="origin_depart_d
                      or row.get("origin_stop_timezone"))
         zone = (dt_util.get_time_zone(zone_name) if zone_name else None) or dt_util.DEFAULT_TIME_ZONE
         try:
-            local = datetime.datetime.strptime(row[at], "%Y-%m-%d %H:%M:%S")
+            instants.append(dt_util.as_utc(_row_instant(row[at], zone)))
         except ValueError:
             continue
-        instants.append(dt_util.as_utc(local.replace(tzinfo=zone)))
     return sorted(instants)
 
 
