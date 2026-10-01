@@ -358,8 +358,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         # updates one bad answer there took the departure times down
         # with it, leaving the sensor on last cycle's
         try:
-            self._get_rt_alerts = await self.hass.async_add_executor_job(get_rt_alerts, self)
-            self._data["alert"] = self._get_rt_alerts
+            self._data["alert"] = await self.hass.async_add_executor_job(get_rt_alerts, self)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.exception("Error getting gtfs realtime alerts, for origin: %s with error: %s", data["origin"], ex)
         try:
