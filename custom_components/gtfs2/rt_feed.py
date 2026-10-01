@@ -475,6 +475,16 @@ def stop_update_clock(stop: Mapping[str, Any]) -> tuple[int, int]:
             int(told.get("delay") or 0))
 
 
+def delay_of(delay: int | None, realtime: int | None, scheduled: int | None) -> int | None:
+    """A call's delay in seconds: the feed's, else, when it gives none or a
+    zero one, the gap between the time it gives and the timetable's, both
+    epoch seconds. IDFM's gateway writes 0 for a metro two minutes late,
+    TAO and Palm Bus leave the delay out."""
+    if not delay and realtime and scheduled:
+        return realtime - scheduled
+    return delay
+
+
 def on_service_day(start_date: str | Collection[str] | None, service_day: str | None) -> bool:
     """Whether a feed's start_date is the service day.
 
