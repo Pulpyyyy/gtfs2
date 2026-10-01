@@ -12,15 +12,21 @@ where the departure query uses them too.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from sqlalchemy.sql import text
 
 from .gtfs_helper import COACH_STOP_PREFIX, RAIL_ROUTE_TYPES_SQL, _alights, _boards, station_names_in
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
 
 
-def has_train_trip_between(schedule, origin_name, destination_name, line=None):
+def has_train_trip_between(schedule: Schedule, origin_name: str | list[str],
+                           destination_name: str | list[str], line: str | None = None) -> bool:
     """Whether any rail trip serves both ends, in this order.
 
     The train path works with station names rather than stop ids, matched
@@ -59,7 +65,7 @@ def has_train_trip_between(schedule, origin_name, destination_name, line=None):
     return bool(row)
 
 
-def get_station_list(schedule, route_id=None):
+def get_station_list(schedule: Schedule, route_id: str | None = None) -> list[str]:
     """List the distinct stop names, for feeds where stop ids are unusable.
 
     A station shows up in GTFS as several stops, one per platform or mode, so
@@ -96,13 +102,13 @@ def get_station_list(schedule, route_id=None):
     return stations
 
 
-def _stop_mode(stop_id):
+def _stop_mode(stop_id: str) -> str:
     """"coach" or "train": the mode an SNCF stop serves, told by its id
     alone (COACH_STOP_PREFIX)."""
     return "coach" if str(stop_id).startswith(COACH_STOP_PREFIX) else "train"
 
 
-def get_station_modes(schedule, route_id):
+def get_station_modes(schedule: Schedule, route_id: str | None) -> dict[str, set[str]]:
     """{station name: {"train", "coach"}} for the stations a rail route calls
     at, when its trips mix trains and coaches; {} on a line of one mode.
 
@@ -122,7 +128,7 @@ def get_station_modes(schedule, route_id):
     """
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql), {"route_id": str(route_id)}).fetchall()
-    modes = {}
+    modes: dict[str, set[str]] = {}
     for name, stop_id in rows:
         if name:
             modes.setdefault(name, set()).add(_stop_mode(stop_id))
@@ -131,7 +137,7 @@ def get_station_modes(schedule, route_id):
     return modes if mixed else {}
 
 
-def get_line_code(schedule, route_id):
+def get_line_code(schedule: Schedule, route_id: str | None) -> str | None:
     """The code a train entry holds its departures to: the route_short_name
     of the route picked, None when the feed gives it none.
 
@@ -147,7 +153,8 @@ def get_line_code(schedule, route_id):
     return code if code is not None and str(code).strip() else None
 
 
-def get_train_destination_list(schedule, route_id, origin_name, line=None):
+def get_train_destination_list(schedule: Schedule, route_id: str | None, origin_name: str,
+                               line: str | None = None) -> dict[str, set[str]]:
     """{station name: {"train", "coach"}} for the stations a trip of the line
     really reaches from the departure station, and by which of the two.
 
@@ -177,7 +184,7 @@ def get_train_destination_list(schedule, route_id, origin_name, line=None):
     params = {"origin": origin_name, "line": line, "route_id": str(route_id or "")}
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql), params).fetchall()
-    reached = {}
+    reached: dict[str, set[str]] = {}
     for name, stop_id in rows:
         if name and name != origin_name:
             reached.setdefault(name, set()).add(_stop_mode(stop_id))
