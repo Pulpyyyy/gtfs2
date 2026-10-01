@@ -8,16 +8,28 @@ follows the order a trip calls at them, branches and loops included.
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Collection, Container, Iterable, Mapping, Sequence
 import json
 import logging
 import statistics
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import text
 
 from .gtfs_db import file_edition
 from .gtfs_helper import PLACE_LAT, PLACE_LON, _alights, _boards, _no_call_between, _place_group, gtfs_seconds
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+    from sqlalchemy.engine import Connection
+
 _LOGGER = logging.getLogger(__name__)
+
+# the sampled trips of a line, each with its calls in riding order:
+# {trip_id: [(stop_id, stop_sequence)]}; a place is the stop_id of the
+# record that names it (_places_of)
+type _Trips = dict[str, list[tuple[str, int]]]
 
 # each trip of the line this way with the stops it calls at, in order: its
 # pattern. _STOP_ROWS and _origin_boarding sample the same trip per pattern
@@ -59,7 +71,7 @@ _STOP_ROWS = f"""
 _STOP_GROUP = _place_group("origin")
 
 
-def _call_type(value):
+def _call_type(value: str | int | None) -> int:
     """A pickup_type / drop_off_type as the feed meant it: 0 when blank."""
     try:
         return int(value or 0)
@@ -67,7 +79,7 @@ def _call_type(value):
         return 0
 
 
-def _calls_where(can):
+def _calls_where(can: Callable[[str], str]) -> str:
     """SQL: the records of a line where some trip of it this way lets
     riders do what can(alias) says, _boards or _alights."""
     return f"""
@@ -86,7 +98,8 @@ _BOARDING_ROWS = _calls_where(_boards)
 _ALIGHTING_ROWS = _calls_where(_alights)
 
 
-def _line_ways(conn, route_id, direction=None):
+def _line_ways(conn: Connection, route_id: str, direction: str | int | None = None,
+               ) -> tuple[Callable[[str], bool], Callable[[str], bool]]:
     """Whether the line, over every trip of it this way, ever takes riders
     on, or sets them down, at a record: (boards, alights), each answering
     a stop_id.
@@ -103,7 +116,7 @@ def _line_ways(conn, route_id, direction=None):
     params = {"route_id": route_id, "direction": _direction_param(direction)}
     _kept, _station_names, place, _trips = _line_of(conn, route_id, direction)
 
-    def ways(sql):
+    def ways(sql: str) -> Callable[[str], bool]:
         records = {row[0] for row in conn.execute(text(sql), params)}
         places = {place[s] for s in records if s in place}
         return lambda stop_id: stop_id in records or place.get(stop_id) in places
@@ -111,7 +124,7 @@ def _line_ways(conn, route_id, direction=None):
     return ways(_BOARDING_ROWS), ways(_ALIGHTING_ROWS)
 
 
-def _same_place(a, b):
+def _same_place(a: Sequence[Any], b: Sequence[Any]) -> bool:
     """The rule of _place_group, on (name, parent, lat, lon) tuples."""
     if a[1] or b[1]:
         return bool(a[1]) and a[1] == b[1]
@@ -123,18 +136,18 @@ def _same_place(a, b):
         return False
 
 
-def _trips_of(rows):
+def _trips_of(rows: Iterable[Sequence[Any]]) -> tuple[_Trips, dict[str, tuple[Any, ...]]]:
     """{trip_id: [(stop_id, stop_sequence)]} and {stop_id: (name, parent,
     lat, lon, station_name)} out of _STOP_ROWS shaped rows."""
-    trips = {}
-    info = {}
+    trips: _Trips = {}
+    info: dict[str, tuple[Any, ...]] = {}
     for trip_id, stop_id, stop_name, stop_sequence, parent_station, station_name, lat, lon in rows:
         trips.setdefault(trip_id, []).append((stop_id, stop_sequence))
         info[stop_id] = (stop_name, parent_station or "", lat, lon, station_name)
     return trips, info
 
 
-def _box_distance(a, b):
+def _box_distance(a: Sequence[Any], b: Sequence[Any]) -> float:
     """How far apart two (name, parent, lat, lon) records are, in boxes:
     below 1 within PLACE_LAT / PLACE_LON."""
     try:
@@ -144,7 +157,7 @@ def _box_distance(a, b):
         return 0
 
 
-def _places_of(trips, info):
+def _places_of(trips: _Trips, info: Mapping[str, Sequence[Any]]) -> dict[str, str]:
     """{stop_id: place}, a place being named by the first of its records the
     line calls at, fullest trip first: that record is what the entry keeps,
     and the one the queries widen to the whole place again.
@@ -156,8 +169,8 @@ def _places_of(trips, info):
     nearer seed, whichever the line met first, so the list does not depend
     on the order it reads the trips in.
     """
-    seeds = []
-    calls = {}
+    seeds: list[str] = []
+    calls: dict[str, bool] = {}
     for _trip_id, trip_stops in sorted(trips.items(), key=lambda kv: (-len(kv[1]), kv[0])):
         for stop_id, _seq in trip_stops:
             if stop_id in calls:
@@ -174,11 +187,13 @@ def _places_of(trips, info):
     return place
 
 
-def _segments_of(places):
+def _segments_of(places: Iterable[str]) -> list[list[str]]:
     """A trip read as places, cut where it comes back to a place it already
     passed: the next piece starts from the last place, so pieces stay tied.
     A racket (Palm Bus 21 out and back through Gare SNCF) or a loop (TAO 22,
     Zenith to Zenith) gives two pieces, each passing a place once."""
+    pieces: list[list[str]]
+    current: list[str]
     pieces, current = [], []
     for p in places:
         if current and p == current[-1]:
@@ -193,7 +208,7 @@ def _segments_of(places):
     return pieces
 
 
-def _runs_forward(shared):
+def _runs_forward(shared: Sequence[int]) -> bool:
     """Whether a piece runs the chain forward, from the chain positions of
     the places it shares with it, in riding order: most pairs of them in
     the chain's order. Counted over pairs, not steps: a way back riding a
@@ -208,7 +223,7 @@ def _runs_forward(shared):
     return up >= down
 
 
-def _lay_piece(order, piece):
+def _lay_piece(order: list[str], piece: Sequence[str]) -> bool:
     """Slot the places of a piece into the chain, each after the place
     preceding it, the piece read forward or backward as the places it
     shares with the chain agree (_runs_forward). False, the chain left
@@ -233,7 +248,7 @@ def _lay_piece(order, piece):
     return True
 
 
-def _chain_of(trips, place):
+def _chain_of(trips: _Trips, place: Mapping[str, str]) -> list[str]:
     """One order of places for the whole line, both ways round.
 
     direction_id cannot be trusted to split a line: on GVB tram 1 a third of
@@ -245,13 +260,14 @@ def _chain_of(trips, place):
     them. A piece sharing nothing yet waits for the chain to grow. Once
     every piece is laid, the places settle (_settle).
     """
-    pieces = {}
+    pieces: dict[tuple[str, ...], int] = {}
+    piece: Sequence[str]
     for _trip_id, trip_stops in trips.items():
         for piece in _segments_of([place[s] for s, _seq in trip_stops]):
             pieces.setdefault(tuple(piece), 0)
             pieces[tuple(piece)] += 1
     pending = sorted(pieces, key=lambda p: (-len(p), -pieces[p], p))
-    order = []
+    order: list[str] = []
     while pending:
         waiting = [piece for piece in pending if not _lay_piece(order, piece)]
         if len(waiting) == len(pending):
@@ -264,13 +280,14 @@ def _chain_of(trips, place):
     return _settle(order, pieces)
 
 
-def _ridden_next_to(order, pieces):
+def _ridden_next_to(order: Sequence[str], pieces: Mapping[tuple[str, ...], int],
+                    ) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, int]]]:
     """({place: {place ridden just before it: weight}}, the same for just
     after), each piece read the way it runs the chain (_runs_forward) and
     weighed by how many patterns ride it."""
     position = {p: i for i, p in enumerate(order)}
-    before = {p: {} for p in order}
-    after = {p: {} for p in order}
+    before: dict[str, dict[str, int]] = {p: {} for p in order}
+    after: dict[str, dict[str, int]] = {p: {} for p in order}
     for piece, count in pieces.items():
         if not _runs_forward([position[p] for p in piece]):
             piece = piece[::-1]
@@ -280,7 +297,7 @@ def _ridden_next_to(order, pieces):
     return before, after
 
 
-def _slot_costs(rest, before, after):
+def _slot_costs(rest: Iterable[str], before: Mapping[str, int], after: Mapping[str, int]) -> list[int]:
     """For each slot of a place among the others (rest), how much the
     steps ridden through it go against the chain: the places ridden
     before it set after the slot, those ridden after it set before."""
@@ -292,7 +309,7 @@ def _slot_costs(rest, before, after):
     return costs
 
 
-def _settle(order, pieces):
+def _settle(order: list[str], pieces: Mapping[tuple[str, ...], int]) -> list[str]:
     """The chain with each place moved, one at a time, to the slot the
     rides through it contradict least, until none moves.
 
@@ -339,7 +356,7 @@ _HEADING_ROWS = """
 """
 
 
-def _heading_of(order, place, heading):
+def _heading_of(order: Sequence[str], place: Mapping[str, str], heading: Iterable[Sequence[Any]]) -> bool:
     """True when the trips of direction 0, weighed by how many run each
     pattern, ride order backwards more than forwards."""
     position = {p: i for i, p in enumerate(order)}
@@ -353,7 +370,8 @@ def _heading_of(order, place, heading):
     return down > up
 
 
-def _ride_of(rows, heading=()):
+def _ride_of(rows: Iterable[Sequence[Any]], heading: Iterable[Sequence[Any]] = (),
+             ) -> tuple[list[list[Any]], dict[str, str | None], dict[str, str]]:
     """One entry per place, in riding order, out of _STOP_ROWS shaped rows.
 
     Returns the kept [stop_id, name, sequence], stop_id being the record that
@@ -366,7 +384,7 @@ def _ride_of(rows, heading=()):
     order = _chain_of(trips, place)
     if _heading_of(order, place, heading):
         order.reverse()
-    first_seq = {}
+    first_seq: dict[str, int] = {}
     for _trip_id, trip_stops in sorted(trips.items(), key=lambda kv: (-len(kv[1]), kv[0])):
         for stop_id, seq in trip_stops:
             first_seq.setdefault(stop_id, seq)
@@ -375,7 +393,8 @@ def _ride_of(rows, heading=()):
     return kept, station_names, place
 
 
-def _labels_of(kept, station_names):
+def _labels_of(kept: Sequence[Sequence[Any]],
+               station_names: Mapping[str, str | None]) -> dict[str, str]:
     """{stop_id: readable name} for the stops whose name the line meets
     more than once; a stop met once keeps its plain name.
 
@@ -388,10 +407,10 @@ def _labels_of(kept, station_names):
     in the order the line calls at them when it does not. The value keeps
     the id untouched, only the readable part changes.
     """
-    by_name = {}
+    by_name: dict[str, list[Sequence[Any]]] = {}
     for x in kept:
         by_name.setdefault(x[1], []).append(x)
-    label = {}
+    label: dict[str, str] = {}
     for name, group in by_name.items():
         if len(group) == 1:
             continue
@@ -410,13 +429,13 @@ def _labels_of(kept, station_names):
     return label
 
 
-def _entries_of(kept, label):
+def _entries_of(kept: Sequence[Sequence[Any]], label: Mapping[str, str]) -> list[str]:
     """The picker's entries, "stop_id: Name (sequence)": get_next_departure
     cuts the id back out of the value, only the name is the user's to read."""
     return [f"{x[0]}: {label.get(x[0], x[1])} ({x[2]})" for x in kept]
 
 
-def _direction_param(direction):
+def _direction_param(direction: str | int | None) -> int | None:
     """None for no direction (the whole line), else 0 or 1."""
     if direction is None or str(direction) not in ("0", "1"):
         return None
@@ -427,11 +446,11 @@ def _direction_param(direction):
 # the origin, towards, destination and pair screens each read the same
 # ones again, every trip of the line grouped each time (TAO tram A, 1.5 s
 # a read). The last few only: a flow reads one line at a time
-_LINE_ROWS = {}
+_LINE_ROWS: dict[tuple[Any, ...], Sequence[Any]] = {}
 _LINE_ROWS_KEPT = 8
 
 
-def _line_rows(conn, sql, params):
+def _line_rows(conn: Connection, sql: str, params: Mapping[str, Any]) -> Sequence[Any]:
     """conn.execute(text(sql), params).fetchall(), kept while the database
     file stays the same one, unchanged; read afresh when it cannot say."""
     try:
@@ -451,7 +470,8 @@ def _line_rows(conn, sql, params):
     return rows
 
 
-def _line_of(conn, route_id, direction=None):
+def _line_of(conn: Connection, route_id: str, direction: str | int | None = None,
+             ) -> tuple[list[list[Any]], dict[str, str | None], dict[str, str], _Trips]:
     """_ride_of for a route, its sampled trips kept beside: (kept,
     station_names, place, trips)."""
     rows = _line_rows(conn, _STOP_ROWS, {
@@ -462,14 +482,15 @@ def _line_of(conn, route_id, direction=None):
     return kept, station_names, place, trips
 
 
-def _loop_termini(trips, place):
+def _loop_termini(trips: _Trips, place: Mapping[str, str]) -> set[str | None]:
     """The places some trip of the line starts and ends at: a loop's terminus
     (TAO 22 runs Zénith to Zénith both ways round)."""
     return {place.get(stops[0][0]) for stops in trips.values()
             if stops and place.get(stops[0][0]) == place.get(stops[-1][0])}
 
 
-def _origin_boarding(conn, route_id, origin_stop_id, direction=None):
+def _origin_boarding(conn: Connection, route_id: str, origin_stop_id: str,
+                     direction: str | int | None = None) -> set[tuple[str, int]]:
     """The calls of the route at the origin's place a rider can get on at,
     as {(trip_id, stop_sequence)}: what _calls_out starts a ride from.
 
@@ -490,7 +511,9 @@ def _origin_boarding(conn, route_id, origin_stop_id, direction=None):
                                  "direction": _direction_param(direction)})}
 
 
-def _calls_out(trips, place, origin_place, boarding=None):
+def _calls_out(trips: Mapping[str, Sequence[tuple[str, int | None]]], place: Mapping[str, str],
+               origin_place: str,
+               boarding: Container[tuple[str, int | None]] | None = None) -> list[tuple[list[str], str]]:
     """(ride, trip_id) for each ride out of the origin place, the ride as
     places: from a call at it to the trip's next call at it, or its end. A
     trip passing the origin twice (Palm Bus 21 out and back through Gare
@@ -500,8 +523,9 @@ def _calls_out(trips, place, origin_place, boarding=None):
     origin a rider can get on at: a ride from any other call is nobody's
     way out (Zou 620 only sets down at Pont des Gabres on its way into
     Cannes) and is left out, the calls still cutting the rides as before."""
-    rides = []
+    rides: list[tuple[list[str], str]] = []
     for trip_id, trip_stops in trips.items():
+        ride: list[str] | None
         ride, way_on = None, True
         for stop_id, seq in trip_stops:
             p = place.get(stop_id, stop_id)
@@ -517,7 +541,8 @@ def _calls_out(trips, place, origin_place, boarding=None):
     return rides
 
 
-def _ways_of(trips, place, origin_place, boarding=None):
+def _ways_of(trips: _Trips, place: Mapping[str, str], origin_place: str,
+             boarding: Container[tuple[str, int | None]] | None = None) -> dict[str, list[tuple[list[str], str]]]:
     """The ways out of an origin, {way: [(ride, trip_id)]}: where the bus
     goes, as the bus itself shows it.
 
@@ -533,12 +558,12 @@ def _ways_of(trips, place, origin_place, boarding=None):
     is part of it. boarding keeps the rides a rider can start (_calls_out).
     """
     loop_termini = _loop_termini(trips, place)
-    rides = {}
+    rides: dict[tuple[str | None, str | None], list[tuple[list[str], str]]] = {}
     for ride, trip_id in _calls_out(trips, place, origin_place, boarding):
         end = place.get(trips[trip_id][-1][0])
         told_by_next = end in loop_termini or end == origin_place
         rides.setdefault((end, ride[0] if told_by_next else None), []).append((ride, trip_id))
-    folded = {}
+    folded: dict[tuple[str | None, str | None], tuple[str | None, str | None]] = {}
     for key, calls in rides.items():
         if key[1] is not None:
             continue
@@ -556,10 +581,10 @@ def _ways_of(trips, place, origin_place, boarding=None):
                     for ride, _trip_id in other_calls for mine, _mine_trip in calls):
                 folded[key] = other
                 break
-    ways = {}
+    ways: dict[str, list[tuple[list[str], str]]] = {}
     for key, calls in rides.items():
         # two poles of one terminus fold into each other: one key for both
-        chain = []
+        chain: list[tuple[str | None, str | None]] = []
         while key in folded and key not in chain:
             chain.append(key)
             key = folded[key]
@@ -569,7 +594,7 @@ def _ways_of(trips, place, origin_place, boarding=None):
     return ways
 
 
-def get_towards(schedule, route_id, origin_stop_id):
+def get_towards(schedule: Schedule, route_id: str, origin_stop_id: str) -> list[tuple[str, str]]:
     """The ways a rider can leave the origin, or nothing to ask.
 
     Asked only when it settles something: when buses from that place go
@@ -595,7 +620,7 @@ def get_towards(schedule, route_id, origin_stop_id):
     label = _labels_of(kept, station_names)
     names = {x[0]: label.get(x[0], x[1]) for x in kept}
     position = {x[0]: i for i, x in enumerate(kept)}
-    shown = []
+    shown: list[tuple[int, int, str, str]] = []
     for way in ways:
         end, _sep, following = way.partition("|")
         if not following or following == end:
@@ -618,7 +643,7 @@ def get_towards(schedule, route_id, origin_stop_id):
     return [(way, text) for _end, _following, way, text in shown]
 
 
-def get_stop_list(schedule, route_id, direction=None):
+def get_stop_list(schedule: Schedule, route_id: str, direction: str | int | None = None) -> list[str]:
     """Every place a route rides, one entry each, in riding order.
 
     Without a direction, the whole line both ways round, which is what the
@@ -643,10 +668,11 @@ def get_stop_list(schedule, route_id, direction=None):
     return stops
 
 
-def _groups_of(before):
+def _groups_of(before: Mapping[str, Iterable[str]]) -> dict[str, str]:
     """{place: group}, the places that come before one another, directly or
     round a cycle, in one group (a strongly connected component of the
     "comes after" relation, Tarjan's walk without recursion)."""
+    group: dict[str, str]
     index, low, group, stack, on_stack = {}, {}, {}, [], set()
     counter = 0
     for root in before:
@@ -678,13 +704,13 @@ def _groups_of(before):
     return group
 
 
-def _onward_of(before):
+def _onward_of(before: Mapping[str, Iterable[str]]) -> dict[str, set[str]]:
     """{place: the place and every place some ride reaches after it}."""
-    after = {p: set() for p in before}
+    after: dict[str, set[str]] = {p: set() for p in before}
     for p, earlier in before.items():
         for q in earlier:
             after.setdefault(q, set()).add(p)
-    onward = {}
+    onward: dict[str, set[str]] = {}
     for start in before:
         seen, todo = {start}, [start]
         while todo:
@@ -696,7 +722,7 @@ def _onward_of(before):
     return onward
 
 
-def _close_group(root, stack, on_stack, group):
+def _close_group(root: str, stack: list[str], on_stack: set[str], group: dict[str, str]) -> None:
     """Take a finished group off _groups_of's stack, named after its root."""
     while True:
         member = stack.pop()
@@ -706,7 +732,8 @@ def _close_group(root, stack, on_stack, group):
             return
 
 
-def _rides_after(calls):
+def _rides_after(calls: Sequence[Sequence[Any]],
+                 ) -> tuple[dict[str, tuple[tuple[int, str], ...]], dict[str, int], set[tuple[str, str]]]:
     """The rides after the origin, out of every call of every trip through it
     (trip_id, stop_sequence, stop_id, whether riders get off there), in trip
     then sequence order.
@@ -717,10 +744,12 @@ def _rides_after(calls):
     stands for}, and every (sampled trip, stop) some trip of the ride sets
     riders down at.
     """
-    by_trip = {}
+    by_trip: dict[str, list[tuple[int, str]]] = {}
     for trip_id, sequence, stop_id, _alights_there in calls:
         by_trip.setdefault(trip_id, []).append((sequence, stop_id))
     ride_of = {trip_id: tuple(ride) for trip_id, ride in by_trip.items()}
+    sample_of: dict[tuple[tuple[int, str], ...], str]
+    count: dict[tuple[tuple[int, str], ...], int]
     sample_of, count = {}, {}
     for trip_id, ride in ride_of.items():
         if ride not in sample_of or trip_id < sample_of[ride]:
@@ -733,7 +762,7 @@ def _rides_after(calls):
     return samples, trip_count, alighting
 
 
-def _sample_rows(conn, samples):
+def _sample_rows(conn: Connection, samples: Mapping[str, Sequence[tuple[int, str]]]) -> list[tuple[Any, ...]]:
     """The sampled rides' calls at the stops the feed describes, shaped as
     _STOP_ROWS rows, in trip then sequence order."""
     stop_ids = sorted({stop_id for ride in samples.values() for _sequence, stop_id in ride})
@@ -749,7 +778,8 @@ def _sample_rows(conn, samples):
             for name, parent, station, lat, lon in [records[stop_id]]]
 
 
-def _riding_order(calls, trip_count):
+def _riding_order(calls: Iterable[tuple[Sequence[str], str]], trip_count: Mapping[str, int],
+                  ) -> tuple[dict[str, int], dict[str, set[str]], dict[str, int]]:
     """What the rides from the origin say of each place: {place: how soon a
     ride reaches it}, {place: the places a ride calls at just before it},
     {place: how many trips ride through it}."""
@@ -768,6 +798,9 @@ def _riding_order(calls, trip_count):
     # put RD du 24 Août inside the Plascassier village loop, which is the
     # other variant). The busiest branch comes first, by the trips it
     # carries, then the nearest.
+    reach: dict[str, int]
+    before: dict[str, set[str]]
+    weight: dict[str, int]
     reach, before, weight = {}, {}, {}
     for ride, trip_id in calls:
         count, newest, met = 0, None, set()
@@ -786,11 +819,11 @@ def _riding_order(calls, trip_count):
     return reach, before, weight
 
 
-def _tails_of(calls):
+def _tails_of(calls: Iterable[tuple[Sequence[str], str]]) -> dict[str, list[frozenset[str]]]:
     """{place: each way on a ride goes from it, as the place and the places
     the ride reaches after it}. A ride ending short on another's way is not
     a way of its own (gtfs-nl 152922 turns trips at Rotterdam Centraal)."""
-    tails = {}
+    tails: dict[str, set[frozenset[str]]] = {}
     for ride, _trip_id in calls:
         for n, p in enumerate(ride):
             if p not in ride[:n]:
@@ -799,7 +832,8 @@ def _tails_of(calls):
             for p, ways in tails.items()}
 
 
-def _meets_a_split_side(place, pool, onward, tails):
+def _meets_a_split_side(place: str, pool: Iterable[str], onward: Mapping[str, set[str]],
+                        tails: Mapping[str, Iterable[frozenset[str]]]) -> bool:
     """Whether what a free place leads to is reached from another free
     place too, neither lying on the other's way, which a ride also leaves
     for somewhere else."""
@@ -809,7 +843,9 @@ def _meets_a_split_side(place, pool, onward, tails):
                for other in pool)
 
 
-def _placed_in_order(reach, before, weight, position, tails):
+def _placed_in_order(reach: Mapping[str, int], before: Mapping[str, set[str]],
+                     weight: Mapping[str, int], position: Mapping[str, int],
+                     tails: Mapping[str, Sequence[frozenset[str]]]) -> list[str]:
     """The places the rides reach, in the order the list offers them."""
     # places that come before one another, two variants riding them in
     # opposite orders, form one group: it is free once what comes before it
@@ -818,6 +854,10 @@ def _placed_in_order(reach, before, weight, position, tails):
     # sweep). Without such a cycle every place is a group of its own
     group = _groups_of(before)
     onward = _onward_of(before)
+    order: list[str]
+    rank: dict[str, int]
+    joined: dict[str, int]
+    waiting: dict[str, int]
     order, placed, rank, joined, waiting = [], set(), {}, {}, {}
     while len(order) < len(reach):
         blocked = {group[p] for p in reach if p not in placed
@@ -864,7 +904,8 @@ def _placed_in_order(reach, before, weight, position, tails):
     return order
 
 
-def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, towards=None):
+def get_destination_stop_list(schedule: Schedule, route_id: str, direction: str | int | None,
+                              origin_stop_id: str, towards: str | None = None) -> list[str]:
     """The places a trip really reaches from the departure place.
 
     towards, a way get_towards offered, keeps the rides leaving that way
@@ -919,7 +960,7 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     trips, _info = _trips_of(rows)
     origin_place = place.get(origin_stop_id, origin_stop_id)
     # the rows start right after each trip's first call at the origin
-    calls = _calls_out({t: [(origin_stop_id, None)] + s for t, s in trips.items()},
+    calls = _calls_out({t: [(origin_stop_id, None), *s] for t, s in trips.items()},
                        place, origin_place)
     if towards is not None:
         # the rides of the way get_towards offered, read from the same trips
@@ -941,7 +982,7 @@ def get_destination_stop_list(schedule, route_id, direction, origin_stop_id, tow
     return stops
 
 
-def _closed_calls(conn, route_id):
+def _closed_calls(conn: Connection, route_id: str) -> dict[tuple[str, int], tuple[bool, bool]]:
     """{(trip_id, stop_sequence): (boards, alights)} of the calls of the
     trips _STOP_ROWS samples where no trip of the pattern takes riders on,
     or none sets them down; every other call is open both ways."""
@@ -957,7 +998,8 @@ def _closed_calls(conn, route_id):
         having boards = 0 or alights = 0""", {"route_id": route_id, "direction": None})}  # noqa: S608
 
 
-def _shortest_ride(calls, origin, destination):
+def _shortest_ride(calls: Iterable[tuple[str, bool, bool]], origin: str,
+                   destination: str) -> tuple[int, int] | None:
     """(where the ride boards, where it alights) of the trip's shortest ride
     from origin to destination, calls being its (place, boards, alights) in
     call order; None when it rides none. Only a call the rider can use is
@@ -976,7 +1018,8 @@ def _shortest_ride(calls, origin, destination):
     return best
 
 
-def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, towards=None):
+def get_pair_direction(schedule: Schedule, route_id: str, origin_stop_id: str,
+                       destination_stop_id: str, towards: str | None = None) -> str | None:
     """The direction an entry must keep for this pair, or None.
 
     towards, the way the rider answered get_towards with, picks the rotation
@@ -1017,11 +1060,11 @@ def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, 
         told = {str(labels[trip_id]) for ride, trip_id in way
                 if destination in ride and labels.get(trip_id) is not None}
         if len(told) == 1:
-            direction = told.pop()
+            direction: str | None = told.pop()
             _LOGGER.debug("Pair %s -> %s on %s ridden %s, keeping direction %s",
                           origin_stop_id, destination_stop_id, route_id, towards, direction)
             return direction
-    rides = []
+    rides: list[tuple[int, Any]] = []
     for trip_id, trip_stops in trips.items():
         best = _shortest_ride([(place[s], *closed.get((trip_id, seq), (True, True)))
                                for s, seq in trip_stops], origin, destination)
@@ -1040,7 +1083,8 @@ def get_pair_direction(schedule, route_id, origin_stop_id, destination_stop_id, 
     return direction
 
 
-def _quickest_rotations(schedule, route_id, origin_stop_id, destination_stop_id, candidates):
+def _quickest_rotations(schedule: Schedule, route_id: str, origin_stop_id: str,
+                        destination_stop_id: str, candidates: Collection[str]) -> set[str]:
     """Of the direction labels in candidates, the one whose shortest rides of
     the pair take the least time, by the median over its trips; all of them
     when that does not tell them apart. The rides are the departure query's:
@@ -1059,7 +1103,7 @@ def _quickest_rotations(schedule, route_id, origin_stop_id, destination_stop_id,
       and {_boards("o")} and {_alights("d")}
       and {_no_call_between("t", "o", "d", origin_group, destination_group)}
     """  # noqa: S608
-    minutes = {}
+    minutes: dict[str, list[float]] = {}
     try:
         with schedule.engine.connect() as conn:
             for label, departs, arrives in conn.execute(text(sql), {
@@ -1075,10 +1119,10 @@ def _quickest_rotations(schedule, route_id, origin_stop_id, destination_stop_id,
     medians = {label: statistics.median(values) for label, values in minutes.items() if values}
     if len(medians) < 2 or len(set(medians.values())) < len(medians):
         return set(candidates)
-    return {min(medians, key=medians.get)}
+    return {min(medians, key=lambda label: medians[label])}
 
 
-def get_direction_labels(schedule, route_id):
+def get_direction_labels(schedule: Schedule, route_id: str) -> dict[str, str]:
     """First and last stop of each direction, to label 0 and 1.
 
     direction_id says nothing on its own, and trip_headsign is often empty,
@@ -1122,10 +1166,10 @@ def get_direction_labels(schedule, route_id):
     """
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql), {"route_id": route_id}).fetchall()
-    stops = {}
+    stops: dict[str, list[str]] = {}
     for direction, name, _seq in rows:
         stops.setdefault(str(direction), []).append(name)
-    labels = {}
+    labels: dict[str, str] = {}
     for key, names in stops.items():
         if not names or not names[0] or not names[-1]:
             continue
@@ -1142,7 +1186,8 @@ def get_direction_labels(schedule, route_id):
     return labels
 
 
-def has_trip_between(schedule, route_id, origin_id, destination_id, direction=None):
+def has_trip_between(schedule: Schedule, route_id: str, origin_id: str, destination_id: str,
+                     direction: str | int | None = None) -> bool:
     """Whether any trip of a route calls at both stops, in this order.
 
     This asks whether the journey exists at all, not whether a bus is due:
@@ -1153,7 +1198,7 @@ def has_trip_between(schedule, route_id, origin_id, destination_id, direction=No
     apart, trips without a direction_id still matching.
     """
     direction_where = ""
-    params = {
+    params: dict[str, Any] = {
         "route_id": route_id,
         "origin_id": origin_id,
         "destination_id": destination_id,
