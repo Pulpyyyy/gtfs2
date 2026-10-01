@@ -128,10 +128,10 @@ def _service_envelope(schedule: Schedule, date_str: str) -> tuple[int, int] | No
                 "and name = 'frequencies'")).fetchone():
             freq = conn.execute(text(_FREQUENCIES_SQL), {"d": date_str}).fetchone()
             bounds += [gtfs_seconds(v) for v in (freq or ())]
-    bounds = [b for b in bounds if b is not None]
-    if not bounds:
+    found = [b for b in bounds if b is not None]
+    if not found:
         return None
-    return min(bounds), max(bounds)
+    return min(found), max(found)
 
 
 def _edition_of(hass: HomeAssistant, file: str) -> _Edition:

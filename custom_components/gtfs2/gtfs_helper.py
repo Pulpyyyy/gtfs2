@@ -1,6 +1,7 @@
 """Support for GTFS Integration."""
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 import datetime
 import json
 import sqlite3
@@ -8,10 +9,12 @@ import re
 import logging
 import os
 import threading
+from typing import TYPE_CHECKING, Any
 import pygtfs
 from sqlalchemy.sql import text
 
 
+from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
 from .const import (
@@ -23,6 +26,10 @@ from .const import (
     )
 from .gtfs_db import feed_zip, file_edition, real_path
 from .rt_feed import on_service_day
+
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,12 +54,12 @@ RAIL_ROUTE_TYPES = (2, *range(100, 118))
 RAIL_ROUTE_TYPES_SQL = ",".join(str(t) for t in RAIL_ROUTE_TYPES)
 
 
-def departure_route_type(route_type, origin_stop_id):
+def departure_route_type(route_type: str | int | None, origin_stop_id: str | None) -> str | int | None:
     """The route_type of one departure: its line's, unless the line is rail
     and the departure leaves from a coach stop, which makes it a rail
     replacement bus."""
     try:
-        rail = int(route_type) in RAIL_ROUTE_TYPES
+        rail = route_type is not None and int(route_type) in RAIL_ROUTE_TYPES
     except (TypeError, ValueError):
         return route_type
     if rail and str(origin_stop_id or "").startswith(COACH_STOP_PREFIX):
@@ -60,7 +67,7 @@ def departure_route_type(route_type, origin_stop_id):
     return route_type
 
 
-def entry_stations(data, end):
+def entry_stations(data: Mapping[str, Any], end: str) -> list[str]:
     """Every station a train entry matches at one end, "origin" or
     "destination": the ones ticked on the station screen, or the single name
     an entry created before that screen took several holds."""
@@ -68,7 +75,7 @@ def entry_stations(data, end):
     return [str(name) for name in names if name]
 
 
-def train_entry_routes(gtfs_dir, data):
+def train_entry_routes(gtfs_dir: str, data: Mapping[str, Any]) -> list[str]:
     """The lines a trip of which runs from one of a train entry's stations
     to one of the other's, read from its source's database; [] when it
     cannot be read.
@@ -104,7 +111,7 @@ def train_entry_routes(gtfs_dir, data):
         return []
 
 
-def station_names_in(prefix, names):
+def station_names_in(prefix: str, names: Iterable[str] | None) -> tuple[str, dict[str, str]]:
     """An SQL "(:prefix_name_0, ...)" for a list of station names, and its
     parameters.
 
@@ -119,10 +126,12 @@ def station_names_in(prefix, names):
     return "(" + ", ".join(f":{key}" for key in keys) + ")", dict(zip(keys, names))
 
 
-def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3",
-                          horizon=NEXT_SERVICE_HORIZON_DAYS, line=None,
-                          origin_names=None, destination_names=None, route=None,
-                          direction=None):
+def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_id: str,
+                          from_date: str, route_type: str = "3",
+                          horizon: int = NEXT_SERVICE_HORIZON_DAYS, line: str | None = None,
+                          origin_names: list[str] | None = None,
+                          destination_names: list[str] | None = None, route: str | None = None,
+                          direction: str | int | None = None) -> str | None:
     """Return the first date on or after from_date that this trip runs, or None.
 
     include_tomorrow only ever reaches J+1, so a line that rests over the
@@ -156,6 +165,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
         _LOGGER.warning("No usable schedule to look up the next service date (%s)", schedule or "empty")
         return None
     line_join = line_where = ""
+    params: dict[str, Any]
     if route_type == "2":
         # trains match on the exact stop_name, like get_next_departure does
         origin_in, params = station_names_in("origin", origin_names or [origin_id])
@@ -184,7 +194,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
             params["route"] = route
         if str(direction) in ("0", "1"):
             line_where += " and (t.direction_id = :direction or t.direction_id is null)"
-            params["direction"] = int(direction)
+            params["direction"] = int(str(direction))
 
     sql = f"""
         with recursive dates(d) as (
@@ -235,7 +245,7 @@ def get_next_service_date(schedule, origin_id, dest_id, from_date, route_type="3
     return str(result)[:10] if result else None
 
 
-def agency_zone(schedule, route=None):
+def agency_zone(schedule: Schedule, route: str | None = None) -> datetime.tzinfo | None:
     """The time zone the feed writes its clocks in: the route's agency's,
     else the first agency that names one; None when the feed names none or
     cannot be read."""
@@ -259,7 +269,7 @@ def agency_zone(schedule, route=None):
     return dt_util.get_time_zone(name) if name else None
 
 
-def _feed_now(schedule, route=None):
+def _feed_now(schedule: Schedule, route: str | None = None) -> str:
     """This moment as the feed writes its clocks: in its agency's zone.
 
     The query lays the stored clocks on service days and compares them
@@ -278,9 +288,12 @@ def _feed_now(schedule, route=None):
     return moment.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _fetch_departure_rows(route_type, origin, destination, schedule, direction=None, route=None,
-                          line=None, origin_names=None, destination_names=None,
-                          window=None, limit=30):
+def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedule: Schedule,
+                          direction: str | int | None = None, route: str | None = None,
+                          line: str | None = None, origin_names: list[str] | None = None,
+                          destination_names: list[str] | None = None,
+                          window: tuple[str, str] | None = None,
+                          limit: int = 30) -> tuple[list[dict[str, Any]], str]:
     """Run the static-GTFS SQL query and return matching rows as plain dicts.
 
     direction is only given by an entry at a loop's terminus
@@ -457,7 +470,7 @@ def _fetch_departure_rows(route_type, origin, destination, schedule, direction=N
     query_params = {
         "origin_station_id": start_station_id,
         "end_station_id": end_station_id,
-        "direction": int(direction) if str(direction) in ("0", "1") else None,
+        "direction": int(str(direction)) if str(direction) in ("0", "1") else None,
         "route": route,
         "line": line,
         "route_type": route_type,
@@ -485,12 +498,12 @@ _CANDIDATES_FED = "SELECT " + ", ".join(
 ) + " FROM json_each(:candidates)"
 # {(schedule id, query, parameters): (schedule, candidates as json)}, the
 # latest last; the schedule is kept so its id is not reused while here
-_CANDIDATES: dict[tuple, tuple] = {}
+_CANDIDATES: dict[tuple[int, str, tuple[tuple[str, Any], ...]], tuple[Schedule, str]] = {}
 _CANDIDATES_GUARD = threading.Lock()
 _CANDIDATES_KEEP = 64
 
 
-def _candidate_pairs(schedule, candidates_sql, params):
+def _candidate_pairs(schedule: Schedule, candidates_sql: str, params: Mapping[str, Any]) -> str:
     """The trips riding from one end of a departure query to the other, as
     json for json_each, read once for a schedule and a pair.
 
@@ -517,15 +530,16 @@ def _candidate_pairs(schedule, candidates_sql, params):
     return fed
 
 
-def _row_instant(value, zone):
+def _row_instant(value: str, zone: datetime.tzinfo | None) -> datetime.datetime:
     """A "YYYY-MM-DD HH:MM:SS" of a departure row, laid in zone."""
     return datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=zone)
 
 
-def _departure_timetable(rows, now, now_local_tz):
+def _departure_timetable(rows: Iterable[Mapping[str, Any]], now: datetime.datetime,
+                         now_local_tz: datetime.datetime) -> list[tuple[tuple[str, str], dict[str, Any]]]:
     """[((departure, trip_id), row)] of the rows not gone yet, in departure
     order, each row marked first or last of its service day."""
-    timetable = {}
+    timetable: dict[tuple[str, str], dict[str, Any]] = {}
     for row in rows:
         depart_dt_str = row["origin_depart_dt"]    # already a correct full instant
         try:
@@ -555,7 +569,7 @@ def _departure_timetable(rows, now, now_local_tz):
         timetable[idx] = {**row, "day": row["origin_depart_date"], "first": False, "last": False}
 
     ordered = sorted(timetable.items())
-    last_of_day = {}
+    last_of_day: dict[str, dict[str, Any]] = {}
     for _, value in ordered:
         if value["origin_depart_date"] not in last_of_day:
             value["first"] = True
@@ -565,7 +579,8 @@ def _departure_timetable(rows, now, now_local_tz):
     return ordered
 
 
-def _departure_zones(hass, item):
+def _departure_zones(hass: HomeAssistant,
+                     item: Mapping[str, Any]) -> tuple[datetime.tzinfo | None, datetime.tzinfo | None]:
     """(origin zone, destination zone) a departure's clock is read in: the
     agency's at both ends, else the origin stop's, with the destination
     stop's at its end when the agency gives none; Home Assistant's when
@@ -582,10 +597,11 @@ def _departure_zones(hass, item):
     return timezone, timezone_dest
 
 
-def _next_departure_lists(upcoming, timezone_dest):
+def _next_departure_lists(upcoming: list[tuple[datetime.datetime, dict[str, Any]]],
+                          timezone_dest: datetime.tzinfo | None) -> dict[str, list[Any]]:
     """The next_departures* lists of the sensor, one entry per departure of
     upcoming [(departure instant, row)], in its order."""
-    lists = {key: [] for key in (
+    lists: dict[str, list[Any]] = {key: [] for key in (
         "next_departures", "next_departures_lines", "next_departures_headsign",
         "next_departures_trip_id", "next_departures_destination_arrival_times",
         "next_departures_durations", "next_departures_origin_stop_id",
@@ -614,7 +630,8 @@ def _next_departure_lists(upcoming, timezone_dest):
     return lists
 
 
-def _stop_time(item, end, arrival, departure):
+def _stop_time(item: Mapping[str, Any], end: str, arrival: datetime.datetime,
+               departure: datetime.datetime) -> dict[str, Any]:
     """The origin_stop_time or destination_stop_time attribute of a
     departure, end being "origin" or "dest"."""
     return {
@@ -629,8 +646,10 @@ def _stop_time(item, end, arrival, departure):
     }
 
 
-def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
-                               now_date_local_tz, now_time):
+def _interpret_departure_rows(hass: HomeAssistant, rows: Iterable[Mapping[str, Any]],
+                               start_station_id: str | None, now: datetime.datetime,
+                               now_local_tz: datetime.datetime, now_date_local_tz: str,
+                               now_time: str) -> dict[str, Any]:
     """Turn raw SQL-shaped rows into the `next_departure` dict."""
     _LOGGER.debug("Interpret rows: %s", rows)
     timetable = _departure_timetable(rows, now, now_local_tz)
@@ -646,7 +665,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
     timezone, timezone_dest = _departure_zones(hass, timetable[0][1])
 
     # the next ten, read again in the zone the first one set
-    upcoming = []
+    upcoming: list[tuple[datetime.datetime, dict[str, Any]]] = []
     for key, value in timetable:
         departure = _row_instant(key[0], timezone)
         if departure > now_local_tz:
@@ -688,7 +707,7 @@ def _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz,
         **_next_departure_lists(upcoming, timezone_dest),
     }
 
-def _departure_clocks(_data):
+def _departure_clocks(_data: Mapping[str, Any]) -> tuple[datetime.datetime, datetime.datetime, str, str]:
     """now (naive, offset applied), now in the local zone, its date and
     the clock, the way the departures are read against them."""
     offset = _data["offset"]
@@ -698,7 +717,8 @@ def _departure_clocks(_data):
             now.strftime(TIME_STR_FORMAT))
 
 
-def drop_departure_trips(hass, _data, struck):
+def drop_departure_trips(hass: HomeAssistant, _data: Mapping[str, Any],
+                         struck: Mapping[str, str | None]) -> dict[str, Any]:
     """The departures again, without the trips the realtime feed struck out.
 
     struck is {trip_id: start_date or None} as struck_trips reads it: a
@@ -723,7 +743,8 @@ def drop_departure_trips(hass, _data, struck):
         now_date_local_tz, now_time)
 
 
-def journey_data(schedule, data, options):
+def journey_data(schedule: Schedule | str | None, data: Mapping[str, Any],
+                 options: Mapping[str, Any]) -> dict[str, Any]:
     """The journey an entry asks the departure query for: its two ends, its
     line and its source, from the entry's data and options. The sensor's
     refresh and the departures service both start from it, so they answer
@@ -749,7 +770,7 @@ def journey_data(schedule, data, options):
     }
 
 
-def departure_query_args(_data):
+def departure_query_args(_data: Mapping[str, Any]) -> dict[str, Any]:
     """What an entry's departures are asked with beyond its two ends, the
     same for the sensor and for the timetable export: the direction kept at
     a loop's terminus, the entry's line, and on the train path the line
@@ -763,7 +784,7 @@ def departure_query_args(_data):
     }
 
 
-def shown_ends(data, departure):
+def shown_ends(data: Mapping[str, Any], departure: Mapping[str, Any]) -> tuple[str, str, str, str]:
     """(route_id, direction, origin stop id, destination stop id) of the
     departure shown, the entry's own where the departure names none: once
     the last departure of the day is gone, the entry still says which line,
@@ -777,7 +798,7 @@ def shown_ends(data, departure):
     )
 
 
-def get_next_departure(hass, _data):
+def get_next_departure(hass: HomeAssistant, _data: dict[str, Any]) -> dict[str, Any]:
     """Get next departures from data."""
     _LOGGER.debug("Get next departure with data: %s", _data)
     if check_extracting(hass, _data['gtfs_dir'],_data['file']):
@@ -814,7 +835,7 @@ def get_next_departure(hass, _data):
     )
 
 
-def get_gtfs(hass, path, data):
+def get_gtfs(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> Schedule | str:
     """Open a datasource's database, or say why there is none to open.
 
     Answers the schedule, or one of the strings the callers know:
@@ -875,7 +896,7 @@ PLACE_LAT = 0.00135
 PLACE_LON = 0.002
 
 
-def _place_group(param):
+def _place_group(param: str) -> str:
     """SQL "(...)" of every stop_id of the place of the stop bound to :param."""
     return f"""(
     select sibling.stop_id
@@ -903,7 +924,7 @@ def _place_group(param):
 # departure, or as a place to get off, sends the rider to a bus that will
 # not open its door. The value is cast, pygtfs stores it as a number but a
 # feed's blank is a NULL, and the db of a test may hold text.
-def _day_offset(time_column):
+def _day_offset(time_column: str) -> str:
     """SQL: the whole days a stored stop time lies past its service day.
 
     Stop times are stored on 1970-01-01, and a time past midnight on the
@@ -912,14 +933,14 @@ def _day_offset(time_column):
     return f"CAST(julianday(date({time_column})) - julianday('1970-01-01') AS INTEGER)"
 
 
-def _on_service_day(day, time_column):
+def _on_service_day(day: str, time_column: str) -> str:
     """SQL: a stored stop time laid on its service day, the days it lies
     past midnight included (see _day_offset)."""
     return (f"datetime({day} || ' ' || time({time_column}), "
             f"'+' || {_day_offset(time_column)} || ' days')")
 
 
-def _runs_on(day, calendar=""):
+def _runs_on(day: str, calendar: str = "") -> str:
     """SQL: the calendar row runs on the weekday of this date."""
     cal = f"{calendar}." if calendar else ""
     return (f"(case cast(strftime('%w', {day}) as int)"
@@ -929,7 +950,7 @@ def _runs_on(day, calendar=""):
             f" else {cal}saturday end) = 1")
 
 
-def _no_call_between(trip, board, alight, origin_group, end_group):
+def _no_call_between(trip: str, board: str, alight: str, origin_group: str, end_group: str) -> str:
     """SQL: the ride from the board call to the alight call of the trip is
     its shortest, no call the rider can use at either end in between."""
     return f"""NOT EXISTS (
@@ -941,24 +962,24 @@ def _no_call_between(trip, board, alight, origin_group, end_group):
                        OR (between_stop.stop_id IN {end_group} AND {_alights("between_stop")})))"""
 
 
-def _removed_on(service, day):
+def _removed_on(service: str, day: str) -> str:
     """SQL: calendar_dates takes this service out on this date."""
     return (f"exists (select 1 from calendar_dates removed"
             f" where removed.service_id = {service}"
             f" and removed.date = {day} and removed.exception_type = 2)")
 
 
-def _boards(alias):
+def _boards(alias: str) -> str:
     """SQL: the rider can get on at this stop_times row."""
     return f"coalesce(cast({alias}.pickup_type as integer), 0) <> 1"
 
 
-def _alights(alias):
+def _alights(alias: str) -> str:
     """SQL: the rider can get off at this stop_times row."""
     return f"coalesce(cast({alias}.drop_off_type as integer), 0) <> 1"
 
 
-def gtfs_seconds(value):
+def gtfs_seconds(value: object) -> int | None:
     """Seconds since the service day's midnight of a stop time, or None.
 
     The one reader of stop times for every module: the queries hand them
@@ -988,7 +1009,7 @@ def gtfs_seconds(value):
     hours, minutes, seconds = (int(part) for part in parts)
     return days * 86400 + hours * 3600 + minutes * 60 + seconds
     
-def check_extracting(hass, gtfs_dir,file):
+def check_extracting(hass: HomeAssistant, gtfs_dir: str, file: str) -> bool:
     _LOGGER.debug("Checking if extracting: %s", file)
     gtfs_dir = hass.config.path(gtfs_dir)
     filename = file
@@ -1015,10 +1036,10 @@ DATASOURCE_INDEXES = (
 
 # the database file each datasource was last checked as, (inode, mtime,
 # size): the same file needs no second look, a rebuilt one gets one
-_INDEX_CHECKED = {}
+_INDEX_CHECKED: dict[str, tuple[int, int, int]] = {}
 
 
-def drop_import_indexes(schedule):
+def drop_import_indexes(schedule: Schedule) -> None:
     """Take the stop_times indexes off a database pygtfs is about to fill.
 
     From 0.1.10 on pygtfs declares trip_id and stop_id indexes on
@@ -1037,7 +1058,8 @@ def drop_import_indexes(schedule):
             conn.execute(text(f'DROP INDEX "{name}"'))
 
 
-def check_datasource_index(hass, schedule, gtfs_dir, file):
+def check_datasource_index(hass: HomeAssistant, schedule: Schedule | str | None, gtfs_dir: str,
+                           file: str) -> None:
     """Give a datasource the indexes the queries need, and its routes an agency.
 
     Runs before every refresh of every sensor, and asked sqlite_master
