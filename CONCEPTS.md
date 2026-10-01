@@ -16,6 +16,11 @@ Examples: TAO, SNCF, Palm Bus.
 A source is identified by its file name. Its url may change; the name, and
 so the source, stays.
 
+Every source has a url, where its feed is fetched from: a host's
+(`https://…`), or a file on this machine (`file://…`), which is how a zip
+dropped in the gtfs2 folder is read. Both are checked and refreshed the
+same way.
+
 ---
 
 ## Datasource

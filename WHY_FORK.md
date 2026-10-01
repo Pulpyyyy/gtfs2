@@ -175,6 +175,39 @@ Benefits:
 
 ---
 
+## Problem: a source made from a zip has no address
+
+Current situation upstream: a source built from a zip dropped in the
+`gtfs2` folder is stored with the address `"na"`, a word that stands for
+"none". Every reader of the address has to know it, and such a source can
+only be refreshed by hand.
+
+Solution: **every source has an address**. A zip in the folder is
+`file://<gtfs2 folder>/<name>.zip`, and the fork reads a `file://` address
+the way it reads an `http://` or `https://` one: the same check, the same
+download, the same refresh.
+
+| | Upstream | Fork |
+|---|---|---|
+| Address of a source made from a zip in the `gtfs2` folder | `"na"` | `file:///config/gtfs2/<name>.zip` |
+| Address typed in the setup | `"na"` by default, left as is for a zip | `http://`, `https://` or `file://` |
+| Where the feed is read from | `extract_from`: `url` downloads the address, `zip` reads the folder | the address, whatever its scheme |
+| A new edition of a zip | dropped in the folder, then `update_gtfs` with `extract_from: zip`, by hand | found by the source's check (the file's time, then its hash), installed or announced as for a hosted source |
+| `update_gtfs`: address | required, `"na"` by default | optional: creates a source (left out, the zip of that name in the folder); for one that exists, its feed is fetched from it this once, a `file://` zip while the host is down |
+| `update_gtfs`: `extract_from` | `url` or `zip` | removed: a call still naming it runs, and the log says the option is gone |
+| A call sending `"na"` | no address with `zip`; with `url`, a download of `"na"`, which fails | read as not given, and said in the log |
+| Entries holding `"na"` | stay so | rewritten at start (entry version 10.3) to the `file://` url of the zip |
+
+Benefits:
+
+- one way to fetch a feed, whatever its scheme, and no word standing in
+  for "none"
+- a zip replaced in the folder is found by the source's own check
+- a feed elsewhere on the machine (a share, a script's output) can be a
+  source
+
+---
+
 ## Problem: very large GTFS feeds
 
 Many users only follow:
