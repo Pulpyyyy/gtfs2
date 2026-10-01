@@ -11,12 +11,15 @@ The config flow lists a database's lines and agencies from here too
 """
 from __future__ import annotations
 
+from collections.abc import Collection, Container, Iterable, Mapping, Sequence
+import csv
 import logging
 import os
 import re
 import zipfile
 from collections import Counter, defaultdict
 from datetime import date
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import text
 
@@ -24,10 +27,18 @@ from .feed_window import runs_some_day
 from .gtfs_db import feed_zip, file_edition
 from .gtfs_filter import _member, read_zip_agencies, read_zip_routes, table_reader, table_rows
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
 
+# the days lines or services run: {id: (first date, last date)}, the dates
+# as GTFS writes them, YYYYMMDD
+type _Spans = dict[str, tuple[str, str]]
 
-def get_routes_in_zip(gtfs_dir, filename):
+
+def get_routes_in_zip(gtfs_dir: str, filename: str) -> set[str]:
     """The route_ids the source zip declares, read without unpacking it.
 
     The zip kept beside a datasource is the only complete record of the feed:
@@ -47,10 +58,10 @@ def get_routes_in_zip(gtfs_dir, filename):
         _LOGGER.debug("No source zip beside datasource %s", filename)
         return set()
     # the one reader of routes.txt, which the flow uses too
-    return {row["route_id"] for row in read_zip_routes(path)}
+    return {row["route_id"] for row in read_zip_routes(path) if row["route_id"]}
 
 
-def get_agencies_in_zip(gtfs_dir, filename):
+def get_agencies_in_zip(gtfs_dir: str, filename: str) -> list[str]:
     """The agencies of the source zip, shaped like get_agency_list's rows.
 
     What the agency step shows when no database exists yet: the feed is the
@@ -63,7 +74,7 @@ def get_agencies_in_zip(gtfs_dir, filename):
             for row in rows]
 
 
-def get_route_options_from_zip(gtfs_dir, filename, agency=None):
+def get_route_options_from_zip(gtfs_dir: str, filename: str, agency: str | None = None) -> list[str]:
     """The route selector options, read from the source zip.
 
     Same "route_type##route_id##label" values get_route_list builds from the
@@ -82,13 +93,14 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
     only = agencies[0]["agency_name"] if len(agencies) == 1 else ""
     labels = _zip_labels(gtfs_dir, filename, rows)
     options = [f"{row.get('route_type') or '99'}##{row['route_id']}##{labels[row['route_id']]}##pruned"
-               for row in rows]
+               for row in rows if row["route_id"]]
     return set_lines_apart(
-        options, [names.get(str(row.get("agency_id") or ""), only) for row in rows],
-        None, gtfs_dir, filename, [row["route_id"] for row in rows])
+        options, [names.get(str(row.get("agency_id") or ""), only) for row in rows if row["route_id"]],
+        None, gtfs_dir, filename, [row["route_id"] for row in rows if row["route_id"]])
 
 
-def set_lines_apart(options, agencies, schedule, gtfs_dir, filename, route_ids):
+def set_lines_apart(options: list[str], agencies: list[str | None], schedule: Schedule | None,
+                    gtfs_dir: str | None, filename: str | None, route_ids: list[str]) -> list[str]:
     """The line options, told apart where they read the same, in the order a
     line number is read; agencies holds each option's agency name, schedule
     is None when there is no database yet.
@@ -112,7 +124,7 @@ def set_lines_apart(options, agencies, schedule, gtfs_dir, filename, route_ids):
     return sorted(options, key=lambda value: _natural(value.split("##")[2]))
 
 
-def get_route_labels_from_zip(gtfs_dir, filename, route_ids):
+def get_route_labels_from_zip(gtfs_dir: str, filename: str, route_ids: Collection[str]) -> dict[str, str]:
     """get_route_labels when there is no database to ask: names from the zip."""
     wanted = set(route_ids)
     known = _zip_labels(gtfs_dir, filename, [
@@ -120,19 +132,20 @@ def get_route_labels_from_zip(gtfs_dir, filename, route_ids):
     return {r: known.get(r, r) for r in route_ids}
 
 
-def _zip_labels(gtfs_dir, filename, rows):
+def _zip_labels(gtfs_dir: str, filename: str, rows: list[dict[str, str | None]]) -> dict[str, str]:
     """{route_id: label} of these routes.txt rows; a line whose long name
     says nothing is named by the ends its headsigns give."""
     ends = headsign_ends(gtfs_dir, filename, [
         row["route_id"] for row in rows
-        if not _adds_to(row.get("route_short_name"), row.get("route_long_name"))])
+        if row["route_id"] and not _adds_to(row.get("route_short_name"), row.get("route_long_name"))])
     return {row["route_id"]: _route_label(row.get("route_short_name"),
                                           row.get("route_long_name"),
                                           ends.get(row["route_id"]), row["route_id"])
-            for row in rows}
+            for row in rows if row["route_id"]}
 
 
-def routes_in_zip_for_agency(gtfs_dir, filename, route_ids, agency=None):
+def routes_in_zip_for_agency(gtfs_dir: str, filename: str, route_ids: list[str],
+                             agency: str | None = None) -> list[str]:
     """Cut a list of route_ids down to one agency's, as routes.txt records it.
 
     The also-import list offers what the feed declares minus what is loaded;
@@ -148,7 +161,7 @@ def routes_in_zip_for_agency(gtfs_dir, filename, route_ids, agency=None):
     return [r for r in route_ids if r in owned]
 
 
-def _says_something(part):
+def _says_something(part: str | None) -> bool:
     """Whether a name part carries anything a reader can use.
 
     A line number is often nothing but digits, so digits count. What does not
@@ -159,7 +172,7 @@ def _says_something(part):
     return any(character.isalnum() for character in str(part or ""))
 
 
-def _adds_to(short, long_name):
+def _adds_to(short: str | None, long_name: str | None) -> bool:
     """Whether the long name tells the reader more than the number does.
 
     IDFM writes the number again as the long name on 1837 of its 2024 lines
@@ -171,7 +184,7 @@ def _adds_to(short, long_name):
             and str(long_name).strip().casefold() != str(short or "").strip().casefold())
 
 
-def _set_apart(options, agencies):
+def _set_apart(options: list[str], agencies: list[str | None]) -> list[str]:
     """Name the agency where two lines of the list read the same.
 
     options are "route_type##route_id##label[##pruned]" values, agencies the
@@ -184,7 +197,7 @@ def _set_apart(options, agencies):
     since it would lengthen every one of them without telling them apart.
     """
     labels = [option.split("##")[2] for option in options]
-    groups = {}
+    groups: dict[str, set[str]] = {}
     for label, agency in zip(labels, agencies):
         groups.setdefault(label.casefold(), set()).add(str(agency or "").strip().casefold())
     out = []
@@ -197,7 +210,7 @@ def _set_apart(options, agencies):
     return out
 
 
-def _look_alikes(options):
+def _look_alikes(options: list[str]) -> list[str]:
     """The route_ids of the lines whose label another line of the same mode
     wears too, after _set_apart: one operator publishing one name for
     several routes (IDFM's three "TER : TER Centre - Val de Loire", to
@@ -208,12 +221,12 @@ def _look_alikes(options):
     return [option.split("##")[1] for option in options if labels[_shown_as(option)] > 1]
 
 
-def _shown_as(option):
+def _shown_as(option: str) -> tuple[str, str | None]:
     """What tells two options apart before the flow adds the mode."""
     return (option.split("##")[2].casefold(), line_mode(option.split("##")[0]))
 
 
-def _leave_out_expired(options, spans, today=None):
+def _leave_out_expired(options: list[str], spans: _Spans, today: str | None = None) -> list[str]:
     """Drop a line whose days are over when a live line wears its label.
 
     Publishers who cut their feed by period of validity list one line per
@@ -229,18 +242,18 @@ def _leave_out_expired(options, spans, today=None):
     """
     today = today or date.today().strftime("%Y%m%d")
 
-    def over(option):
+    def over(option: str) -> bool:
         span = spans.get(option.split("##")[1])
-        return bool(span) and span[1] < today
+        return span is not None and span[1] < today
 
-    alive = defaultdict(bool)
+    alive: defaultdict[tuple[str, str | None], bool] = defaultdict(bool)
     for option in options:
         alive[_shown_as(option)] |= not over(option)
     return [option for option in options
             if not (over(option) and alive[_shown_as(option)])]
 
 
-def _read_date(stamp):
+def _read_date(stamp: str) -> str | None:
     """A GTFS date as the user reads it, or None when it is not one."""
     try:
         return date(int(stamp[:4]), int(stamp[4:6]), int(stamp[6:8])).isoformat()
@@ -248,7 +261,7 @@ def _read_date(stamp):
         return None
 
 
-def _set_apart_by_span(options, spans):
+def _set_apart_by_span(options: list[str], spans: _Spans) -> list[str]:
     """Give the look-alikes that remain the days they run.
 
     What is left after the agency, the ends and the expired ones: the same
@@ -262,7 +275,7 @@ def _set_apart_by_span(options, spans):
     for no reader's benefit - the rail replacement runs Leipzig publishes
     under one name, all of them dated the same twelvemonth.
     """
-    periods = defaultdict(set)
+    periods: defaultdict[tuple[str, str | None], set[tuple[str, str] | None]] = defaultdict(set)
     for option in options:
         periods[_shown_as(option)].add(spans.get(option.split("##")[1]))
     out = []
@@ -278,7 +291,7 @@ def _set_apart_by_span(options, spans):
     return out
 
 
-def _set_apart_by_ends(options, ends):
+def _set_apart_by_ends(options: list[str], ends: Mapping[str, str]) -> list[str]:
     """Give the look-alikes their two ends: " · Chartres ↔ Gare Montparnasse".
 
     ends is {route_id: ends} as route_ends or headsign_ends read them. A
@@ -296,11 +309,11 @@ def _set_apart_by_ends(options, ends):
     return out
 
 
-# the ends read from trips.txt, per zip edition: {(path, size, mtime): ends}
-_HEADSIGN_ENDS = {}
+# the ends read from trips.txt, per zip edition: {(path, file_edition): (ends, spans)}
+_HEADSIGN_ENDS: dict[tuple[str, tuple[int, int, int] | None], tuple[dict[str, str], _Spans]] = {}
 
 
-def _names_a_place(headsign, places=frozenset()):
+def _names_a_place(headsign: str | None, places: frozenset[str] = frozenset()) -> bool:
     """Whether a trip_headsign reads as a destination rather than a code.
 
     SNCF writes the train number there ("44930"), IDFM the RER mission code
@@ -318,9 +331,9 @@ def _names_a_place(headsign, places=frozenset()):
     return True
 
 
-def _read_place_words(zin):
+def _read_place_words(zin: zipfile.ZipFile) -> frozenset[str]:
     """The stop names of an open feed and their first words, casefolded."""
-    words = set()
+    words: set[str] = set()
     for row in table_rows(zin, "stops.txt"):
         name = (row.get("stop_name") or "").strip().casefold()
         if name:
@@ -329,7 +342,7 @@ def _read_place_words(zin):
     return frozenset(words)
 
 
-def _read_service_spans(zin):
+def _read_service_spans(zin: zipfile.ZipFile) -> _Spans:
     """{service_id: (first date, last date)} of an open feed.
 
     Both calendars count: a feed may give a service a window in
@@ -337,8 +350,8 @@ def _read_service_spans(zin):
     exceptions extend. Only the dates a service runs on are read, never
     the ones it is removed from, so a window never grows on a cancellation.
     """
-    spans = {}
-    def seen(service, first, last):
+    spans: _Spans = {}
+    def seen(service: str | None, first: str | None, last: str | None) -> None:
         # the last column of a padded table carries the padding (Renfe)
         first, last = (first or "").strip(), (last or "").strip()
         if not service or not first or not last:
@@ -357,14 +370,15 @@ def _read_service_spans(zin):
     return spans
 
 
-def _headsign_ends(shown, place_words):
+def _headsign_ends(shown: Mapping[str | None, Mapping[str, Counter[str]]],
+                   place_words: frozenset[str]) -> dict[str, str]:
     """{route_id: "A ↔ B"} out of {route_id: {direction: Counter of the
     headsigns its trips show}}: the place each direction shows most often.
     A direction whose trips mostly show a code, or nothing, is left out; a
     line with none left is not in it."""
-    ends = {}
+    ends: dict[str, str] = {}
     for route_id, directions in shown.items():
-        places = []
+        places: list[str] = []
         for direction in sorted(directions):
             counts = directions[direction]
             # a feed without direction_id puts both ways under one key
@@ -379,7 +393,7 @@ def _headsign_ends(shown, place_words):
     return ends
 
 
-def _read_trips(zip_path):
+def _read_trips(zip_path: str) -> tuple[dict[str, str], _Spans]:
     """What trips.txt says about every line, in one pass over it.
 
     Returns ({route_id: "A ↔ B"}, {route_id: (first date, last date)}): the
@@ -387,9 +401,9 @@ def _read_trips(zip_path):
     days the line runs. Both answers come from the same reading because
     that file is the expensive one: 196 MB on the British national feed,
     and reading it twice showed."""
-    shown = defaultdict(lambda: defaultdict(Counter))
-    serves = defaultdict(set)
-    place_words = frozenset()
+    shown: defaultdict[str | None, defaultdict[str, Counter[str]]] = defaultdict(lambda: defaultdict(Counter))
+    serves: defaultdict[str, set[tuple[str, str]]] = defaultdict(set)
+    place_words: frozenset[str] = frozenset()
     try:
         with zipfile.ZipFile(zip_path) as zin:
             member = _member(zin, "trips.txt")
@@ -403,7 +417,7 @@ def _read_trips(zip_path):
                     if headsigns:
                         shown[row.get("route_id")][row.get("direction_id") or ""][
                             (row.get("trip_headsign") or "").strip()] += 1
-                    service = calendar.get(row.get("service_id"))
+                    service = calendar.get(row.get("service_id") or "")
                     if service:
                         serves[str(row.get("route_id"))].add(service)
             if headsigns:
@@ -416,7 +430,7 @@ def _read_trips(zip_path):
     return _headsign_ends(shown, place_words), spans
 
 
-def headsign_ends(gtfs_dir, filename, route_ids):
+def headsign_ends(gtfs_dir: str | None, filename: str | None, route_ids: Iterable[str]) -> dict[str, str]:
     """Where these lines go, as the trips of the source zip say it:
     {route_id: "Château de Vincennes ↔ La Défense"}, for the ones it can.
 
@@ -432,9 +446,9 @@ def headsign_ends(gtfs_dir, filename, route_ids):
     return {r: ends[r] for r in route_ids if r in ends}
 
 
-def _from_trips(gtfs_dir, filename):
+def _from_trips(gtfs_dir: str | None, filename: str | None) -> tuple[dict[str, str], _Spans]:
     """The pair _read_trips builds, read once per edition of the zip."""
-    zip_path = feed_zip(gtfs_dir, filename) if gtfs_dir else None
+    zip_path = feed_zip(gtfs_dir, filename) if gtfs_dir and filename else None
     if not zip_path or not os.path.exists(zip_path):
         return {}, {}
     key = (zip_path, file_edition(zip_path))
@@ -445,7 +459,7 @@ def _from_trips(gtfs_dir, filename):
     return _HEADSIGN_ENDS[key]
 
 
-def route_spans(gtfs_dir, filename, route_ids):
+def route_spans(gtfs_dir: str | None, filename: str | None, route_ids: Iterable[str]) -> _Spans:
     """{route_id: (first date, last date)}: the days these lines run.
 
     Read from the same pass over trips.txt as the destinations, so a list
@@ -458,14 +472,20 @@ def route_spans(gtfs_dir, filename, route_ids):
     return {r: spans[r] for r in route_ids if r in spans}
 
 
-def _read_trip_calls(zin, route_ids):
+def _read_trip_calls(zin: zipfile.ZipFile, route_ids: Container[str]) -> tuple[
+        dict[str, str], Counter[str], dict[str, tuple[int, str]], dict[str, tuple[int, str]],
+        dict[str, str | None]]:
     """({trip_id: route_id} of these lines, Counter of each trip's calls,
     {trip_id: (sequence, stop_id)} of its first and of its last call,
     {stop_id: stop_name}), read from the zip's tables."""
+    trips: dict[str, str]
+    calls: Counter[str]
+    first: dict[str, tuple[int, str]]
+    last: dict[str, tuple[int, str]]
     trips, calls, first, last = {}, Counter(), {}, {}
     files = {n.rsplit("/", 1)[-1]: n for n in zin.namelist()}
 
-    def rows(name):
+    def rows(name: str) -> csv.DictReader[str]:
         return table_reader(zin.open(files[name]))
 
     for row in rows("trips.txt"):
@@ -485,7 +505,7 @@ def _read_trip_calls(zin, route_ids):
     return trips, calls, first, last, names
 
 
-def _read_stop_ends(zip_path, route_ids):
+def _read_stop_ends(zip_path: str, route_ids: Container[str]) -> dict[str, str]:
     """{route_id: "A > B"} for these lines: the first and last stop of the
     trip that calls at the most stops, read from the zip's stop_times.txt,
     as _route_endpoints reads it from the database."""
@@ -495,10 +515,10 @@ def _read_stop_ends(zip_path, route_ids):
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not read the stops of %s: %s", zip_path, ex)
         return {}
-    most = {}
+    most: dict[str, int] = {}
     for trip, route_id in trips.items():
         most[route_id] = max(most.get(route_id, 0), calls[trip])
-    ends = {}
+    ends: dict[str, tuple[str, str]] = {}
     for trip, route_id in trips.items():
         if not calls[trip] or calls[trip] < most[route_id]:
             continue
@@ -514,8 +534,8 @@ def _read_stop_ends(zip_path, route_ids):
     return {route_id: f"{a} > {b}" for route_id, (a, b) in ends.items()}
 
 
-# the ends read from stop_times.txt, per zip edition: {(path, size, mtime): ends}
-_STOP_ENDS = {}
+# the ends read from stop_times.txt, per zip edition: {(path, file_edition): ends}
+_STOP_ENDS: dict[tuple[str, tuple[int, int, int] | None], dict[str, str | None]] = {}
 
 # the largest stop_times.txt worth walking for a handful of look-alikes.
 # What the read buys does not grow with the feed, what it costs does: Renfe
@@ -526,7 +546,7 @@ _STOP_ENDS = {}
 _STOP_TIMES_CAP = 150 * 1024 * 1024
 
 
-def _stop_times_size(zip_path):
+def _stop_times_size(zip_path: str) -> int | None:
     """How big stop_times.txt is unpacked, read from the zip's directory.
 
     The central directory carries every member's size, so this answers in
@@ -543,7 +563,8 @@ def _stop_times_size(zip_path):
     return None
 
 
-def look_alike_ends(schedule, gtfs_dir, filename, route_ids):
+def look_alike_ends(schedule: Schedule | None, gtfs_dir: str | None, filename: str | None,
+                    route_ids: Iterable[str]) -> dict[str, str]:
     """The ends of look-alike lines (see _look_alikes), wherever they are
     written: the trips' destinations, the imported trips (when schedule is
     given), and for what is left the zip's stop_times.txt.
@@ -564,7 +585,7 @@ def look_alike_ends(schedule, gtfs_dir, filename, route_ids):
     else:
         ends = headsign_ends(gtfs_dir, filename, route_ids)
     missing = {r for r in route_ids if r not in ends}
-    zip_path = feed_zip(gtfs_dir, filename) if gtfs_dir else None
+    zip_path = feed_zip(gtfs_dir, filename) if gtfs_dir and filename else None
     if not missing or not zip_path or not os.path.exists(zip_path):
         return ends
     size = _stop_times_size(zip_path)
@@ -584,11 +605,12 @@ def look_alike_ends(schedule, gtfs_dir, filename, route_ids):
         found = _read_stop_ends(zip_path, unread)
         # a line with no trip in the zip is remembered too, not read again
         known.update({r: found.get(r) for r in unread})
-    ends.update({r: known[r] for r in missing if known[r]})
+    ends.update({r: name for r in missing if (name := known[r])})
     return ends
 
 
-def route_ends(schedule, gtfs_dir, filename, route_ids):
+def route_ends(schedule: Schedule, gtfs_dir: str | None, filename: str | None,
+               route_ids: list[str]) -> dict[str, str]:
     """The ends of these lines: the trips' destinations where the zip names
     them, the first and last stop of the longest imported trip otherwise."""
     ends = headsign_ends(gtfs_dir, filename, route_ids)
@@ -596,7 +618,7 @@ def route_ends(schedule, gtfs_dir, filename, route_ids):
     return ends
 
 
-def _route_endpoints(schedule, route_ids):
+def _route_endpoints(schedule: Schedule, route_ids: list[str]) -> dict[str, str]:
     """Where each of these lines starts and ends, as "A > B".
 
     Read from the trip of the line that calls at the most stops: the first
@@ -638,7 +660,7 @@ def _route_endpoints(schedule, route_ids):
         # did before: ugly, but never empty
         _LOGGER.warning("Could not read the ends of %s routes: %s", len(route_ids), ex)
         return {}
-    trips = {}
+    trips: dict[tuple[str, str], tuple[tuple[int, str], tuple[int, str]]] = {}
     for route_id, trip_id, sequence, name in rows:
         if not name:
             continue
@@ -653,7 +675,7 @@ def _route_endpoints(schedule, route_ids):
     # export (the SNCF dates them). The ends stay in the order the trip
     # rides them: a feed publishing each way as a line of its own (Renfe's
     # Alvia) tells the two apart by that order alone
-    ends = {}
+    ends: dict[str, tuple[str, str]] = {}
     for (route_id, _trip), (first, last) in trips.items():
         if not first or not last or first[1] == last[1]:
             continue
@@ -663,7 +685,8 @@ def _route_endpoints(schedule, route_ids):
     return {route_id: f"{a} > {b}" for route_id, (a, b) in ends.items()}
 
 
-def _route_label(short, long_name, endpoints=None, route_id=None):
+def _route_label(short: str | None, long_name: str | None, endpoints: str | None = None,
+                 route_id: str | None = None) -> str:
     """What the user reads for one line: its number, then where it goes.
 
     The two parts are kept only if they say something, so a line named
@@ -683,9 +706,9 @@ def _route_label(short, long_name, endpoints=None, route_id=None):
     return str(route_id or "")
 
 
-def _natural(label):
+def _natural(label: str) -> list[tuple[int, int] | tuple[int, str]]:
     """Sort key that reads 2 before 10, the way a line number is read."""
-    out = []
+    out: list[tuple[int, int] | tuple[int, str]] = []
     for chunk in re.split(r"(\d+)", str(label)):
         out.append((1, int(chunk)) if chunk.isdigit() else (0, chunk.lower()))
     return out
@@ -712,7 +735,7 @@ _MODE_TYPES = (
 )
 
 
-def line_mode(route_type):
+def line_mode(route_type: str | int) -> str | None:
     """The mode of a GTFS route_type, basic or extended, or None."""
     try:
         n = int(str(route_type))
@@ -722,7 +745,7 @@ def line_mode(route_type):
                  if n in basic or n in extended), None)
 
 
-def with_modes(options, words):
+def with_modes(options: list[str], words: Mapping[str, str]) -> list[str]:
     """The labels to show for route options, the mode in brackets at the end
     where lines of one number run different modes.
 
@@ -736,10 +759,10 @@ def with_modes(options, words):
     labels = [option.split("##")[2] for option in options]
     modes = [line_mode(option.split("##")[0]) for option in options]
 
-    def number(label):
+    def number(label: str) -> str:
         return label.split(" : ")[0].split(" · ")[0].strip().casefold()
 
-    seen = {}
+    seen: dict[str, set[str | None]] = {}
     for label, mode in zip(labels, modes):
         seen.setdefault(number(label), set()).add(mode)
     return [f"{label} ({words.get(mode, mode)})"
@@ -747,7 +770,8 @@ def with_modes(options, words):
             for label, mode in zip(labels, modes)]
 
 
-def get_route_labels(schedule, route_ids, gtfs_dir=None, filename=None):
+def get_route_labels(schedule: Schedule, route_ids: Sequence[str], gtfs_dir: str | None = None,
+                     filename: str | None = None) -> dict[str, str]:
     """Readable names for route_ids, as {route_id: "41 : GARE - ESAT RODIN"}.
 
     routes survives a prune even when its trips do not, so these names are
@@ -757,7 +781,7 @@ def get_route_labels(schedule, route_ids, gtfs_dir=None, filename=None):
     """
     if not route_ids:
         return {}
-    out = {}
+    out: dict[str, str] = {}
     placeholders = ", ".join(f":r{i}" for i in range(len(route_ids)))
     sql = ("select route_id, route_short_name, route_long_name from routes "
            f"where route_id in ({placeholders})")  # noqa: S608
@@ -779,7 +803,8 @@ def get_route_labels(schedule, route_ids, gtfs_dir=None, filename=None):
     return {r: out[r] for r in route_ids}
 
 
-def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
+def get_route_list(schedule: Schedule, data: Mapping[str, Any], with_trips_only: bool = False,
+                   gtfs_dir: str | None = None) -> list[str]:
     """List the routes of a datasource.
 
     with_trips_only skips the routes that carry no trip. A datasource holds
@@ -799,7 +824,7 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     """
     _LOGGER.debug("Getting routes with data: %s", data)
     trips_where = ""
-    pruned = set()
+    pruned: set[str] = set()
     if with_trips_only:
         with_trips = "and exists (select 1 from trips t where t.route_id = r.route_id)"
         if gtfs_dir:
@@ -825,8 +850,8 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     {trips_where}
     order by agency_name
     """  # noqa: S608
-    routes_list = []
-    routes = []
+    routes_list: list[list[Any]] = []
+    routes: list[str] = []
     with schedule.engine.connect() as conn:
         params.update({f"pr{i}": r for i, r in enumerate(sorted(pruned))})
         rows = conn.execute(text(sql_routes), params).fetchall()
@@ -857,7 +882,7 @@ def get_route_list(schedule, data, with_trips_only=False, gtfs_dir=None):
     return routes
 
 
-def get_route_count(schedule, data):
+def get_route_count(schedule: Schedule, data: Mapping[str, Any]) -> int:
     """How many routes get_route_list lists without with_trips_only.
 
     The route screen only shows that number. Building the whole list to
@@ -871,7 +896,7 @@ def get_route_count(schedule, data):
         return conn.execute(text(sql), params).scalar()
 
 
-def _routes_where(data):
+def _routes_where(data: Mapping[str, Any]) -> tuple[str, dict[str, Any]]:
     """(SQL, params) of the routes, aliased r, of the entry's agency and
     mode: "0" stands for every agency, "99" for every mode. The list and
     its count ask the same, so the count is the list's length."""
@@ -884,15 +909,15 @@ def _routes_where(data):
     return where, {"agency_id": agency_id, "route_type": data["route_type"]}
 
 
-def get_agency_list(schedule, data):
+def get_agency_list(schedule: Schedule, data: Mapping[str, Any]) -> list[str]:
     _LOGGER.debug("Getting agencies with data: %s", data)
     sql_agencies = """
     SELECT a.agency_id, a.agency_name 
     from agency a
     order by a.agency_name
     """
-    agencies_list = []
-    agencies = []
+    agencies_list: list[list[Any]] = []
+    agencies: list[str] = []
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql_agencies), {"q": "q"}).fetchall()
     for row_cursor in rows:
