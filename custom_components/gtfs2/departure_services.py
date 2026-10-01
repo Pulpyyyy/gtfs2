@@ -32,7 +32,7 @@ def _route_departures_between(data, first, last, limit=5000, at="origin_depart_d
     at is the time of the ride read: origin_depart_dt, its departure from
     the origin, or dest_arrival_dt, its arrival at the destination (the
     arrivals service), laid in the destination's zone when the agency
-    names none.
+    names none, in the origin's when the destination names none either.
     """
     rows, _origin = _fetch_departure_rows(
         data["route_type"], data["origin"], data["destination"], data["schedule"],
@@ -44,7 +44,10 @@ def _route_departures_between(data, first, last, limit=5000, at="origin_depart_d
         if key in seen or not row.get(at):
             continue
         seen.add(key)
-        zone_name = row.get("agency_timezone") or row.get(stop_zone)
+        # an arrival with no zone of its end is read in the origin's, as
+        # the sensor reads it (_departure_zones); Home Assistant's else
+        zone_name = (row.get("agency_timezone") or row.get(stop_zone)
+                     or row.get("origin_stop_timezone"))
         zone = (dt_util.get_time_zone(zone_name) if zone_name else None) or dt_util.DEFAULT_TIME_ZONE
         try:
             local = datetime.datetime.strptime(row[at], "%Y-%m-%d %H:%M:%S")
