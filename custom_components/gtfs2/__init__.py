@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
+
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, SupportsResponse
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers import config_validation as cv
 
 from datetime import timedelta
@@ -38,7 +40,7 @@ _LOGGER = logging.getLogger(__name__)
 # no api key in the logs, whichever module writes the line
 hide_keys_in_logs(__name__, __path__)
 
-def _unique_id_at_1_2(config_entry: ConfigEntry):
+def _unique_id_at_1_2(config_entry: ConfigEntry) -> str | None:
     """The unique_id an entry has from minor version 2 on: a datasource
     entry's takes its prefix, the others keep theirs."""
     if config_entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
@@ -76,7 +78,7 @@ def _migrate_minor(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
             config_entry, data=_data_at_1_3(hass, config_entry), minor_version=3)
 
 
-async def async_migrate_entry(hass, config_entry: ConfigEntry) -> bool:
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Migrate old entry.
 
     Each step hands its version to async_update_entry with the rest: set
@@ -260,7 +262,7 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
      
 
 # the key of a feed, static or realtime, and where it travels
-_KEY_FIELDS = {
+_KEY_FIELDS: dict[vol.Marker, Any] = {
     vol.Optional(CONF_API_KEY): cv.string,
     vol.Optional("api_key_name"): cv.string,
     vol.Optional("api_key_location"): vol.In(ATTR_API_KEY_LOCATIONS),
@@ -322,49 +324,49 @@ _DATASOURCES_SCHEMA = vol.Schema({
 }, extra=vol.ALLOW_EXTRA)
 
 
-def setup(hass, config):
+def setup(hass: HomeAssistant, config: dict) -> bool:
     """Setup the service component."""
 
-    async def update_gtfs(call):
+    async def update_gtfs(call: ServiceCall) -> bool:
         """My GTFS Update service."""
         return await async_update_gtfs(hass, call.data)
 
-    def update_gtfs_rt_local(call):
+    def update_gtfs_rt_local(call: ServiceCall) -> bool:
         """My GTFS RT service."""
         note_key(call.data.get(CONF_API_KEY))
         _LOGGER.debug("Updating GTFS RT with: %s", call.data)
         get_gtfs_rt(hass, DEFAULT_PATH_RT, call.data)
         return True  
 
-    async def update_local_stops(call):
+    async def update_local_stops(call: ServiceCall) -> bool:
         """My GTFS Update Local Stops service."""
         _LOGGER.debug("Updating GTFS Local Stops with: %s", call.data)
         await update_gtfs_local_stops(hass, call.data)
         return True
     
-    async def extract_departures(call):
+    async def extract_departures(call: ServiceCall) -> dict[str, Any]:
         """My GTFS Departures service."""
         _LOGGER.debug("Retrieving next departures with: %s", call.data)
         departures = await get_route_departures(hass, call.data)
         return departures
 
-    async def extract_arrivals(call):
+    async def extract_arrivals(call: ServiceCall) -> dict[str, Any]:
         """My GTFS Arrivals service."""
         _LOGGER.debug("Retrieving arrivals with: %s", call.data)
         return await get_route_arrivals(hass, call.data)
         
-    async def extract_trip_stops(call):
+    async def extract_trip_stops(call: ServiceCall) -> dict[str, Any]:
         """My GTFS Trip Stops service."""
         _LOGGER.debug("Retrieving trip stops with: %s", call.data)
         stops = await get_trip_stops(hass, call.data)
         return stops       
 
-    async def prune_datasource(call):
+    async def prune_datasource(call: ServiceCall) -> dict[str, list]:
         """My GTFS Prune Datasource service."""
         _LOGGER.debug("Pruning GTFS datasource with: %s", call.data)
         return await async_prune_datasources(hass, call.data)
 
-    async def intern_datasource(call):
+    async def intern_datasource(call: ServiceCall) -> dict[str, list]:
         """My GTFS Intern Datasource service."""
         _LOGGER.debug("Interning GTFS datasource with: %s", call.data)
         return await async_intern_datasources(hass, call.data)
@@ -392,7 +394,7 @@ def setup(hass, config):
         supports_response=SupportsResponse.OPTIONAL)
     return True
 
-async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
+async def update_listener(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle options update.
 
     Every coordinator runs every minute: the journey one reads its static
