@@ -20,7 +20,7 @@ from .geojson import entry_file_part, safe_file_part, write_json_if_changed
 from .gtfs_helper import agency_zone, gtfs_seconds, shown_ends
 from .places import _call_type
 from .rt_feed import (
-    CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, stop_relationship, stop_update_clock,
+    CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, delay_of, stop_relationship, stop_update_clock,
     trip_relationship,
 )
 
@@ -271,11 +271,11 @@ def _time_call(run, update, by_sequence, called_twice):
     when, delay = stop_update_clock(update)
     if when:
         stop["expected"] = datetime.datetime.fromtimestamp(int(when), datetime.timezone.utc).isoformat()
-    if when and not delay and stop.get("scheduled"):
+    if when and stop.get("scheduled"):
         # a feed that gives times without delays (TAO, Palm Bus):
         # the delay is the gap to the schedule
-        delay = int((datetime.datetime.fromisoformat(stop["expected"])
-                     - datetime.datetime.fromisoformat(stop["scheduled"])).total_seconds())
+        delay = delay_of(delay, int(when), int(
+            datetime.datetime.fromisoformat(stop["scheduled"]).timestamp()))
     if delay or when:
         stop["delay"] = int(delay or 0)
         return True
