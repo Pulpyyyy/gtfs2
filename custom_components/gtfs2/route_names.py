@@ -80,16 +80,9 @@ def get_route_options_from_zip(gtfs_dir, filename, agency=None):
     # agency_id may be left out when the feed has a single agency
     names = {str(a.get("agency_id") or ""): a["agency_name"] for a in agencies}
     only = agencies[0]["agency_name"] if len(agencies) == 1 else ""
-    ends = headsign_ends(gtfs_dir, filename, [
-        row["route_id"] for row in rows
-        if not _adds_to(row.get("route_short_name"), row.get("route_long_name"))])
-    options = []
-    for row in rows:
-        label = _route_label(row.get("route_short_name"),
-                             row.get("route_long_name"),
-                             ends.get(row["route_id"]), row["route_id"])
-        options.append(
-            f"{row.get('route_type') or '99'}##{row['route_id']}##{label}##pruned")
+    labels = _zip_labels(gtfs_dir, filename, rows)
+    options = [f"{row.get('route_type') or '99'}##{row['route_id']}##{labels[row['route_id']]}##pruned"
+               for row in rows]
     return set_lines_apart(
         options, [names.get(str(row.get("agency_id") or ""), only) for row in rows],
         None, gtfs_dir, filename, [row["route_id"] for row in rows])
@@ -121,16 +114,22 @@ def set_lines_apart(options, agencies, schedule, gtfs_dir, filename, route_ids):
 
 def get_route_labels_from_zip(gtfs_dir, filename, route_ids):
     """get_route_labels when there is no database to ask: names from the zip."""
-    rows = read_zip_routes(feed_zip(gtfs_dir, filename))
     wanted = set(route_ids)
-    ends = headsign_ends(gtfs_dir, filename, [
-        row["route_id"] for row in rows if row["route_id"] in wanted
-        and not _adds_to(row.get("route_short_name"), row.get("route_long_name"))])
-    known = {row["route_id"]: _route_label(row.get("route_short_name"),
-                                           row.get("route_long_name"),
-                                           ends.get(row["route_id"]), row["route_id"])
-             for row in rows}
+    known = _zip_labels(gtfs_dir, filename, [
+        row for row in read_zip_routes(feed_zip(gtfs_dir, filename)) if row["route_id"] in wanted])
     return {r: known.get(r, r) for r in route_ids}
+
+
+def _zip_labels(gtfs_dir, filename, rows):
+    """{route_id: label} of these routes.txt rows; a line whose long name
+    says nothing is named by the ends its headsigns give."""
+    ends = headsign_ends(gtfs_dir, filename, [
+        row["route_id"] for row in rows
+        if not _adds_to(row.get("route_short_name"), row.get("route_long_name"))])
+    return {row["route_id"]: _route_label(row.get("route_short_name"),
+                                          row.get("route_long_name"),
+                                          ends.get(row["route_id"]), row["route_id"])
+            for row in rows}
 
 
 def routes_in_zip_for_agency(gtfs_dir, filename, route_ids, agency=None):
