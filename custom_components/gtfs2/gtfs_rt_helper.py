@@ -855,23 +855,15 @@ def convert_realtime_siri_trips_to_json(url,headers,stop_id):
         return {"entity": []}
 
     json_object = json.loads(response.content)
-    feed = json_object
-
-    if feed.get('Siri'):
-        try:
-            feed_entities = feed['Siri']['ServiceDelivery']['StopMonitoringDelivery'][0]['MonitoredStopVisit']
-            feed = feed['Siri']
-        except Exception as ex:  # pylint: disable=broad-except
-            # an answer of another shape, at every refresh it keeps it: the
-            # missing key says it all, the stack is this line
-            _LOGGER.error("Ìssues getting GTFS RT SIRI data: %s", ex)
-            return 'issues with getting siri data'        
-    else:  
-        try:
-            feed_entities = feed['ServiceDelivery']['StopMonitoringDelivery'][0]['MonitoredStopVisit']
-        except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.error("Ìssues getting GTFS RT SIRI data: %s", ex)
-            return 'issues with getting siri data'
+    # the delivery under a Siri root (Strasbourg) or at the top (MTA)
+    feed = json_object.get('Siri') or json_object
+    try:
+        feed_entities = feed['ServiceDelivery']['StopMonitoringDelivery'][0]['MonitoredStopVisit']
+    except Exception as ex:  # pylint: disable=broad-except
+        # an answer of another shape, at every refresh it keeps it: the
+        # missing key says it all, the stack is this line
+        _LOGGER.error("Ìssues getting GTFS RT SIRI data: %s", ex)
+        return 'issues with getting siri data'
         
     _LOGGER.debug("Feed entities: %s", feed_entities)
 
