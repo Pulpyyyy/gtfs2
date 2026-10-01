@@ -11,10 +11,12 @@ the alerts alike, the time and delay a stop update gives
 (stop_update_clock) and whether the day a feed names for a trip is the
 service day (on_service_day).
 """
+from collections.abc import Collection, Mapping, Sequence
 import json
 import logging
 import threading
 import time
+from typing import Any
 
 import requests
 from google.transit import gtfs_realtime_pb2
@@ -22,6 +24,11 @@ from google.transit import gtfs_realtime_pb2
 from .key_mask import fetch
 
 _LOGGER = logging.getLogger(__name__)
+
+# what a feed is read into: for the trip updates and the vehicles, the
+# dicts convert_gtfs_realtime_to_json and its sibling write; for the
+# alerts, the protobuf messages themselves
+type FeedEntities = Sequence[Any]
 
 
 # One GTFS-RT feed covers a whole network, so every sensor reading the same
@@ -31,7 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 #
 # The feed publishes neither ETag nor Last-Modified, so conditional requests
 # are impossible and a local cache is the only way to avoid the repeat.
-_FEED_CACHE: dict[tuple[str, str, str], tuple[float, object]] = {}
+_FEED_CACHE: dict[tuple[str, str, str], tuple[float, FeedEntities]] = {}
 _FEED_CACHE_LOCKS: dict[tuple[str, str, str], threading.Lock] = {}
 _FEED_CACHE_GUARD = threading.Lock()
 # short enough that a delay stays fresh, long enough to cover a wave of
@@ -62,7 +69,7 @@ FEED_BEAT_MAX = 300
 RT_USER_AGENT = "GTFS2-HomeAssistant/1.0 (+https://github.com/vingerha/gtfs2)"
 
 
-def _with_user_agent(headers):
+def _with_user_agent(headers: Mapping[str, str] | None) -> dict[str, str]:
     """The request headers with a User-Agent naming the integration.
 
     requests announces itself as python-requests, which some agency gateways
@@ -76,7 +83,8 @@ def _with_user_agent(headers):
     return merged
 
 
-def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
+def get_gtfs_feed_entities(url: str, headers: Mapping[str, str] | None, label: str,
+                           owner: str = "") -> FeedEntities | None:
     """Return the feed entities, fetching at most once per TTL and per feed.
 
     Holds a per-feed lock across the fetch: without it the coordinators, which
@@ -121,7 +129,7 @@ def get_gtfs_feed_entities(url: str, headers, label: str, owner: str = ""):
         return entities
 
 
-def _still_current(key, fetched):
+def _still_current(key: tuple[str, str, str], fetched: float) -> bool:
     """Whether a feed read at `fetched` is still the latest one: younger
     than FEED_CACHE_TTL, or, its beat known, its next publication not due
     yet (_FEED_PUBLISHED)."""
@@ -134,7 +142,7 @@ def _still_current(key, fetched):
     return time.time() < published + beat + FEED_PUBLISH_LAG
 
 
-def _note_publication(key, published):
+def _note_publication(key: tuple[str, str, str], published: int | None) -> None:
     """Keep a feed's publication time and learn its beat: the shortest gap
     seen between two publications, so a reading that missed one does not
     stretch it."""
@@ -152,7 +160,7 @@ def _note_publication(key, published):
     _FEED_PUBLISHED[key] = (published, beat)
 
 
-def _forget_old_feeds(current):
+def _forget_old_feeds(current: tuple[str, str, str]) -> None:
     """Drop the feeds nothing has asked for in a while.
 
     Read under the guard, so the caller's own key is spared whatever its
@@ -175,10 +183,10 @@ def _forget_old_feeds(current):
 # what each realtime url last failed with, while it fails: every entry
 # reading a source fetches its feeds each cycle, and an outage of the host
 # wrote the same error once per entry and per minute
-_FAILING = {}
+_FAILING: dict[str, str] = {}
 
 
-def _say_failure(url, message, *args):
+def _say_failure(url: str, message: str, *args: object) -> None:
     """Log a realtime failure when it is new for the url, debug after."""
     text = message % args
     if _FAILING.get(url) != text:
@@ -188,12 +196,12 @@ def _say_failure(url, message, *args):
         _LOGGER.debug(text)
 
 
-def _say_recovered(url, label):
+def _say_recovered(url: str, label: str) -> None:
     if _FAILING.pop(url, None) is not None:
         _LOGGER.info("The %s feed at %s answers again", label, url)
 
 
-def _feed_body(url, headers, label):
+def _feed_body(url: str, headers: Mapping[str, str] | None, label: str) -> bytes | None:
     """The bytes of a realtime feed, from its host or from the file a
     file:// url names; None, the failure said, when there are none."""
     try:
@@ -225,7 +233,7 @@ def _feed_body(url, headers, label):
     return None
 
 
-def _json_feed_entities(url, label, content):
+def _json_feed_entities(url: str, label: str, content: bytes) -> FeedEntities | None:
     """The entities of a json feed; None, the failure said, when it is not one."""
     try:
         feed = json.loads(content)
@@ -252,7 +260,8 @@ def _json_feed_entities(url, label, content):
     return feed.get('entity') if isinstance(feed, dict) else None
 
 
-def _protobuf_feed_entities(url, label, content):
+def _protobuf_feed_entities(url: str, label: str,
+                            content: bytes) -> tuple[FeedEntities | None, int | None]:
     """(the entities of a protobuf feed, the trip updates and the vehicles
     as dicts, the alerts as messages; when its header says it was
     published, None when it does not). (None, None), the failure said,
@@ -281,11 +290,11 @@ def _protobuf_feed_entities(url, label, content):
     return feed.get('entity'), int((feed.get("header") or {}).get("timestamp") or 0) or None
 
 
-def _fetch_gtfs_feed_entities(url: str, headers, label: str):
+def _fetch_gtfs_feed_entities(url: str, headers: Mapping[str, str] | None, label: str) -> FeedEntities | None:
     return _fetch_feed(url, headers, label)[0]
 
 
-def _fetch_feed(url: str, headers, label: str):
+def _fetch_feed(url: str, headers: Mapping[str, str] | None, label: str) -> tuple[FeedEntities | None, int | None]:
     """(the entities of a feed, when it says it was published), (None,
     None) when it could not be read."""
     _LOGGER.debug(f"GTFS RT get_feed_entities for url: {url} , headers: {headers}, label: {label}")
@@ -308,37 +317,37 @@ SKIPPED_STOP = "SKIPPED"
 NO_DATA_STOP = "NO_DATA"
 
 
-def _trip_relationship(trip):
+def _trip_relationship(trip: gtfs_realtime_pb2.TripDescriptor) -> str:
     try:
         return trip.ScheduleRelationship.Name(trip.schedule_relationship)
     except (AttributeError, ValueError):
         return "SCHEDULED"
 
 
-def _stop_relationship(stop_time_update):
+def _stop_relationship(stop_time_update: gtfs_realtime_pb2.TripUpdate.StopTimeUpdate) -> str:
     try:
         return stop_time_update.ScheduleRelationship.Name(stop_time_update.schedule_relationship)
     except (AttributeError, ValueError):
         return "SCHEDULED"
 
 
-def trip_relationship(entity):
+def trip_relationship(entity: Mapping[str, Any]) -> str:
     """The trip's schedule_relationship out of a converted entity, SCHEDULED
     when the feed (or the SIRI path) says nothing."""
     return ((entity.get("trip_update") or {}).get("trip") or {}).get(
         "schedule_relationship") or "SCHEDULED"
 
 
-def stop_relationship(stop_time_update):
+def stop_relationship(stop_time_update: Mapping[str, Any] | None) -> str:
     """The stop update's schedule_relationship, SCHEDULED when unsaid."""
     return (stop_time_update or {}).get("schedule_relationship") or "SCHEDULED"
 
 
-def convert_gtfs_realtime_to_json(gtfs_realtime_data):
+def convert_gtfs_realtime_to_json(gtfs_realtime_data: bytes) -> dict[str, Any]:
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(gtfs_realtime_data)
 
-    json_data = {
+    json_data: dict[str, Any] = {
         "header": {
             "gtfs_realtime_version": feed.header.gtfs_realtime_version,
             "timestamp": feed.header.timestamp,
@@ -395,11 +404,11 @@ def convert_gtfs_realtime_to_json(gtfs_realtime_data):
         json_data["entity"].append(entity_dict)
     return json_data        
 
-def convert_gtfs_realtime_positions_to_json(gtfs_realtime_data):
+def convert_gtfs_realtime_positions_to_json(gtfs_realtime_data: bytes) -> dict[str, Any]:
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(gtfs_realtime_data)
 
-    json_data = {
+    json_data: dict[str, Any] = {
         # when the feed was published, for the feed cache
         "header": {"timestamp": feed.header.timestamp},
         "entity": []
@@ -436,7 +445,7 @@ def convert_gtfs_realtime_positions_to_json(gtfs_realtime_data):
     return json_data
 
 
-def _same_route(configured, seen):
+def _same_route(configured: str | None, seen: str | None) -> bool:
     """Whether a realtime route_id designates the configured route.
 
     Some feeds qualify their ids, so an exact match alone is too strict and a
@@ -458,7 +467,7 @@ def _same_route(configured, seen):
     return not seen[-len(configured) - 1].isalnum()
 
 
-def stop_update_clock(stop):
+def stop_update_clock(stop: Mapping[str, Any]) -> tuple[int, int]:
     ''' (time, delay) of a stop update: the departure's when it says
     anything, the arrival's otherwise; 0 for what it leaves out '''
     # a train that arrives late and makes up time while it stands at
@@ -471,7 +480,7 @@ def stop_update_clock(stop):
             int(told.get("delay") or 0))
 
 
-def on_service_day(start_date, service_day):
+def on_service_day(start_date: str | Collection[str] | None, service_day: str | None) -> bool:
     """Whether a feed's start_date is the service day.
 
     start_date is what the feed named, YYYYMMDD, or None for "unsaid",
