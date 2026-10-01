@@ -14,12 +14,13 @@ from __future__ import annotations
 import logging
 import re
 from collections.abc import Callable, Coroutine
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant import data_entry_flow
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
@@ -49,6 +50,10 @@ from .rt_source import datasource_unique_id
 from .source_refresh import source_zip_url
 from .places import get_direction_labels, get_pair_direction, has_trip_between
 
+if TYPE_CHECKING:
+    # for the annotations only
+    from pygtfs import Schedule
+
 _LOGGER = logging.getLogger(__name__)
 
 # a screen of the flow as another one calls it, async_step_<id>(user_input),
@@ -57,12 +62,12 @@ _LOGGER = logging.getLogger(__name__)
 type _Step = Callable[..., Coroutine[Any, Any, FlowResult]]
 
 
-def _stop_id(entry):
+def _stop_id(entry: str) -> str:
     """The stop_id of a "stop_id: Name (sequence)" entry."""
     return entry.rsplit(": ", 1)[0].strip()
 
 
-def _stop_name(entry):
+def _stop_name(entry: str) -> str:
     """The readable part of a "stop_id: Name (sequence)" entry.
 
     Ids carry colons of their own, so cut from the right.
@@ -70,7 +75,7 @@ def _stop_name(entry):
     return entry.rsplit(": ", 1)[-1].rsplit(" (", 1)[0].strip()
 
 
-def _base_name(entry):
+def _base_name(entry: str) -> str:
     """_stop_name without the flow's own " #n" disambiguation suffix.
 
     The suffixed name is what the pickers and the by-name matching need;
@@ -82,7 +87,26 @@ def _base_name(entry):
 class JourneyScreens:
     """From the direction to the closing screen: sensor, mirror journey, same line, finish, import."""
 
-    def _journey_placeholders(self, **extra):
+    # what these screens use of the flow they are mixed in (ConfigFlow)
+    hass: HomeAssistant
+    _pygtfs: Schedule | str | None
+    _user_inputs: dict
+    _route_label: str
+    _route_shown: str
+    _return_trip: dict | None
+    _return_name: str
+    _created_name: str
+    _line: dict
+    async_show_form: Callable[..., FlowResult]
+    async_show_menu: Callable[..., FlowResult]
+    async_abort: Callable[..., FlowResult]
+    async_create_entry: Callable[..., FlowResult]
+    async_set_unique_id: Callable[..., Coroutine[Any, Any, object]]
+    _abort_if_unique_id_configured: Callable[..., None]
+    async_step_stops: _Step
+    async_step_stops_train: _Step
+
+    def _journey_placeholders(self, **extra: str) -> dict[str, str]:
         """The line picked so far, recalled at the top of the screens that
         pick the stops."""
         return {
@@ -115,7 +139,7 @@ class JourneyScreens:
         _LOGGER.debug(f"UserInputs Direction: {self._user_inputs}")
         return await self.async_step_stops()
 
-    def _keep_line(self):
+    def _keep_line(self) -> None:
         """Remember the line and direction picked: another journey on the
         same line starts from there, offered once this one is created."""
         self._line = {
@@ -135,7 +159,8 @@ class JourneyScreens:
         return await self._name_and_create("sensor", user_input, self._suggested_name(trip),
                                            trip, add_return=True)
 
-    async def _trip_name(self, origin, destination, loop_direction):
+    async def _trip_name(self, origin: str, destination: str,
+                         loop_direction: str | int | None) -> str:
         """origin → destination by their base names. A circular line reads
         the same at both ends, and the return's plain ends would collide
         with the outward sensor's name: its rotation is named by where it
@@ -147,32 +172,32 @@ class JourneyScreens:
             trip = labels.get(str(loop_direction), "") or trip
         return trip
 
-    def _suggested_name(self, trip):
+    def _suggested_name(self, trip: str) -> str:
         """The name offered for a sensor of this trip: source, line, trip."""
         # the source leads, so the entity id tells line 1 of one network
         # from line 1 of another: sensor.gtfs_idfm_14_...
         return " ".join(filter(None, (self._user_inputs.get(CONF_FILE), self._route_label, trip)))
 
-    async def _name_and_create(self, step_id, user_input, suggested, trip, add_return):
+    async def _name_and_create(self, step_id: str, user_input: dict | None, suggested: str,
+                               trip: str, add_return: bool) -> FlowResult:
         """The naming screen of a journey, bus or train: the name, and the
         way back when there is one (ticked by default when add_return), then
         the sensor created and the closing screen."""
         errors: dict[str, str] = {}
 
-        def _show(errors, previous=None):
+        def _show(errors: dict[str, str], previous: dict | None = None) -> FlowResult:
             previous = previous or {}
+            fields: dict[vol.Marker, Any] = {
+                vol.Required(
+                    CONF_NAME, default=previous.get(CONF_NAME, suggested)
+                ): str,
+                **({vol.Optional(
+                    CONF_ADD_RETURN, default=add_return
+                ): selector.BooleanSelector()} if self._return_trip else {}),
+            }
             return self.async_show_form(
                 step_id=step_id,
-                data_schema=vol.Schema(
-                    {
-                        vol.Required(
-                            CONF_NAME, default=previous.get(CONF_NAME, suggested)
-                        ): str,
-                        **({vol.Optional(
-                            CONF_ADD_RETURN, default=add_return
-                        ): selector.BooleanSelector()} if self._return_trip else {}),
-                    },
-                ),
+                data_schema=vol.Schema(fields),
                 description_placeholders={
                     **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                     "trip": trip,
@@ -197,7 +222,8 @@ class JourneyScreens:
         # warning in the log the rider never read, after the rider had asked
         # for it
         return_name = (self._return_trip or {}).get(CONF_NAME)
-        if add_return and name_in_use(return_name, taken | {user_input[CONF_NAME]}):
+        if (add_return and return_name is not None
+                and name_in_use(return_name, taken | {user_input[CONF_NAME]})):
             errors["base"] = "return_name_taken"
             return _show(errors, user_input)
         self._user_inputs.update(user_input)
@@ -268,7 +294,7 @@ class JourneyScreens:
             return await self.async_step_stops_train()
         return await self.async_step_stops()
 
-    def _reset_for_next_journey(self):
+    def _reset_for_next_journey(self) -> None:
         """Forget the journey just created, keep the datasource.
 
         Going round again must not inherit the previous stops or sensor name,
@@ -320,7 +346,7 @@ class JourneyScreens:
             title=import_data[CONF_NAME], data=import_data
         )
 
-    async def _find_return_trip(self, origin, destination):
+    async def _find_return_trip(self, origin: str, destination: str) -> None:
         """Look for the same journey the other way round.
 
         Both directions of a line share one route_id, so the mirror is the
@@ -354,7 +380,7 @@ class JourneyScreens:
             CONF_NAME: self._return_name,
         }
 
-    async def _create_return_trip(self):
+    async def _create_return_trip(self) -> None:
         """Create the return sensor through a second flow.
 
         A flow creates one entry, so the mirror is handed to a fresh flow on

@@ -136,7 +136,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         self._source_rt_inputs: dict = {}
         # the line and direction picked, where another journey on the same
         # line starts from once this one is created
-        self._line: dict | None = None
+        self._line: dict = {}
 
     @callback
     def async_remove(self) -> None:
