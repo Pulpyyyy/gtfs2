@@ -359,7 +359,8 @@ async def async_bootstrap_datasource_entries(hass: HomeAssistant,
     disk and from the entries, and only the missing datasource entries are
     created. Deliberately never through async_migrate_entry - a per-entry
     migration of a per-source object is how a bootstrap ends half-done and
-    unrepeatable, and the journey entries are not touched at all.
+    unrepeatable. The journey entries are only touched once their source's
+    entry exists, to let go of the copies it took over (_drop_journey_copies).
     The caller lists the sources on disk (get_datasources).
     """
     files = set(datasources)
@@ -388,4 +389,23 @@ async def async_bootstrap_datasource_entries(hass: HomeAssistant,
         except Exception as ex:  # pylint: disable=broad-except
             # one source failing must not keep the others from their entry
             _LOGGER.exception("Could not create datasource entry for %s: %s", file, ex)
+    _drop_journey_copies(hass)
+
+
+def _drop_journey_copies(hass: HomeAssistant) -> None:
+    """Take the source's address, key and feeds off its journeys, once the
+    source's entry holds them. The copies served a return to the upstream
+    version only; a journey whose source has no entry yet keeps them, for
+    the next start to take over."""
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if (entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE
+                or datasource_entry(hass, entry.data.get(CONF_FILE)) is None):
+            continue
+        data = journey_entry_data(entry.data)
+        options = {key: value for key, value in entry.options.items()
+                   if key not in (*RT_OPTION_KEYS, CONF_REAL_TIME)}
+        if data != dict(entry.data) or options != dict(entry.options):
+            _LOGGER.info("%s now reads its source's address and feeds from the source",
+                         entry.title)
+            hass.config_entries.async_update_entry(entry, data=data, options=options)
 
