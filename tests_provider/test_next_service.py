@@ -42,6 +42,7 @@ import asyncio
 import csv
 import datetime
 import io
+import sqlite3
 import types
 import zipfile
 import zoneinfo
@@ -49,6 +50,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from freezegun import freeze_time
 
 import ha_stub
@@ -307,7 +309,8 @@ def test_a_query_that_fails_gives_no_date_rather_than_an_error():
     # the date only enriches an attribute: a failing read must not break
     # the update that asked for it
     def refuse():
-        raise RuntimeError("database is locked")
+        # what SQLAlchemy raises when SQLite answers that its file is locked
+        raise OperationalError("select", {}, sqlite3.OperationalError("database is locked"))
     broken = types.SimpleNamespace(engine=types.SimpleNamespace(connect=refuse))
     assert gtfs_helper.get_next_service_date(broken, "S1", "S2", "2026-06-12") is None
 
