@@ -392,6 +392,7 @@ attributes dict and what it reads, "nothing of the entity" (3f01c10).
 ```
 gtfs_db.py            everything that opens a database file directly, the sources on disk
 db_build.py           an import into a scratch database, the followed lines copied, the swap
+db_intern.py          stop_times keyed by integers instead of repeated id strings
 gtfs_helper.py        the departure queries
 datasource.py         a source's database as the readers open it: get_gtfs, its indexes
 stop_rules.py         the SQL pieces every reader shares: who gets on or off, one place, train stations

@@ -11,6 +11,7 @@ import feed_db
 import ha_stub
 
 gtfs_db = ha_stub.load("gtfs_db")
+db_intern = ha_stub.load("db_intern")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
 FEED = {
@@ -35,7 +36,7 @@ COUNTED = ("trips", "stop_times", "calendar", "calendar_dates", "gtfs2_stop_time
 def _source(tmp_path, interned=False):
     feed_db.build(tmp_path, FEED).engine.dispose()
     if interned:
-        assert gtfs_db.intern_gtfs_datasource(str(tmp_path), "feed")
+        assert db_intern.intern_gtfs_datasource(str(tmp_path), "feed")
     return str(tmp_path)
 
 

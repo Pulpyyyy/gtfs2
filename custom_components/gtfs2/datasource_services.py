@@ -18,7 +18,8 @@ from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN, DEFAULT_PATH, CONF_API_KEY, CONF_EXTRACT_FROM, CONF_URL
 from .db_build import on_a_copy
-from .gtfs_db import prune_gtfs_datasource, intern_gtfs_datasource, real_path, routes_in
+from .db_intern import intern_gtfs_datasource
+from .gtfs_db import prune_gtfs_datasource, real_path, routes_in
 from .key_mask import note_key
 from .rt_source import async_ensure_datasource_entry, datasource_entry, source_readers, static_key_fields
 from .source_refresh import (

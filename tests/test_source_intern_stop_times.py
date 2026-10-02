@@ -12,9 +12,8 @@ import sqlite3
 import feed_db
 import ha_stub
 
-gtfs_db = ha_stub.load("gtfs_db")
 db_build = ha_stub.load("db_build")
-intern_gtfs_datasource = gtfs_db.intern_gtfs_datasource
+intern_gtfs_datasource = ha_stub.load("db_intern").intern_gtfs_datasource
 
 
 def make_db(path, extra_column=None):
