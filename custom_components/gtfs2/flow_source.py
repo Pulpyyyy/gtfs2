@@ -14,6 +14,7 @@ import asyncio
 import logging
 import os
 import re
+from urllib.parse import urlsplit
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -66,6 +67,24 @@ _LOGGER = logging.getLogger(__name__)
 # what an address typed for a source may start with: a host, or a file
 # on this machine, which fetch reads as a host (file_url)
 SOURCE_URL_SCHEMES = ("http://", "https://", FILE_SCHEME)
+
+
+def valid_feed_url(url: str) -> bool:
+    """Whether a typed address can name a feed, by its syntax alone:
+    http(s) with a host, its port a number when one is given, or file://
+    with a path. Whether it answers is the download's to say."""
+    url = url.strip()
+    try:
+        parts = urlsplit(url)
+        # a port that is no number raises here, not in urlsplit
+        parts.port
+    except ValueError:
+        return False
+    if parts.scheme in ("http", "https"):
+        return bool(parts.hostname) and not any(c.isspace() for c in url)
+    if parts.scheme == "file":
+        return bool(parts.path)
+    return False
 
 _SOURCE_NAME = re.compile(r"\w[\w\- ]*")
 
@@ -315,7 +334,7 @@ class SourceScreens:
         errors: dict[str, str] = {}
         if not _SOURCE_NAME.fullmatch(name):
             errors[CONF_FILE] = "invalid_source_name"
-        if not url.startswith(SOURCE_URL_SCHEMES):
+        if not valid_feed_url(url):
             errors[CONF_URL] = "invalid_source_url"
         if not errors and await self._name_taken_elsewhere(name, url):
             errors[CONF_FILE] = "source_exists"

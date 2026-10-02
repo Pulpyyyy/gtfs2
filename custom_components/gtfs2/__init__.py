@@ -21,7 +21,7 @@ from .datasource_services import async_intern_datasources, async_prune_datasourc
 from .gtfs_db import real_path, routes_in, route_name_in, get_datasources, close_schedule
 from .rt_local import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
-from .flow_source import SOURCE_URL_SCHEMES
+from .flow_source import SOURCE_URL_SCHEMES, valid_feed_url
 from .rt_source import (
     source_readers,
     async_bootstrap_datasource_entries,
@@ -280,8 +280,8 @@ def _without_legacy_none(data: dict) -> dict:
 
 def _source_url(value: str) -> str:
     """An address a source can be fetched from, as the source screen takes it."""
-    if not value.strip().startswith(SOURCE_URL_SCHEMES):
-        raise vol.Invalid("the address must start with " + ", ".join(SOURCE_URL_SCHEMES))
+    if not valid_feed_url(value):
+        raise vol.Invalid("not a valid address (" + ", ".join(SOURCE_URL_SCHEMES) + ")")
     return value
 
 

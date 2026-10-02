@@ -320,7 +320,7 @@
       "return_name_taken": "Ein Sensor trägt bereits den Namen, den die Rückfahrt bekäme: Rückfahrt abwählen oder zuerst jenen Sensor umbenennen.",
       "source_exists": "Eine Quelle dieses Namens gibt es bereits mit einer anderen Adresse: Wählen Sie sie unter den vorhandenen Quellen, oder geben Sie dieser einen anderen Namen.",
       "invalid_source_name": "Nur Buchstaben, Ziffern, Leerzeichen, Binde- und Unterstriche: der Name wird zum Dateinamen der Quelle.",
-      "invalid_source_url": "Die Adresse muss mit http://, https:// oder file:// beginnen",
+      "invalid_source_url": "Diese Adresse ist nicht gültig (http://, https:// oder file://)",
       "route_not_listed": "Das ist keine Linie dieser Quelle: Wählen Sie eine aus der Liste, ein Teil ihres Namens findet sie.",
       "no_destination": "Von der gewählten Starthaltestelle ist in dieser Richtung keine Haltestelle erreichbar",
       "unknown": "Unerwarteter Fehler",
@@ -460,7 +460,7 @@
       "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern"
     },
     "error": {
-      "invalid_source_url": "Die Adresse muss mit http://, https:// oder file:// beginnen"
+      "invalid_source_url": "Diese Adresse ist nicht gültig (http://, https:// oder file://)"
     }
   },
   "selector": {

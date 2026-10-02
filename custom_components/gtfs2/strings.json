@@ -320,7 +320,7 @@
       "return_name_taken": "A sensor already has the name the return journey would get: untick the return, or rename that sensor first.",
       "source_exists": "A source of this name already exists with another address: pick it among the existing sources, or give this one another name.",
       "invalid_source_name": "Letters, digits, spaces, dashes and underscores only: the name becomes the source's file name.",
-      "invalid_source_url": "The address must start with http://, https:// or file://",
+      "invalid_source_url": "This is not a valid address (http://, https:// or file://)",
       "route_not_listed": "That is not one of the lines of this source: pick one in the list, typing part of its name finds it.",
       "no_destination": "No stop can be reached from the selected origin in this direction",
       "unknown": "[%key:common::config_flow::error::unknown%]",
@@ -460,7 +460,7 @@
       "stop_limit_reached": "Detected a high number of stops for this radius, \npossibly impacting system performance. \n You can change the limit at your own risk before changing the radius"
     },
     "error": {
-      "invalid_source_url": "The address must start with http://, https:// or file://"
+      "invalid_source_url": "This is not a valid address (http://, https:// or file://)"
     }
   },
   "selector": {
