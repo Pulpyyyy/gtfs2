@@ -5,6 +5,7 @@ import asyncio
 from collections.abc import Mapping
 import datetime
 from datetime import timedelta
+from functools import partial
 import logging
 import re
 from typing import TYPE_CHECKING, Any
@@ -30,19 +31,22 @@ from .const import (
     CONF_ALERTS_URL,
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_TRIPS,
+    ATTR_RT_CANCELLED,
+    ATTR_RT_SKIPPED,
     ICON,
     ICONS
 )    
 from .gtfs_db import close_schedule, file_edition, real_path
 from .datasource import check_datasource_index, check_extracting, get_gtfs
-from .gtfs_helper import get_next_departure, journey_data, shown_ends
+from .gtfs_helper import (departure_query_args, drop_departure_trips, get_next_departure,
+                          journey_data, shown_ends)
 from .local_stops import get_local_stops_next_departures, drop_gone_local_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck
 from .trip_match import _names_trip
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
-from .refresh_steps import drop_struck_trips, next_service_date_for
+from .service_days import get_next_service_date
 from .departure_attributes import departure_records
 from .exports import export_leg, export_route_shape, export_timetable
 
@@ -127,6 +131,89 @@ def shown_departure_left(previous: Mapping[str, Any], now: datetime.datetime) ->
     return not any(hasattr(moment, "tzinfo") and moment.tzinfo is not None and moment > now
                    and _names_trip(departure.get("trip_id"), trip)
                    for moment, trip in coming)
+
+
+# Two steps of the fork's refresh. When the timetable has nothing left to
+# show, next_service_date_for looks ahead for the next day the journey
+# runs at all. When the realtime feed struck a listed trip, cancelled or
+# skipping the origin, drop_struck_trips reads the departures again
+# without it and refreshes the realtime attributes for the departure now
+# shown. Both run inside _async_update_data, after the static and the
+# realtime readings.
+
+
+async def next_service_date_for(hass: HomeAssistant, schedule: Schedule | str | None,
+                                data: Mapping[str, Any], offset: int | None) -> str | None:
+    """The next day this journey runs, as YYYY-MM-DD, or None.
+
+    The search starts today, not tomorrow. A line can run today
+    with every departure already behind us, and that is not the
+    same thing as a line resting for days: the sensor tells the
+    two apart by whether the date it gets back is today's.
+    """
+    try:
+        # async_add_executor_job takes positional arguments only:
+        # the keywords ride in a partial, or the call raises and
+        # the date is lost on every refresh
+        return await hass.async_add_executor_job(partial(
+            get_next_service_date, schedule,
+            id_of(data["origin"]), id_of(data["destination"]),
+            (dt_util.now() + timedelta(
+                minutes=offset or 0)).strftime("%Y-%m-%d"),
+            data["route_type"],
+            # what the departures themselves are asked with
+            **departure_query_args(data),
+        ))
+    except SQLAlchemyError as ex:
+        # only enriches an attribute: never fail the update over it
+        _LOGGER.warning("Could not get next service date: %s", ex)
+        return None
+
+
+async def drop_struck_trips(coordinator: GTFSUpdateCoordinator, data: Mapping[str, Any],
+                            run_static: bool) -> None:
+    """Read the departures again without the trips the feed struck.
+
+    A trip the feed cancelled, or that skips the origin, is
+    no departure: the board moves on to the next one rather
+    than showing the struck one as on time. The departures
+    are read again from the rows of the last static refresh
+    without those trips, and the realtime attributes follow
+    the departure now shown.
+    What was struck is remembered until the next static
+    refresh: once dropped, a trip is no longer in the list
+    the feed is matched against, and the attribute would
+    forget it a minute later.
+    """
+    if run_static:
+        coordinator._struck_cancelled, coordinator._struck_skipped = {}, {}
+    coordinator._remember_struck()
+    struck = merge_struck(coordinator._struck_skipped, coordinator._struck_cancelled)
+    departure = coordinator._data.get("next_departure") or {}
+    listed = {str(t) for t in departure.get("next_departures_trip_id") or []}
+    listed.add(str(departure.get("trip_id")))
+    if struck and listed & set(struck) and coordinator._data.get("departure_rows"):
+        _LOGGER.debug("GTFS RT: the feed struck %s out of the listed trips, reading the departures again", sorted(listed & set(struck)))
+        coordinator._data["next_departure"] = await coordinator.hass.async_add_executor_job(
+            drop_departure_trips, coordinator.hass, coordinator._data, struck)
+        coordinator._follow_departure(data)
+        coordinator._get_next_service = await coordinator.hass.async_add_executor_job(get_next_services, coordinator)
+        coordinator._remember_struck()
+        coordinator._data["next_departure_realtime_attr"] = coordinator._get_next_service
+        coordinator._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
+        # the alerts were read for the departure just struck out: its trip,
+        # its stop, the board behind it. Read again for the one now shown,
+        # or the old departure's sentence stayed on the new one. The feed
+        # is still in the cycle's cache, nothing is downloaded twice
+        try:
+            coordinator._data["alert"] = await coordinator.hass.async_add_executor_job(
+                get_rt_alerts, coordinator)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.exception("Error reading the alerts again for %s: %s", data["origin"], ex)
+    # the trips struck since the last static refresh, whichever
+    # reading turned them up
+    coordinator._get_next_service[ATTR_RT_CANCELLED] = sorted(coordinator._struck_cancelled)
+    coordinator._get_next_service[ATTR_RT_SKIPPED] = sorted(coordinator._struck_skipped)
 
 
 class GTFSUpdateCoordinator(DataUpdateCoordinator):

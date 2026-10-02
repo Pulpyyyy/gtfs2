@@ -33,7 +33,6 @@ import ha_stub
 ha_stub.install()
 
 coordinator_mod = ha_stub.load("coordinator")
-refresh_steps_mod = sys.modules["gtfs2_under_test.refresh_steps"]
 const = sys.modules["gtfs2_under_test.const"]
 
 UTC = datetime.timezone.utc
@@ -206,10 +205,10 @@ class Refresh:
             (coordinator_mod, "get_rt_alerts"): self._stand_in("get_rt_alerts"),
             (coordinator_mod, "get_next_services"): self._stand_in(
                 "get_next_services", self._next_services),
-            (refresh_steps_mod, "get_rt_alerts"): self._stand_in("get_rt_alerts"),
-            (refresh_steps_mod, "get_next_services"): self._stand_in(
+            (coordinator_mod, "get_rt_alerts"): self._stand_in("get_rt_alerts"),
+            (coordinator_mod, "get_next_services"): self._stand_in(
                 "get_next_services", self._next_services),
-            (refresh_steps_mod, "drop_departure_trips"): self._stand_in("drop_departure_trips"),
+            (coordinator_mod, "drop_departure_trips"): self._stand_in("drop_departure_trips"),
             (coordinator_mod, "er"): types.SimpleNamespace(
                 async_get=self._stand_in("entity_registry", lambda hass: self.registry)),
         }

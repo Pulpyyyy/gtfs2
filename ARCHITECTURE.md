@@ -152,7 +152,7 @@ config_flow.py                              upstream's flow, split in screens
 When a block the fork added there has a single responsibility, it moves to
 a module the fork owns, and the upstream method calls it in one line where
 the block stood. That is how `alerts.py`, `departure_attributes.py`,
-`refresh_steps.py`, `route_names.py`, `notifications.py`, `geojson.py`,
+`route_names.py`, `notifications.py`, `geojson.py`,
 `source_zip.py`, `stations.py` and the `flow_*.py` screens were born.
 
 **Constraint.** A move changes no behaviour:
@@ -349,8 +349,8 @@ repairs.py         the fixes Settings > Repairs offers for gtfs2's issues
   holds only what the sources share: locks, probe states, check timers, the
   bootstrap flag (b960969).
 - The coordinator holds no SQL: it reads the timetable through `gtfs_helper`
-  and the realtime through `gtfs_rt_helper`, and hands the fork's own steps
-  to `refresh_steps.py` and `exports.py`.
+  and the realtime through `gtfs_rt_helper`, and hands the map files to
+  `exports.py`.
 
 ### 2. Config flow layer
 
@@ -374,7 +374,6 @@ which asks which source first and saves on it.
 ```
 alerts.py                what a service alert means for one sensor
 departure_attributes.py  the departure sensor's attributes, group by group
-refresh_steps.py         next service date, trips struck by the realtime
 route_names.py           the lines a feed declares, labelled for the flow
 line_labels.py           what the user reads for a line: number, where it goes, mode
 line_ends.py             where a line goes: its trips' destinations, its two ends
@@ -696,10 +695,10 @@ rt_window.py          rt_window_gate: is this a time the feeds are read?
 rt_feed.py            get_gtfs_feed_entities: one download per publication
         ↓
 gtfs_rt_helper.py     get_next_services, get_rt_alerts
-        ↓                    ↓
-alerts.py             refresh_steps.py (drop_struck_trips)
         ↓
-coordinator.py
+alerts.py
+        ↓
+coordinator.py        drop_struck_trips
         ↓
 sensor.py
 ```

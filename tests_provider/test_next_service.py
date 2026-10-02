@@ -70,7 +70,10 @@ stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py"
 # the days a service runs, the same way
 service_days = (ha_stub.load("service_days") if (ha_stub.COMPONENT / "service_days.py").is_file()
                 else gtfs_helper)
-refresh_steps = ha_stub.load("refresh_steps")
+# the two steps of the refresh sit in the coordinator here; a checkout run
+# with --component that keeps them in a module of their own is read there
+refresh_steps = (ha_stub.load("refresh_steps") if (ha_stub.COMPONENT / "refresh_steps.py").is_file()
+                 else ha_stub.load("coordinator"))
 departure_attributes = ha_stub.load("departure_attributes")
 
 TAO = Path(__file__).parent / "fixtures" / "tao-journeys"

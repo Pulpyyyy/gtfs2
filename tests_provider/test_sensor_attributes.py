@@ -85,7 +85,10 @@ try:
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
     local_stops = gtfs_helper
 departure_attributes = ha_stub.load("departure_attributes")
-refresh_steps = ha_stub.load("refresh_steps")
+# the two steps of the refresh sit in the coordinator here; a checkout run
+# with --component that keeps them in a module of their own is read there
+refresh_steps = (ha_stub.load("refresh_steps") if (ha_stub.COMPONENT / "refresh_steps.py").is_file()
+                 else ha_stub.load("coordinator"))
 rt_window = ha_stub.load("rt_window")
 
 HERE = Path(__file__).resolve().parent
