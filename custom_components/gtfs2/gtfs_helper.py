@@ -496,10 +496,14 @@ def _departure_zones(hass: HomeAssistant,
     nothing is said."""
     if hass.config.time_zone is None:
         _LOGGER.error("Timezone is not set in Home Assistant configuration")
+    # a zone Home Assistant does not know, misspelt or missing from the
+    # host's zone database, reads as None: Home Assistant's own then, as
+    # the departures service does, not a clock with no zone
     timezone = zone_of(
-        item["agency_timezone"], item["origin_stop_timezone"], hass.config.time_zone, "UTC")
+        item["agency_timezone"], item["origin_stop_timezone"], hass.config.time_zone, "UTC"
+    ) or dt_util.DEFAULT_TIME_ZONE
     if item["dest_stop_timezone"] is not None and item["agency_timezone"] is None:
-        timezone_dest = dt_util.get_time_zone(item["dest_stop_timezone"])
+        timezone_dest = zone_of(item["dest_stop_timezone"]) or timezone
     else:
         timezone_dest = timezone
     _LOGGER.debug("Defined orig timezone: %s, dest timezone: %s", timezone, timezone_dest)
