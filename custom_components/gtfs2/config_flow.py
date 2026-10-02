@@ -45,6 +45,7 @@ from .const import (
 )
 
 from .datasource import get_gtfs, check_datasource_index
+from .geojson import name_in_use
 from .gtfs_db import get_datasources, remove_datasource, close_schedule
 from .route_names import get_agency_list, get_route_count, get_route_list
 from .local_stops import get_local_stop_list
@@ -252,7 +253,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         # the platform then dropped as duplicates; a name in use is refused
         # as on the journey screen
         entries = [e.data for e in self.hass.config_entries.async_entries(DOMAIN)]
-        if user_input[CONF_NAME] in {e.get(CONF_NAME) for e in entries}:
+        if name_in_use(user_input[CONF_NAME], {e.get(CONF_NAME) for e in entries}):
             errors["base"] = "name_taken"
             return await _show(errors, user_input)
         if any(e.get(CONF_DEVICE_TRACKER_ID) == user_input[CONF_DEVICE_TRACKER_ID]

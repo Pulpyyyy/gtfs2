@@ -43,3 +43,34 @@ def test_the_destinations_are_asked_with_the_origin_s_id(monkeypatch):
     result = asyncio.run(flow.async_step_towards())
     assert asked == ["000000008CTA"]
     assert result["reason"] == "no_destination"
+
+
+def test_local_stops_refuse_a_name_whose_files_a_journey_has(monkeypatch):
+    # "Orleans" and the journey "Orléans" are two names and one file part:
+    # removing the local stops entry deleted the journey's timetable and leg
+    async def sources(hass, path):
+        return ["tao"]
+
+    async def job(fn, *args):
+        return fn(*args)
+
+    monkeypatch.setattr(config_flow, "get_datasources", sources)
+    monkeypatch.setattr(config_flow, "source_zip_url", lambda hass, file: f"file:///gtfs2/{file}.zip")
+    journey = types.SimpleNamespace(data={"name": "Orléans", "file": "tao"})
+    async def checked(data):
+        return "checked"
+
+    flow = config_flow.ConfigFlow()
+    flow.hass = types.SimpleNamespace(
+        async_add_executor_job=job,
+        config_entries=types.SimpleNamespace(
+            async_entries=lambda domain: [journey],
+            async_entry_for_domain_unique_id=lambda handler, unique_id: None,
+            flow=types.SimpleNamespace(async_progress_by_handler=lambda *a, **k: [])))
+    flow.handler, flow.flow_id, flow.context = "gtfs2", "f1", {}
+    flow._user_inputs = {}
+    # past the name check, the source check answers and the form comes back
+    flow._check_data = checked
+    result = asyncio.run(flow.async_step_local_stops(
+        {"file": "tao", "device_tracker_id": "person.me", "name": "Orleans"}))
+    assert result["errors"] == {"base": "name_taken"}
