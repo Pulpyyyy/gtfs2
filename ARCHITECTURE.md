@@ -529,9 +529,9 @@ minute, without a reload.
 
 ## Services
 
-Registered once, in `setup()`. Four answer with a service response
-(`SupportsResponse.OPTIONAL`): `extract_departures`, `extract_trip_stops`,
-`prune_datasource` and `intern_datasource`.
+Registered once, in `setup()`. Five answer with a service response
+(`SupportsResponse.OPTIONAL`): `extract_departures`, `extract_arrivals`,
+`extract_trip_stops`, `prune_datasource` and `intern_datasource`.
 
 ```
 update_gtfs              refresh a datasource from its own url and key, or
@@ -544,6 +544,8 @@ extract_departures       a journey entry's departures today and tomorrow from
                          from_time on, plus next (the first one after the two
                          days, None when the calendar has none) and until (the
                          last service day the feed publishes)
+extract_arrivals         the same rides, read at their arrival at the
+                         destination (e7db903e)
 extract_trip_stops       the calls of each trip a sensor lists, from its origin
                          on, "name - HH:MM:SS"
 prune_datasource         drop what no entry follows; dry_run says what would go

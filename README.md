@@ -18,6 +18,8 @@
 
 **[Documentation](https://github.com/vingerha/gtfs2/wiki)**
 
+About this fork: [WHY_FORK.md](WHY_FORK.md) says why it exists, [CONCEPTS.md](CONCEPTS.md) explains its concepts in plain words, [ARCHITECTURE.md](ARCHITECTURE.md) says where each responsibility lives and why.
+
 ![image](https://github.com/vingerha/gtfs2/assets/44190435/401d3f5b-c3c3-405f-ab9a-1ecf949d5428)
 
 ## 🌍 Support Environmental Protection
