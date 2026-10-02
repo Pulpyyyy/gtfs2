@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Any
 import requests
 from google.transit import gtfs_realtime_pb2
 
-from .file_url import url_path
 from .key_mask import fetch
 
 if TYPE_CHECKING:
@@ -218,16 +217,10 @@ def _say_recovered(url: str, label: str) -> None:
 
 def _feed_body(url: str, headers: Mapping[str, str | None] | None, label: str) -> bytes | None:
     """The bytes of a realtime feed, from its host or from the file a
-    file:// url names; None, the failure said, when there are none."""
+    file:// url names; None, the failure said, when there are none. A file
+    is read as the static sources read theirs, through fetch: one reading
+    of a file:// url, a file gone answering 404."""
     try:
-        if url.startswith("file://"):
-            # a feed on disk, named by a file:// url: read as a file, it
-            # needs no http round of its own. Its path read as the static
-            # sources read theirs: a space, a host, a Windows drive
-            with open(url_path(url), "rb") as local:
-                content = local.read()
-            _LOGGER.debug("Successfully updated %s", label)
-            return content
         response = fetch("get", url, headers=_with_user_agent(headers), timeout=20)
     except (requests.RequestException, OSError) as ex:
         # a host that is down, a name that no longer resolves, a certificate
