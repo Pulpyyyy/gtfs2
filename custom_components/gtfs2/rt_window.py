@@ -30,6 +30,7 @@ from datetime import date, datetime, time, timedelta, tzinfo
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 from pygtfs import Schedule
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH
@@ -207,11 +208,17 @@ def rt_window_gate(hass: HomeAssistant, file: str, schedule: Schedule,
     Fail-open: a source whose timetable cannot be read keeps its realtime,
     the gate only silences what it positively knows is asleep.
     """
+    if schedule is None or isinstance(schedule, str):
+        # a sentinel of get_gtfs: no timetable to derive a window from
+        _STATE.setdefault(file, {})["paused"] = None
+        return None
     try:
         paused = _gate(hass, file, schedule, trip_update_url, now)
     except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.warning(
-            "Realtime window for %s could not be derived, leaving realtime on: %s",
+        # a database that cannot answer is said in a line, a mistake with
+        # where it happened
+        log = _LOGGER.warning if isinstance(ex, SQLAlchemyError) else _LOGGER.exception
+        log("Realtime window for %s could not be derived, leaving realtime on: %s",
             file, ex)
         _STATE.setdefault(file, {})["paused"] = None
         return None

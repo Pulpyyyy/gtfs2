@@ -288,6 +288,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             )
             self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat()
         except Exception as ex:  # pylint: disable=broad-except
+            if not isinstance(ex, SQLAlchemyError):
+                # Home Assistant says an UpdateFailed in one line: enough for
+                # a database that cannot answer, not for a mistake
+                _LOGGER.exception("Error in getting gtfs data: %s", ex)
             raise UpdateFailed(f"Error in getting gtfs data: {ex}") from ex
         _LOGGER.debug("GTFS coordinator data from helper: %s", self._data["next_departure"])
 
