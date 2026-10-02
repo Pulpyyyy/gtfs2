@@ -123,8 +123,11 @@ async def export_route_shape(coordinator: GTFSUpdateCoordinator, data: Mapping[s
     # the file is named from the route and the direction, both known even
     # once the last departure of the day is behind us: the attribute stays
     # put so a card keeps its route through the evening, and it is named
-    # before the first write rather than a refresh later
-    if route_id and direction not in ("None", ""):
+    # before the first write rather than a refresh later. A feed with no
+    # direction_id gets its file written <route>_none_route.json all the
+    # same, and named like the leg and the vehicles files, or a card never
+    # finds it
+    if route_id:
         coordinator._data["route_geojson_file"] = route_geojson_name(route_id, direction)
     if not route_id:
         return
