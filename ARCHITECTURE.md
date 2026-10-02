@@ -54,7 +54,7 @@ Goals:
 - The database size follows what is followed, not the size of the network.
 - A failed download, import or check leaves the current data in place.
 - Nothing blocking on the event loop.
-- A downgrade to upstream keeps working on the same config entries.
+- An install coming from upstream keeps its sources, keys and realtime feeds.
 
 Non-goals:
 
@@ -514,17 +514,16 @@ idempotently, from the disk and the journey entries already there
 (`async_bootstrap_datasource_entries`). Realtime options are seeded from the
 most recently modified journey entry.
 
-**Compatibility with upstream.** The entry `VERSION` stays upstream's (10):
-the fork adds a kind of entry, it does not change the schema of the others.
-Every edit on a datasource entry is mirrored back onto the journey entries
-of the source (`async_mirror_rt_to_entries`), so a downgrade to upstream,
-which knows no datasource entry, finds current values rather than those
-frozen at bootstrap. Minor version 3 turns the url `"na"` a source made
-from a zip held, and its journeys, into the `file://` url of that zip;
-upstream reads a journey's url only when its `extract_from` is `url`,
-which theirs is not. Coordinators resolve realtime through the datasource
-entry first and fall back on the entry's own options, which is also what a
-pre-bootstrap start reads.
+**Coming from upstream.** The entry `VERSION` stays upstream's (10): the
+fork adds a kind of entry, it does not change the schema of the others, so
+an install coming from upstream starts on its own entries. The bootstrap
+creates each source's entry from the address, key and realtime feeds its
+journeys hold, then takes those copies off the journeys
+(`_drop_journey_copies`): a journey holds its source by name only. A return
+to upstream is not kept. Minor version 3 turns the url `"na"` a source made
+from a zip held into the `file://` url of that zip. Coordinators resolve
+realtime through the datasource entry first and fall back on the entry's
+own options, which is what a start before the bootstrap reads.
 
 **Journey entry.** Gets a `GTFSUpdateCoordinator` and one departure sensor.
 A bus journey names its line, direction and stops; a train journey names

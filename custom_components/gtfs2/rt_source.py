@@ -8,10 +8,12 @@ with, entry.options are the realtime feeds, and the file name makes the
 unique_id (datasource_unique_id) so a source can never have two.
 
 The model is all-source: a sensor follows its source, and realtime is on for
-every sensor of a source as soon as the source has any realtime feed url. The
-journey entries keep their old realtime options as a fallback, so an install
-that predates the datasource entries, or downgrades to upstream, keeps its
-realtime exactly as it was.
+every sensor of a source as soon as the source has any realtime feed url. A
+journey entry holds its source by name only: the copies an install coming
+from upstream had on its journeys are read once, to create the source's
+entry, then dropped (_drop_journey_copies). Until then they stay the
+journey's realtime config, so such an install keeps its realtime through
+its first start.
 """
 from __future__ import annotations
 
@@ -175,8 +177,8 @@ def rt_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> tuple[Mapping[str
     options hold the feeds, shared by every sensor of the source, and
     realtime is on as soon as any feed url is set - the per-sensor
     boolean does not apply any more. Without a datasource entry the entry's
-    own options apply unchanged, which is what keeps an install working
-    before the bootstrap ran, and after a downgrade.
+    own options apply unchanged, which is what keeps an install coming
+    from upstream working before the bootstrap ran.
 
     Read on every coordinator cycle, so an edit on the datasource entry
     reaches every sensor of the source within a minute, with no reload.
