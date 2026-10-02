@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 import homeassistant.util.dt as dt_util
+from sqlalchemy.exc import SQLAlchemyError
 
 from .const import (
     id_of,
@@ -409,7 +410,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             self._data["records"] = await self.hass.async_add_executor_job(
                 departure_records, self._pygtfs, self._data)
             self._records_key = key
-        except Exception as ex:  # pylint: disable=broad-except
+        except SQLAlchemyError as ex:
             # the attributes that read them go without for a cycle
             _LOGGER.debug("Could not read the departure's records: %s", ex)
 

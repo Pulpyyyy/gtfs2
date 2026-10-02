@@ -25,6 +25,7 @@ from collections import Counter
 from collections.abc import Collection, Container, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH_GEOJSON
@@ -138,7 +139,7 @@ def _route_trip_calls(schedule: Schedule, route_id: str, direction: str | int | 
             shaped = {row[0] for row in conn.execute(text(sql_shaped), params)}
             for trip_id, stop_id, sequence in conn.execute(text(sql_calls), params):
                 calls.setdefault(trip_id, []).append((sequence, stop_id))
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         _LOGGER.warning("Could not find a trip to draw route %s direction %s: %s", route_id, direction, ex)
         return None
     return shaped, {trip_id: tuple(stop_id for _, stop_id in sorted(rows))

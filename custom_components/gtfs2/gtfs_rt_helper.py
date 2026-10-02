@@ -8,6 +8,7 @@ import os
 
 import homeassistant.util.dt as dt_util
 import requests
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text as sql_text
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
@@ -244,7 +245,7 @@ def _scheduled_off_board(self: _Coordinator, feed_entities: FeedEntities,
         with schedule.engine.connect() as conn:
             rows = conn.execute(sql_text(sql), {"stop": self._stop_id,
                                                 "trips": json.dumps(sorted(realtime))}).fetchall()
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         _LOGGER.debug("Could not read the timetable of the trips off the board: %s", ex)
         return {}
     # the clocks the board's own departures are written in
@@ -581,7 +582,7 @@ def _trip_destinations(schedule: Schedule | str | None, trip_ids: Iterable[str])
     try:
         with schedule.engine.connect() as conn:
             rows = conn.execute(sql_text(sql), {"trips": json.dumps(trip_ids)}).fetchall()
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         _LOGGER.debug("Could not read where the vehicles go: %s", ex)
         return {}
     found = {}
@@ -604,7 +605,7 @@ def _trip_directions(schedule: Schedule | str | None, trip_ids: Iterable[str]) -
                 sql_text("SELECT trip_id, direction_id FROM trips "
                          "WHERE trip_id IN (SELECT value FROM json_each(:trips))"),
                 {"trips": json.dumps(trip_ids)}).fetchall()
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         _LOGGER.debug("Could not read the directions of the vehicles' trips: %s", ex)
         return {}
     return {str(trip): str(direction) for trip, direction in rows if direction is not None}

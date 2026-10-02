@@ -16,6 +16,7 @@ import threading
 from typing import TYPE_CHECKING, Any
 
 import homeassistant.util.dt as dt_util
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text as sql_text
 
 from .gtfs_db import file_edition
@@ -281,7 +282,7 @@ def _stop_aliases(data: Mapping[str, Any] | None, stop_id: str | None) -> set[st
         return set()
     data = data or {}
     schedule = data.get("schedule")
-    if schedule is None:
+    if schedule is None or isinstance(schedule, str):
         return frozenset({stop_id})
     key = (data.get("file"), stop_id)
     # read once: tested then read, the entry could go in between
@@ -294,7 +295,7 @@ def _stop_aliases(data: Mapping[str, Any] | None, stop_id: str | None) -> set[st
             rows = conn.execute(
                 sql_text("select parent_station from stops where stop_id = :stop_id"),
                 {"stop_id": stop_id}).fetchall()
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         # a locked or pruned datasource is no reason to lose the alerts the
         # stop itself is named in, and a failure is not worth remembering
         _LOGGER.debug("Could not read the station of stop %s: %s", stop_id, ex)
@@ -324,7 +325,7 @@ def _route_facts(data: Mapping[str, Any] | None, route_id: str | None) -> tuple[
     data = data or {}
     schedule = data.get("schedule")
     route_id = str(route_id or "")
-    if schedule is None or not route_id:
+    if schedule is None or isinstance(schedule, str) or not route_id:
         return None, None
     key = (data.get("file"), route_id)
     cached = _ROUTE_FACTS.get(key)
@@ -335,7 +336,7 @@ def _route_facts(data: Mapping[str, Any] | None, route_id: str | None) -> tuple[
             row = conn.execute(
                 sql_text("select agency_id, route_type from routes where route_id = :route_id"),
                 {"route_id": route_id}).fetchone()
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         _LOGGER.debug("Could not read line %s: %s", route_id, ex)
         return None, None
     facts: tuple[str | None, ...] = (None, None)
@@ -362,7 +363,7 @@ def _stop_names(data: Mapping[str, Any] | None, stop_ids: Iterable[str]) -> list
     data = data or {}
     schedule = data.get("schedule")
     names: list[str] = []
-    if schedule is None:
+    if schedule is None or isinstance(schedule, str):
         return names
     for stop_id in stop_ids:
         key = (data.get("file"), str(stop_id))
@@ -375,7 +376,7 @@ def _stop_names(data: Mapping[str, Any] | None, stop_ids: Iterable[str]) -> list
                                  "left join stops p on p.stop_id = s.parent_station "
                                  "where s.stop_id = :stop_id"),
                         {"stop_id": str(stop_id)}).fetchone()
-            except Exception as ex:  # pylint: disable=broad-except
+            except SQLAlchemyError as ex:
                 # the alert is still worth its sentence without the name
                 _LOGGER.debug("Could not read the name of stop %s: %s", stop_id, ex)
                 continue
@@ -411,7 +412,8 @@ def _journey_stops(data: Mapping[str, Any] | None, trip_id: str | None = None) -
     trip_id = departure.get("trip_id") or trip_id
     first = departure.get("origin_stop_sequence")
     last = (departure.get("destination_stop_time") or {}).get("Sequence")
-    if schedule is None or not trip_id or first is None or last is None:
+    if (schedule is None or isinstance(schedule, str) or not trip_id
+            or first is None or last is None):
         return set()
     stops: set[str] = set()
     try:
@@ -423,7 +425,7 @@ def _journey_stops(data: Mapping[str, Any] | None, trip_id: str | None = None) -
                          "and st.stop_sequence >= :first "
                          "and st.stop_sequence <= :last"),
                 {"trip_id": trip_id, "first": first, "last": last}).fetchall()
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         # the two ends are still read without this, so a datasource that cannot
         # answer costs the middle of the journey and nothing else
         _LOGGER.debug("Could not read the stops of trip %s: %s", trip_id, ex)

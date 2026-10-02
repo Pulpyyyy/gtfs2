@@ -26,6 +26,7 @@ from unittest.mock import patch
 
 import pytest
 from freezegun import freeze_time
+from sqlalchemy.exc import SQLAlchemyError
 
 import ha_stub
 
@@ -135,6 +136,9 @@ class Refresh:
         self.coordinator = coordinator_mod.GTFSUpdateCoordinator(self.hass, self.entry)
         self.real = set(real)
         self.failing = set()
+        # what a failing one raises, when the refresh only catches that:
+        # the records are lost to a database that cannot answer, not to a bug
+        self.raises = {"departure_records": SQLAlchemyError}
         self.calls = defaultdict(list)
         self.order = []
         self.registry = _Registry([])
@@ -154,7 +158,7 @@ class Refresh:
         self.calls[name].append(args)
         self.order.append(name)
         if name in self.failing:
-            raise RuntimeError(f"{name} failed")
+            raise self.raises.get(name, RuntimeError)(f"{name} failed")
 
     def _stand_in(self, name, answer=None):
         def stand_in(*args):

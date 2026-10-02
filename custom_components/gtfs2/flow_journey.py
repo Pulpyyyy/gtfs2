@@ -23,6 +23,7 @@ from homeassistant import data_entry_flow
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
+from sqlalchemy.exc import SQLAlchemyError
 
 from .const import (
     CONF_ADD_RETURN,
@@ -363,7 +364,7 @@ class JourneyScreens:
             loop_direction = await self.hass.async_add_executor_job(
                 get_pair_direction, self._pygtfs, route,
                 _stop_id(destination), _stop_id(origin)) if exists else None
-        except Exception as ex:  # pylint: disable=broad-except
+        except SQLAlchemyError as ex:
             _LOGGER.debug("No return journey for %s: %s", route, ex)
             return
         if not exists:

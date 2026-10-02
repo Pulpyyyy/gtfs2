@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
+from sqlalchemy.exc import SQLAlchemyError
 
 from .const import ATTR_RT_CANCELLED, ATTR_RT_SKIPPED, id_of
 from .gtfs_helper import departure_query_args, drop_departure_trips, get_next_service_date
@@ -52,7 +53,7 @@ async def next_service_date_for(hass: HomeAssistant, schedule: Schedule | str | 
             # what the departures themselves are asked with
             **departure_query_args(data),
         ))
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         # only enriches an attribute: never fail the update over it
         _LOGGER.warning("Could not get next service date: %s", ex)
         return None

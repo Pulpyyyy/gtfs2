@@ -34,6 +34,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from itertools import groupby
 from typing import TYPE_CHECKING, Any, Literal
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
 if TYPE_CHECKING:
@@ -227,7 +228,7 @@ def _stations(schedule: Schedule) -> tuple[dict[str, str], dict[str, str]]:
             rows = conn.execute(
                 text("SELECT stop_id, parent_station, stop_name FROM stops")
             ).fetchall()
-    except Exception:  # pylint: disable=broad-except
+    except SQLAlchemyError:
         # a stops table without the column: every stop is its own station
         with schedule.engine.connect() as conn:
             rows = [

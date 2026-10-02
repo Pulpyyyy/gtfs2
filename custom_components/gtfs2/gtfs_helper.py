@@ -11,6 +11,7 @@ import os
 import threading
 from typing import TYPE_CHECKING, Any
 import pygtfs
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
 
@@ -234,7 +235,7 @@ def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_
                 "from_date": from_date,
                 "horizon": f"+{int(horizon)} days",
             }).fetchone()
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         # never let a lookup that only enriches an attribute break the update
         _LOGGER.warning("Could not determine next service date: %s", ex)
         return None
@@ -272,7 +273,7 @@ def agency_zone(schedule: Schedule, route: str | None = None) -> datetime.tzinfo
                     "WHERE agency_timezone IS NOT NULL AND agency_timezone <> '' "
                     "LIMIT 1")).fetchone()
             name = row[0] if row else None
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         _LOGGER.debug("Could not read the agency's zone, using Home Assistant's: %s", ex)
     return zone_of(name)
 

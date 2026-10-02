@@ -22,6 +22,7 @@ from collections import Counter, defaultdict
 from datetime import date
 from typing import TYPE_CHECKING, Any
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
 from .feed_window import runs_some_day
@@ -654,7 +655,7 @@ def _route_endpoints(schedule: Schedule, route_ids: list[str]) -> dict[str, str]
     try:
         with schedule.engine.connect() as conn:
             rows = conn.execute(text(sql), {"routes": json.dumps(route_ids)}).fetchall()
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         # without this the label falls back to the route_id, which is what it
         # did before: ugly, but never empty
         _LOGGER.warning("Could not read the ends of %s routes: %s", len(route_ids), ex)
@@ -786,7 +787,7 @@ def get_route_labels(schedule: Schedule, route_ids: Sequence[str], gtfs_dir: str
     try:
         with schedule.engine.connect() as conn:
             rows = conn.execute(text(sql), {"routes": json.dumps(list(route_ids))}).fetchall()
-    except Exception as ex:  # pylint: disable=broad-except
+    except SQLAlchemyError as ex:
         _LOGGER.warning("Could not read route names: %s", ex)
         return {r: r for r in route_ids}
     rows = list(rows)

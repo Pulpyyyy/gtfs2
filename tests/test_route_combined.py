@@ -218,6 +218,7 @@ def test_coordinator_case(case_id: str, case_dir: Path):
         with patch.object(coordinator_mod, "get_gtfs", return_value=SCHEDULE), \
              patch.object(coordinator_mod, "get_next_departure", side_effect=next_departure_from_rows), \
              patch.object(coordinator_mod, "check_datasource_index", return_value=None), \
+             patch.object(coordinator_mod, "departure_records", return_value={}), \
              patch.object(exports_mod, "write_route_file", return_value=None), \
              patch.object(exports_mod, "get_representative_trip", return_value="fullest_trip"), \
              patch.object(exports_mod, "write_leg_file", return_value=None), \
@@ -230,7 +231,8 @@ def test_coordinator_case(case_id: str, case_dir: Path):
     # file, not an output: compared through what the coordinator made of
     # them, never repeated in the capture. The records are the same kind of
     # thing, the database rows the sensor describes the departure with,
-    # read for it off the loop; against this fake schedule they are empty
+    # read for it off the loop; stood in here, this fake schedule answers
+    # no query
     for key in ("departure_rows", "departure_rows_origin", "records"):
         result.pop(key, None)
     assert result["schedule"] is SCHEDULE
