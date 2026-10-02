@@ -14,7 +14,6 @@ import ha_stub
 route_names = ha_stub.load("route_names")
 line_labels = ha_stub.load("line_labels")
 line_ends = ha_stub.load("line_ends")
-look_alikes = ha_stub.load("look_alikes")
 
 
 def test_a_long_name_that_repeats_the_number_is_dropped():
@@ -36,15 +35,15 @@ def test_a_long_name_that_says_more_is_kept():
 
 def test_look_alike_lines_of_two_operators_get_their_agency():
     options = ["1##M1##1", "3##B1##1", "3##B2##2##pruned"]
-    got = look_alikes._set_apart(options, ["RATP", "Terres d'Envol", "RATP"])
+    got = line_labels._set_apart(options, ["RATP", "Terres d'Envol", "RATP"])
     assert got == ["1##M1##1 · RATP", "3##B1##1 · Terres d'Envol", "3##B2##2##pruned"]
 
 
 def test_look_alikes_of_one_agency_are_left_alone():
     options = ["3##S1##INCONNU", "2##S2##INCONNU"]
-    assert look_alikes._set_apart(options, ["OCEdefault", "OCEdefault"]) == options
+    assert line_labels._set_apart(options, ["OCEdefault", "OCEdefault"]) == options
     # nor does a missing agency get a bare separator
-    assert look_alikes._set_apart(["3##X##7", "3##Y##7"], ["GVB", None]) == \
+    assert line_labels._set_apart(["3##X##7", "3##Y##7"], ["GVB", None]) == \
         ["3##X##7 · GVB", "3##Y##7"]
 
 
@@ -52,9 +51,9 @@ def test_look_alikes_of_one_agency_get_their_ends():
     # IDFM: one operator, one name, routes to Chartres and to Montargis
     options = ["2##C1##TER : TER Centre", "2##C2##TER : TER Centre##pruned",
                "2##C3##TER : TER Centre-Val", "3##I1##INCONNU : A ↔ B", "3##I2##INCONNU : A ↔ B"]
-    twins = look_alikes._look_alikes(options)
+    twins = line_labels._look_alikes(options)
     assert twins == ["C1", "C2", "I1", "I2"]
-    got = look_alikes._set_apart_by_ends(options, {
+    got = line_labels._set_apart_by_ends(options, {
         "C1": "Montparnasse ↔ Chartres", "C2": "Bercy ↔ Montargis", "I1": "A ↔ B"})
     assert got == ["2##C1##TER : TER Centre · Montparnasse ↔ Chartres",
                    "2##C2##TER : TER Centre · Bercy ↔ Montargis##pruned",
@@ -66,7 +65,7 @@ def test_look_alikes_of_one_agency_get_their_ends():
 def test_look_alikes_of_two_modes_are_left_to_the_mode():
     # Zou's P18 train and P18 coach: the flow says "(train)" and "(coach)"
     options = ["2##P18T##P18 : Nîmes-Avignon", "3##P18C##P18 : Nîmes-Avignon"]
-    assert look_alikes._look_alikes(options) == []
+    assert line_labels._look_alikes(options) == []
 
 
 def test_look_alikes_without_destinations_read_the_stops(tmp_path):
@@ -155,7 +154,7 @@ def test_a_line_whose_days_are_over_gives_way_to_its_live_twin():
     options = ["3##N1##22", "3##N2##22", "3##X##40", "0##T1##22"]
     spans = {"N1": ("20260101", "20260301"), "N2": ("20260302", "20261231"),
              "X": ("20250101", "20250601"), "T1": ("20250101", "20250601")}
-    got = look_alikes._leave_out_expired(options, spans, today="20260915")
+    got = line_labels._leave_out_expired(options, spans, today="20260915")
     # a dead line with no twin stays, and the tram 22 is not the bus 22
     assert got == ["3##N2##22", "3##X##40", "0##T1##22"]
 
@@ -163,9 +162,9 @@ def test_a_line_whose_days_are_over_gives_way_to_its_live_twin():
 def test_a_feed_entirely_out_of_date_keeps_its_lines():
     options = ["3##A##7", "3##B##7"]
     spans = {"A": ("20240101", "20240601"), "B": ("20240602", "20241231")}
-    assert look_alikes._leave_out_expired(options, spans, today="20260915") == options
+    assert line_labels._leave_out_expired(options, spans, today="20260915") == options
     # nor does a line without dates count as over
-    assert look_alikes._leave_out_expired(["3##A##7", "3##C##7"], spans, today="20260915") == \
+    assert line_labels._leave_out_expired(["3##A##7", "3##C##7"], spans, today="20260915") == \
         ["3##C##7"]
 
 
@@ -173,7 +172,7 @@ def test_look_alikes_of_different_periods_say_their_days():
     options = ["3##B1##29", "3##B2##29##pruned", "3##U##30"]
     spans = {"B1": ("20260901", "20261231"), "B2": ("20270104", "20270104"),
              "U": ("20260101", "20261231")}
-    assert look_alikes._set_apart_by_span(options, spans) == [
+    assert line_labels._set_apart_by_span(options, spans) == [
         "3##B1##29 · 2026-09-01 → 2026-12-31",
         # a single day is said once
         "3##B2##29 · 2027-01-04##pruned",
@@ -184,9 +183,9 @@ def test_look_alikes_of_the_same_days_are_not_dated():
     # Leipzig's rail replacement runs, one name and one twelvemonth
     options = ["3##S1##SEV", "3##S2##SEV"]
     spans = {"S1": ("20260101", "20261231"), "S2": ("20260101", "20261231")}
-    assert look_alikes._set_apart_by_span(options, spans) == options
+    assert line_labels._set_apart_by_span(options, spans) == options
     # a date that is not one is not shown
-    assert look_alikes._set_apart_by_span(
+    assert line_labels._set_apart_by_span(
         options, {"S1": ("20260101", "20261231"), "S2": ("2026", "x")}) == \
         ["3##S1##SEV · 2026-01-01 → 2026-12-31", "3##S2##SEV"]
 

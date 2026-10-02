@@ -4,9 +4,9 @@ A route's label is its number then where it goes, built from routes in the
 database (get_route_labels) or, before any database exists, from routes.txt
 in the source zip (get_route_options_from_zip and the other *_zip readers).
 The config flow lists a database's lines and agencies from here too
-(get_route_list, get_route_count, get_agency_list). The label itself is
-line_labels.py's, where a line goes line_ends.py's, and how lines that read
-the same are told apart look_alikes.py's.
+(get_route_list, get_route_count, get_agency_list). The label itself, and how lines that
+read the same are told apart, are line_labels.py's, where a line goes
+line_ends.py's.
 """
 from __future__ import annotations
 
@@ -22,8 +22,7 @@ from sqlalchemy.sql import text
 from .gtfs_db import feed_zip
 from .gtfs_filter import read_zip_agencies, read_zip_routes
 from .line_ends import headsign_ends, route_ends
-from .line_labels import _adds_to, _route_label
-from .look_alikes import set_lines_apart
+from .line_labels import _adds_to, _route_label, set_lines_apart
 
 if TYPE_CHECKING:
     # for the annotations only
