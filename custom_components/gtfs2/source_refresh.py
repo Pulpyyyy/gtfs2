@@ -29,6 +29,7 @@ import asyncio
 from collections.abc import Mapping
 import hashlib
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -272,6 +273,11 @@ def rebuild_pending(hass: HomeAssistant, file: str) -> bool:
     kept = source_meta(source_zip_path(hass, file))
     if not kept:
         return False
+    # a database gone (an error, a restore) is built again from the zip:
+    # with no record of what it was built from, the zip's stands in for
+    # it, the two read alike, and the feed was downloaded again
+    if not os.path.exists(real_path(hass.config.path(DEFAULT_PATH), file)):
+        return True
     return version_label(installed_meta(hass, file)) != version_label(kept)
 
 

@@ -50,6 +50,7 @@ def _write(path, meta):
 def test_same_bytes_carry_the_validators_to_the_installed_record(tmp_path):
     gtfs_dir = tmp_path / "gtfs2"
     gtfs_dir.mkdir()
+    (gtfs_dir / "src.sqlite").write_bytes(b"")
     _write(gtfs_dir / "src.zip.meta.json", {"sha256": "abc", "last_modified": "NEW"})
     _write(gtfs_dir / "src.sqlite.meta.json", {"sha256": "abc", "last_modified": "OLD"})
     source_refresh._carry_validators(_hass(tmp_path), "src")
@@ -67,3 +68,16 @@ def test_other_bytes_leave_the_installed_record(tmp_path):
     installed = json.loads((gtfs_dir / "src.sqlite.meta.json").read_text())
     assert installed["last_modified"] == "OLD"
     assert source_refresh.rebuild_pending(_hass(tmp_path), "src")
+
+
+def test_a_database_gone_is_built_again_from_the_kept_zip(tmp_path):
+    # lost to an error or a restore, with no record of what it was built
+    # from: the record falls back on the zip's, the two read alike, and
+    # the button downloaded the feed again rather than build the zip there
+    gtfs_dir = tmp_path / "gtfs2"
+    gtfs_dir.mkdir()
+    (gtfs_dir / "src.zip").write_bytes(b"zip")
+    _write(gtfs_dir / "src.zip.meta.json", {"sha256": "abc", "last_modified": "NEW"})
+    assert source_refresh.rebuild_pending(_hass(tmp_path), "src")
+    (gtfs_dir / "src.sqlite").write_bytes(b"")
+    assert not source_refresh.rebuild_pending(_hass(tmp_path), "src")
