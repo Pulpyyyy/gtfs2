@@ -22,9 +22,10 @@ early.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 import logging
 import threading
+from typing import Any
 from datetime import date, datetime, time, timedelta, tzinfo
 
 from homeassistant.core import HomeAssistant
@@ -36,7 +37,8 @@ from sqlalchemy.sql import text
 from .const import DEFAULT_PATH
 from .gtfs_db import file_edition, real_path
 from .clocks import _removed_on, _runs_on, agency_zone, gtfs_seconds
-from .rt_feed import _FEED_CACHE, _same_route
+from .rt_feed import (CANCELLED_TRIP, SKIPPED_STOP, _FEED_CACHE, _same_route, stop_relationship,
+                      trip_relationship)
 from .rt_source import source_readers
 
 _LOGGER = logging.getLogger(__name__)
@@ -247,11 +249,12 @@ def _after_close(hass: HomeAssistant, file: str, trip_update_url: str | None,
     them open."""
     cap = last_close + OVERTIME_CAP
     if now_local <= cap:
-        # the lines the source's sensors name; a source read only by
-        # train or local stops sensors names none, and the check then
-        # listens to the whole feed rather than going deaf
+        # the lines the source's sensors name; a source read whole by
+        # one of them, a train or local stops sensor, names none, and the
+        # check then listens to the whole feed rather than going deaf
+        routes, whole = source_readers(hass, file)
         if trip_update_url and cached_feed_has_future_stop(
-                file, trip_update_url, source_readers(hass, file)[0],
+                file, trip_update_url, set() if whole else routes,
                 now_aware.timestamp()):
             until = min(now_local + EXTEND, cap)
             state.update(extended_until=until.isoformat(),
@@ -315,6 +318,24 @@ def _gate(hass: HomeAssistant, file: str, schedule: Schedule,
     return reason
 
 
+def _followed_update(entity: object, routes: Iterable[str]) -> Mapping[str, Any]:
+    """The trip update of a cached entity a sensor may follow, empty when
+    there is none: not a trip update, a cancelled trip, or a line named
+    that no sensor follows."""
+    if not isinstance(entity, dict):
+        return {}
+    trip_update = entity.get("trip_update") or {}
+    # a cancelled trip is no vehicle under way, as the sensor drops it
+    if trip_relationship(entity) in CANCELLED_TRIP:
+        return {}
+    seen = (trip_update.get("trip") or {}).get("route_id")
+    # a trip naming no line (SNCF) may be one the sensor follows by its
+    # trip id: only a line named and not followed is left out
+    if routes and seen and not any(_same_route(route, seen) for route in routes):
+        return {}
+    return trip_update
+
+
 def cached_feed_has_future_stop(owner: str, url: str, routes: Iterable[str],
                                 now_epoch: float) -> bool:
     """Whether the last cached trip-updates fetch still announces a stop time
@@ -334,15 +355,10 @@ def cached_feed_has_future_stop(owner: str, url: str, routes: Iterable[str],
     if not cached:
         return False
     for entity in cached[1] or []:
-        if not isinstance(entity, dict):
-            continue
-        trip_update = entity.get("trip_update")
-        if not trip_update:
-            continue
-        seen = (trip_update.get("trip") or {}).get("route_id")
-        if routes and not any(_same_route(route, seen) for route in routes):
-            continue
+        trip_update = _followed_update(entity, routes)
         for stop in trip_update.get("stop_time_update") or []:
+            if stop_relationship(stop) == SKIPPED_STOP:
+                continue
             # a json feed writes int64 as text, as the departure reader knows
             try:
                 when = max(int((stop.get("arrival") or {}).get("time") or 0),

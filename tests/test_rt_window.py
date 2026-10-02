@@ -137,16 +137,17 @@ def _at(day, hms):
     return datetime.datetime.fromisoformat(f"{day} {hms}:00").replace(tzinfo=TZ)
 
 
-def _feed(now, offset_seconds, route="L1"):
-    """One trip update in the realtime cache, its stop offset from now."""
+def _feed(now, offset_seconds, route="L1", trip=None, stop=None):
+    """One trip update in the realtime cache, its stop offset from now;
+    trip and stop add fields to the trip descriptor and the stop update."""
     when = int(now.timestamp()) + offset_seconds
     rt_feed._FEED_CACHE[(FILE, URL, "trip_data")] = (time.time(), [{
         "id": "e1",
         "trip_update": {
-            "trip": {"trip_id": "t1", "route_id": route},
+            "trip": {"trip_id": "t1", "route_id": route, **(trip or {})},
             "stop_time_update": [{
                 "stop_id": "s1", "stop_sequence": 3,
-                "arrival": {"time": when}, "departure": {"time": when},
+                "arrival": {"time": when}, "departure": {"time": when}, **(stop or {}),
             }],
         },
     }])
@@ -250,6 +251,36 @@ def test_a_source_following_no_line_hears_every_line(schedule):
     now = _at(DAY_AFTER, "02:00")
     _feed(now, +600, route="L9")
     assert _gate(schedule, now, hass=_hass(route="train")) is None
+
+
+def test_a_trip_update_naming_no_line_stretches_the_window(schedule):
+    # SNCF's realtime names no route_id: the sensor follows such a trip by
+    # its id, and the window kept closing on it as soon as a line was named
+    now = _at(DAY_AFTER, "02:00")
+    _feed(now, +600, route="")
+    assert _gate(schedule, now) is None
+
+
+def test_a_source_read_whole_by_one_sensor_hears_every_line(schedule):
+    # a train sensor beside a line sensor: the train one reads every line
+    now = _at(DAY_AFTER, "02:00")
+    _feed(now, +600, route="L9")
+    hass = types.SimpleNamespace(config_entries=_Entries([
+        types.SimpleNamespace(data={"file": FILE, "route": "L1: Ligne 1"}, options={}),
+        types.SimpleNamespace(data={"file": FILE, "route": "train"}, options={})]))
+    assert _gate(schedule, now, hass=hass) is None
+
+
+@pytest.mark.parametrize("trip, stop", [
+    ({"schedule_relationship": "CANCELED"}, None),
+    (None, {"schedule_relationship": "SKIPPED"}),
+], ids=["cancelled_trip", "skipped_stop"])
+def test_a_struck_call_does_not_stretch_the_window(schedule, trip, stop):
+    # the sensor drops a cancelled trip and a skipped stop: no vehicle
+    # under way to wait for
+    now = _at(DAY_AFTER, "02:00")
+    _feed(now, +600, trip=trip, stop=stop)
+    assert _gate(schedule, now) == "no_service_today"
 
 
 # --- cap ----------------------------------------------------------------------
