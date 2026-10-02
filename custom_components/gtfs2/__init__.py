@@ -19,7 +19,7 @@ from .notifications import async_notify_line_orphaned, clear_line_orphaned
 from .exports import remove_entry_geojson
 from .datasource_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
 from .gtfs_db import real_path, routes_in, route_name_in, get_datasources, close_schedule
-from .gtfs_rt_helper import get_gtfs_rt
+from .rt_local import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
 from .flow_source import SOURCE_URL_SCHEMES
 from .rt_source import (

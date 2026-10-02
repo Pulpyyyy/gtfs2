@@ -423,6 +423,7 @@ rt_source.py        the datasource entries, owning the realtime feeds and keys
 zip_peek.py         read a remote zip's contents, take one member out of it
 freshness.py        ask the host whether the feed changed, without downloading
 rt_feed.py          a realtime feed read once per publication, decoded
+rt_local.py         one realtime feed, or a SIRI answer, downloaded to a local file
 ```
 
 ## Glossary

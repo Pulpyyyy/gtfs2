@@ -14,7 +14,7 @@ import types
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_local = ha_stub.load("rt_local")
 
 VISIT = {"MonitoredVehicleJourney": {
     "LineRef": "A", "DirectionRef": 1,
@@ -29,9 +29,9 @@ DELIVERY = {"ServiceDelivery": {
 
 
 def _converted(monkeypatch, answer):
-    monkeypatch.setattr(gtfs_rt_helper, "fetch", lambda *args, **kwargs: types.SimpleNamespace(
+    monkeypatch.setattr(rt_local, "fetch", lambda *args, **kwargs: types.SimpleNamespace(
         status_code=200, content=json.dumps(answer).encode(), text=""))
-    return gtfs_rt_helper.convert_realtime_siri_trips_to_json("https://h/siri?k=1", {}, "S1")
+    return rt_local.convert_realtime_siri_trips_to_json("https://h/siri?k=1", {}, "S1")
 
 
 def _at(text):

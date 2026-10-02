@@ -11,7 +11,7 @@ import types
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_local = ha_stub.load("rt_local")
 
 
 def _asked(tmp_path, monkeypatch, origin):
@@ -22,11 +22,11 @@ def _asked(tmp_path, monkeypatch, origin):
         config_entries=types.SimpleNamespace(async_get_entry=lambda entry_id: entry))
     registry = types.SimpleNamespace(
         async_get=lambda entity_id: types.SimpleNamespace(config_entry_id="E"))
-    monkeypatch.setattr(gtfs_rt_helper.er, "async_get", lambda _hass: registry)
+    monkeypatch.setattr(rt_local.er, "async_get", lambda _hass: registry)
     asked = []
-    monkeypatch.setattr(gtfs_rt_helper, "convert_realtime_siri_trips_to_json",
+    monkeypatch.setattr(rt_local, "convert_realtime_siri_trips_to_json",
                         lambda url, headers, stop_id: asked.append(stop_id) or {})
-    gtfs_rt_helper.get_gtfs_rt(hass, "gtfs2", {
+    rt_local.get_gtfs_rt(hass, "gtfs2", {
         "url": "https://h/siri", "file": "src", "entity_for_siri": "sensor.trip"})
     return asked
 
