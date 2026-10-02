@@ -201,9 +201,12 @@ def _build_local_stop_element(self: GTFSLocalStopUpdateCoordinator, row: Mapping
         "date": scheduled.date().isoformat(),
         "stop_name": row["stop_name"],
         "stop_id": row["stop_id"],
-        "route": row["route_short_name"],
+        # a line named by its long name only (TriMet's MAX), a destination
+        # given on each call rather than on the trip (TriMet): the card
+        # showed neither the line nor where it goes
+        "route": row["route_short_name"] or row["route_long_name"],
         "route_long": row["route_long_name"],
-        "headsign": row["trip_headsign"],
+        "headsign": row["trip_headsign"] or row["stop_headsign"],
         "trip_id": row["trip_id"],
         "direction_id": row["direction_id"],
         "icon": self._icon,
@@ -231,7 +234,7 @@ def _fetch_local_stop_rows(schedule: Schedule, latitude: float, longitude: float
                    trip.trip_id, trip.trip_headsign, trip.direction_id, trip.trip_short_name,
                    trip.service_id,
                    st.departure_time AS departure_time_raw,
-                   st.stop_sequence AS stop_sequence,
+                   st.stop_sequence AS stop_sequence, st.stop_headsign AS stop_headsign,
                    route.route_long_name, route.route_short_name, route.route_type, route.route_id
             FROM nearby
             CROSS JOIN stop_times st ON st.stop_id = nearby.stop_id
@@ -268,7 +271,7 @@ def _fetch_local_stop_rows(schedule: Schedule, latitude: float, longitude: float
               AND cd2.exception_type = 1
           )
         SELECT cs.stop_id, cs.stop_name, cs.latitude, cs.longitude, cs.stop_timezone, cs.agency_timezone,
-               cs.trip_id, cs.trip_headsign, cs.direction_id, cs.trip_short_name,
+               cs.trip_id, cs.trip_headsign, cs.stop_headsign, cs.direction_id, cs.trip_short_name,
                {_on_service_day("vd.date", "cs.departure_time_raw")} AS departure_dt,
                cs.stop_sequence, cs.route_long_name, cs.route_short_name, cs.route_type,
                cs.route_id
