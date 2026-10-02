@@ -63,7 +63,7 @@ Non-goals:
   database layer").
 - Querying the whole network from a database. Line lists and headsigns of
   lines never imported are read from the zip (`route_names.py`,
-  `zip_peek.py`), not imported to be read.
+  `line_ends.py`, `zip_peek.py`), not imported to be read.
 - Supporting Windows as a runtime. Home Assistant runs on Linux; the swap
   has a fallback for a developer's Windows box, unguarded for the few
   microseconds of the rename (`swap_in`).
@@ -377,6 +377,7 @@ departure_attributes.py  the departure sensor's attributes, group by group
 refresh_steps.py         next service date, trips struck by the realtime
 route_names.py           line labels, lines a feed declares
 line_labels.py           what the user reads for a line: number, where it goes, mode
+line_ends.py             where a line goes: its trips' destinations, its two ends
 stations.py              train entries: stations instead of stops
 exports.py               which map files a refresh writes, and when
 local_stops.py           the departures around a person or zone, timetable and realtime
@@ -581,7 +582,7 @@ off the event loop, matched by stop_id and stop_sequence (d15f022).
 What the route screen shows decides which line a sensor follows, so the
 labels are built to tell lines apart, and read from the zip when the
 database holds no timetable for them (`route_names.py`; the label itself in
-`line_labels.py`).
+`line_labels.py`, where a line goes in `line_ends.py`).
 
 ```
 label          the line number, then where it goes (_route_label)

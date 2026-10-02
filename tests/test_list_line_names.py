@@ -13,6 +13,7 @@ import ha_stub
 
 route_names = ha_stub.load("route_names")
 line_labels = ha_stub.load("line_labels")
+line_ends = ha_stub.load("line_ends")
 
 
 def test_a_long_name_that_repeats_the_number_is_dropped():
@@ -76,7 +77,7 @@ def test_look_alikes_without_destinations_read_the_stops(tmp_path):
         zout.writestr("stop_times.txt", "trip_id,stop_sequence,stop_id\n"
                       "T1,1,PA\nT1,2,TA\nT2,1,PA\nT2,2,LO\nT2,3,TA\nT3,5,TA\nT3,9,PA\n")
         zout.writestr("stops.txt", "stop_id,stop_name\nPA,Paris\nLO,Lourdes\nTA,Tarbes\n")
-    got = route_names.look_alike_ends(None, str(tmp_path), "feed", ["R1", "R2", "R3"])
+    got = line_ends.look_alike_ends(None, str(tmp_path), "feed", ["R1", "R2", "R3"])
     # the trip with the most stops draws the line; R3 has no stop to read
     assert got == {"R1": "Paris > Tarbes", "R2": "Tarbes > Paris"}
 
@@ -95,7 +96,7 @@ def test_the_trips_name_where_a_line_goes(tmp_path):
         ("M4", "0", "Porte de Clignancourt"), ("M4", "0", "Porte de Clignancourt"),
         ("M4", "1", "Bagneux - Lucie Aubrac"), ("M4", "1", "Montparnasse Bienvenue"),
         ("M4", "1", "Bagneux - Lucie Aubrac")])
-    assert route_names.headsign_ends(gtfs_dir, "feed", ["M4"]) == \
+    assert line_ends.headsign_ends(gtfs_dir, "feed", ["M4"]) == \
         {"M4": "Porte de Clignancourt ↔ Bagneux - Lucie Aubrac"}
 
 
@@ -104,21 +105,21 @@ def test_codes_in_the_headsign_are_not_places(tmp_path):
     gtfs_dir = _feed(tmp_path, [
         ("K8", "0", "44930"), ("K8", "1", "44931"),
         ("RERA", "0", "UZAR"), ("RERA", "1", "NATO")])
-    assert route_names.headsign_ends(gtfs_dir, "feed", ["K8", "RERA"]) == {}
+    assert line_ends.headsign_ends(gtfs_dir, "feed", ["K8", "RERA"]) == {}
 
 
 def test_a_feed_without_directions_gives_the_two_most_shown(tmp_path):
     gtfs_dir = _feed(tmp_path, [
         ("F", "", "Den Helder"), ("F", "", "Texel"), ("F", "", "Den Helder"), ("F", "", "Texel"),
         ("F", "", "Oudeschild")])
-    assert route_names.headsign_ends(gtfs_dir, "feed", ["F"]) == {"F": "Den Helder ↔ Texel"}
+    assert line_ends.headsign_ends(gtfs_dir, "feed", ["F"]) == {"F": "Den Helder ↔ Texel"}
 
 
 def test_no_zip_no_trips_no_headsign_give_nothing(tmp_path):
-    assert route_names.headsign_ends(str(tmp_path), "absent", ["X"]) == {}
-    assert route_names.headsign_ends(None, "feed", ["X"]) == {}
+    assert line_ends.headsign_ends(str(tmp_path), "absent", ["X"]) == {}
+    assert line_ends.headsign_ends(None, "feed", ["X"]) == {}
     gtfs_dir = _feed(tmp_path, [("X", "0", "")])
-    assert route_names.headsign_ends(gtfs_dir, "feed", ["X"]) == {}
+    assert line_ends.headsign_ends(gtfs_dir, "feed", ["X"]) == {}
 
 
 def test_lines_of_one_number_and_several_modes_say_their_mode():
@@ -211,7 +212,7 @@ def test_the_days_a_line_runs_come_from_both_calendars(tmp_path):
                               # an added day widens the window, a removed one never
                               "WEEK,20260702,1\nWEEK,20261225,2\n"
                               "DAYS,20260301,1\nDAYS,20260214,1\n"})
-    assert route_names.route_spans(gtfs_dir, "feed", ["W", "D", "N", "absent"]) == {
+    assert line_ends.route_spans(gtfs_dir, "feed", ["W", "D", "N", "absent"]) == {
         "W": ("20260105", "20260702"), "D": ("20260214", "20260301")}
 
 
@@ -227,7 +228,7 @@ def test_a_calendar_row_with_every_weekday_off_gives_no_days(tmp_path):
                         "NEVER,0,0,0,0,0,0,0,20170407,20301231\n",
         "calendar_dates.txt": "service_id,date,exception_type\n"
                               "SEPT,20260915,1\nSEPT,20261115,1\n"})
-    assert route_names.route_spans(gtfs_dir, "feed", ["B", "Z"]) == {
+    assert line_ends.route_spans(gtfs_dir, "feed", ["B", "Z"]) == {
         "B": ("20260915", "20261115")}
 
 

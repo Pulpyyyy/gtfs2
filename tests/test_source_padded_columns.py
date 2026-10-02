@@ -16,7 +16,7 @@ import ha_stub
 
 feed_window = ha_stub.load("feed_window")
 gtfs_filter = ha_stub.load("gtfs_filter")
-route_names = ha_stub.load("route_names")
+line_ends = ha_stub.load("line_ends")
 
 WIDTH = 80
 FEED = {
@@ -55,7 +55,7 @@ def test_the_timetable_knows_its_last_day(tmp_path):
 
 def test_the_lines_know_their_days(tmp_path):
     _padded(tmp_path)
-    assert route_names.route_spans(str(tmp_path), "feed", ["R1", "R2"]) == {
+    assert line_ends.route_spans(str(tmp_path), "feed", ["R1", "R2"]) == {
         "R1": ("20260918", "20261011"), "R2": ("20261012", "20261213")}
 
 

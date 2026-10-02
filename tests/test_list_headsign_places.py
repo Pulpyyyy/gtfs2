@@ -11,7 +11,7 @@ import zipfile
 
 import ha_stub
 
-route_names = ha_stub.load("route_names")
+line_ends = ha_stub.load("line_ends")
 
 STOPS = ("stop_id,stop_name,stop_lat,stop_lon\n"
          "S1,Nice Ville,0,0\nS2,Marseille Saint-Charles,0,0\nS3,Pau,0,0\nS4,Bordeaux,0,0\n")
@@ -26,13 +26,13 @@ def test_towns_in_capitals_stay_destinations(tmp_path):
     with zipfile.ZipFile(zip_path, "w") as zout:
         zout.writestr("stops.txt", STOPS)
         zout.writestr("trips.txt", TRIPS)
-    ends = route_names.headsign_ends(str(tmp_path), "src", ["R1", "R2", "R3"])
+    ends = line_ends.headsign_ends(str(tmp_path), "src", ["R1", "R2", "R3"])
     assert ends["R1"] == "NICE ↔ Marseille Saint-Charles"
     assert ends["R2"] == "PAU ↔ Bordeaux"
     assert "R3" not in ends
 
 
 def test_a_code_without_a_place_is_a_code():
-    assert not route_names._names_a_place("UZAR", frozenset({"nice", "nice ville"}))
-    assert route_names._names_a_place("NICE", frozenset({"nice", "nice ville"}))
-    assert not route_names._names_a_place("44930")
+    assert not line_ends._names_a_place("UZAR", frozenset({"nice", "nice ville"}))
+    assert line_ends._names_a_place("NICE", frozenset({"nice", "nice ville"}))
+    assert not line_ends._names_a_place("44930")

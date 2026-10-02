@@ -15,7 +15,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-route_names = ha_stub.load("route_names")
+line_ends = ha_stub.load("line_ends")
 
 STOPS = {"A": "Gare", "B": "Centre", "C": "Lac"}
 
@@ -38,7 +38,7 @@ def _schedule(tmp_path, trips):
 
 def test_the_same_ends_whichever_trip_comes_first(tmp_path):
     back_first = _schedule(tmp_path, [("A1", 1, "CBA"), ("Z9", 0, "ABC")])
-    assert route_names._route_endpoints(back_first, ["R"]) == {"R": "Gare > Lac"}
+    assert line_ends._route_endpoints(back_first, ["R"]) == {"R": "Gare > Lac"}
     back_first.engine.dispose()
 
 
@@ -49,7 +49,7 @@ def test_the_same_ends_whatever_the_trip_ids(tmp_path):
         folder = tmp_path / ids[0]
         folder.mkdir()
         one = _schedule(folder, [(ids[0], None, "CBA"), (ids[1], None, "ABC")])
-        assert route_names._route_endpoints(one, ["R"]) == {"R": "Gare > Lac"}
+        assert line_ends._route_endpoints(one, ["R"]) == {"R": "Gare > Lac"}
         one.engine.dispose()
 
 
@@ -59,7 +59,7 @@ def test_a_line_each_way_keeps_its_way(tmp_path):
         conn.execute(text("insert into trips values ('T2', 'Q', 0)"))
         for seq, stop in enumerate("CBA", 1):
             conn.execute(text("insert into stop_times values ('T2', :s, :q)"), {"s": stop, "q": seq})
-    assert route_names._route_endpoints(lines, ["R", "Q"]) == {"R": "Gare > Lac", "Q": "Lac > Gare"}
+    assert line_ends._route_endpoints(lines, ["R", "Q"]) == {"R": "Gare > Lac", "Q": "Lac > Gare"}
     lines.engine.dispose()
 
 
@@ -72,5 +72,5 @@ def test_the_zip_ends_follow_the_same_rules(tmp_path):
                       "L1,S1,1\nL1,S3,2\nL1,S1,3\n"          # a loop: Lac > Lac
                       "B1,S1,1\nB1,S2,2\n"                  # Lac then Gare
                       "N1,S3,1\nN1,S4,2\n")                 # ends on a stop with no name
-    ends = route_names._read_stop_ends(str(tmp_path / "src.zip"), {"LOOP", "R", "NONAME"})
+    ends = line_ends._read_stop_ends(str(tmp_path / "src.zip"), {"LOOP", "R", "NONAME"})
     assert ends == {"R": "Lac > Gare"}

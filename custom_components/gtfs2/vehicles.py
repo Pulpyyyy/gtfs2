@@ -39,7 +39,7 @@ def _trip_destinations(schedule: Schedule | str | None, trip_ids: Iterable[str])
     trip_ids = sorted({str(t) for t in trip_ids if t})
     if not trip_ids or schedule is None or isinstance(schedule, str):
         return {}
-    from .route_names import _names_a_place
+    from .line_ends import _names_a_place
     sql = """
     SELECT t.trip_id, t.trip_headsign,
            (SELECT s.stop_name FROM stop_times st
