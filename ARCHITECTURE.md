@@ -34,8 +34,8 @@ quotes these figures):
 | Problem | Measured | Commit |
 |---|---|---|
 | pygtfs imports the whole network, row by row, whatever the user follows | SNCF, one route kept: import 262 s → 10 s, datasource 167.8 MB → 5.9 MB | da8f4c6 |
-| A refresh rebuilt the live file: sensors read a half-built database | "unknown for five minutes"; minutes to hours on a national feed | ec0881b, gtfs_db.py |
-| A refresh threw away what prune and intern had reclaimed | 259 MB back to 1.1 GB on a live install | gtfs_db.py docstring |
+| A refresh rebuilt the live file: sensors read a half-built database | "unknown for five minutes"; minutes to hours on a national feed | ec0881b, db_build.py |
+| A refresh threw away what prune and intern had reclaimed | 259 MB back to 1.1 GB on a live install | db_build.py docstring |
 | DELETE on a national `stop_times` held the database | 15 M rows: Home Assistant went unresponsive | aefaae1 |
 
 The fork's answer, in one sentence: **keep the zip as the full record,
@@ -391,6 +391,7 @@ attributes dict and what it reads, "nothing of the entity" (3f01c10).
 
 ```
 gtfs_db.py            everything that opens a database file directly, the sources on disk
+db_build.py           an import into a scratch database, the followed lines copied, the swap
 gtfs_helper.py        the departure queries
 datasource.py         a source's database as the readers open it: get_gtfs, its indexes
 stop_rules.py         the SQL pieces every reader shares: who gets on or off, one place, train stations
@@ -412,8 +413,8 @@ pair_direction.py     the direction an entry keeps for its two places, and its l
 feed_window.py        how long the kept timetable is good for
 ```
 
-`gtfs_db.py` imports neither pygtfs nor Home Assistant: the scratch build is
-passed in as a callable (`import_routes(..., build_scratch)`), so the module
+`gtfs_db.py` and `db_build.py` import neither pygtfs nor Home Assistant: the
+scratch build is passed in as a callable (`import_routes(..., build_scratch)`), so the modules
 can be tested on plain SQLite files.
 
 ### 5. Source & feed layer
@@ -757,7 +758,7 @@ source_zip.py  fetch, keep the zip   gtfs_helper.py   get_next_departure
      ↓                                    ↓
 gtfs_filter.py keep chosen routes    <file>.sqlite
      ↓
-gtfs_db.py     build, swap
+db_build.py    build, swap
      ↓
 <file>.sqlite
 ```
@@ -852,7 +853,7 @@ imports in half a second, where the full import built a 2.6 GB scratch file
 
 **Why the scratch database stays raw.** Interning it too would mean two sets
 of integer keys to reconcile, and keys are local to a file: a second import
-measured 31 stop keys already taken (`gtfs_db.py`).
+measured 31 stop keys already taken (`db_build.py`).
 
 #### Adding lines (`import_routes`)
 

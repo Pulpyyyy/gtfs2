@@ -23,8 +23,8 @@ import pygtfs
 from .const import CONF_INNER_ZIP
 from .direction_repair import repair_trip_directions
 from .freshness import adopt_zip, download_feed, source_request
-from .gtfs_db import (feed_zip, import_routes, optimise_datasource, real_path, remove_files,
-                      routes_in, staging_name, swap_in)
+from .db_build import import_routes, optimise_datasource, swap_in
+from .gtfs_db import feed_zip, real_path, remove_files, routes_in, staging_name
 from .zip_peek import extract_member, inner_zips, inner_zips_in_file
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)

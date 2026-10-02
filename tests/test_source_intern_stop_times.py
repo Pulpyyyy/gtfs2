@@ -13,6 +13,7 @@ import feed_db
 import ha_stub
 
 gtfs_db = ha_stub.load("gtfs_db")
+db_build = ha_stub.load("db_build")
 intern_gtfs_datasource = gtfs_db.intern_gtfs_datasource
 
 
@@ -70,7 +71,7 @@ def test_debris_of_an_older_run_does_not_block(tmp_path):
 
 def test_intern_on_a_copy_swaps_the_result_in(tmp_path):
     make_db(tmp_path / "src.sqlite")
-    stats = gtfs_db.on_a_copy(str(tmp_path), "src", intern_gtfs_datasource, False)
+    stats = db_build.on_a_copy(str(tmp_path), "src", intern_gtfs_datasource, False)
     assert stats and stats["file"] == "src"
     assert tables(tmp_path / "src.sqlite")["stop_times"] == "view"
     assert sorted(p.name for p in tmp_path.iterdir()) == ["src.sqlite"]
@@ -87,14 +88,14 @@ def test_the_live_file_stays_readable_during_the_work(tmp_path):
         conn.close()
         return intern_gtfs_datasource(gtfs_dir, name)
 
-    assert gtfs_db.on_a_copy(str(tmp_path), "src", work)
+    assert db_build.on_a_copy(str(tmp_path), "src", work)
     assert seen == [4]
 
 
 def test_nothing_done_nothing_swapped(tmp_path):
     make_db(tmp_path / "src.sqlite")
     stamp = (tmp_path / "src.sqlite").stat().st_mtime_ns
-    assert gtfs_db.on_a_copy(str(tmp_path), "src", lambda d, n: None) is None
+    assert db_build.on_a_copy(str(tmp_path), "src", lambda d, n: None) is None
     assert (tmp_path / "src.sqlite").stat().st_mtime_ns == stamp
     assert sorted(p.name for p in tmp_path.iterdir()) == ["src.sqlite"]
 
@@ -125,7 +126,7 @@ def _import(tmp_path, routes):
     def build(scratch_file):
         make_scratch(scratch_file)
         return True
-    return gtfs_db.import_routes(str(tmp_path), "src", routes, build)
+    return db_build.import_routes(str(tmp_path), "src", routes, build)
 
 
 def test_import_counts_what_each_route_brings(tmp_path):
@@ -160,14 +161,14 @@ def test_the_real_file_keeps_its_own_schema(tmp_path):
 def test_a_first_import_that_brings_nothing_leaves_no_database(tmp_path, monkeypatch):
     # a file with the schema alone read as a datasource that follows no
     # line, which the flows then sent down the legacy extract
-    monkeypatch.setattr(gtfs_db, "copy_route", lambda *args, **kwargs: None)
+    monkeypatch.setattr(db_build, "copy_route", lambda *args, **kwargs: None)
     assert _import(tmp_path, ["A", "B"]) == {}
     assert sorted(p.name for p in tmp_path.iterdir()) == []
 
 
 def test_a_later_import_that_brings_nothing_keeps_the_database(tmp_path, monkeypatch):
     assert _import(tmp_path, ["A"]) == {"A": 4}
-    monkeypatch.setattr(gtfs_db, "copy_route", lambda *args, **kwargs: None)
+    monkeypatch.setattr(db_build, "copy_route", lambda *args, **kwargs: None)
     assert _import(tmp_path, ["B"]) == {}
     conn = sqlite3.connect(tmp_path / "src.sqlite")
     assert conn.execute("select count(*) from stop_times").fetchone()[0] == 4

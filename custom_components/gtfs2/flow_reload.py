@@ -32,8 +32,8 @@ from .const import (
     DEFAULT_PATH,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
-from .gtfs_db import (close_schedule, import_routes, on_a_copy, optimise_datasource, real_path,
-                      routes_in, scratch_path)
+from .db_build import import_routes, on_a_copy, optimise_datasource
+from .gtfs_db import close_schedule, real_path, routes_in, scratch_path
 from .flow_journey import _Step
 from .datasource import check_datasource_index
 from .notifications import async_notify_import

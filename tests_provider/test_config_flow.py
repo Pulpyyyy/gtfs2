@@ -119,6 +119,10 @@ flow_source = ha_stub.load("flow_source")
 flow_reload = ha_stub.load("flow_reload")
 rt_source = ha_stub.load("rt_source")
 gtfs_db = ha_stub.load("gtfs_db")
+# the import into a scratch database has a module of its own here, gtfs_db
+# in a checkout run with --component that keeps it there
+db_build = (ha_stub.load("db_build") if (ha_stub.COMPONENT / "db_build.py").is_file()
+            else gtfs_db)
 key_mask = ha_stub.load("key_mask")
 source_refresh = ha_stub.load("source_refresh")
 
@@ -1019,8 +1023,8 @@ def test_an_import_that_stops_at_a_line_names_the_lines_left_out(world, monkeypa
         others = offered(also, "also_reload")
         # the second line asked along fails to copy: the import stops there,
         # and the lines after it are not tried
-        copy = gtfs_db.copy_route
-        monkeypatch.setattr(gtfs_db, "copy_route", lambda real, scratch, route_id, shared=True:
+        copy = db_build.copy_route
+        monkeypatch.setattr(db_build, "copy_route", lambda real, scratch, route_id, shared=True:
                             None if route_id == others[1] else copy(real, scratch, route_id, shared))
         stops = shown(await submit(hass, also, also_reload=others), FORM, "stops")
         assert "reload_done" in hass.config_entries.flow.walked
