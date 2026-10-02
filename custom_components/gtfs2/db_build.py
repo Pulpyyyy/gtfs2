@@ -37,7 +37,8 @@ import sqlite3
 from typing import Any
 
 from .db_intern import intern_gtfs_datasource
-from .gtfs_db import prune_gtfs_datasource, real_path, remove_files, scratch_path, staging_name
+from .db_prune import prune_gtfs_datasource
+from .gtfs_db import real_path, remove_files, scratch_path, staging_name
 
 _LOGGER = logging.getLogger(__name__)
 
