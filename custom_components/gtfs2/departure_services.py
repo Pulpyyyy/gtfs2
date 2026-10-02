@@ -19,7 +19,8 @@ from homeassistant.helpers import entity_registry as er
 from .const import DEFAULT_PATH, id_of
 from .feed_window import last_service_day
 from .gtfs_db import close_schedule, feed_zip
-from .gtfs_helper import _fetch_departure_rows, _row_instant, departure_query_args, get_gtfs, get_next_service_date, journey_data, zone_of
+from .clocks import zone_of
+from .gtfs_helper import _fetch_departure_rows, _row_instant, departure_query_args, get_gtfs, get_next_service_date, journey_data
 
 if TYPE_CHECKING:
     # for the annotations only

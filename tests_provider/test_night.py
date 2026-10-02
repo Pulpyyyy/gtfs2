@@ -57,6 +57,10 @@ import fixture_db  # noqa: E402
 import test_journeys as tj  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
+# the clocks of a feed have a module of their own here; a checkout run
+# with --component that keeps them in gtfs_helper is read there
+feed_clocks = (ha_stub.load("clocks") if (ha_stub.COMPONENT / "clocks.py").is_file()
+               else gtfs_helper)
 # what a stop is to the rider has a module of its own here; a checkout run
 # with --component that keeps it in gtfs_helper is read there
 stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
@@ -170,7 +174,7 @@ def _fold_to_calendar(schedule):
 def _laid(day, stored, zone):
     """A stop time on its service day, as an instant."""
     return (datetime.datetime.combine(day, datetime.time(0), zone)
-            + datetime.timedelta(seconds=gtfs_helper.gtfs_seconds(stored)))
+            + datetime.timedelta(seconds=feed_clocks.gtfs_seconds(stored)))
 
 
 def _plain_day(days, zone):

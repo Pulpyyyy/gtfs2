@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import text
 
-from .gtfs_helper import gtfs_seconds
+from .clocks import gtfs_seconds
 from .stop_rules import _alights, _boards, _no_call_between, _place_group
 from .places import _RIDES, _line_of, _line_rows, _loop_termini, _origin_boarding, _ways_of
 

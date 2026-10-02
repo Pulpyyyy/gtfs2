@@ -30,7 +30,8 @@ from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH_GEOJSON
 from .gtfs_db import feed_zip
-from .gtfs_helper import gtfs_seconds, shown_ends
+from .clocks import gtfs_seconds
+from .gtfs_helper import shown_ends
 from .places import _call_type, _line_ways
 from .gtfs_shape import read_shape, trip_shape_id
 

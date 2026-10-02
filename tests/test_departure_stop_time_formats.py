@@ -11,7 +11,7 @@ import datetime
 
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+clocks = ha_stub.load("clocks")
 geojson = ha_stub.load("geojson")
 rt_window = ha_stub.load("rt_window")
 
@@ -34,12 +34,12 @@ CASES = [
 
 def test_every_form_reads_the_same():
     for value, seconds in CASES:
-        assert gtfs_helper.gtfs_seconds(value) == seconds, value
+        assert clocks.gtfs_seconds(value) == seconds, value
 
 
 def test_the_modules_read_through_it():
-    assert geojson.gtfs_seconds is gtfs_helper.gtfs_seconds
-    assert rt_window.gtfs_seconds is gtfs_helper.gtfs_seconds
+    assert geojson.gtfs_seconds is clocks.gtfs_seconds
+    assert rt_window.gtfs_seconds is clocks.gtfs_seconds
     # the line file writes the feed's own clock, past 24:00 after midnight
     assert geojson._fmt_gtfs_time("25:15:00") == "25:15:00"
     assert geojson._fmt_gtfs_time("1970-01-02 00:36:00") == "24:36:00"

@@ -90,6 +90,10 @@ import fixture_db  # noqa: E402
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the platforms and with them the rest of Home Assistant.
 gtfs_helper = ha_stub.load("gtfs_helper")
+# the clocks of a feed have a module of their own here; a checkout run
+# with --component that keeps them in gtfs_helper is read there
+clocks = (ha_stub.load("clocks") if (ha_stub.COMPONENT / "clocks.py").is_file()
+          else gtfs_helper)
 # what a stop is to the rider has a module of its own here; a checkout run
 # with --component that keeps it in gtfs_helper is read there
 stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
@@ -614,7 +618,7 @@ def services_on(schedule, day_iso):
 
 # seconds since the service day's midnight of a stop time as the db stores
 # it (an hour past 24 on 1970-01-02): the component's own reader
-gtfs_seconds = gtfs_helper.gtfs_seconds
+gtfs_seconds = clocks.gtfs_seconds
 
 
 def late_departures(fx, route_id, direction, origins, destinations,

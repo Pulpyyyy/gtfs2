@@ -14,7 +14,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+clocks = ha_stub.load("clocks")
 
 
 def _schedule(tmp_path, agencies, routes):
@@ -35,15 +35,15 @@ def _name(zone):
 
 def test_the_route_s_agency_leads(tmp_path):
     schedule = _schedule(tmp_path, [("A", "Europe/Paris"), ("B", "America/New_York")], [("R", "B")])
-    assert _name(gtfs_helper.agency_zone(schedule, "R")) == "America/New_York"
+    assert _name(clocks.agency_zone(schedule, "R")) == "America/New_York"
 
 
 def test_a_first_agency_without_a_zone_is_passed_over(tmp_path):
     schedule = _schedule(tmp_path, [("A", ""), ("B", "Europe/Paris")], [("R", "X")])
-    assert _name(gtfs_helper.agency_zone(schedule, "R")) == "Europe/Paris"
-    assert _name(gtfs_helper.agency_zone(schedule)) == "Europe/Paris"
+    assert _name(clocks.agency_zone(schedule, "R")) == "Europe/Paris"
+    assert _name(clocks.agency_zone(schedule)) == "Europe/Paris"
 
 
 def test_a_feed_naming_no_zone_answers_none(tmp_path):
     schedule = _schedule(tmp_path, [("A", "")], [])
-    assert gtfs_helper.agency_zone(schedule) is None
+    assert clocks.agency_zone(schedule) is None
