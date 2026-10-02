@@ -53,7 +53,7 @@ def test_retrying_asks_first_then_starts_the_refresh(monkeypatch):
         started.append(entry_)
 
     monkeypatch.setattr(repairs, "datasource_entry", lambda hass_, file: entry if file == "tao" else None)
-    monkeypatch.setattr(repairs, "async_refresh_source", refresh)
+    monkeypatch.setattr(repairs, "async_rebuild_source", refresh)
     flow = _flow("refresh_failed_tao", {"file": "tao"}, hass)
     form = _step(flow)
     assert (form["type"], form["step_id"]) == ("form", "confirm")
@@ -62,6 +62,29 @@ def test_retrying_asks_first_then_starts_the_refresh(monkeypatch):
     done = _step(flow, {})
     assert done["type"] == "create_entry"
     assert hass.tasks == ["gtfs2 refresh tao"]
+
+
+def test_retrying_rebuilds_from_the_kept_zip_when_it_is_ahead(monkeypatch):
+    # a nightly refresh adopted the new zip and failed to build it: the
+    # retry builds that zip, as the button does, rather than downloading
+    # the same feed again from a host that may be down
+    source_refresh = ha_stub.load("source_refresh")
+    for pending in (True, False):
+        hass = _Hass()
+        started, asked = [], []
+        hass.async_create_background_task = lambda coro, name: started.append(coro)
+        entry = types.SimpleNamespace(data={"file": "tao"})
+
+        async def refresh(hass_, entry_, *, use_zip=False):
+            asked.append(use_zip)
+            return True
+
+        monkeypatch.setattr(repairs, "datasource_entry", lambda hass_, file: entry)
+        monkeypatch.setattr(source_refresh, "rebuild_pending", lambda hass_, file: pending)
+        monkeypatch.setattr(source_refresh, "async_refresh_source", refresh)
+        _step(_flow("refresh_failed_tao", {"file": "tao"}, hass), {})
+        asyncio.run(started[0])
+        assert asked == [pending]
 
 
 def test_retrying_a_source_gone_aborts(monkeypatch):

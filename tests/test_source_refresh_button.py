@@ -42,8 +42,8 @@ def test_a_press_refreshes_from_the_zip_only_when_it_is_ahead(monkeypatch):
             calls.append((entry, use_zip))
             return True
 
-        monkeypatch.setattr(button, "async_refresh_source", refresh)
-        monkeypatch.setattr(button, "rebuild_pending", lambda hass, file: pending)
+        monkeypatch.setattr(source_refresh, "async_refresh_source", refresh)
+        monkeypatch.setattr(source_refresh, "rebuild_pending", lambda hass, file: pending)
         hass = _Hass()
         entity, entry = _button(hass)
         asyncio.run(entity.async_press())
@@ -54,8 +54,8 @@ def test_a_failed_refresh_says_so(monkeypatch):
     async def refresh(hass, entry, *, use_zip=False):
         return False
 
-    monkeypatch.setattr(button, "async_refresh_source", refresh)
-    monkeypatch.setattr(button, "rebuild_pending", lambda hass, file: False)
+    monkeypatch.setattr(source_refresh, "async_refresh_source", refresh)
+    monkeypatch.setattr(source_refresh, "rebuild_pending", lambda hass, file: False)
     entity, _ = _button(_Hass())
     with pytest.raises(HomeAssistantError, match="failed"):
         asyncio.run(entity.async_press())
@@ -68,7 +68,7 @@ def test_a_press_during_a_rebuild_starts_nothing(monkeypatch):
         calls.append(entry)
         return True
 
-    monkeypatch.setattr(button, "async_refresh_source", refresh)
+    monkeypatch.setattr(source_refresh, "async_refresh_source", refresh)
 
     async def run():
         hass = _Hass()

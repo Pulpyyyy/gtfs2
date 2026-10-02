@@ -16,7 +16,7 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .datasource_services import async_prune_line
 from .rt_source import datasource_entry
-from .source_refresh import async_refresh_source
+from .source_refresh import async_rebuild_source
 
 
 class RetryRefreshFlow(RepairsFlow):
@@ -36,7 +36,7 @@ class RetryRefreshFlow(RepairsFlow):
         # a rebuild takes minutes: it runs on its own, and raises the issue
         # again if it fails again
         self.hass.async_create_background_task(
-            async_refresh_source(self.hass, entry), f"gtfs2 refresh {file}")
+            async_rebuild_source(self.hass, entry), f"gtfs2 refresh {file}")
         return self.async_create_entry(data={})
 
 

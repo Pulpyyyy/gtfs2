@@ -14,7 +14,7 @@ from .const import (
     CONF_FILE,
 )
 from .rt_source import source_device
-from .source_refresh import async_refresh_source, rebuild_pending, source_lock
+from .source_refresh import async_rebuild_source, source_lock
 
 
 async def async_setup_entry(
@@ -58,8 +58,6 @@ class GTFSSourceRefreshButton(ButtonEntity):
             raise HomeAssistantError(f"A refresh of {self._file} is already running")
         # the update entity's rule: a zip already ahead of the database is
         # the feed, rebuilt from rather than downloaded again
-        use_zip = await self.hass.async_add_executor_job(
-            rebuild_pending, self.hass, self._file)
-        if not await async_refresh_source(self.hass, self._entry, use_zip=use_zip):
+        if not await async_rebuild_source(self.hass, self._entry):
             raise HomeAssistantError(
                 f"The refresh of {self._file} failed, the current data stays")

@@ -368,6 +368,16 @@ async def async_refresh_source(hass: HomeAssistant, entry: ConfigEntry,
     return await async_refresh_source_data(hass, entry.data.get(CONF_FILE), data)
 
 
+async def async_rebuild_source(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Refresh a source on the user's word, the button or a Repairs retry:
+    from the kept zip when it is ahead of the database (rebuild_pending),
+    a rebuild that did not go through, rather than downloading the same
+    feed again from a host that may be down; from the host otherwise."""
+    use_zip = await hass.async_add_executor_job(
+        rebuild_pending, hass, entry.data.get(CONF_FILE))
+    return await async_refresh_source(hass, entry, use_zip=use_zip)
+
+
 async def _async_build_kept_zip(hass: HomeAssistant, entry: ConfigEntry, file: str) -> bool:
     """Build a source from its kept zip when the database lags behind it.
 
