@@ -16,7 +16,7 @@ from sqlalchemy import create_engine, event
 import feed_db
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+datasource = ha_stub.load("datasource")
 
 FEED = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,Europe/Paris\n",
@@ -59,9 +59,9 @@ def _indexes(db):
 
 def test_missing_indexes_are_made_and_routes_get_their_agency(tmp_path):
     hass, schedule, db = _datasource(tmp_path)
-    gtfs_helper._INDEX_CHECKED.clear()
-    gtfs_helper.check_datasource_index(hass, schedule, "gtfs2", "src")
-    assert _indexes(db) == {name for _t, _c, name in gtfs_helper.DATASOURCE_INDEXES}
+    datasource._INDEX_CHECKED.clear()
+    datasource.check_datasource_index(hass, schedule, "gtfs2", "src")
+    assert _indexes(db) == {name for _t, _c, name in datasource.DATASOURCE_INDEXES}
     conn = sqlite3.connect(db)
     assert conn.execute("select agency_id from routes").fetchone() == ("A",)
     conn.close()
@@ -70,21 +70,21 @@ def test_missing_indexes_are_made_and_routes_get_their_agency(tmp_path):
 
 def test_an_interned_datasource_keeps_its_view(tmp_path):
     hass, schedule, db = _datasource(tmp_path, interned=True)
-    gtfs_helper._INDEX_CHECKED.clear()
-    gtfs_helper.check_datasource_index(hass, schedule, "gtfs2", "src")
+    datasource._INDEX_CHECKED.clear()
+    datasource.check_datasource_index(hass, schedule, "gtfs2", "src")
     assert not {n for n in _indexes(db) if n.startswith("gtfs2_stop_times")}
     schedule.engine.dispose()
 
 
 def test_the_same_file_is_not_read_again(tmp_path):
     hass, schedule, db = _datasource(tmp_path)
-    gtfs_helper._INDEX_CHECKED.clear()
-    gtfs_helper.check_datasource_index(hass, schedule, "gtfs2", "src")
+    datasource._INDEX_CHECKED.clear()
+    datasource.check_datasource_index(hass, schedule, "gtfs2", "src")
     opened = []
     event.listen(schedule.engine, "connect", lambda *a: opened.append(1))
     schedule.engine.dispose()
-    gtfs_helper.check_datasource_index(hass, schedule, "gtfs2", "src")
-    gtfs_helper.check_datasource_index(hass, schedule, "gtfs2", "src")
+    datasource.check_datasource_index(hass, schedule, "gtfs2", "src")
+    datasource.check_datasource_index(hass, schedule, "gtfs2", "src")
     assert opened == []
     schedule.engine.dispose()
 
@@ -107,7 +107,7 @@ def test_an_import_fills_stop_times_before_indexing_it(tmp_path):
         for name, body in FEED.items():
             zout.writestr(name, body)
     fresh = pygtfs.Schedule(str(tmp_path / "fresh.sqlite"))
-    gtfs_helper.drop_import_indexes(fresh)
+    datasource.drop_import_indexes(fresh)
     fresh.engine.dispose()
     assert _stop_times_indexes(tmp_path / "fresh.sqlite") == set()
 
@@ -118,8 +118,8 @@ def test_an_import_fills_stop_times_before_indexing_it(tmp_path):
     assert _stop_times_indexes(scratch) == set()
     hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
     schedule = types.SimpleNamespace(engine=create_engine(f"sqlite:///{scratch}"))
-    gtfs_helper._INDEX_CHECKED.clear()
-    gtfs_helper.check_datasource_index(hass, schedule, "gtfs2", "src")
+    datasource._INDEX_CHECKED.clear()
+    datasource.check_datasource_index(hass, schedule, "gtfs2", "src")
     assert _stop_times_indexes(scratch) == {"gtfs2_stop_times_trip_id", "gtfs2_stop_times_stop_id"}
     conn = sqlite3.connect(scratch)
     assert conn.execute("select count(*) from stop_times").fetchone() == (2,)

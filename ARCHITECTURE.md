@@ -169,9 +169,7 @@ the block stood. That is how `alerts.py`, `departure_attributes.py`,
 
 **What is not moved.** Upstream code that the fork does not modify stays
 where upstream put it, which keeps an upstream change to it easy to review
-and take over: `get_gtfs` stays in `gtfs_helper.py`, down to opening a
-built database since the legacy extract went;
-the per-import flags (`check_source_dates`, `clean_feed_info`) stay on the
+and take over: the per-import flags (`check_source_dates`, `clean_feed_info`) stay on the
 journey entries
 (`_JOURNEY_REFRESH_KEYS`, "kept there for upstream compatibility").
 
@@ -391,7 +389,8 @@ attributes dict and what it reads, "nothing of the entity" (3f01c10).
 
 ```
 gtfs_db.py            everything that opens a database file directly, the sources on disk
-gtfs_helper.py        the departure queries; get_gtfs
+gtfs_helper.py        the departure queries
+datasource.py         a source's database as the readers open it: get_gtfs, its indexes
 stop_rules.py         the SQL pieces every reader shares: who gets on or off, one place, train stations
 clocks.py             a stop time in seconds, the time zone a feed writes its times in
 service_days.py       the next day a journey runs, and the SQL of a service day

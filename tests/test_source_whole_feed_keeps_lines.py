@@ -60,11 +60,11 @@ def _refresh(gtfs_dir, monkeypatch):
     """refresh_datasource on a zip source, a fork refused: the legacy
     extract forked and rebuilt the database in place."""
     import types
-    gtfs_helper = ha_stub.load("gtfs_helper")
+    datasource = ha_stub.load("datasource")
 
     def no_fork():
         raise AssertionError("the legacy extract ran")
-    monkeypatch.setattr(gtfs_helper.os, "fork", no_fork, raising=False)
+    monkeypatch.setattr(datasource.os, "fork", no_fork, raising=False)
     hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(gtfs_dir)))
     return source_zip.refresh_datasource(hass, "gtfs2", {"file": "src", "extract_from": "zip"})
 

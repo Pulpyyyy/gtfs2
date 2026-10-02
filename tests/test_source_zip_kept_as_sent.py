@@ -17,7 +17,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+datasource = ha_stub.load("datasource")
 source_zip = ha_stub.load("source_zip")
 
 FEED = {
@@ -61,7 +61,7 @@ def test_the_whole_feed_import_reads_the_zip_without_writing_it(tmp_path):
 def test_a_datasource_opened_with_no_database_leaves_the_zip_alone(tmp_path):
     sent = _zip(tmp_path / "src.zip")
     hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: p))
-    assert gtfs_helper.get_gtfs(hass, str(tmp_path), {"file": "src", "url": "na",
+    assert datasource.get_gtfs(hass, str(tmp_path), {"file": "src", "url": "na",
                                                       "extract_from": "zip"}) == "not_built"
     assert (tmp_path / "src.zip").read_bytes() == sent
     assert sorted(p.name for p in tmp_path.iterdir()) == ["src.zip"]

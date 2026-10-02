@@ -35,7 +35,7 @@ from .const import (
 from .gtfs_db import (close_schedule, import_routes, on_a_copy, optimise_datasource, real_path,
                       routes_in, scratch_path)
 from .flow_journey import _Step
-from .gtfs_helper import check_datasource_index
+from .datasource import check_datasource_index
 from .notifications import async_notify_import
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
 from .rt_source import source_readers

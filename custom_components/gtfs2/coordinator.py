@@ -34,7 +34,8 @@ from .const import (
     ICONS
 )    
 from .gtfs_db import close_schedule, file_edition, real_path
-from .gtfs_helper import get_gtfs, get_next_departure, check_datasource_index, check_extracting, journey_data, shown_ends
+from .datasource import check_datasource_index, check_extracting, get_gtfs
+from .gtfs_helper import get_next_departure, journey_data, shown_ends
 from .local_stops import get_local_stops_next_departures, drop_gone_local_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck

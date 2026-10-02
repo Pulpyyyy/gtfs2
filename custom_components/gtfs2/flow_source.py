@@ -53,7 +53,7 @@ from .flow_reload import _database_size
 from .freshness import source_meta
 from .file_url import FILE_SCHEME
 from .gtfs_db import feed_zip, real_path, get_zipfiles
-from .gtfs_helper import check_extracting
+from .datasource import check_extracting
 from .key_mask import KEY_MASK, note_key
 from .rt_source import async_ensure_datasource_entry, datasource_entry
 from .source_refresh import source_zip_url

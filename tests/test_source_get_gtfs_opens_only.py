@@ -18,7 +18,7 @@ import pygtfs
 
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+datasource = ha_stub.load("datasource")
 
 FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "boarding" / "static.zip"
 
@@ -35,7 +35,7 @@ def _built(tmp_path):
 
 def test_url_source_answers_from_its_database(tmp_path, monkeypatch):
     hass = _built(tmp_path)
-    got = gtfs_helper.get_gtfs(hass, "gtfs2", {"file": "src", "url": "https://h/src.zip",
+    got = datasource.get_gtfs(hass, "gtfs2", {"file": "src", "url": "https://h/src.zip",
                                               "extract_from": "url"})
     assert got.feeds
     got.engine.dispose()
@@ -43,7 +43,7 @@ def test_url_source_answers_from_its_database(tmp_path, monkeypatch):
 
 def test_zip_source_answers_from_its_database(tmp_path):
     hass = _built(tmp_path)
-    got = gtfs_helper.get_gtfs(hass, "gtfs2", {"file": "src", "url": "na", "extract_from": "zip"})
+    got = datasource.get_gtfs(hass, "gtfs2", {"file": "src", "url": "na", "extract_from": "zip"})
     assert got.feeds
     got.engine.dispose()
 
@@ -59,7 +59,7 @@ def test_no_database_is_not_built_from_here(tmp_path):
     gtfs_dir, hass = _unbuilt(tmp_path)
     for data in ({"file": "src", "url": "na", "extract_from": "zip"},
                  {"file": "src", "url": "https://h/src.zip", "extract_from": "url"}):
-        assert gtfs_helper.get_gtfs(hass, "gtfs2", data) == "not_built"
+        assert datasource.get_gtfs(hass, "gtfs2", data) == "not_built"
     # no empty file left behind, taken for a datasource next time
     assert sorted(p.name for p in gtfs_dir.iterdir()) == ["src.zip"]
     assert (gtfs_dir / "src.zip").read_bytes() == FEED.read_bytes()
@@ -68,6 +68,6 @@ def test_no_database_is_not_built_from_here(tmp_path):
 def test_a_database_without_a_feed_is_not_built_from_here(tmp_path):
     gtfs_dir, hass = _unbuilt(tmp_path)
     pygtfs.Schedule(str(gtfs_dir / "src.sqlite")).engine.dispose()
-    assert gtfs_helper.get_gtfs(hass, "gtfs2", {"file": "src", "url": "na",
+    assert datasource.get_gtfs(hass, "gtfs2", {"file": "src", "url": "na",
                                                "extract_from": "zip"}) == "not_built"
     assert (gtfs_dir / "src.zip").read_bytes() == FEED.read_bytes()

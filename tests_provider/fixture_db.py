@@ -155,7 +155,9 @@ def _import(fixtures, directory, path):
     # sweep ran for hours on queries no install makes that slowly
     hass = types.SimpleNamespace(config=types.SimpleNamespace(
         path=lambda *parts: os.path.join(directory, *parts)))
-    ha_stub.load("gtfs_helper").check_datasource_index(hass, schedule, "", "fixture")
+    # in gtfs_helper on a checkout run with --component that keeps it there
+    opener = "datasource" if (ha_stub.COMPONENT / "datasource.py").is_file() else "gtfs_helper"
+    ha_stub.load(opener).check_datasource_index(hass, schedule, "", "fixture")
     return schedule
 
 
