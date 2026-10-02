@@ -62,6 +62,7 @@ from .rt_source import (
     RT_OPTION_KEYS,
     datasource_entry,
     datasource_files,
+    journey_entry_data,
 )
 from .const import TRANSLATION_DESCRIPTION_PLACEHOLDERS
 from .flow_train import TrainScreens
@@ -283,7 +284,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             return await _show(errors, user_input)
         else:
             return self.async_create_entry(
-                title=user_input[CONF_NAME], data=self._user_inputs
+                title=user_input[CONF_NAME], data=journey_entry_data(self._user_inputs)
                 )                
                    
     async def async_step_source(self, user_input: dict | None = None) -> FlowResult:
@@ -769,8 +770,6 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
                 # and written into user_input it ended up in the options
                 _data = dict(user_input)
                 _data["file"] = self.config_entry.data["file"]
-                _data["url"] = self.config_entry.data["url"]
-                _data["extract_from"] = self.config_entry.data["extract_from"]
                 _data["device_tracker_id"] = self.config_entry.data["device_tracker_id"]
                 _data["radius"] = user_input["radius"]
                 stop_limit = await _check_stop_list(self, _data)

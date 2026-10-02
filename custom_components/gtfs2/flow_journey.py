@@ -48,7 +48,7 @@ from .const import (
     id_of,
 )
 from .geojson import name_in_use
-from .rt_source import datasource_unique_id
+from .rt_source import datasource_unique_id, journey_entry_data
 from .source_refresh import source_zip_url
 from .pair_direction import get_direction_labels, get_pair_direction, has_trip_between
 
@@ -341,7 +341,7 @@ class JourneyScreens:
         await self.async_set_unique_id(f"gtfs-{import_data[CONF_NAME]}")
         self._abort_if_unique_id_configured()
         return self.async_create_entry(
-            title=import_data[CONF_NAME], data=import_data
+            title=import_data[CONF_NAME], data=journey_entry_data(import_data)
         )
 
     async def _find_return_trip(self, origin: str, destination: str) -> None:

@@ -63,6 +63,17 @@ RT_OPTION_KEYS = (
 
 RT_FEED_URL_KEYS = (CONF_TRIP_UPDATE_URL, CONF_VEHICLE_POSITION_URL, CONF_ALERTS_URL)
 
+# what a journey or local stops entry never holds: its source's address,
+# the network picked in an envelope, the key and the realtime feeds, all
+# on the source's datasource entry
+SOURCE_FIELDS = (CONF_URL, CONF_EXTRACT_FROM, CONF_INNER_ZIP, *RT_OPTION_KEYS)
+
+
+def journey_entry_data(data: Mapping[str, Any]) -> dict[str, Any]:
+    """What a journey or local stops entry stores of what the flow
+    collected: its source by name, nothing of the source itself."""
+    return {key: value for key, value in data.items() if key not in SOURCE_FIELDS}
+
 # the key the static feed is downloaded with, held in the datasource entry's
 # data next to the url and mirrored onto the journey entries. Distinct from
 # the realtime key in the options: one key per feed, the provider may differ

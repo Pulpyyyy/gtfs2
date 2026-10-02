@@ -759,7 +759,7 @@ def test_a_bus_journey_holds_what_the_sensor_reads(world):
         [entry] = hass.journeys()
         # what was answered, and nothing of the screens' own switches
         assert dict(entry.data) == {
-            "file": "tao", "url": _zip_url(hass, "tao"), "extract_from": "zip", "agency": "0: ALL",
+            "file": "tao", "agency": "0: ALL",
             "route_type": route_type, "route": route_id, "direction": None,
             "origin": origin, "destination": destination, "loop_direction": None,
             "name": name}
@@ -832,7 +832,7 @@ def test_a_train_journey_and_its_return_hold_the_stations_and_the_line(world):
                         MENU, "finished")
         outward, ride_back = hass.journeys()
         assert dict(outward.data) == {
-            "file": "sncf", "url": _zip_url(hass, "sncf"), "extract_from": "zip", "agency": "0: ALL",
+            "file": "sncf", "agency": "0: ALL",
             "route_type": "2", "route": "train", "direction": "0", "line": line,
             "origin": origin, "destination": destination, "name": default(naming, "name")}
         assert dict(ride_back.data) == {**outward.data, "origin": destination,
@@ -1347,8 +1347,7 @@ def test_the_flow_waits_for_an_unpacking_and_goes_on_with_what_was_typed(world, 
         journal.unlink()
         created = shown(await flows.async_finish_progress(form["flow_id"]), CREATE)
         assert dict(created["result"].data) == {
-            "file": "tao", "device_tracker_id": "person.me", "name": "around me",
-            "url": _zip_url(hass, "tao"), "extract_from": "zip"}
+            "file": "tao", "device_tracker_id": "person.me", "name": "around me"}
     walk(world, scenario)
 
 
@@ -1389,8 +1388,7 @@ def test_local_stops_take_a_person_or_a_zone_once_per_source(world):
         created = shown(await submit(hass, form, file="tao", device_tracker_id="person.me",
                                      name="around me"), CREATE)
         assert dict(created["result"].data) == {
-            "file": "tao", "device_tracker_id": "person.me", "name": "around me",
-            "url": _zip_url(hass, "tao"), "extract_from": "zip"}
+            "file": "tao", "device_tracker_id": "person.me", "name": "around me"}
         assert created["result"].unique_id == "gtfs-local-tao-person.me"
         form = await choose(hass, await start(hass), "local_stops")
         again = shown(await submit(hass, form, file="tao", device_tracker_id="zone.work",
