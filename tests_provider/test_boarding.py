@@ -83,6 +83,10 @@ try:
     stations = ha_stub.load("stations")
 except FileNotFoundError:  # a tree without the fork's train screens
     stations = None
+try:
+    pair_direction = ha_stub.load("pair_direction")
+except FileNotFoundError:  # a tree that keeps the pair's direction in places
+    pair_direction = None
 
 FIXTURES = Path(__file__).parent / "fixtures"
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
@@ -146,7 +150,8 @@ def _train_data(schedule, origin, destination):
 def _reader(name):
     """The helper under test, or None where this tree has no such reader."""
     return (getattr(gtfs_helper, name, None) or getattr(places, name, None) or getattr(geojson, name, None)
-            or getattr(leg_mod, name, None) or getattr(stations, name, None))
+            or getattr(leg_mod, name, None) or getattr(stations, name, None)
+            or getattr(pair_direction, name, None))
 
 
 class Check:

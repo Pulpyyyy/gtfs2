@@ -401,9 +401,10 @@ gtfs_shape.py         read one shape out of the zip (shapes.txt is never importe
 geojson.py            the files written under www/gtfs2 for a map card: names, route file, writing
 leg.py                the leg file: the ride of the next departure, stop by stop
 timetable.py          the timetable file: every departure over three service days
-places.py             the places of a line the flow offers, their order and direction
+places.py             the places of a line the flow offers: origin, way, destination
 place_order.py        the order a line's places are ridden in, both ways round
 destination_order.py  the order the places reached from an origin are offered in
+pair_direction.py     the direction an entry keeps for its two places, and its labels
 feed_window.py        how long the kept timetable is good for
 ```
 

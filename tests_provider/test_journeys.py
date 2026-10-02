@@ -103,6 +103,9 @@ stations = (ha_stub.load("stations") if (ha_stub.COMPONENT / "stations.py").is_f
 # a checkout keeps it there
 place_order = (ha_stub.load("place_order") if (ha_stub.COMPONENT / "place_order.py").is_file()
                else places)
+# and the direction an entry keeps for its pair
+pair_direction = (ha_stub.load("pair_direction")
+                  if (ha_stub.COMPONENT / "pair_direction.py").is_file() else places)
 
 
 def _function(module, name):
@@ -1252,7 +1255,7 @@ def check_route(check, fx, route_id, direction, kind):
                                f"one place ({named(fx, origin)}), not a journey the list offers",
                                asked=asked, got=None, same_place=True)
                     continue
-                kept = places.get_pair_direction(schedule, route_id, origin, destination)
+                kept = pair_direction.get_pair_direction(schedule, route_id, origin, destination)
                 data = _data_for(schedule, route_id, route_type, entries,
                                  entry_of, pattern[o], pattern[d], kept)
                 origins, reached = fx.siblings_of(origin), fx.siblings_of(destination)
@@ -1343,7 +1346,7 @@ def check_route(check, fx, route_id, direction, kind):
                 else:
                     swapped = dict(data, origin=data["destination"],
                                    destination=data["origin"],
-                                   direction=str(places.get_pair_direction(
+                                   direction=str(pair_direction.get_pair_direction(
                                        schedule, route_id, destination, origin)))
                     result = get_next_departure(hass, swapped)
                     # Both ways round are offered, so the reverse pair is a
@@ -1493,7 +1496,7 @@ def check_midnight(check, fx, clock, hass, route_id, route_type, direction,
                        include_tomorrow=include_tomorrow)
         return
     ids = [entry.split(": ", 1)[0] for entry in entries]
-    query_direction = places.get_pair_direction(
+    query_direction = pair_direction.get_pair_direction(
         schedule, route_id, ids[stood_for[origin]], ids[stood_for[destination]])
     days = pair_service_days(fx, origin, destination, route_type,
                              route_id, query_direction)
@@ -1667,7 +1670,7 @@ def check_towards(check, fx, route_id, everything, ids, entry_of, home):
             # at a loop's terminus the answer is the rotation: the entry
             # keeps a label the trips riding that way carry
             far = offered[-1]
-            kept = places.get_pair_direction(schedule, route_id, origin, far, way)
+            kept = pair_direction.get_pair_direction(schedule, route_id, origin, far, way)
             trip_ids = [t for ride, trip_id in mine if far in ride
                         for t in everything.get(pattern_of.get(trip_id), ())]
             with schedule.engine.connect() as conn:

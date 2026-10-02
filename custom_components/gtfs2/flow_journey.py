@@ -49,7 +49,7 @@ from .const import (
 from .geojson import name_in_use
 from .rt_source import datasource_unique_id
 from .source_refresh import source_zip_url
-from .places import get_direction_labels, get_pair_direction, has_trip_between
+from .pair_direction import get_direction_labels, get_pair_direction, has_trip_between
 
 if TYPE_CHECKING:
     # for the annotations only

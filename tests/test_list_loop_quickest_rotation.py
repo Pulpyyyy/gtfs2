@@ -15,7 +15,7 @@ import ha_stub
 
 ha_stub.install()
 
-places = ha_stub.load("places")
+pair_direction = ha_stub.load("pair_direction")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type\n"
 FEED = {
@@ -61,7 +61,7 @@ def test_a_call_nobody_can_use_does_not_shorten_a_rotation(tmp_path):
         "ANTI,11:18:00,11:18:00,P,5,0,0\nANTI,11:24:00,11:24:00,Z,6,0,0\n"),
         "trips.txt": "route_id,service_id,trip_id,direction_id\nR,D,CLOCK,0\nR,D,ANTI,1\n"})
     try:
-        assert places.get_pair_direction(schedule, "R", "Z", "M") == "0"
+        assert pair_direction.get_pair_direction(schedule, "R", "Z", "M") == "0"
     finally:
         schedule.engine.dispose()
 
@@ -71,6 +71,6 @@ def test_a_call_nobody_can_leave_by_does_not_time_a_rotation(tmp_path):
     try:
         # the rider leaving Zenith reaches Mairie in 10 minutes one way
         # round, 12 the other: the 2 minutes of the express are no ride
-        assert places.get_pair_direction(schedule, "R", "Z", "M") == "0"
+        assert pair_direction.get_pair_direction(schedule, "R", "Z", "M") == "0"
     finally:
         schedule.engine.dispose()
