@@ -375,9 +375,10 @@ which asks which source first and saves on it.
 alerts.py                what a service alert means for one sensor
 departure_attributes.py  the departure sensor's attributes, group by group
 refresh_steps.py         next service date, trips struck by the realtime
-route_names.py           line labels, lines a feed declares
+route_names.py           the lines a feed declares, labelled for the flow
 line_labels.py           what the user reads for a line: number, where it goes, mode
 line_ends.py             where a line goes: its trips' destinations, its two ends
+look_alikes.py           lines that would read the same, told apart
 stations.py              train entries: stations instead of stops
 exports.py               which map files a refresh writes, and when
 local_stops.py           the departures around a person or zone, timetable and realtime
@@ -582,7 +583,8 @@ off the event loop, matched by stop_id and stop_sequence (d15f022).
 What the route screen shows decides which line a sensor follows, so the
 labels are built to tell lines apart, and read from the zip when the
 database holds no timetable for them (`route_names.py`; the label itself in
-`line_labels.py`, where a line goes in `line_ends.py`).
+`line_labels.py`, where a line goes in `line_ends.py`, look-alike lines set
+apart in `look_alikes.py`).
 
 ```
 label          the line number, then where it goes (_route_label)

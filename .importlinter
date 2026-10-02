@@ -15,7 +15,7 @@ containers =
 layers =
     coordinator : sensor : update : button : switch : datasource_services : departure_services : repairs
     config_flow : flow_source : flow_reload : flow_journey : flow_train : flow_options
-    alerts : departure_attributes : refresh_steps : route_names : line_labels : line_ends : stations : exports : local_stops : gtfs_rt_helper : vehicles : trip_match
+    alerts : departure_attributes : refresh_steps : route_names : line_labels : line_ends : look_alikes : stations : exports : local_stops : gtfs_rt_helper : vehicles : trip_match
     gtfs_db : db_build : db_intern : db_prune : gtfs_filter : direction_repair : gtfs_shape : geojson : leg : timetable : feed_window : places : place_order : destination_order : pair_direction : gtfs_helper : stop_rules : clocks : service_days : datasource : source_zip : source_refresh : rt_window
     rt_source : zip_peek : freshness : rt_feed : rt_local
 
