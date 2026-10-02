@@ -160,11 +160,28 @@ def convert_realtime_siri_trips_to_json(url: str, headers: Mapping[str, str | No
     return json_data
 
 
-def _siri_epoch(call: Mapping[str, Any], expected: str, aimed: str) -> float | None:
-    """One end of a SIRI call in epoch seconds: expected when the host knows
-    it, aimed otherwise, None when it gives neither."""
-    told = call.get(expected) or call.get(aimed)
+def _siri_epoch(told: str | None) -> float | None:
+    """A SIRI time in epoch seconds, None when the host gives none."""
     return datetime.fromisoformat(told).timestamp() if told else None
+
+
+def _siri_end(call: Mapping[str, Any], expected: str, aimed: str) -> dict[str, Any]:
+    """One end of a SIRI call as a stop update's arrival or departure: its
+    time, expected when the host knows it, aimed otherwise, and its delay,
+    expected less aimed, when it gives both; {} when it gives neither.
+
+    The delay was always written empty, and the readers then took the gap
+    to the timetable instead, which needs the visit's trip and stop to be
+    the timetable's own: the host's two times say it without that."""
+    expected_at = _siri_epoch(call.get(expected))
+    aimed_at = _siri_epoch(call.get(aimed))
+    time = expected_at if expected_at is not None else aimed_at
+    if time is None:
+        return {}
+    end: dict[str, Any] = {"time": time}
+    if expected_at is not None and aimed_at is not None:
+        end["delay"] = int(expected_at - aimed_at)
+    return end
 
 
 def _siri_trip_update(entity: Mapping[str, Any], stop_id: str) -> dict[str, Any] | None:
@@ -181,12 +198,12 @@ def _siri_trip_update(entity: Mapping[str, Any], stop_id: str) -> dict[str, Any]
     # ExpectedArrivalTime, the real one: spelt without its "a" this never
     # matched, so every arrival was read as the timetable's and no delay
     # ever showed
-    arrives = _siri_epoch(call, 'ExpectedArrivalTime', 'AimedArrivalTime')
-    departs = _siri_epoch(call, 'ExpectedDepartureTime', 'AimedDepartureTime')
-    if arrives is None and departs is None:
+    arrival = _siri_end(call, 'ExpectedArrivalTime', 'AimedArrivalTime')
+    departure = _siri_end(call, 'ExpectedDepartureTime', 'AimedDepartureTime')
+    if not arrival and not departure:
         _LOGGER.debug("SIRI visit of %s at %s gives no time, left out", trip_id, stop_id)
         return None
-    starts = departs if departs is not None else arrives
+    starts = departure.get("time", arrival.get("time"))
     return {
         "id": trip_id,
         "trip_update": {
@@ -200,8 +217,8 @@ def _siri_trip_update(entity: Mapping[str, Any], stop_id: str) -> dict[str, Any]
             "stop_time_update": [{
                 "stop_sequence": "n.a",
                 "stop_id": stop_id,
-                "arrival": {"delay": '', "time": arrives} if arrives is not None else {},
-                "departure": {"delay": '', "time": departs} if departs is not None else {},
+                "arrival": arrival,
+                "departure": departure,
             }]
         }
     }

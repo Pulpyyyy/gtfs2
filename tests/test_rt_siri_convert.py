@@ -84,6 +84,24 @@ def test_a_visit_without_a_time_does_not_cost_the_others(monkeypatch):
     assert calls["NULL"]["departure"]["time"] == _at("2026-10-01T08:09:00+00:00")
 
 
+def test_the_delay_is_expected_less_aimed(monkeypatch):
+    feed = _converted(monkeypatch, _delivery(
+        _visit("LATE", AimedArrivalTime="2026-10-01T08:00:00+00:00",
+               ExpectedArrivalTime="2026-10-01T08:02:00+00:00",
+               AimedDepartureTime="2026-10-01T08:01:00+00:00",
+               ExpectedDepartureTime="2026-10-01T08:03:30+00:00"),
+        _visit("EARLY", AimedDepartureTime="2026-10-01T09:00:00+00:00",
+               ExpectedDepartureTime="2026-10-01T08:59:00+00:00"),
+        _visit("AIMED", AimedDepartureTime="2026-10-01T10:00:00+00:00")))
+    calls = {e["id"]: e["trip_update"]["stop_time_update"][0] for e in feed["entity"]}
+    assert calls["LATE"]["arrival"]["delay"] == 120
+    assert calls["LATE"]["departure"]["delay"] == 150
+    assert calls["EARLY"]["departure"]["delay"] == -60
+    # the host gives one time only: no delay said, the readers take the
+    # gap to the timetable as for any feed that leaves it out
+    assert "delay" not in calls["AIMED"]["departure"]
+
+
 def test_a_siri_root_reads_the_same(monkeypatch):
     assert _converted(monkeypatch, {"Siri": DELIVERY}) == _converted(monkeypatch, DELIVERY)
 
