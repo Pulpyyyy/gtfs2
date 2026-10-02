@@ -38,7 +38,8 @@ from .datasource import check_datasource_index, check_extracting, get_gtfs
 from .gtfs_helper import get_next_departure, journey_data, shown_ends
 from .local_stops import get_local_stops_next_departures, drop_gone_local_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
-from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck
+from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck
+from .trip_match import _names_trip
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
 from .refresh_steps import drop_struck_trips, next_service_date_for
