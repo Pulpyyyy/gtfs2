@@ -25,7 +25,7 @@ from .const import (
 )
 from .clocks import _day_offset, _on_service_day, _removed_on, _runs_on, zone_of
 from .datasource import check_extracting
-from .gtfs_helper import _row_instant
+from .gtfs_helper import _feed_now, _row_instant
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
 from .rt_feed import FeedEntities, get_gtfs_feed_entities, on_service_day
 from .stop_rules import _boards
@@ -407,7 +407,6 @@ def get_local_stops_next_departures(self: GTFSLocalStopUpdateCoordinator) -> lis
         _LOGGER.warning("Datasource %s has no usable schedule (%s), no local stops", self._data["file"], schedule or "empty")
         return []
     offset = self._data["offset"]
-    now = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset)
     latitude, longitude= _tracker_position(self.hass, self._data['device_tracker_id'])
     time_range= str('+' + str(self._data.get("timerange", DEFAULT_LOCAL_STOP_TIMERANGE)) + ' minute')
     time_range_history = str('-' + str(self._data.get("timerange_history", DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY)) + ' minute')
@@ -416,6 +415,9 @@ def get_local_stops_next_departures(self: GTFSLocalStopUpdateCoordinator) -> lis
         _LOGGER.error("No latitude and/or longitude for : %s", self._data['device_tracker_id'])
         return []
 
+    # the stored stop times are the network's wall clock: now is read on
+    # it, as the journey sensor reads it, not on Home Assistant's
+    now = datetime.datetime.fromisoformat(_feed_now(schedule, None, offset))
     rows = _fetch_local_stop_rows(
         schedule, latitude, longitude, radius, time_range, time_range_history, now
     )
