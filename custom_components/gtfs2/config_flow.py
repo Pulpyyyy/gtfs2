@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
@@ -46,7 +47,7 @@ from .const import (
 
 from .datasource import get_gtfs, check_datasource_index
 from .geojson import name_in_use
-from .gtfs_db import get_datasources, remove_datasource, close_schedule
+from .gtfs_db import remove_datasource, close_schedule
 from .route_names import get_agency_list, get_route_count, get_route_list
 from .local_stops import get_local_stop_list
 from .places import get_destination_stop_list, get_stop_list, get_towards
@@ -55,11 +56,12 @@ from .stations import get_station_list, get_station_modes
 from .route_names import get_route_options_from_zip, get_agencies_in_zip
 from .line_labels import LINE_MODES, with_modes
 from .notifications import _async_text
-from .source_refresh import source_lock, source_zip_url
+from .source_refresh import source_lock, source_zip_path, source_zip_url
 
 from .rt_source import (
     RT_OPTION_KEYS,
     datasource_entry,
+    datasource_files,
 )
 from .const import TRANSLATION_DESCRIPTION_PLACEHOLDERS
 from .flow_train import TrainScreens
@@ -154,7 +156,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         """Handle the source."""
         # with no datasource yet, only the first entry can lead anywhere,
         # so say it rather than describing the general case
-        datasources = await get_datasources(self.hass, DEFAULT_PATH)
+        datasources = datasource_files(self.hass)
         placeholders = dict(TRANSLATION_DESCRIPTION_PLACEHOLDERS)
         if not datasources:
             # nothing to build a sensor on yet: only the first entry leads
@@ -180,7 +182,13 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
     async def async_step_start_end(self, user_input: dict | None = None) -> FlowResult:
         """Handle the source."""
         errors: dict[str, str] = {}
-        if user_input is None:
+        if user_input is not None and await self._fresh_source_of(user_input[CONF_FILE]) \
+                and not await self.hass.async_add_executor_job(
+                    os.path.exists, source_zip_path(self.hass, user_input[CONF_FILE])):
+            # neither a database nor its zip: nothing to read the lines
+            # from, until a refresh of the source downloads the feed again
+            errors["base"] = "not_built"
+        if user_input is None or errors:
             # reached again from the closing screen: the previous journey must
             # not leak into this one
             if self._created_name:
@@ -188,7 +196,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             if self._pending_error:
                 errors["base"] = self._pending_error
                 self._pending_error = None
-            datasources = await get_datasources(self.hass, DEFAULT_PATH)
+            datasources = datasource_files(self.hass)
             return self.async_show_form(
                 step_id="start_end",
                 data_schema=vol.Schema(
@@ -217,7 +225,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             """Render the form, keeping what the user already typed."""
             previous = previous or {}
             tracker = previous.get(CONF_DEVICE_TRACKER_ID)
-            datasources = await get_datasources(self.hass, DEFAULT_PATH)
+            datasources = datasource_files(self.hass)
             return self.async_show_form(
                 step_id="local_stops",
                 data_schema=vol.Schema(
@@ -306,8 +314,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         main menu offers them too, the same screens (OptionsScreens), saved
         on the source picked (_save_source).
         """
-        files = sorted(entry.data[CONF_FILE] for entry in self.hass.config_entries.async_entries(DOMAIN)
-                       if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE)
+        files = datasource_files(self.hass)
         if not files:
             # the files are there, their entries not yet: the start of
             # Home Assistant creates them
@@ -340,7 +347,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         """Handle a flow initialized by the user."""
         errors: dict[str, str] = {}
         if user_input is None:
-            datasources = await get_datasources(self.hass, DEFAULT_PATH)
+            datasources = datasource_files(self.hass)
             return self.async_show_form(
                 step_id="remove",
                 data_schema=vol.Schema(

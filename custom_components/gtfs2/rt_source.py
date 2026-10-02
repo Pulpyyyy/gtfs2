@@ -118,6 +118,14 @@ def datasource_entry(hass: HomeAssistant, file: str | None) -> ConfigEntry | Non
     return None
 
 
+def datasource_files(hass: HomeAssistant) -> list[str]:
+    """The sources there are, by name: their datasource entries. The entry
+    is the source; its database is built from the feed and built again
+    when it is gone (an error, a restore), the source listed meanwhile."""
+    return sorted(entry.data[CONF_FILE] for entry in hass.config_entries.async_entries(DOMAIN)
+                  if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE)
+
+
 def journey_entries(hass: HomeAssistant, file: str | None) -> list[ConfigEntry]:
     """Every non-datasource entry reading this source, local stops included."""
     return [

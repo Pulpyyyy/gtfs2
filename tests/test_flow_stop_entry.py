@@ -48,13 +48,10 @@ def test_the_destinations_are_asked_with_the_origin_s_id(monkeypatch):
 def test_local_stops_refuse_a_name_whose_files_a_journey_has(monkeypatch):
     # "Orleans" and the journey "Orléans" are two names and one file part:
     # removing the local stops entry deleted the journey's timetable and leg
-    async def sources(hass, path):
-        return ["tao"]
-
     async def job(fn, *args):
         return fn(*args)
 
-    monkeypatch.setattr(config_flow, "get_datasources", sources)
+    monkeypatch.setattr(config_flow, "datasource_files", lambda hass: ["tao"])
     monkeypatch.setattr(config_flow, "source_zip_url", lambda hass, file: f"file:///gtfs2/{file}.zip")
     journey = types.SimpleNamespace(data={"name": "Orléans", "file": "tao"})
     async def checked(data):

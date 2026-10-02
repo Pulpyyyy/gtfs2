@@ -699,6 +699,37 @@ async def bus_journey(hass, file, *, route=1, origin=1, way=1, destination=1,
 
 # --- the promises ---------------------------------------------------------------------
 
+def test_a_source_whose_database_is_gone_is_still_offered(world):
+    # the source is its entry: a database lost (an error, a restore) is
+    # built again, and the source stays on every screen meanwhile. Listed
+    # by its .sqlite, it vanished from the menu, the journey screen and the
+    # removal, its settings reachable from its entry only
+    async def scenario(hass):
+        await install_source(hass, "tao-journeys", "tao")
+        (gtfs_dir(hass) / "tao.sqlite").unlink()
+        menu = shown(await start(hass), MENU, "user")
+        sources = shown(await choose(hass, menu, "start_end"), FORM, "start_end")
+        assert offered(sources, "file") == ["tao"]
+        # read from the kept zip, as a source just added: the lines chosen
+        # are imported, which builds the database again
+        lines = shown(await submit(hass, sources, file="tao"), FORM, "route")
+        assert all(route.endswith("##pruned") for route in offered(lines, "route"))
+        removal = shown(await choose(hass, await start(hass), "remove"), FORM, "remove")
+        assert offered(removal, "file") == ["tao"]
+    walk(world, scenario)
+
+
+def test_a_source_with_neither_database_nor_zip_says_to_refresh_it(world):
+    async def scenario(hass):
+        await install_source(hass, "tao-journeys", "tao")
+        (gtfs_dir(hass) / "tao.sqlite").unlink()
+        (gtfs_dir(hass) / "tao.zip").unlink()
+        sources = shown(await choose(hass, await start(hass), "start_end"), FORM, "start_end")
+        again = shown(await submit(hass, sources, file="tao"), FORM, "start_end")
+        assert again["errors"] == {"base": "not_built"}
+    walk(world, scenario)
+
+
 def test_a_bus_journey_holds_what_the_sensor_reads(world):
     async def scenario(hass):
         await install_source(hass, "tao-journeys", "tao")
@@ -1425,12 +1456,13 @@ def test_a_source_s_settings_are_reached_from_the_main_menu_too(world):
 
 def test_a_source_file_with_no_entry_yet_has_no_settings_to_offer(world):
     # the start of Home Assistant creates a source's entry: a file without
-    # one has nothing the screens could save on
+    # one has nothing the screens could save on. The sources are listed by
+    # their entries, so the menu offers nothing but adding one
     async def scenario(hass):
         await install_source(hass, "tao-journeys", "tao")
         await hass.config_entries.async_remove(hass.datasource("tao").entry_id)
-        done = shown(await choose(hass, await start(hass), "source_real_time"), ABORT)
-        assert done["reason"] == "no_source_entry"
+        menu = shown(await start(hass), MENU, "user_empty")
+        assert menu["menu_options"] == ["source"]
     walk(world, scenario)
 
 
@@ -1474,6 +1506,7 @@ def test_the_zip_screen_lists_the_zips_there_are(world):
 def test_a_source_with_an_empty_database_and_no_zip_sends_the_rider_back(world):
     async def scenario(hass):
         (gtfs_dir(hass) / "ghost.sqlite").write_bytes(b"")
+        await rt_source.async_ensure_datasource_entry(hass, "ghost", api={})
         sources = shown(await choose(hass, await start(hass), "start_end"), FORM, "start_end")
         again = shown(await submit(hass, sources, file="ghost"), FORM, "start_end")
         assert again["errors"] == {"base": "no_zip_file"}

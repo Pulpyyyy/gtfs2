@@ -525,6 +525,11 @@ class SourceScreens:
         _LOGGER.debug(f"UserInputs Source zip: {self._user_inputs}")
         return await self.async_step_source_rt()
 
+    async def _fresh_source_of(self, file: str) -> bool:
+        """Whether a source has no database yet, or no more: see _fresh_source."""
+        return not await self.hass.async_add_executor_job(
+            os.path.exists, real_path(self.hass.config.path(DEFAULT_PATH), file))
+
     async def _fresh_source(self) -> bool:
         """Whether the source picked in this flow has no database yet.
 
@@ -534,9 +539,7 @@ class SourceScreens:
         national feed is what makes the difference between a flow that
         continues and one that parks the user behind a progress screen.
         """
-        gtfs_dir = self.hass.config.path(DEFAULT_PATH)
-        return not await self.hass.async_add_executor_job(
-            os.path.exists, real_path(gtfs_dir, self._user_inputs[CONF_FILE]))
+        return await self._fresh_source_of(self._user_inputs[CONF_FILE])
 
     async def async_step_extracting(self, user_input: dict | None = None) -> FlowResult:
         """Wait, showing progress, while something writes to the datasource.
