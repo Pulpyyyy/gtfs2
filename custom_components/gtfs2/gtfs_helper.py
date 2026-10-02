@@ -179,7 +179,7 @@ def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_
     return str(result)[:10] if result else None
 
 
-def _feed_now(schedule: Schedule, route: str | None = None) -> str:
+def _feed_now(schedule: Schedule, route: str | None = None, offset: int = 0) -> str:
     """This moment as the feed writes its clocks: in its agency's zone.
 
     The query lays the stored clocks on service days and compares them
@@ -189,10 +189,11 @@ def _feed_now(schedule: Schedule, route: str | None = None) -> str:
     way a network in another zone, or a process left on UTC, dropped or
     kept the wrong hours of departures. The route's agency first, the
     feed's first agency otherwise, Home Assistant's zone when the feed
-    names none. Naive, as the query's own datetimes are.
+    names none. Naive, as the query's own datetimes are. offset is the
+    entry's walking time, in minutes: a departure sooner is out of reach.
     """
     zone = agency_zone(schedule, route)
-    moment = dt_util.now()
+    moment = dt_util.now() + datetime.timedelta(minutes=offset)
     if zone is not None:
         moment = moment.astimezone(zone)
     return moment.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
@@ -203,7 +204,7 @@ def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedu
                           line: str | None = None, origin_names: list[str] | None = None,
                           destination_names: list[str] | None = None,
                           window: tuple[str, str] | None = None,
-                          limit: int = 30) -> tuple[list[dict[str, Any]], str]:
+                          limit: int = 30, offset: int = 0) -> tuple[list[dict[str, Any]], str]:
     """Run the static-GTFS SQL query and return matching rows as plain dicts.
 
     direction is only given by an entry at a loop's terminus
@@ -387,7 +388,7 @@ def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedu
         "window_first": window[0] if window else None,
         "window_last": window[1] if window else None,
         # this moment on the network's clock, see _feed_now
-        "now": _feed_now(schedule, route),
+        "now": _feed_now(schedule, route, offset),
         **name_params,
     }
     _LOGGER.debug("SQL statement:\n%s", sql_query)
@@ -734,7 +735,9 @@ def get_next_departure(hass: HomeAssistant, _data: dict[str, Any]) -> dict[str, 
 
     rows, start_station_id = _fetch_departure_rows(
         route_type, _data["origin"], _data["destination"], schedule,
-        **departure_query_args(_data))
+        # the walking time is asked of the query: cut from its answer, it
+        # left nothing of the next 30 departures of a frequent line
+        offset=int(_data.get("offset") or 0), **departure_query_args(_data))
     # kept beside the departures: a realtime refresh that learns of a
     # cancelled trip reads them again without it (drop_departure_trips),
     # rather than showing the struck trip as on time until the next
