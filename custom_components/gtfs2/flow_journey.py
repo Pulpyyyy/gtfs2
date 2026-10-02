@@ -45,6 +45,7 @@ from .const import (
     DOMAIN,
     ENTRY_KIND_DATASOURCE,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+    id_of,
 )
 from .geojson import name_in_use
 from .rt_source import datasource_unique_id
@@ -63,17 +64,13 @@ _LOGGER = logging.getLogger(__name__)
 type _Step = Callable[..., Coroutine[Any, Any, FlowResult]]
 
 
-def _stop_id(entry: str) -> str:
-    """The stop_id of a "stop_id: Name (sequence)" entry."""
-    return entry.rsplit(": ", 1)[0].strip()
-
-
 def _stop_name(entry: str) -> str:
     """The readable part of a "stop_id: Name (sequence)" entry.
 
-    Ids carry colons of their own, so cut from the right.
+    Ids carry colons of their own but never ": ", which names do ("A28:
+    Kala's (East Bound)"): cut at the first one, as id_of does.
     """
-    return entry.rsplit(": ", 1)[-1].rsplit(" (", 1)[0].strip()
+    return entry.split(": ", 1)[-1].rsplit(" (", 1)[0].strip()
 
 
 def _base_name(entry: str) -> str:
@@ -360,10 +357,10 @@ class JourneyScreens:
         try:
             exists = await self.hass.async_add_executor_job(
                 has_trip_between, self._pygtfs, route,
-                _stop_id(destination), _stop_id(origin))
+                id_of(destination), id_of(origin))
             loop_direction = await self.hass.async_add_executor_job(
                 get_pair_direction, self._pygtfs, route,
-                _stop_id(destination), _stop_id(origin)) if exists else None
+                id_of(destination), id_of(origin)) if exists else None
         except SQLAlchemyError as ex:
             _LOGGER.debug("No return journey for %s: %s", route, ex)
             return

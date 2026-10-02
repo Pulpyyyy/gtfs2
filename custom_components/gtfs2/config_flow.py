@@ -65,7 +65,7 @@ from .flow_train import TrainScreens
 from .flow_reload import ReloadScreens
 from .flow_source import SourceScreens
 from .flow_options import OptionsScreens
-from .flow_journey import _stop_id, _stop_name, _base_name
+from .flow_journey import _stop_name, _base_name
 from .flow_journey import JourneyScreens
 
 if TYPE_CHECKING:
@@ -572,11 +572,11 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
                 get_towards,
                 self._pygtfs,
                 self._user_inputs[CONF_ROUTE],
-                _stop_id(origin),
+                id_of(origin),
             )
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.exception("Error reading the ways out of %s on route %s: %s",
-                          _stop_id(origin), self._user_inputs.get(CONF_ROUTE), ex)
+                          id_of(origin), self._user_inputs.get(CONF_ROUTE), ex)
             return self.async_abort(reason="no_stops_read")
         if not ways:
             return await self.async_step_destination()
@@ -608,8 +608,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
                 get_pair_direction,
                 self._pygtfs,
                 self._user_inputs[CONF_ROUTE],
-                _stop_id(self._user_inputs[CONF_ORIGIN]),
-                _stop_id(self._user_inputs[CONF_DESTINATION]),
+                id_of(self._user_inputs[CONF_ORIGIN]),
+                id_of(self._user_inputs[CONF_DESTINATION]),
                 self._towards,
             )
             _LOGGER.debug(f"UserInputs Destination: {self._user_inputs}")
@@ -620,7 +620,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             self._pygtfs,
             self._user_inputs[CONF_ROUTE],
             None,
-            _stop_id(self._user_inputs[CONF_ORIGIN]),
+            id_of(self._user_inputs[CONF_ORIGIN]),
             self._towards,
         )
         if not destinations:
