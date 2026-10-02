@@ -677,11 +677,18 @@ def test_vehicle_positions_name_their_file_and_clear_stale_markers_once(tmp_path
     shown = marker("geo_location.r1_13_7", "R1(13)7")
     other_line = marker("geo_location.r2_14_1", "R2(14)1")
     other_platform = marker("geo_location.r1_15_2", "R1(15)2", platform="usgs")
-    refresh.registry = _Registry([stale, shown, other_line, other_platform])
-    refresh.hass.states.get = lambda entity_id: object() if entity_id == shown.entity_id else None
+    # the markers written since 7f58063a: geo_json_events keys them
+    # <its entry id>_<route>_<way>_<vehicle, or the trip's crc>
+    stale_now = marker("geo_location.r1_0_123", "01JENTRY_R1_0_123")
+    shown_now = marker("geo_location.r1_1_bus42", "01JENTRY_R1_1_bus42")
+    other_line_now = marker("geo_location.r10_0_5", "01JENTRY_R10_0_5")
+    refresh.registry = _Registry([stale, shown, other_line, other_platform,
+                                  stale_now, shown_now, other_line_now])
+    refresh.hass.states.get = lambda entity_id: (
+        object() if entity_id in (shown.entity_id, shown_now.entity_id) else None)
     result = refresh.run()
     assert result["vehicle_positions_file"] == coordinator_mod.vehicle_positions_name("R1", "0")
-    assert refresh.registry.removed == [stale.entity_id]
+    assert refresh.registry.removed == [stale.entity_id, stale_now.entity_id]
     refresh.run(later(1))
     assert refresh.count("entity_registry") == 1
 

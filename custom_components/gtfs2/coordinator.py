@@ -7,7 +7,6 @@ import datetime
 from datetime import timedelta
 from functools import partial
 import logging
-import re
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -45,6 +44,7 @@ from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
+from .vehicles import marker_ids
 from .departure_attributes import departure_records
 from .exports import export_leg, export_route_shape, export_timetable
 
@@ -525,7 +525,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         trip that runs again is simply registered afresh.
         """
         registry = er.async_get(self.hass)
-        pattern = re.compile(re.escape(str(self._route_id)) + r"\(\d+\)\d{1,3}$")
+        pattern = marker_ids(str(self._route_id))
         for entry in list(registry.entities.values()):
             if (
                 entry.domain == "geo_location"

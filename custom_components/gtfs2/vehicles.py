@@ -10,6 +10,7 @@ import binascii
 import json
 import logging
 import os
+import re
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -145,6 +146,15 @@ def _vehicle_feature(vehicle: Mapping[str, Any], route_id: str, seen: str | int 
         "type": "Feature",
     }
     return feature, (feature, str(trip_id), veh, crc, way)
+
+
+def marker_ids(route_id: str) -> re.Pattern[str]:
+    """The registry unique_ids of a route's vehicle markers. geo_json_events
+    keys a marker <its entry id>_<properties.id>: the id _vehicle_feature
+    writes, route_way_vehicle (or the trip's crc), and route(direction)crc,
+    the one written before it, which installs still hold."""
+    route = re.escape(str(route_id))
+    return re.compile(rf"(?:^|_){route}(?:_[^_]*_[^_]+|\(\d+\)\d{{1,3}})$")
 
 
 def _candidate_trips(feed_entities: FeedEntities, board: set[str], route_id: str) -> list[str]:
