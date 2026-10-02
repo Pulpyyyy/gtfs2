@@ -54,6 +54,36 @@ def test_a_visit_becomes_a_trip_update_at_the_stop(monkeypatch):
     assert call["departure"]["time"] == _at("2026-10-01T08:01:00+00:00")
 
 
+def _visit(journey, **times):
+    return {"MonitoredVehicleJourney": {
+        "LineRef": "A", "DirectionRef": 1,
+        "FramedVehicleJourneyRef": {"DatedVehicleJourneyRef": journey},
+        "MonitoredCall": times}}
+
+
+def _delivery(*visits):
+    return {"ServiceDelivery": {
+        "ResponseTimestamp": "2026-10-01T07:59:00+00:00",
+        "StopMonitoringDelivery": [{"version": "2.0", "MonitoredStopVisit": list(visits)}]}}
+
+
+def test_a_visit_without_a_time_does_not_cost_the_others(monkeypatch):
+    # the first stop of a line gives no arrival, the last no departure, and
+    # a host may leave a visit with neither: that one alone is left out
+    feed = _converted(monkeypatch, _delivery(
+        _visit("FIRST", AimedDepartureTime="2026-10-01T08:01:00+00:00"),
+        _visit("LAST", ExpectedArrivalTime="2026-10-01T08:05:00+00:00"),
+        _visit("NONE"),
+        _visit("NULL", ExpectedArrivalTime=None, AimedDepartureTime="2026-10-01T08:09:00+00:00")))
+    calls = {e["id"]: e["trip_update"]["stop_time_update"][0] for e in feed["entity"]}
+    assert set(calls) == {"FIRST", "LAST", "NULL"}
+    assert calls["FIRST"]["arrival"] == {}
+    assert calls["FIRST"]["departure"]["time"] == _at("2026-10-01T08:01:00+00:00")
+    assert calls["LAST"]["departure"] == {}
+    assert calls["LAST"]["arrival"]["time"] == _at("2026-10-01T08:05:00+00:00")
+    assert calls["NULL"]["departure"]["time"] == _at("2026-10-01T08:09:00+00:00")
+
+
 def test_a_siri_root_reads_the_same(monkeypatch):
     assert _converted(monkeypatch, {"Siri": DELIVERY}) == _converted(monkeypatch, DELIVERY)
 

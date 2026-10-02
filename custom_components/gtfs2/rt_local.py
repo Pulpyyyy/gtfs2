@@ -152,40 +152,56 @@ def convert_realtime_siri_trips_to_json(url: str, headers: Mapping[str, str | No
 
 
     for entity in feed_entities:
-        journey = entity['MonitoredVehicleJourney']
-        call = journey['MonitoredCall']
-        trip_id = journey['FramedVehicleJourneyRef']['DatedVehicleJourneyRef']
-        # expected when the host knows it, aimed otherwise
-        departs = datetime.fromisoformat(call.get('ExpectedDepartureTime', call.get('AimedDepartureTime'))).timestamp()
-        entity_dict = {
-            "id": trip_id,
-            "trip_update": {
-                "trip": {
-                    "trip_id": trip_id,
-                    "start_time": departs,
-                    "start_date": departs,
-                    "route_id": journey['LineRef'],
-                    "direction_id": str(journey['DirectionRef'])
-                },
-                "stop_time_update": [{
-                    "stop_sequence": "n.a",
-                    "stop_id": stop_id,
-                    "arrival": {
-                        "delay": '',
-                        # ExpectedArrivalTime, the real one: spelt without
-                        # its "a" this never matched, so every arrival was
-                        # read as the timetable's and no delay ever showed
-                        "time": datetime.fromisoformat(call.get('ExpectedArrivalTime', call.get('AimedArrivalTime'))).timestamp()
-                    },
-                    "departure": {
-                        "delay": '',
-                        "time": departs
-                    }
-                }]
-            }
-        }
-        
-        json_data["entity"].append(entity_dict)
-        
+        entity_dict = _siri_trip_update(entity, stop_id)
+        if entity_dict is not None:
+            json_data["entity"].append(entity_dict)
+
     _LOGGER.debug("json data: %s", json.dumps(json_data))
     return json_data
+
+
+def _siri_epoch(call: Mapping[str, Any], expected: str, aimed: str) -> float | None:
+    """One end of a SIRI call in epoch seconds: expected when the host knows
+    it, aimed otherwise, None when it gives neither."""
+    told = call.get(expected) or call.get(aimed)
+    return datetime.fromisoformat(told).timestamp() if told else None
+
+
+def _siri_trip_update(entity: Mapping[str, Any], stop_id: str) -> dict[str, Any] | None:
+    """A monitored visit as a trip update calling at the stop; None for a
+    visit with no time at all.
+
+    A call gives its arrival, its departure, or both: the first stop of a
+    line has no arrival, the last no departure. Read whole, one such visit
+    raised and the stop's every other visit was lost with it.
+    """
+    journey = entity['MonitoredVehicleJourney']
+    call = journey['MonitoredCall']
+    trip_id = journey['FramedVehicleJourneyRef']['DatedVehicleJourneyRef']
+    # ExpectedArrivalTime, the real one: spelt without its "a" this never
+    # matched, so every arrival was read as the timetable's and no delay
+    # ever showed
+    arrives = _siri_epoch(call, 'ExpectedArrivalTime', 'AimedArrivalTime')
+    departs = _siri_epoch(call, 'ExpectedDepartureTime', 'AimedDepartureTime')
+    if arrives is None and departs is None:
+        _LOGGER.debug("SIRI visit of %s at %s gives no time, left out", trip_id, stop_id)
+        return None
+    starts = departs if departs is not None else arrives
+    return {
+        "id": trip_id,
+        "trip_update": {
+            "trip": {
+                "trip_id": trip_id,
+                "start_time": starts,
+                "start_date": starts,
+                "route_id": journey['LineRef'],
+                "direction_id": str(journey['DirectionRef'])
+            },
+            "stop_time_update": [{
+                "stop_sequence": "n.a",
+                "stop_id": stop_id,
+                "arrival": {"delay": '', "time": arrives} if arrives is not None else {},
+                "departure": {"delay": '', "time": departs} if departs is not None else {},
+            }]
+        }
+    }
