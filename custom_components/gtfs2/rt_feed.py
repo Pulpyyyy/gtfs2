@@ -244,15 +244,15 @@ def _json_feed_entities(url: str, label: str, content: bytes) -> FeedEntities | 
         # the alert reader walks protobuf messages, HasField and all:
         # handed dicts it raised, and the realtime of the cycle went
         # with it. A json feed is read into the message it stands for
+        from google.protobuf import json_format
         try:
-            from google.protobuf import json_format
             message = gtfs_realtime_pb2.FeedMessage()
             json_format.ParseDict(feed, message, ignore_unknown_fields=True)
             # an answer again, as on every other path: the outage kept
             # otherwise, and its next one was only said at debug level
             _say_recovered(url, label)
             return message.entity
-        except Exception as ex:  # pylint: disable=broad-except
+        except json_format.ParseError as ex:
             _say_failure(url, "Trying to update %s, and got json that is not a GTFS-RT feed: %s",
                          label, type(ex).__name__)
             return None

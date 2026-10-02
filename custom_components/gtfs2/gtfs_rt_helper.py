@@ -854,10 +854,10 @@ def get_gtfs_rt(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> str:
             # check if content is json else write without format            
             try:
                 open(os.path.join(gtfs_dir, file_all), "w").write(json.dumps(feed_entities, indent=4)) 
-            except Exception as ex:
+            except (TypeError, ValueError) as ex:
                 _LOGGER.debug("Not writing to file as json because of error: %s", ex)
                 open(os.path.join(gtfs_dir, file_all), "w").write(str(feed_entities))              
-        except Exception:  # pylint: disable=broad-except
+        except OSError:
             _LOGGER.info("Issues with converting GTFS RT data to JSON, output to string") 
     return "ok"   
         
@@ -887,7 +887,7 @@ def convert_realtime_siri_trips_to_json(url: str, headers: Mapping[str, str | No
     feed = json_object.get('Siri') or json_object
     try:
         feed_entities = feed['ServiceDelivery']['StopMonitoringDelivery'][0]['MonitoredStopVisit']
-    except Exception as ex:  # pylint: disable=broad-except
+    except (KeyError, IndexError, TypeError) as ex:
         # an answer of another shape, at every refresh it keeps it: the
         # missing key says it all, the stack is this line
         _LOGGER.error("Ìssues getting GTFS RT SIRI data: %s", ex)

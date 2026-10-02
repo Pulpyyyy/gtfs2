@@ -61,7 +61,7 @@ def _alert_kind(alert: gtfs_realtime_pb2.Alert) -> dict[str, str]:
             continue
         try:
             name = alert.DESCRIPTOR.fields_by_name[field].enum_type.values_by_number[value].name
-        except Exception:  # pylint: disable=broad-except
+        except KeyError:
             # an enum value this binding does not know: the spec grows, and a
             # number nobody can name is not worth failing an update over
             _LOGGER.debug("Unknown alert %s value: %s", field, value)
