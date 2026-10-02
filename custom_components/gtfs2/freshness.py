@@ -114,7 +114,7 @@ def probe_source(data: Mapping[str, Any], zip_path: str) -> dict[str, str | None
             return {"result": PROBE_UNCHANGED, "etag": meta.get("etag"),
                     "last_modified": meta.get("last_modified")}
         response.raise_for_status()
-    except Exception as ex:  # pylint: disable=broad-except
+    except (requests.RequestException, OSError, ValueError) as ex:
         _LOGGER.warning("Could not ask %s about freshness: %s",
                         data.get("url"), ex)
         return {"result": PROBE_ERROR, "etag": None, "last_modified": None}

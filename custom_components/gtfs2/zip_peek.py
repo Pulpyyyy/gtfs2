@@ -138,7 +138,7 @@ def inner_zips(url: str, headers: Mapping[str, str] | None) -> list[str]:
     """
     try:
         members, _ = _directory(url, headers)
-    except Exception as ex:  # pylint: disable=broad-except
+    except (requests.RequestException, OSError, struct.error) as ex:
         _LOGGER.debug("Could not read the directory of %s: %s", hide_keys(url), ex)
         return []
     if not members or any(
@@ -226,7 +226,7 @@ def open_member(url: str, headers: Mapping[str, str] | None, name: str) -> _Memb
         if body is None:
             return None
         return _MemberResponse(response, packed, method)
-    except Exception as ex:  # pylint: disable=broad-except
+    except (requests.RequestException, OSError, struct.error) as ex:
         _LOGGER.warning("Could not take %s out of %s: %s", name, hide_keys(url), ex)
         return None
 
