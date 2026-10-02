@@ -46,7 +46,10 @@ def test_a_visit_becomes_a_trip_update_at_the_stop(monkeypatch):
     assert entity["id"] == "J1"
     trip = entity["trip_update"]["trip"]
     assert (trip["trip_id"], trip["route_id"], trip["direction_id"]) == ("J1", "A", "1")
-    assert trip["start_time"] == _at("2026-10-01T08:01:00+00:00")
+    # the day of the visit's times, the host naming no operating day, and
+    # no start time, the host not saying when the trip left its first stop
+    assert trip["start_date"] == "20261001"
+    assert "start_time" not in trip
     [call] = entity["trip_update"]["stop_time_update"]
     assert call["stop_id"] == "S1"
     # expected when the host knows it, aimed otherwise
@@ -100,6 +103,25 @@ def test_the_delay_is_expected_less_aimed(monkeypatch):
     # the host gives one time only: no delay said, the readers take the
     # gap to the timetable as for any feed that leaves it out
     assert "delay" not in calls["AIMED"]["departure"]
+
+
+def test_the_trip_starts_on_the_operating_day_the_host_names(monkeypatch):
+    # MTA's shape: the operating day in DataFrameRef, the trip's first
+    # departure in OriginAimedDepartureTime, in the host's own offset
+    night = _visit("NIGHT", AimedDepartureTime="2026-10-02T00:40:00-04:00")
+    journey = night["MonitoredVehicleJourney"]
+    journey["FramedVehicleJourneyRef"]["DataFrameRef"] = "2026-10-01"
+    journey["OriginAimedDepartureTime"] = "2026-10-02T00:15:00-04:00"
+    day = _visit("DAY", AimedDepartureTime="2026-10-01T08:01:00-04:00")
+    day["MonitoredVehicleJourney"]["FramedVehicleJourneyRef"]["DataFrameRef"] = "2026-10-01"
+    day["MonitoredVehicleJourney"]["OriginAimedDepartureTime"] = "2026-10-01T07:40:00-04:00"
+    feed = _converted(monkeypatch, _delivery(night, day))
+    trips = {e["id"]: e["trip_update"]["trip"] for e in feed["entity"]}
+    assert trips["DAY"]["start_date"] == "20261001"
+    assert trips["DAY"]["start_time"] == "07:40:00"
+    # left after midnight, on the operating day before: past 24:00
+    assert trips["NIGHT"]["start_date"] == "20261001"
+    assert trips["NIGHT"]["start_time"] == "24:15:00"
 
 
 def test_a_siri_root_reads_the_same(monkeypatch):

@@ -5,7 +5,7 @@ updates on the way (convert_realtime_siri_trips_to_json).
 from __future__ import annotations
 
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import date, datetime
 import json
 import logging
 import os
@@ -184,6 +184,35 @@ def _siri_end(call: Mapping[str, Any], expected: str, aimed: str) -> dict[str, A
     return end
 
 
+def _siri_trip_start(journey: Mapping[str, Any], call: Mapping[str, Any]) -> dict[str, str]:
+    """start_date (YYYYMMDD) and start_time (HH:MM:SS) of a visit's trip, as
+    GTFS-RT writes them.
+
+    The day is the operating day the host names for the journey
+    (DataFrameRef), else the day of the visit's own times as the host
+    wrote them; the time, when the host says when the trip left its first
+    stop (OriginAimedDepartureTime), past 24:00 for a trip that left after
+    its operating day. Both held the visit's epoch seconds, which no reader
+    could take for a service day.
+    """
+    frame = str((journey.get('FramedVehicleJourneyRef') or {}).get('DataFrameRef') or "")
+    try:
+        day = date.fromisoformat(frame[:10])
+    except ValueError:
+        # one of them is there: a visit with none is left out before
+        told = next(call[key] for key in ('AimedDepartureTime', 'ExpectedDepartureTime',
+                                          'AimedArrivalTime', 'ExpectedArrivalTime')
+                    if call.get(key))
+        day = datetime.fromisoformat(told).date()
+    start = {"start_date": day.strftime("%Y%m%d")}
+    origin = journey.get('OriginAimedDepartureTime')
+    if origin:
+        left = datetime.fromisoformat(origin)
+        hours = left.hour + 24 * (left.date() - day).days
+        start["start_time"] = f"{hours:02d}:{left.minute:02d}:{left.second:02d}"
+    return start
+
+
 def _siri_trip_update(entity: Mapping[str, Any], stop_id: str) -> dict[str, Any] | None:
     """A monitored visit as a trip update calling at the stop; None for a
     visit with no time at all.
@@ -203,14 +232,12 @@ def _siri_trip_update(entity: Mapping[str, Any], stop_id: str) -> dict[str, Any]
     if not arrival and not departure:
         _LOGGER.debug("SIRI visit of %s at %s gives no time, left out", trip_id, stop_id)
         return None
-    starts = departure.get("time", arrival.get("time"))
     return {
         "id": trip_id,
         "trip_update": {
             "trip": {
                 "trip_id": trip_id,
-                "start_time": starts,
-                "start_date": starts,
+                **_siri_trip_start(journey, call),
                 "route_id": journey['LineRef'],
                 "direction_id": str(journey['DirectionRef'])
             },
