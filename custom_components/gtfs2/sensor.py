@@ -30,6 +30,7 @@ from .const import (
     CONF_RT_ENABLED,
 )
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
+from .local_stops import local_stops_nearby
 from .rt_source import has_rt_feed, source_device
 from .rt_window import window_state
 from .feed_window import read_feed_window, timetable_state
@@ -75,7 +76,13 @@ async def async_setup_entry(
             # that says it is not ready yet
             raise PlatformNotReady(
                 f"Datasource {coordinator.data.get('file')} is still being unpacked")
-        for stop in coordinator.data["local_stops_next_departures"]:
+        # every stop served around, not only those with a departure in the
+        # window now: an entry made after the last bus got no sensor at all
+        stops = await hass.async_add_executor_job(local_stops_nearby, hass, coordinator.data)
+        nearby = {stop["stop_id"] for stop in stops}
+        stops += [stop for stop in coordinator.data["local_stops_next_departures"]
+                  if stop["stop_id"] not in nearby]
+        for stop in stops:
             sensors.append(
                     GTFSLocalStopSensor(stop, coordinator, coordinator.data.get("name", "No Name"))
                 )

@@ -10,6 +10,7 @@ import datetime
 import logging
 from typing import TYPE_CHECKING, Any
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
@@ -71,7 +72,42 @@ def get_local_stop_list(hass: HomeAssistant, schedule: Schedule, data: Mapping[s
         rowcount += 1
     _LOGGER.debug("Local stops list output: %s", rowcount)
     return rowcount
-        
+
+
+def local_stops_nearby(hass: HomeAssistant, data: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The stops a local stops entry follows: every stop within its radius
+    a trip calls at, whether or not a departure falls in the window now.
+    The sensors were made from the stops with a departure in the window:
+    an entry made in the evening, after the last bus, got none."""
+    schedule = data.get("schedule")
+    if schedule is None or isinstance(schedule, str):
+        return []
+    latitude, longitude = _tracker_position(hass, data["device_tracker_id"])
+    if not latitude or not longitude:
+        return []
+    # the stops within the radius first, then their calls, as the
+    # departures are read (_fetch_local_stop_rows)
+    sql_query = """
+        WITH nearby AS MATERIALIZED (
+            SELECT stop_id, stop_name FROM stops
+            WHERE abs(stop_lat - :latitude) < :radius AND abs(stop_lon - :longitude) < :radius
+        )
+        SELECT DISTINCT nearby.stop_id, nearby.stop_name
+        FROM nearby
+        CROSS JOIN stop_times st ON st.stop_id = nearby.stop_id
+        ORDER BY nearby.stop_id
+        """
+    radius = data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
+    try:
+        with schedule.engine.connect() as conn:
+            rows = conn.execute(text(sql_query), {"latitude": latitude, "longitude": longitude,
+                                                  "radius": radius}).fetchall()
+    except SQLAlchemyError as ex:
+        # the stops with a departure now are still there to make sensors of
+        _LOGGER.warning("Could not read the stops around %s: %s", data["device_tracker_id"], ex)
+        return []
+    return [{"stop_id": row[0], "stop_name": row[1]} for row in rows]
+
 
 def local_departure_leaves(scheduled: datetime.datetime, realtime: datetime.datetime | str,
                            delay: int | str) -> datetime.datetime:
