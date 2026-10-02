@@ -88,12 +88,31 @@ def test_each_orphaned_line_has_its_own(monkeypatch):
     raised = _record(monkeypatch)
     asyncio.run(notifications.async_notify_line_orphaned(None, "src", "R1", "A"))
     asyncio.run(notifications.async_notify_line_orphaned(None, "src", "R2", "B"))
-    assert sorted(key[1] for key in ISSUES) == ["line_orphaned_src_R1", "line_orphaned_src_R2"]
-    issue = _issue("line_orphaned_src_R1")
+    assert sorted(key[1] for key in ISSUES) == ["line_orphaned_src/R1", "line_orphaned_src/R2"]
+    issue = _issue("line_orphaned_src/R1")
     assert (issue["translation_key"], issue["is_fixable"]) == ("line_orphaned", True)
     assert issue["translation_placeholders"] == {"file": "src", "line": "A"}
     assert issue["data"] == {"file": "src", "route": "R1", "line": "A"}
     assert not raised
+
+
+def test_two_sources_and_lines_never_share_an_orphan_issue(monkeypatch):
+    # source names and route ids both hold "_": "tao_bus" + "12" and
+    # "tao" + "bus_12" read as one id, and the second issue replaced the
+    # first
+    _record(monkeypatch)
+    asyncio.run(notifications.async_notify_line_orphaned(None, "tao_bus", "12", "12"))
+    asyncio.run(notifications.async_notify_line_orphaned(None, "tao", "bus_12", "Bus 12"))
+    assert len(ISSUES) == 2
+
+
+def test_a_line_read_again_clears_the_issue_an_older_version_raised(monkeypatch):
+    # an issue is persistent: one raised under the former id outlives the
+    # upgrade, and the line read again clears it too
+    _record(monkeypatch)
+    ISSUES[("gtfs2", "line_orphaned_src_R1")] = {"data": {"file": "src", "route": "R1"}}
+    notifications.clear_line_orphaned(None, "src", "R1")
+    assert ISSUES == {}
 
 
 def test_a_line_read_again_is_no_orphan(monkeypatch):

@@ -56,7 +56,10 @@ async def async_notify_import(hass: HomeAssistant, filename: str, routes: Iterab
 
 
 def line_orphaned_issue(filename: str, route: str) -> str:
-    return f"line_orphaned_{filename}_{route}"
+    # "/" is in no file name, the source's, while a source name and a
+    # route id both hold "_": "tao_bus" + "12" and "tao" + "bus_12" were
+    # one id, the second issue in place of the first
+    return f"line_orphaned_{filename}/{route}"
 
 
 async def async_notify_line_orphaned(hass: HomeAssistant, filename: str, route: str,
@@ -82,6 +85,8 @@ async def async_notify_line_orphaned(hass: HomeAssistant, filename: str, route: 
 def clear_line_orphaned(hass: HomeAssistant, filename: str, route: str) -> None:
     """A sensor reads the line again: it is no dead weight any more."""
     ir.async_delete_issue(hass, DOMAIN, line_orphaned_issue(filename, route))
+    # the id an older version gave it: the issue is persistent
+    ir.async_delete_issue(hass, DOMAIN, f"line_orphaned_{filename}_{route}")
 
 
 async def async_notify_lines_missing(hass: HomeAssistant, filename: str,
