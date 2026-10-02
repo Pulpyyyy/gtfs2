@@ -98,6 +98,9 @@ clocks = (ha_stub.load("clocks") if (ha_stub.COMPONENT / "clocks.py").is_file()
 # with --component that keeps it in gtfs_helper is read there
 stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
               else gtfs_helper)
+# the days a service runs, the same way
+service_days_mod = (ha_stub.load("service_days") if (ha_stub.COMPONENT / "service_days.py").is_file()
+                    else gtfs_helper)
 try:
     places = ha_stub.load("places")
 except FileNotFoundError:  # a tree that lists a line's places in gtfs_helper
@@ -165,7 +168,7 @@ def _asked_once(function):
 get_next_departure = _asked_once(_function(gtfs_helper, "get_next_departure"))
 get_stop_list = _function(places, "get_stop_list")
 get_destination_stop_list = _function(places, "get_destination_stop_list")
-get_next_service_date = _function(gtfs_helper, "get_next_service_date")
+get_next_service_date = _function(service_days_mod, "get_next_service_date")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 KINDS = ("stop_list", "destinations", "towards", "next_service", "pairs",
@@ -648,7 +651,7 @@ def late_departures(fx, route_id, direction, origins, destinations,
                   key=gtfs_seconds)
 
 
-def next_of(days, from_iso, horizon=gtfs_helper.NEXT_SERVICE_HORIZON_DAYS):
+def next_of(days, from_iso, horizon=service_days_mod.NEXT_SERVICE_HORIZON_DAYS):
     """What get_next_service_date is expected to answer from that day."""
     start = datetime.date.fromisoformat(from_iso)
     end = start + datetime.timedelta(days=horizon)

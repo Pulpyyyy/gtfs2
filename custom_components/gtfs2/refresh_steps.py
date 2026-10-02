@@ -20,8 +20,9 @@ import homeassistant.util.dt as dt_util
 from sqlalchemy.exc import SQLAlchemyError
 
 from .const import ATTR_RT_CANCELLED, ATTR_RT_SKIPPED, id_of
-from .gtfs_helper import departure_query_args, drop_departure_trips, get_next_service_date
+from .gtfs_helper import departure_query_args, drop_departure_trips
 from .gtfs_rt_helper import get_next_services, get_rt_alerts, merge_struck
+from .service_days import get_next_service_date
 
 if TYPE_CHECKING:
     # for the annotations only

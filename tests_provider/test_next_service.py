@@ -67,6 +67,9 @@ gtfs_helper = ha_stub.load("gtfs_helper")
 # with --component that keeps it in gtfs_helper is read there
 stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
               else gtfs_helper)
+# the days a service runs, the same way
+service_days = (ha_stub.load("service_days") if (ha_stub.COMPONENT / "service_days.py").is_file()
+                else gtfs_helper)
 refresh_steps = ha_stub.load("refresh_steps")
 departure_attributes = ha_stub.load("departure_attributes")
 
@@ -220,7 +223,7 @@ def test_the_next_service_date_is_the_first_day_the_zip_runs_a_ride(tao, route_i
     schedule, feed = tao
     for asked in DAYS:
         expected = feed.next_service(route_id, origin, destination, datetime.date.fromisoformat(asked))
-        got = gtfs_helper.get_next_service_date(schedule, origin, destination, asked,
+        got = service_days.get_next_service_date(schedule, origin, destination, asked,
                                                 "3", route=route_id)
         assert got == expected, f"asked on {asked}"
 
@@ -288,7 +291,7 @@ def test_calendar_weekdays_removals_additions_and_the_horizon(calendar_feed, rou
     schedule, feed = calendar_feed
     # the literal answer and the zip agree, so the table cannot drift
     assert feed.next_service(route_id, origin, destination, datetime.date.fromisoformat(asked)) == answer
-    got = gtfs_helper.get_next_service_date(schedule, origin, destination, asked, "3", route=route_id)
+    got = service_days.get_next_service_date(schedule, origin, destination, asked, "3", route=route_id)
     assert got == answer
 
 
@@ -296,9 +299,9 @@ def test_a_loops_way_round_holds_the_answer_to_it(calendar_feed):
     # the only trip of R runs direction 0: asked for the other way round,
     # at a loop's terminus, it does not count
     schedule, _ = calendar_feed
-    assert gtfs_helper.get_next_service_date(schedule, "S1", "S2", "2026-06-12", "3",
+    assert service_days.get_next_service_date(schedule, "S1", "S2", "2026-06-12", "3",
                                              route="R", direction="0") == "2026-06-12"
-    assert gtfs_helper.get_next_service_date(schedule, "S1", "S2", "2026-06-12", "3",
+    assert service_days.get_next_service_date(schedule, "S1", "S2", "2026-06-12", "3",
                                              route="R", direction="1") is None
 
 
@@ -306,7 +309,7 @@ def test_a_loops_way_round_holds_the_answer_to_it(calendar_feed):
 def test_an_unusable_datasource_has_no_next_date(schedule):
     # get_gtfs hands back None or a sentinel string when the datasource
     # cannot be read: no date, and no query sent to it
-    assert gtfs_helper.get_next_service_date(schedule, "S1", "S2", "2026-06-12") is None
+    assert service_days.get_next_service_date(schedule, "S1", "S2", "2026-06-12") is None
 
 
 def test_a_query_that_fails_gives_no_date_rather_than_an_error():
@@ -316,7 +319,7 @@ def test_a_query_that_fails_gives_no_date_rather_than_an_error():
         # what SQLAlchemy raises when SQLite answers that its file is locked
         raise OperationalError("select", {}, sqlite3.OperationalError("database is locked"))
     broken = types.SimpleNamespace(engine=types.SimpleNamespace(connect=refuse))
-    assert gtfs_helper.get_next_service_date(broken, "S1", "S2", "2026-06-12") is None
+    assert service_days.get_next_service_date(broken, "S1", "S2", "2026-06-12") is None
 
 
 # --- outcomes -------------------------------------------------------------------
@@ -389,7 +392,7 @@ def test_a_date_and_no_departure_in_hand(tao, outcome, route_id, now, asked_from
     # coordinator holds a date and no departure: handed here the date the
     # zip and the component agree on.
     schedule, feed = tao
-    found = gtfs_helper.get_next_service_date(schedule, CITE_U, INTERIVES, asked_from,
+    found = service_days.get_next_service_date(schedule, CITE_U, INTERIVES, asked_from,
                                               "3", route=route_id)
     assert found == feed.next_service(route_id, CITE_U, INTERIVES,
                                       datetime.date.fromisoformat(asked_from))
