@@ -23,12 +23,11 @@ from .const import (
     ICONS,
     TIME_STR_FORMAT,
 )
-from .clocks import zone_of
+from .clocks import _day_offset, _on_service_day, _removed_on, _runs_on, zone_of
 from .datasource import check_extracting
 from .gtfs_helper import _row_instant
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
 from .rt_feed import FeedEntities, get_gtfs_feed_entities, on_service_day
-from .service_days import _day_offset, _on_service_day, _removed_on, _runs_on
 from .stop_rules import _boards
 
 if TYPE_CHECKING:

@@ -21,8 +21,8 @@ from .feed_window import last_service_day
 from .gtfs_db import close_schedule, feed_zip
 from .clocks import zone_of
 from .datasource import get_gtfs
-from .gtfs_helper import _fetch_departure_rows, _row_instant, departure_query_args, journey_data
-from .service_days import get_next_service_date
+from .gtfs_helper import (_fetch_departure_rows, _row_instant, departure_query_args,
+                          get_next_service_date, journey_data)
 
 if TYPE_CHECKING:
     # for the annotations only

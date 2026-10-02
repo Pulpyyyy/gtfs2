@@ -17,8 +17,7 @@ import homeassistant.util.dt as dt_util
 from .const import DEFAULT_PATH_GEOJSON, id_of
 from .feed_window import last_service_day
 from .geojson import entry_file_part, write_json_if_changed
-from .gtfs_helper import _fetch_departure_rows, departure_query_args
-from .service_days import get_next_service_date
+from .gtfs_helper import _fetch_departure_rows, departure_query_args, get_next_service_date
 from .leg import _leg_timezone
 
 _LOGGER = logging.getLogger(__name__)

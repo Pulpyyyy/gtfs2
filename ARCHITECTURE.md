@@ -394,11 +394,10 @@ gtfs_db.py            the files a source is made of, the sources on disk, lettin
 db_build.py           an import into a scratch database, the followed lines copied, the swap
 db_intern.py          stop_times keyed by integers instead of repeated id strings
 db_prune.py           a datasource trimmed down to the lines it follows
-gtfs_helper.py        the departure queries
+gtfs_helper.py        the departure queries, and the next day a journey runs
 datasource.py         a source's database as the readers open it: get_gtfs, its indexes
 stop_rules.py         the SQL pieces every reader shares: who gets on or off, one place, train stations
-clocks.py             a stop time in seconds, the time zone a feed writes its times in
-service_days.py       the next day a journey runs, and the SQL of a service day
+clocks.py             a stop time in seconds and on its service day, the time zone a feed writes its times in
 source_zip.py         the zip beside a datasource: fetched, kept, refreshed, imported
 source_refresh.py     automatic refresh of the static feeds, per source and mode
 rt_window.py          when the realtime feeds are worth reading, off the timetable

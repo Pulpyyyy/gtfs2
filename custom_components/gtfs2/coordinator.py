@@ -39,13 +39,12 @@ from .const import (
 from .gtfs_db import close_schedule, file_edition, real_path
 from .datasource import check_datasource_index, check_extracting, get_gtfs
 from .gtfs_helper import (departure_query_args, drop_departure_trips, get_next_departure,
-                          journey_data, shown_ends)
+                          get_next_service_date, journey_data, shown_ends)
 from .local_stops import get_local_stops_next_departures, drop_gone_local_departures
 from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
-from .service_days import get_next_service_date
 from .departure_attributes import departure_records
 from .exports import export_leg, export_route_shape, export_timetable
 

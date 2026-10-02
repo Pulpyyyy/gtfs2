@@ -35,8 +35,7 @@ from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH
 from .gtfs_db import file_edition, real_path
-from .clocks import agency_zone, gtfs_seconds
-from .service_days import _removed_on, _runs_on
+from .clocks import _removed_on, _runs_on, agency_zone, gtfs_seconds
 from .rt_feed import _FEED_CACHE, _same_route
 from .rt_source import source_readers
 
