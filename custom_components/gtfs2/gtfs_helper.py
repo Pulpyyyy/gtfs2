@@ -4,7 +4,6 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 import datetime
 import json
-import sqlite3
 import re
 import logging
 import os
@@ -27,6 +26,8 @@ from .const import (
     )
 from .gtfs_db import feed_zip, file_edition, real_path
 from .rt_feed import on_service_day
+from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
+                         _no_call_between, _place_group, entry_stations, station_names_in)
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -40,19 +41,8 @@ _LOGGER = logging.getLogger(__name__)
 # unbounded scan would walk the whole calendar to say so.
 NEXT_SERVICE_HORIZON_DAYS = 90
 
-# The SNCF files the coaches that stand in for its trains under the train line
-# itself, so route_type calls them rail. Only the stop tells them apart: a
-# coach calls at "StopPoint:OCECar TER-87543009" where the train calls at
-# "StopPoint:OCETrain TER-87543009", same station, same name. On the national
-# feed of September 2026, 283 of the 582 rail lines carry such coaches, and no
-# coach shares a single stop_id with a train. "Navette" is not one of them: it
-# is the rail shuttle between Tours and Saint-Pierre-des-Corps.
-COACH_STOP_PREFIX = "StopPoint:OCECar "
 # GTFS extended route type: Rail Replacement Bus Service
 RAIL_REPLACEMENT_BUS = 714
-RAIL_ROUTE_TYPES = (2, *range(100, 118))
-# the same, as the queries write it
-RAIL_ROUTE_TYPES_SQL = ",".join(str(t) for t in RAIL_ROUTE_TYPES)
 
 
 def departure_route_type(route_type: str | int | None, origin_stop_id: str | None) -> str | int | None:
@@ -66,65 +56,6 @@ def departure_route_type(route_type: str | int | None, origin_stop_id: str | Non
     if rail and str(origin_stop_id or "").startswith(COACH_STOP_PREFIX):
         return RAIL_REPLACEMENT_BUS
     return route_type
-
-
-def entry_stations(data: Mapping[str, Any], end: str) -> list[str]:
-    """Every station a train entry matches at one end, "origin" or
-    "destination": the ones ticked on the station screen, or the single name
-    an entry created before that screen took several holds."""
-    names = data.get(f"{end}_stations") or [data.get(end)]
-    return [str(name) for name in names if name]
-
-
-def train_entry_routes(gtfs_dir: str, data: Mapping[str, Any]) -> list[str]:
-    """The lines a trip of which runs from one of a train entry's stations
-    to one of the other's, read from its source's database; [] when it
-    cannot be read.
-
-    A train entry stores "train" for its line and rides whatever line
-    serves its two stations: the map files its departures wrote are named
-    after those lines, and removing the entry has to find them. Blocking,
-    made for the executor.
-    """
-    db_file = real_path(gtfs_dir, data.get("file") or "")
-    if not data.get("file") or not os.path.exists(db_file):
-        return []
-    origin_in, params = station_names_in("origin", entry_stations(data, "origin"))
-    dest_in, dest_params = station_names_in("dest", entry_stations(data, "destination"))
-    params.update(dest_params)
-    sql = f"""
-    select distinct t.route_id from trips t
-    inner join stop_times o on o.trip_id = t.trip_id
-    inner join stops so on so.stop_id = o.stop_id
-    inner join stop_times d on d.trip_id = t.trip_id
-    inner join stops sd on sd.stop_id = d.stop_id
-    where so.stop_name in {origin_in} and sd.stop_name in {dest_in}
-      and o.stop_sequence < d.stop_sequence
-    """  # noqa: S608
-    try:
-        conn = sqlite3.connect(db_file, timeout=10)
-        try:
-            return [str(row[0]) for row in conn.execute(sql, params)]
-        finally:
-            conn.close()
-    except sqlite3.Error as ex:
-        _LOGGER.warning("Could not read the lines of train entry %s: %s", data.get("name"), ex)
-        return []
-
-
-def station_names_in(prefix: str, names: Iterable[str] | None) -> tuple[str, dict[str, str]]:
-    """An SQL "(:prefix_name_0, ...)" for a list of station names, and its
-    parameters.
-
-    A train entry may name several stations at one end: the station, and the
-    coach station its replacement coaches leave from, which the feed files as
-    a station of its own under another name (SNCF K8+: "Paris Austerlitz" for
-    the trains, "Paris-Austerlitz Routiere" 240 m away for the coaches).
-    Nothing in the feed links the two, so the rider ticks both.
-    """
-    names = [str(name) for name in names or [] if name] or [""]
-    keys = [f"{prefix}_name_{n}" for n in range(len(names))]
-    return "(" + ", ".join(f":{key}" for key in keys) + ")", dict(zip(keys, names))
 
 
 def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_id: str,
@@ -887,51 +818,6 @@ IMPORT_IGNORED = ("shapes.txt", "transfers.txt", "fare_attributes.txt",
                   "levels.txt", "pathways.txt", "translations.txt")
 
 
-# A place is what the rider waits at, whatever the feed writes it as. Most
-# feeds give each side of the road a record of its own, one per direction,
-# and some give one per platform: Zou files the two poles of Pont de la
-# Brague, 8 m apart, under one parent station, and half of the line's trips
-# are entered on the pole across the road from the way they drive. Picking a
-# record hid the trips entered on the other one. So a place is the parent
-# station when the feed has one; when it has none (TAO: 9 parents for 1359
-# poles), the records of the same name within PLACE_LAT / PLACE_LON of each
-# other, about 150 m, which gathered the three poles of Zenith, 107 m apart
-# at most, and keeps apart two villages' "Centre". The box is measured from
-# the record the entry holds, so the list and the queries agree on it.
-PLACE_LAT = 0.00135
-
-
-PLACE_LON = 0.002
-
-
-def _place_group(param: str) -> str:
-    """SQL "(...)" of every stop_id of the place of the stop bound to :param."""
-    return f"""(
-    select sibling.stop_id
-    from stops chosen, stops sibling
-    where chosen.stop_id = :{param}
-      and (sibling.stop_id = chosen.stop_id
-           or (chosen.parent_station is not null
-               and chosen.parent_station <> ''
-               and sibling.parent_station = chosen.parent_station)
-           or ((chosen.parent_station is null or chosen.parent_station = '')
-               and (sibling.parent_station is null or sibling.parent_station = '')
-               and sibling.stop_name = chosen.stop_name
-               and abs(sibling.stop_lat - chosen.stop_lat) <= {PLACE_LAT}
-               and abs(sibling.stop_lon - chosen.stop_lon) <= {PLACE_LON})))"""
-
-
-# Whether the rider can get on, or off, at a call. stop_times says it per
-# call: pickup_type and drop_off_type read 0 (or nothing) for a regular
-# stop, 1 for none at all, 2 and 3 for a phone call or a word to the driver,
-# which is still a way on. A 1 is not rare, and not only at the ends of a
-# trip: a night train takes nobody on at its morning stops (SNCF: 2,080
-# calls mid-route, 44 route-stop pairs where no trip ever boards), a coach
-# sets down only on its way into town (Zou: 9,285 calls, 279 pairs), the
-# Dutch feed flags 51,145 calls and 912 pairs. Offering such a call as a
-# departure, or as a place to get off, sends the rider to a bus that will
-# not open its door. The value is cast, pygtfs stores it as a number but a
-# feed's blank is a NULL, and the db of a test may hold text.
 def _day_offset(time_column: str) -> str:
     """SQL: the whole days a stored stop time lies past its service day.
 
@@ -958,33 +844,11 @@ def _runs_on(day: str, calendar: str = "") -> str:
             f" else {cal}saturday end) = 1")
 
 
-def _no_call_between(trip: str, board: str, alight: str, origin_group: str, end_group: str) -> str:
-    """SQL: the ride from the board call to the alight call of the trip is
-    its shortest, no call the rider can use at either end in between."""
-    return f"""NOT EXISTS (
-                SELECT 1 FROM stop_times between_stop
-                WHERE between_stop.trip_id = {trip}.trip_id
-                  AND between_stop.stop_sequence > {board}.stop_sequence
-                  AND between_stop.stop_sequence < {alight}.stop_sequence
-                  AND ((between_stop.stop_id IN {origin_group} AND {_boards("between_stop")})
-                       OR (between_stop.stop_id IN {end_group} AND {_alights("between_stop")})))"""
-
-
 def _removed_on(service: str, day: str) -> str:
     """SQL: calendar_dates takes this service out on this date."""
     return (f"exists (select 1 from calendar_dates removed"
             f" where removed.service_id = {service}"
             f" and removed.date = {day} and removed.exception_type = 2)")
-
-
-def _boards(alias: str) -> str:
-    """SQL: the rider can get on at this stop_times row."""
-    return f"coalesce(cast({alias}.pickup_type as integer), 0) <> 1"
-
-
-def _alights(alias: str) -> str:
-    """SQL: the rider can get off at this stop_times row."""
-    return f"coalesce(cast({alias}.drop_off_type as integer), 0) <> 1"
 
 
 def gtfs_seconds(value: object) -> int | None:

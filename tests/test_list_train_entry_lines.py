@@ -13,7 +13,7 @@ import pygtfs
 
 import ha_stub
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+stop_rules = ha_stub.load("stop_rules")
 
 FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "sncf" / "static.zip"
 
@@ -36,9 +36,9 @@ K34 = "FR:Line::b1eda504-6395-4189-9623-6460d66f2bae:"
 def test_the_lines_between_the_two_stations(tmp_path):
     _database(tmp_path)
     data = {"file": "sncf", "route": "train", "origin": "Arles", "destination": "Miramas"}
-    assert set(gtfs_helper.train_entry_routes(str(tmp_path), data)) == {K7, K9, K34}
+    assert set(stop_rules.train_entry_routes(str(tmp_path), data)) == {K7, K9, K34}
 
 
 def test_no_database_no_lines(tmp_path):
-    assert gtfs_helper.train_entry_routes(str(tmp_path), {"file": "gone", "origin": "A",
+    assert stop_rules.train_entry_routes(str(tmp_path), {"file": "gone", "origin": "A",
                                                           "destination": "B"}) == []

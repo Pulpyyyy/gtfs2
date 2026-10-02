@@ -90,6 +90,10 @@ import fixture_db  # noqa: E402
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the platforms and with them the rest of Home Assistant.
 gtfs_helper = ha_stub.load("gtfs_helper")
+# what a stop is to the rider has a module of its own here; a checkout run
+# with --component that keeps it in gtfs_helper is read there
+stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
+              else gtfs_helper)
 try:
     places = ha_stub.load("places")
 except FileNotFoundError:  # a tree that lists a line's places in gtfs_helper
@@ -398,7 +402,7 @@ class Fixture:
         """
         if stop_id in self._places:
             return self._places[stop_id]
-        group = getattr(gtfs_helper, "_place_group", None)
+        group = getattr(stop_rules, "_place_group", None)
         if group:
             with self.schedule.engine.connect() as conn:
                 found = {stop_id} | {row[0] for row in conn.execute(
@@ -572,7 +576,7 @@ def pair_service_days(fx, origin, destination, route_type,
     prefix after the component matched them whole."""
     if route_type == "2":
         rail = {r for r, kind in fx.route_types.items()
-                if int(kind) in gtfs_helper.RAIL_ROUTE_TYPES}
+                if int(kind) in stop_rules.RAIL_ROUTE_TYPES}
 
         def at(stop, end):
             return fx.stop_names.get(stop) == end
@@ -1893,7 +1897,7 @@ def check_train_stations(check, fx, route_id, direction):
     grouped = patterns_of(schedule, route_id, direction)
     firsts = list(dict.fromkeys(fx.stop_names[p[0]] for p in sorted(grouped)))
     lasts = list(dict.fromkeys(fx.stop_names[p[-1]] for p in sorted(grouped)))
-    prefix = gtfs_helper.COACH_STOP_PREFIX
+    prefix = stop_rules.COACH_STOP_PREFIX
     coach_line = any(stop.startswith(prefix) for p in grouped for stop in p)
     coaches_read = 0
     # every pattern with the same two ends on the same day asks the same
@@ -2030,7 +2034,7 @@ def check_train_destinations(check, fx, route_id, direction):
 
     own = reached_from(patterns_of_routes([route_id]))
     rail = [r for r, kind in fx.route_types.items()
-            if int(kind) in gtfs_helper.RAIL_ROUTE_TYPES]
+            if int(kind) in stop_rules.RAIL_ROUTE_TYPES]
     anywhere = reached_from(patterns_of_routes(rail))
     origins = sorted({fx.stop_names[s]
                       for p in patterns_of(schedule, route_id, direction) for s in p})

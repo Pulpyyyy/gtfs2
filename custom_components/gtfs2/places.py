@@ -18,7 +18,7 @@ from sqlalchemy.sql import text
 
 from .destination_order import _placed_in_order, _rides_after, _riding_order, _tails_of
 from .gtfs_db import file_edition
-from .gtfs_helper import _alights, _boards, _place_group
+from .stop_rules import _alights, _boards, _place_group
 from .place_order import _Trips, _ride_of, _trips_of
 
 if TYPE_CHECKING:

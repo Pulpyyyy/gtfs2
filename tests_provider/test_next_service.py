@@ -63,6 +63,10 @@ import fixture_db  # noqa: E402
 import test_journeys as tj  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
+# what a stop is to the rider has a module of its own here; a checkout run
+# with --component that keeps it in gtfs_helper is read there
+stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
+              else gtfs_helper)
 refresh_steps = ha_stub.load("refresh_steps")
 departure_attributes = ha_stub.load("departure_attributes")
 
@@ -122,7 +126,7 @@ class Feed:
         (_place_group), never by a copy of its rule here."""
         with self.schedule.engine.connect() as conn:
             return {stop_id} | {row[0] for row in conn.execute(
-                text("SELECT stop_id FROM stops WHERE stop_id IN " + gtfs_helper._place_group("s")),
+                text("SELECT stop_id FROM stops WHERE stop_id IN " + stop_rules._place_group("s")),
                 {"s": stop_id})}
 
     def rides(self, route_id, origin, destination):

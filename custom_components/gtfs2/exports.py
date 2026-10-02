@@ -25,7 +25,8 @@ import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH, DEFAULT_PATH_GEOJSON, DOMAIN, id_of
 from .gtfs_db import feed_zip, file_edition, real_path, remove_files
-from .gtfs_helper import shown_ends, train_entry_routes
+from .gtfs_helper import shown_ends
+from .stop_rules import train_entry_routes
 from .geojson import write_route_file, route_geojson_name, get_representative_trip, vehicle_positions_name
 from .leg import write_leg_file, leg_geojson_name, leg_geojson_pattern, owns_leg_file
 from .rt_feed import FeedEntities

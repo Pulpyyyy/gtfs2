@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
-from .gtfs_helper import PLACE_LAT, PLACE_LON
+from .stop_rules import PLACE_LAT, PLACE_LON
 
 
 # the sampled trips of a line, each with its calls in riding order:

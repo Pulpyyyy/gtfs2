@@ -57,6 +57,10 @@ import fixture_db  # noqa: E402
 import test_journeys as tj  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
+# what a stop is to the rider has a module of its own here; a checkout run
+# with --component that keeps it in gtfs_helper is read there
+stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
+              else gtfs_helper)
 try:
     local_stops = ha_stub.load("local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
@@ -197,13 +201,13 @@ def _night_calls(conn, promise):
         "t.route_id, t.direction_id, r.route_type, "
         "(SELECT nx.stop_id FROM stop_times nx WHERE nx.trip_id = st.trip_id "
         " AND nx.stop_sequence > st.stop_sequence "
-        f" AND {gtfs_helper._alights('nx')} ORDER BY nx.stop_sequence LIMIT 1) "
+        f" AND {stop_rules._alights('nx')} ORDER BY nx.stop_sequence LIMIT 1) "
         "AS next_stop "
         "FROM stop_times st "
         "INNER JOIN trips t ON t.trip_id = st.trip_id "
         "INNER JOIN routes r ON r.route_id = t.route_id "
         "WHERE st.departure_time >= '1970-01-02' "
-        f"AND {gtfs_helper._boards('st')} "
+        f"AND {stop_rules._boards('st')} "
         "ORDER BY st.stop_id, st.departure_time, st.trip_id")).fetchall()
     seen, calls = set(), []
     for row in rows:
@@ -258,7 +262,7 @@ def _calls_within(conn, days, stop_id, zone, now):
     for trip_id, service_id, stored in conn.execute(text(
             "SELECT st.trip_id, t.service_id, st.departure_time FROM stop_times st "
             "INNER JOIN trips t ON t.trip_id = st.trip_id WHERE st.stop_id = :s "
-            f"AND {gtfs_helper._boards('st')}"),  # noqa: S608
+            f"AND {stop_rules._boards('st')}"),  # noqa: S608
             {"s": stop_id}):
         if stored is None:
             continue

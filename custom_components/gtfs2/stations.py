@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.sql import text
 
-from .gtfs_helper import COACH_STOP_PREFIX, RAIL_ROUTE_TYPES_SQL, _alights, _boards, station_names_in
+from .stop_rules import COACH_STOP_PREFIX, RAIL_ROUTE_TYPES_SQL, _alights, _boards, station_names_in
 
 if TYPE_CHECKING:
     # for the annotations only

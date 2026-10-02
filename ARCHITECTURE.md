@@ -391,7 +391,8 @@ attributes dict and what it reads, "nothing of the entity" (3f01c10).
 
 ```
 gtfs_db.py            everything that opens a database file directly, the sources on disk
-gtfs_helper.py        the departure queries and the SQL pieces every reader shares; get_gtfs
+gtfs_helper.py        the departure queries; get_gtfs
+stop_rules.py         the SQL pieces every reader shares: who gets on or off, one place, train stations
 source_zip.py         the zip beside a datasource: fetched, kept, refreshed, imported
 source_refresh.py     automatic refresh of the static feeds, per source and mode
 rt_window.py          when the realtime feeds are worth reading, off the timetable
