@@ -246,6 +246,12 @@ async def get_trip_stops(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[s
         trips = list(state.attributes.get("next_departures_trips") or [])
         origin_station_ids.append(state.attributes.get("origin_station_stop_id", ""))
         origin_station_names.append(state.attributes.get("origin_station_stop_name", ""))
+        # each listed trip leaves from its own record of the place, a
+        # terminus's quays in turn: the first departure's alone left the
+        # others with no stop at all
+        for stop_id in state.attributes.get("next_departures_origin_stop_id") or []:
+            if stop_id not in origin_station_ids:
+                origin_station_ids.append(stop_id)
 
     schedule = await hass.async_add_executor_job(
         get_gtfs, hass, DEFAULT_PATH, cf_data
