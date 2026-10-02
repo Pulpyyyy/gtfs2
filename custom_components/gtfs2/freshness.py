@@ -192,8 +192,8 @@ def fetch_if_new(data: Mapping[str, Any], zip_path: str, adopt: bool = True) -> 
     that publish none, and the double check for hosts whose validators
     lie. Returns True when a new zip was swapped in, sidecar updated with
     it; False when the download matched what the zip already holds; None
-    when the download failed or was not a zip. In the last two cases the
-    kept zip is untouched; on a match the sidecar takes the validators the
+    when the download failed, was not a zip or could not be swapped in. In
+    the last two cases the kept zip is untouched; on a match the sidecar takes the validators the
     host now sends, so the next check asks with those and hears "unchanged"
     without downloading again. The caller owns the rebuild: after a True, the
     fresh feed sits in the zip and a refresh from it picks it up without
@@ -223,7 +223,18 @@ def fetch_if_new(data: Mapping[str, Any], zip_path: str, adopt: bool = True) -> 
         except OSError:
             pass
         return digest
-    adopt_zip(response, staged, zip_path)
+    try:
+        adopt_zip(response, staged, zip_path)
+    except OSError as ex:
+        # a reader holding the kept zip open (Windows), a full disk: the
+        # check says it and leaves no half kept download behind, as a
+        # refresh does
+        _LOGGER.error("Could not keep the download of %s: %s", data.get("url"), ex)
+        try:
+            os.remove(staged)
+        except OSError:
+            pass
+        return None
     return True
 
 

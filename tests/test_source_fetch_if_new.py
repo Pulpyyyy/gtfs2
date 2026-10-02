@@ -78,6 +78,22 @@ def test_new_bytes_are_adopted_by_default(tmp_path, monkeypatch):
     assert (tmp_path / "src.zip").read_bytes() == feed_bytes("2")
 
 
+def test_a_swap_that_fails_leaves_the_kept_zip_and_no_download(tmp_path, monkeypatch):
+    # on Windows a reader holding the kept zip open makes os.replace fail;
+    # the nightly check let the error out, without a word to the source,
+    # and left src.zip.new on disk
+    zip_path = kept_zip(tmp_path, "1")
+    monkeypatch.setattr(freshness, "fetch", answering(feed_bytes("2")))
+
+    def held_open(response, staged, kept):
+        raise PermissionError(13, "The file is in use", kept)
+
+    monkeypatch.setattr(freshness, "adopt_zip", held_open)
+    assert freshness.fetch_if_new(DATA, zip_path) is None
+    assert (tmp_path / "src.zip").read_bytes() == feed_bytes("1")
+    assert not (tmp_path / "src.zip.new").exists()
+
+
 def test_new_bytes_are_only_told_without_adopting(tmp_path, monkeypatch):
     zip_path = kept_zip(tmp_path, "1")
     meta_before = (tmp_path / "src.zip.meta.json").read_text()
