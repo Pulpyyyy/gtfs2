@@ -313,9 +313,9 @@ def test_a_feed_left_on_disk_is_read_as_its_download(record_property, tmp_path):
     check = Check()
     copy = tmp_path / "around_me_localstop.rt"
     copy.write_bytes((FIXTURE / "trip_updates.pb").read_bytes())
-    read = rt_feed._fetch_gtfs_feed_entities(f"file://{copy}", {}, "trip_data")
+    read = rt_feed._fetch_gtfs_feed_entities(copy.as_uri(), {}, "trip_data")
     sent = rt_feed.convert_gtfs_realtime_to_json((FIXTURE / "trip_updates.pb").read_bytes())
     check.same(read, sent["entity"], "the file reads as the download")
     check.same(rt_feed._fetch_gtfs_feed_entities(
-        f"file://{tmp_path / 'gone.rt'}", {}, "trip_data"), None, "a file gone is no feed")
+        (tmp_path / "gone.rt").as_uri(), {}, "trip_data"), None, "a file gone is no feed")
     _done(record_property, check, fixture="sncf", promise="local_file")

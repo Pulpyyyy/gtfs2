@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 import requests
 from google.transit import gtfs_realtime_pb2
 
+from .file_url import url_path
 from .key_mask import fetch
 
 if TYPE_CHECKING:
@@ -221,8 +222,9 @@ def _feed_body(url: str, headers: Mapping[str, str | None] | None, label: str) -
     try:
         if url.startswith("file://"):
             # a feed on disk, named by a file:// url: read as a file, it
-            # needs no http round of its own
-            with open(url[len("file://"):], "rb") as local:
+            # needs no http round of its own. Its path read as the static
+            # sources read theirs: a space, a host, a Windows drive
+            with open(url_path(url), "rb") as local:
                 content = local.read()
             _LOGGER.debug("Successfully updated %s", label)
             return content
