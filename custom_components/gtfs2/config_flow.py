@@ -51,7 +51,8 @@ from .local_stops import get_local_stop_list
 from .places import get_destination_stop_list, get_stop_list, get_towards
 from .pair_direction import get_pair_direction
 from .stations import get_station_list, get_station_modes
-from .route_names import get_route_options_from_zip, get_agencies_in_zip, LINE_MODES, with_modes
+from .route_names import get_route_options_from_zip, get_agencies_in_zip
+from .line_labels import LINE_MODES, with_modes
 from .notifications import _async_text
 from .source_refresh import source_lock, source_zip_url
 

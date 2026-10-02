@@ -12,23 +12,24 @@ from __future__ import annotations
 import ha_stub
 
 route_names = ha_stub.load("route_names")
+line_labels = ha_stub.load("line_labels")
 
 
 def test_a_long_name_that_repeats_the_number_is_dropped():
-    assert route_names._route_label("1", "1") == "1"
-    assert route_names._route_label("Licorne", " licorne ") == "Licorne"
+    assert line_labels._route_label("1", "1") == "1"
+    assert line_labels._route_label("Licorne", " licorne ") == "Licorne"
 
 
 def test_the_route_ends_stand_in_for_a_repeated_number():
-    assert route_names._route_label("1", "1", "La Défense > Château de Vincennes") == \
+    assert line_labels._route_label("1", "1", "La Défense > Château de Vincennes") == \
         "1 : La Défense > Château de Vincennes"
 
 
 def test_a_long_name_that_says_more_is_kept():
-    assert route_names._route_label("T4", "Remplacement Tram T4") == "T4 : Remplacement Tram T4"
-    assert route_names._route_label("4", "Lijn 4") == "4 : Lijn 4"
-    assert route_names._route_label("INCONNU", " -", None, "R1") == "INCONNU"
-    assert route_names._route_label(None, None, None, "R1") == "R1"
+    assert line_labels._route_label("T4", "Remplacement Tram T4") == "T4 : Remplacement Tram T4"
+    assert line_labels._route_label("4", "Lijn 4") == "4 : Lijn 4"
+    assert line_labels._route_label("INCONNU", " -", None, "R1") == "INCONNU"
+    assert line_labels._route_label(None, None, None, "R1") == "R1"
 
 
 def test_look_alike_lines_of_two_operators_get_their_agency():
@@ -126,7 +127,7 @@ def test_lines_of_one_number_and_several_modes_say_their_mode():
                "3##B6##6 : Gare de Bourg-la-Reine",
                "1##M3B##3B : Porte des Lilas ↔ Gambetta"]
     words = {"metro": "métro", "bus": "bus"}
-    assert route_names.with_modes(options, words) == [
+    assert line_labels.with_modes(options, words) == [
         "6 : Nation ↔ Charles de Gaulle - Étoile (métro)",
         "6 : Remplacement Métro 6 (bus)",
         "6 : Gare de Bourg-la-Reine (bus)",
@@ -135,15 +136,15 @@ def test_lines_of_one_number_and_several_modes_say_their_mode():
 
 def test_lines_of_one_number_and_one_mode_keep_their_label():
     options = ["0##T4a##4 : Lijn 4 · GVB", "0##T4b##4 : Lijn 4 · HTM", "99##X##9"]
-    assert route_names.with_modes(options, {"tram": "tram"}) == [
+    assert line_labels.with_modes(options, {"tram": "tram"}) == [
         "4 : Lijn 4 · GVB", "4 : Lijn 4 · HTM", "9"]
 
 
 def test_route_types_basic_and_extended():
-    assert [route_names.line_mode(t) for t in ("0", "1", "2", "3", "4", "5", "6", "7", "11", "12")] == [
+    assert [line_labels.line_mode(t) for t in ("0", "1", "2", "3", "4", "5", "6", "7", "11", "12")] == [
         "tram", "metro", "train", "bus", "ferry", "cable_tram", "aerial_lift", "funicular",
         "trolleybus", "monorail"]
-    assert [route_names.line_mode(t) for t in ("100", "200", "401", "700", "900", "1300", "99", "x")] == [
+    assert [line_labels.line_mode(t) for t in ("100", "200", "401", "700", "900", "1300", "99", "x")] == [
         "train", "coach", "metro", "bus", "tram", "aerial_lift", None, None]
 
 
