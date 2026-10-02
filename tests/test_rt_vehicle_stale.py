@@ -20,7 +20,7 @@ from google.transit import gtfs_realtime_pb2
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+vehicles = ha_stub.load("vehicles")
 rt_feed = ha_stub.load("rt_feed")
 
 NOW = datetime.datetime(2026, 9, 25, 19, 53, tzinfo=datetime.timezone.utc)
@@ -53,14 +53,14 @@ def _feed_bytes(ages, extra=()):
 
 def _on_the_map(monkeypatch, entities, **context):
     monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities", lambda **kw: entities)
-    monkeypatch.setattr(gtfs_rt_helper, "update_geojson", lambda me: None)
+    monkeypatch.setattr(vehicles, "update_geojson", lambda me: None)
     me = types.SimpleNamespace(
         _vehicle_position_url="http://feed.invalid/vp", _headers={}, _trip_id="T0",
         _trip_list=[], _direction="0", _route_id="A", _icon="mdi:tram",
         _data={"file": "tao", "schedule": None, "next_departure": {"route_short_name": "A"}},
         **context)
     with freeze_time(NOW):
-        body = gtfs_rt_helper.get_rt_vehicle_positions(me)
+        body = vehicles.get_rt_vehicle_positions(me)
     return sorted(e["properties"]["trip_id"] for e in body)
 
 

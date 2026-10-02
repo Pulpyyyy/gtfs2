@@ -9,7 +9,7 @@ every file here shares: an id or an entry's name as a file name part
 (write_json_file) and a write skipped when nothing changed
 (write_json_if_changed). The leg file is in leg.py, the timetable in
 timetable.py. The coordinator calls the writers from the executor; the
-positions file itself is written by gtfs_rt_helper.get_rt_vehicle_positions.
+positions file itself is written by vehicles.get_rt_vehicle_positions.
 """
 from __future__ import annotations
 

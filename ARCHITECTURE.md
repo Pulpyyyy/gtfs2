@@ -379,7 +379,8 @@ route_names.py           line labels, lines a feed declares
 stations.py              train entries: stations instead of stops
 exports.py               which map files a refresh writes, and when
 local_stops.py           the departures around a person or zone, timetable and realtime
-gtfs_rt_helper.py        the realtime of one sensor: next services, delays, alerts, vehicles
+gtfs_rt_helper.py        the realtime of one sensor: next services, delays, alerts
+vehicles.py              the vehicles of a journey, written as the map card's file
 ```
 
 Functions here take values, not entities: `departure_attributes` takes the

@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+vehicles = ha_stub.load("vehicles")
 rt_feed = ha_stub.load("rt_feed")
 
 
@@ -40,7 +40,7 @@ def test_each_vehicle_titled_after_its_trip(tmp_path, monkeypatch):
     schedule = _schedule(tmp_path)
     monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                         lambda **kw: [_vehicle("T1", "101"), _vehicle("T2", "102")])
-    monkeypatch.setattr(gtfs_rt_helper, "update_geojson", lambda me: None)
+    monkeypatch.setattr(vehicles, "update_geojson", lambda me: None)
     me = types.SimpleNamespace(
         _vehicle_position_url="http://feed.invalid/vp", _headers={}, _trip_id="T1",
         _trip_list=["T1", "T2"], _direction="0", _route_id="R1", _icon="mdi:bus",
@@ -48,7 +48,7 @@ def test_each_vehicle_titled_after_its_trip(tmp_path, monkeypatch):
                "next_departure": {"route_short_name": "N1"}},
         # the rider's destination, which the title used to show
         config_entry=types.SimpleNamespace(data={"destination": "S9: Mairie"}))
-    body = gtfs_rt_helper.get_rt_vehicle_positions(me)
+    body = vehicles.get_rt_vehicle_positions(me)
     titles = sorted(e["properties"]["title"] for e in body)
     assert titles == ["N1 → Lac 101_bus", "N1 → Stade 102_bus"]
     schedule.engine.dispose()
@@ -69,12 +69,12 @@ def test_the_database_direction_places_the_vehicle(tmp_path, monkeypatch):
     feed[0]["vehicle"]["trip"]["direction_id"] = "1"
     feed[1]["vehicle"]["trip"]["direction_id"] = "0"
     monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities", lambda **kw: feed)
-    monkeypatch.setattr(gtfs_rt_helper, "update_geojson", lambda me: None)
+    monkeypatch.setattr(vehicles, "update_geojson", lambda me: None)
     me = types.SimpleNamespace(
         _vehicle_position_url="http://feed.invalid/vp", _headers={}, _trip_id="T9",
         _trip_list=[], _direction="0", _route_id="R1", _icon="mdi:bus",
         _data={"file": "src", "schedule": schedule, "next_departure": {"route_short_name": "N1"}})
-    body = gtfs_rt_helper.get_rt_vehicle_positions(me)
+    body = vehicles.get_rt_vehicle_positions(me)
     assert [e["properties"]["trip_id"] for e in body] == ["T1"]
     assert body[0]["properties"]["direction_id"] == "0"
     engine.dispose()
