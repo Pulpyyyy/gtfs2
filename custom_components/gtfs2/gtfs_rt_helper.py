@@ -547,7 +547,9 @@ def get_rt_alerts(self: GTFSUpdateCoordinator) -> dict[str, Any]:
     # an entry created before this option existed has no alerts_url at all, and
     # subscripting None raised, which cost that entry its whole realtime block
     url = str(self._alerts_url or "")
-    if url[:4] == "http":
+    # any url, as the trip updates and the vehicles: a file:// feed is what
+    # update_gtfs_rt_local writes, and an "http" prefix left it unread
+    if url:
         feed_entities = _read_feed(self, url, "alerts")
         rt_alerts = journey_alerts(self, feed_entities)
 
