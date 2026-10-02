@@ -99,6 +99,10 @@ except FileNotFoundError:  # a tree that lists a line's places in gtfs_helper
 # it lacks fails the cases that need it
 stations = (ha_stub.load("stations") if (ha_stub.COMPONENT / "stations.py").is_file()
             else gtfs_helper)
+# the riding order of a line's places, the same way: read in places where
+# a checkout keeps it there
+place_order = (ha_stub.load("place_order") if (ha_stub.COMPONENT / "place_order.py").is_file()
+               else places)
 
 
 def _function(module, name):
@@ -660,7 +664,7 @@ def served_between(patterns, origins, destinations):
 # a ride read as list positions, cut where it comes back to a position it
 # already passed (a racket, a loop): the component's own cut. A ride of one
 # place gives a piece of one, which rides_in_order passes as nothing to check
-pieces_of = places._segments_of
+pieces_of = place_order._segments_of
 
 
 def rides_in_order(piece, size, ends=(), ways=(True, False), excused=None):

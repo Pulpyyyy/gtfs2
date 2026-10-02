@@ -402,6 +402,7 @@ geojson.py            the files written under www/gtfs2 for a map card: names, r
 leg.py                the leg file: the ride of the next departure, stop by stop
 timetable.py          the timetable file: every departure over three service days
 places.py             the places of a line the flow offers, their order and direction
+place_order.py        the order a line's places are ridden in, both ways round
 feed_window.py        how long the kept timetable is good for
 ```
 
