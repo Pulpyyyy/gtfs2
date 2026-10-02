@@ -882,9 +882,15 @@ class Check:
 # strict: the day a fix lands, its marks have to go with it, which is how a
 # fix PR and the test that turns green arrive together. On main the stop
 # selector, the swapped pair and the train match each carry a set of marks;
-# this branch passes every one of them, so the dict is empty here, and a
-# case that regresses gets its mark back with the reason.
-KNOWN: dict[str, str] = {}
+# this branch passes every one of them; a case that regresses gets its mark
+# back with the reason, and so does a defect a new fixture brings to light.
+KNOWN: dict[str, str] = {
+    # TriMet line 20, direction 1: the whole-line origin list does not
+    # follow the main ride 9971 .. 14201 (31 trips), which steps back in it
+    # along SW Barnes and W Burnside; the list order family of the
+    # destination list chantier, not fixed yet
+    "trimet-20-d1-stop_list": "the origin list contradicts TriMet 20's main ride back",
+}
 
 
 def _zip_table(archive, name):

@@ -1,0 +1,33 @@
+{
+  "captured_at": 1790979113,
+  "kept": {
+    "agency": 1,
+    "calendar": 25,
+    "calendar_dates": 18,
+    "feed_info": 1,
+    "routes": 2,
+    "stop_times": 11877,
+    "stops": 356,
+    "trips": 330
+  },
+  "kept_night_trips": true,
+  "provider": "TriMet, Portland",
+  "routes_kept": {
+    "100": [
+      "100"
+    ],
+    "20": [
+      "20"
+    ]
+  },
+  "source_totals": {
+    "stop_times": 3402538,
+    "trips": 4550
+  },
+  "sources": {
+    "static": "https://developer.trimet.org/schedule/gtfs.zip"
+  },
+  "static_only": true,
+  "trip_cap_per_pattern": 5,
+  "why": "no trip_headsign at all: the destination is the stop_headsign of each call; MAX lines with no route_short_name, named by their long name only; a zone behind UTC (America/Los_Angeles); night trips past 24:00 (discussion vingerha/gtfs2#208, 2026-10-02)"
+}
