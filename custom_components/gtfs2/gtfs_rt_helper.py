@@ -824,7 +824,6 @@ def get_gtfs_rt(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> str:
             log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
             log("Ìssues with downloading GTFS RT SIRI data to: %s with error: %s", os.path.join(gtfs_dir, file), ex)
             return "no_rt_data_file" 
-        return "ok"                                
     try:
         r = fetch("get", url, headers=_with_user_agent(_headers), allow_redirects=True, timeout=20)
         if r.status_code != 200:
