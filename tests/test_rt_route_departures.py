@@ -28,6 +28,7 @@ from freezegun import freeze_time
 import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_feed = sys.modules["gtfs2_under_test.rt_feed"]
 const = sys.modules["gtfs2_under_test.const"]
 
 UTC = datetime.timezone.utc
@@ -63,7 +64,7 @@ def sensor(trip="T1", board=(), direction="0", relative=False):
 
 def services(feed, me=None):
     me = me or sensor()
-    with freeze_time(NOW), patch.object(gtfs_rt_helper, "get_gtfs_feed_entities",
+    with freeze_time(NOW), patch.object(rt_feed, "get_gtfs_feed_entities",
                                         lambda **_kw: feed):
         return gtfs_rt_helper.get_next_services(me)
 

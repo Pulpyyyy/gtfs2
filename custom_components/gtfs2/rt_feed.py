@@ -1,7 +1,8 @@
 """Reading a realtime feed, for every reader in gtfs_rt_helper.
 
 One download per feed and per publication, shared by every sensor that
-reads it (get_gtfs_feed_entities); a failure said once, not once per
+reads it (get_gtfs_feed_entities, and _read_feed for one of a
+coordinator's feeds); a failure said once, not once per
 sensor and per minute; and the body, json or protobuf, decoded into what
 the readers walk (convert_gtfs_realtime_to_json,
 convert_gtfs_realtime_positions_to_json), with the GTFS-RT enums spelled
@@ -16,12 +17,16 @@ import json
 import logging
 import threading
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 from google.transit import gtfs_realtime_pb2
 
 from .key_mask import fetch
+
+if TYPE_CHECKING:
+    # for the annotations only
+    from .coordinator import GTFSLocalStopUpdateCoordinator, GTFSUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,6 +34,8 @@ _LOGGER = logging.getLogger(__name__)
 # dicts convert_gtfs_realtime_to_json and its sibling write; for the
 # alerts, the protobuf messages themselves
 type FeedEntities = Sequence[Any]
+# the coordinator a realtime reader runs on: a journey's, or the local stops'
+type _Coordinator = GTFSUpdateCoordinator | GTFSLocalStopUpdateCoordinator
 
 
 # One GTFS-RT feed covers a whole network, so every sensor reading the same
@@ -127,6 +134,13 @@ def get_gtfs_feed_entities(url: str, headers: Mapping[str, str | None] | None, l
         else:
             _FEED_FAILED[key] = time.time()
         return entities
+
+
+def _read_feed(self: _Coordinator, url: str, label: str) -> FeedEntities | None:
+    """The entities of one of the entity's realtime feeds, read with its
+    headers through its source's cache."""
+    return get_gtfs_feed_entities(url=url, headers=self._headers, label=label,
+                                  owner=self._data.get("file", ""))
 
 
 def _still_current(key: tuple[str, str, str], fetched: float) -> bool:

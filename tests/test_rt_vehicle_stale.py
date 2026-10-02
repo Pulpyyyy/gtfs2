@@ -52,7 +52,7 @@ def _feed_bytes(ages, extra=()):
 
 
 def _on_the_map(monkeypatch, entities, **context):
-    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities", lambda **kw: entities)
+    monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities", lambda **kw: entities)
     monkeypatch.setattr(gtfs_rt_helper, "update_geojson", lambda me: None)
     me = types.SimpleNamespace(
         _vehicle_position_url="http://feed.invalid/vp", _headers={}, _trip_id="T0",

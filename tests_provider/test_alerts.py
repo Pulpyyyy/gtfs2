@@ -28,6 +28,7 @@ ha_stub.install()
 import fixture_db  # noqa: E402
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_feed = ha_stub.load("rt_feed")
 alerts_mod = ha_stub.load("alerts")
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sncf"
@@ -68,7 +69,7 @@ def test_alerts_reach_the_listed_trips(record_property, monkeypatch):
     feed = rt.FeedMessage()
     feed.ParseFromString((FIXTURE / "service_alerts.pb").read_bytes())
     alerts = list(feed.entity)
-    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities", lambda **_kw: alerts)
+    monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities", lambda **_kw: alerts)
     check = Check()
     # the capture's own scenarios: a trip an alert names by its number, and
     # a trip nothing is announced on
@@ -178,19 +179,19 @@ def test_alerts_name_their_stops(record_property, monkeypatch):
 
     check = Check()
     # Versigny, passed on the way, named by its station as IDFM does
-    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities",
+    monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                         lambda **_kw: [works("StopArea:OCE87296608")])
     got = gtfs_rt_helper.get_rt_alerts(follower())
     items = got.get("origin_stop_alerts") or []
     check.same([i.get("stops") for i in items], [["Versigny"]], "the station passed is named")
     check.same(got.get("origin_stop_alert"), "Travaux", "the sentence stays the feed's")
     # the departure itself, named by its platform: the station's name
-    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities",
+    monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                         lambda **_kw: [works("StopPoint:OCECar TER-87296442")])
     items = gtfs_rt_helper.get_rt_alerts(follower()).get("origin_stop_alerts") or []
     check.same([i.get("stops") for i in items], [["Tergnier"]], "the departure is named")
     # a station off the journey: no alert at all, as before
-    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities",
+    monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                         lambda **_kw: [works("StopArea:OCE99999999")])
     check.same(gtfs_rt_helper.get_rt_alerts(follower()).get("origin_stop_alerts"), None,
                "a station off the journey")
@@ -255,7 +256,7 @@ def test_alerts_to_come_say_when(record_property, monkeypatch):
     check = Check()
     with freeze_time(now):
         # only alerts to come: listed, dated, and nothing current is said
-        monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities",
+        monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                             lambda **_kw: [works, police])
         got = gtfs_rt_helper.get_rt_alerts(follower())
         items = got.get("origin_stop_alerts") or []
@@ -273,7 +274,7 @@ def test_alerts_to_come_say_when(record_property, monkeypatch):
                     got.get("alert_cause"), got.get("alert_effect")),
                    (None, None, None, None), "nothing current is said")
         # with a slowdown now: it takes the sentence, the effect and the head
-        monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities",
+        monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                             lambda **_kw: [works, police, delay])
         got = gtfs_rt_helper.get_rt_alerts(follower())
         items = got.get("origin_stop_alerts") or []

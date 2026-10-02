@@ -68,6 +68,7 @@ coordinator_mod = ha_stub.load("coordinator")
 # one function inside it that touches the network.
 import sys  # noqa: E402
 gtfs_rt_helper_mod = sys.modules["gtfs2_under_test.gtfs_rt_helper"]
+rt_feed_mod = sys.modules["gtfs2_under_test.rt_feed"]
 # and the file exports the refresh calls, whose writers are patched out
 exports_mod = sys.modules["gtfs2_under_test.exports"]
 
@@ -223,7 +224,7 @@ def test_coordinator_case(case_id: str, case_dir: Path):
              patch.object(exports_mod, "get_representative_trip", return_value="fullest_trip"), \
              patch.object(exports_mod, "write_leg_file", return_value=None), \
              patch.object(coordinator_mod, "get_rt_alerts", return_value={}), \
-             patch.object(gtfs_rt_helper_mod, "get_gtfs_feed_entities", return_value=feed_entities):
+             patch.object(rt_feed_mod, "get_gtfs_feed_entities", return_value=feed_entities):
             result = asyncio.run(coord._async_update_data())
 
     result = case_files.normalize_datetimes(result)

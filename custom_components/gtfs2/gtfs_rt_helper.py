@@ -45,7 +45,7 @@ from .alerts import journey_alerts
 from .geojson import vehicle_positions_name, write_json_file
 from .key_mask import fetch
 from .rt_feed import (
-    CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, FeedEntities, _same_route, _with_user_agent,
+    CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, FeedEntities, _Coordinator, _read_feed, _same_route, _with_user_agent,
     delay_of, get_gtfs_feed_entities, stop_relationship, stop_update_clock,
     trip_relationship,
 )
@@ -54,10 +54,8 @@ from .rt_source import rt_headers, with_query_key
 if TYPE_CHECKING:
     # for the annotations only
     from pygtfs import Schedule
-    from .coordinator import GTFSLocalStopUpdateCoordinator, GTFSUpdateCoordinator
+    from .coordinator import GTFSUpdateCoordinator
 
-# the coordinator a realtime reader runs on: a journey's, or the local stops'
-type _Coordinator = GTFSUpdateCoordinator | GTFSLocalStopUpdateCoordinator
 # the departures, delays and trips listed at one stop, in the same order
 type _Slot = dict[str, list[Any]]
 # {route_id: {direction_id: {stop_id: _Slot}}}
@@ -74,12 +72,6 @@ def due_in_minutes(timestamp: datetime) -> int:
     diff = timestamp - dt_util.utcnow()
     _LOGGER.debug("GTFS RT due in minutes, timestamp: %s, now_utc: %s", timestamp, dt_util.utcnow())
     return int(diff.total_seconds() / 60)
-
-def _read_feed(self: _Coordinator, url: str, label: str) -> FeedEntities | None:
-    """The entities of one of the entity's realtime feeds, read with its
-    headers through its source's cache."""
-    return get_gtfs_feed_entities(url=url, headers=self._headers, label=label,
-                                  owner=self._data.get("file", ""))
 
 
 def get_next_services(self: GTFSUpdateCoordinator) -> dict[str, Any]:

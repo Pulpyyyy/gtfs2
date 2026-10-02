@@ -14,6 +14,7 @@ from sqlalchemy import create_engine, text
 import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+rt_feed = ha_stub.load("rt_feed")
 
 
 def _schedule(tmp_path):
@@ -37,7 +38,7 @@ def _vehicle(trip, vehicle_id):
 
 def test_each_vehicle_titled_after_its_trip(tmp_path, monkeypatch):
     schedule = _schedule(tmp_path)
-    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities",
+    monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                         lambda **kw: [_vehicle("T1", "101"), _vehicle("T2", "102")])
     monkeypatch.setattr(gtfs_rt_helper, "update_geojson", lambda me: None)
     me = types.SimpleNamespace(
@@ -67,7 +68,7 @@ def test_the_database_direction_places_the_vehicle(tmp_path, monkeypatch):
     feed = [_vehicle("T1", "101"), _vehicle("T2", "102")]
     feed[0]["vehicle"]["trip"]["direction_id"] = "1"
     feed[1]["vehicle"]["trip"]["direction_id"] = "0"
-    monkeypatch.setattr(gtfs_rt_helper, "get_gtfs_feed_entities", lambda **kw: feed)
+    monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities", lambda **kw: feed)
     monkeypatch.setattr(gtfs_rt_helper, "update_geojson", lambda me: None)
     me = types.SimpleNamespace(
         _vehicle_position_url="http://feed.invalid/vp", _headers={}, _trip_id="T9",
