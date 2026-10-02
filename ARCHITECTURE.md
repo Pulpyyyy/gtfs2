@@ -381,9 +381,8 @@ look_alikes.py           lines that would read the same, told apart
 stations.py              train entries: stations instead of stops
 exports.py               which map files a refresh writes, and when
 local_stops.py           the departures around a person or zone, timetable and realtime
-gtfs_rt_helper.py        the realtime of one sensor: next services, delays, alerts
+gtfs_rt_helper.py        the realtime of one sensor: the feed trips it follows, next services, delays, alerts
 vehicles.py              the vehicles of a journey, written as the map card's file
-trip_match.py            which feed trips an entity follows, and their scheduled times
 ```
 
 Functions here take values, not entities: `departure_attributes` takes the
