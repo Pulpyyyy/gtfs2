@@ -74,3 +74,13 @@ def test_the_local_stops_query_leaves_an_untimed_call_out(tmp_path):
         schedule, 47.01, 1.01, 0.03, "+60 minute", "-15 minute", AT.replace(tzinfo=None))
     assert {(r["trip_id"], r["stop_id"]) for r in rows} == {("T", "S1"), ("T", "S3")}
     schedule.engine.dispose()
+
+
+def test_an_untimed_end_gives_no_next_service_day(tmp_path):
+    # the departures leave such a pair out: the next service day did not,
+    # and the sensor, blank, said the line still ran today
+    schedule = _schedule(tmp_path)
+    assert gtfs_helper.get_next_service_date(schedule, "S1", "S2", "2026-09-24") is None
+    assert gtfs_helper.get_next_service_date(schedule, "S1", "S3", "2026-09-24") == "2026-09-24"
+    schedule.engine.dispose()
+

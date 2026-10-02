@@ -146,6 +146,9 @@ def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_
             where {origin_where} and {dest_where}
               and o.stop_sequence < x.stop_sequence
               and {_boards("o")} and {_alights("x")}
+              -- an untimed call is no departure, as the departures read it
+              and o.arrival_time is not null and o.departure_time is not null
+              and x.arrival_time is not null and x.departure_time is not null
               {line_where}
         )
         select min(dates.d) from dates
