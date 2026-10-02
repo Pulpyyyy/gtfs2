@@ -38,7 +38,6 @@ from .const import (
     CONF_TIMERANGE,
     CONF_REFRESH_INTERVAL,
     CONF_OFFSET,
-    CONF_REAL_TIME,
     CONF_KIND,
     ENTRY_KIND_DATASOURCE,
     DEFAULT_MAX_LOCAL_STOPS,
@@ -59,7 +58,6 @@ from .notifications import _async_text
 from .source_refresh import source_lock, source_zip_path, source_zip_url
 
 from .rt_source import (
-    RT_OPTION_KEYS,
     datasource_entry,
     datasource_files,
     journey_entry_data,
@@ -775,12 +773,6 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
                 stop_limit = await _check_stop_list(self, _data)
                 if stop_limit :
                     return self.async_abort(reason=stop_limit)
-            # the realtime fields mirrored from the datasource entry live in
-            # these options too, for a downgrade to fall back on: an edit of
-            # the sensor's own knobs must not wipe them
-            for key in (*RT_OPTION_KEYS, CONF_REAL_TIME):
-                if key in self.config_entry.options and key not in user_input:
-                    self._user_inputs[key] = self.config_entry.options[key]
             self._user_inputs.update(user_input)
             _LOGGER.debug(f"UserInputs Options Init: {self._user_inputs}")
             return self.async_create_entry(title="", data=self._user_inputs)

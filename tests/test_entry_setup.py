@@ -1,8 +1,8 @@
 """How the three kinds of entry are set up, unloaded and removed.
 
 A datasource entry runs no coordinator: it forwards to the source's own
-platforms, mirrors its realtime settings onto the journey entries on every
-edit, and arms the scheduled look at its host, disarmed with the entry. A
+platforms and arms the scheduled look at its host, re-armed on every edit
+and disarmed with the entry; its journeys are not written to. A
 journey entry gets the coordinator of its kind, a local stops one when it
 follows a person, kept on the entry itself. The first entry set up starts
 the walk that gives every source its datasource entry, and only the first.
@@ -99,9 +99,8 @@ def test_a_datasource_entry_runs_no_coordinator(monkeypatch):
     assert asyncio.run(integration.async_setup_entry(hass, entry)) is True
     assert hass.forwarded == [("d1", list(integration.DATASOURCE_PLATFORMS))]
     assert not hasattr(entry, "runtime_data")
-    # every edit is mirrored onto the journeys and re-arms the check
-    assert entry.listeners == [integration.async_mirror_rt_to_entries,
-                               integration.async_rearm_source_check]
+    # every edit re-arms the check, and writes nothing on the journeys
+    assert entry.listeners == [integration.async_rearm_source_check]
     assert armed == [("arm", "d1")]
     # the check goes with the entry
     for func in entry.on_unload:

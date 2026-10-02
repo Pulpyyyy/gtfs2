@@ -183,7 +183,7 @@ def _collect_source_rt_options(url_fields: Mapping[str, Any], key_fields: Mappin
     """The options a datasource entry stores: what was typed, nothing empty.
 
     An emptied field means removal, so blanks and stray spaces never make it
-    into the options - the coordinators and the mirror both read absence as
+    into the options - the coordinators read absence as
     "this source does not have that feed". Without a key, none of the key
     fields survive either. The rt_enabled switch is not on these screens,
     so its position rides through an edit untouched.

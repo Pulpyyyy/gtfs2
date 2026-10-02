@@ -28,9 +28,6 @@ for fetch. The promises:
                  stripping it, and its own url wins; the refresh data carries
                  the journeys' import flags; a source that took the key over
                  speaks for itself, and one that dropped it resolves none
-    mirror       the source's url and key land on every journey entry; a key
-                 the source dropped comes off the entries that had it; an
-                 entry with nothing to change is not written
 
 Already promised elsewhere, not repeated here: same bytes are not kept and
 new bytes are (test_source_fetch_if_new.py), and removing a datasource takes the
@@ -277,35 +274,6 @@ def test_a_source_that_dropped_its_key_resolves_none():
     dropped = _entry("tao", DROPPED)
     cfg = rt_source.static_feed_config(_hass(dropped, _entry("line 2", KEYED)), dropped)
     assert "api_key" not in cfg
-
-
-# --- mirror -------------------------------------------------------------------
-
-def test_the_mirror_writes_the_sources_url_and_key_on_every_journey():
-    keyless, keyed = _entry("line 1", KEYLESS), _entry("line 2", KEYED)
-    owning = _entry("tao", OWNING)
-    asyncio.run(rt_source.async_mirror_rt_to_entries(_hass(keyless, owning, keyed), owning))
-    assert [e.data.get("url") for e in (keyless, keyed)] == ["https://host/tao.zip"] * 2
-    assert [e.data.get("api_key") for e in (keyless, keyed)] == ["s-key"] * 2
-    assert keyless.data.get("api_key_location") == "header"
-
-
-def test_the_mirror_takes_a_dropped_key_off_the_journeys():
-    keyless, keyed = _entry("line 1", KEYLESS), _entry("line 2", KEYED)
-    owning, dropped = _entry("tao", OWNING), _entry("tao", DROPPED)
-    asyncio.run(rt_source.async_mirror_rt_to_entries(_hass(keyless, owning, keyed), owning))
-    asyncio.run(rt_source.async_mirror_rt_to_entries(_hass(keyless, dropped, keyed), dropped))
-    assert [e.data.get("api_key") for e in (keyless, keyed)] == [None, None]
-    assert keyed.data.get("api_key_location") == "not_applicable"
-
-
-def test_the_mirror_writes_nothing_when_nothing_changes():
-    untouched = _entry("line 3", {"file": "tao", "url": "https://host/tao.zip",
-                                  "api_key_location": "not_applicable"},
-                       {"real_time": False})
-    hass = _hass(untouched, _entry("tao", DROPPED))
-    asyncio.run(rt_source.async_mirror_rt_to_entries(hass, hass.config_entries.entries[1]))
-    assert hass.config_entries.updated == []
 
 
 # --- once ---------------------------------------------------------------------

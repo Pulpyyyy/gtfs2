@@ -37,7 +37,7 @@ class GTFSDatasourceRTSwitch(SwitchEntity):
     finds the urls and the key exactly where they were - nothing to retype,
     unlike emptying the fields. The state lives in the datasource entry's
     options, so it survives restarts, and flipping it runs through the same
-    update the realtime screens use, mirror to the journey entries included.
+    update the realtime screens use.
     """
 
     _attr_entity_category = EntityCategory.CONFIG

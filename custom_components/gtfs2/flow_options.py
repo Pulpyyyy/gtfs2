@@ -148,8 +148,7 @@ class OptionsScreens:
         creation flow asked once is edited here with the same screens; the
         refresh paths read the source, never a caller. The key stays
         behind its toggle like everywhere else. The change lands on the
-        datasource entry's data and the mirror listener writes it through
-        to the journey entries, so a downgrade to upstream keeps working.
+        datasource entry's data, which every reader of the source reads.
         """
         errors: dict[str, str] = {}
         opts = self._source().options
@@ -225,8 +224,7 @@ class OptionsScreens:
         """Store what the static feed screens collected.
 
         The address and the key go on the datasource entry's data, the
-        refresh policy in its options. Untoggling the key drops it: the
-        mirror listener takes it off the journey entries too.
+        refresh policy in its options. Untoggling the key drops it.
         """
         fields = self._user_inputs
         entry = self._source()

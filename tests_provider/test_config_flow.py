@@ -1519,13 +1519,14 @@ async def imported(hass, data):
         DOMAIN, context={"source": "import"}, data=data))["result"]
 
 
-def test_a_journey_s_options_keep_the_realtime_it_carries(world):
+def test_a_journey_s_options_hold_its_own_knobs_only(world):
     async def scenario(hass):
         options = hass.config_entries.options
         entry = await imported(hass, {
             "file": "tao", "url": "na", "extract_from": "zip", "name": "to work",
             "route": "ORLEANS:Line:40", "route_type": "3", "origin": "a: A", "destination": "b: B"})
-        # the realtime a journey kept before its source held it
+        # the realtime a journey kept before its source held it: the
+        # source's now, which an edit of the journey's own knobs lets go
         hass.config_entries.async_update_entry(entry, options={
             "trip_update_url": "https://rt.example/trips", "real_time": True})
         form = shown(await options_of(hass, entry), FORM, "init")
@@ -1534,8 +1535,7 @@ def test_a_journey_s_options_keep_the_realtime_it_carries(world):
         with pytest.raises(vol.Invalid):
             await submit(hass, form, options, refresh_interval="soon")
         shown(await submit(hass, form, options, refresh_interval=5, offset=2), CREATE)
-        assert dict(entry.options) == {"trip_update_url": "https://rt.example/trips",
-                                       "real_time": True, "refresh_interval": 5, "offset": 2}
+        assert dict(entry.options) == {"refresh_interval": 5, "offset": 2}
     walk(world, scenario)
 
 

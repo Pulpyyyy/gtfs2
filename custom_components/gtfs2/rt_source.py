@@ -75,8 +75,8 @@ def journey_entry_data(data: Mapping[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in data.items() if key not in SOURCE_FIELDS}
 
 # the key the static feed is downloaded with, held in the datasource entry's
-# data next to the url and mirrored onto the journey entries. Distinct from
-# the realtime key in the options: one key per feed, the provider may differ
+# data next to the url. Distinct from the realtime key in the options: one
+# key per feed, the provider may differ
 STATIC_KEY_KEYS = (CONF_API_KEY, CONF_API_KEY_NAME, CONF_API_KEY_LOCATION)
 
 def has_rt_feed(cfg: Mapping[str, Any]) -> bool:
@@ -389,60 +389,3 @@ async def async_bootstrap_datasource_entries(hass: HomeAssistant,
             # one source failing must not keep the others from their entry
             _LOGGER.exception("Could not create datasource entry for %s: %s", file, ex)
 
-
-async def async_mirror_rt_to_entries(hass: HomeAssistant, source_entry: ConfigEntry) -> None:
-    """Write the datasource's feeds through to its journey entries.
-
-    While the datasource entry exists the resolution never reads the journey
-    copies - but a downgrade to upstream does. Mirroring on every edit keeps
-    that exit working with current values instead of the ones frozen at
-    bootstrap. The per-entry boolean follows the all-source rule: realtime is
-    on wherever the source has a trip updates url.
-
-    The static feed is mirrored the same way, into the entries' data: the
-    address the zip comes from, and the key that download needs once the
-    source has taken it over. A key the source dropped is taken off the
-    entries too, so a stale copy can never bring it back.
-    """
-    cfg = source_entry.options
-    src = source_entry.data
-    # a source silenced by its switch mirrors as realtime off: the urls stay
-    # in place, here and on the journey entries alike. Deliberately stricter
-    # than has_rt_feed: upstream can only run realtime on trip updates, so an
-    # alerts-only source mirrors as off rather than erroring there every cycle
-    active = bool(cfg.get(CONF_TRIP_UPDATE_URL)) and cfg.get(CONF_RT_ENABLED, True)
-    for entry in journey_entries(hass, src.get(CONF_FILE)):
-        new_options = _mirrored_options(entry.options, cfg, active)
-        if new_options != dict(entry.options):
-            hass.config_entries.async_update_entry(entry, options=new_options)
-        new_data = _mirrored_data(entry.data, src)
-        if new_data != dict(entry.data):
-            hass.config_entries.async_update_entry(entry, data=new_data)
-
-
-def _mirrored_options(options: Mapping[str, Any], cfg: Mapping[str, Any], active: bool) -> dict[str, Any]:
-    """A journey entry's options with the source's realtime feeds written over them."""
-    new_options = {**options}
-    for key in RT_OPTION_KEYS:
-        if key in cfg:
-            new_options[key] = cfg[key]
-        else:
-            new_options.pop(key, None)
-    new_options[CONF_REAL_TIME] = active
-    return new_options
-
-
-def _mirrored_data(data: Mapping[str, Any], src: Mapping[str, Any]) -> dict[str, Any]:
-    """A journey entry's data with the source's static address and key."""
-    new_data = {**data}
-    if src.get(CONF_URL):
-        new_data[CONF_URL] = src[CONF_URL]
-    if CONF_API_KEY_LOCATION in src:
-        if src.get(CONF_API_KEY):
-            for key in STATIC_KEY_KEYS:
-                new_data[key] = src[key]
-        elif data.get(CONF_API_KEY):
-            for key in STATIC_KEY_KEYS:
-                new_data.pop(key, None)
-            new_data[CONF_API_KEY_LOCATION] = DEFAULT_API_KEY_LOCATION
-    return new_data

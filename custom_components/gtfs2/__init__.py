@@ -25,7 +25,6 @@ from .flow_source import SOURCE_URL_SCHEMES, valid_feed_url
 from .rt_source import (
     source_readers,
     async_bootstrap_datasource_entries,
-    async_mirror_rt_to_entries,
     datasource_unique_id,
 )
 from .source_refresh import (
@@ -165,12 +164,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
         # a datasource entry runs no coordinator: it carries the source's
         # realtime feeds, which the sensors' coordinators resolve each cycle.
-        # Every edit is mirrored back onto the journey entries, so a
-        # downgrade to upstream falls back on current values rather than the
-        # ones frozen at bootstrap. Its entities are the diagnostic saying
-        # whether realtime runs, and why not, and the switch that silences
-        # it without losing the config.
-        entry.async_on_unload(entry.add_update_listener(async_mirror_rt_to_entries))
+        # Its entities are the diagnostic saying whether realtime runs, and
+        # why not, and the switch that silences it without losing the config.
         # the scheduled look at the source's host, armed per the entry's
         # options and re-armed when they change
         async_arm_source_check(hass, entry)
