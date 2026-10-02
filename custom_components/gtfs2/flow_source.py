@@ -170,6 +170,14 @@ def _source_rt_key_schema(opts: Mapping[str, Any]) -> dict[vol.Marker, Any]:
     }
 
 
+def rt_url_errors(url_fields: Mapping[str, Any]) -> dict[str, str]:
+    """The realtime addresses typed that are no valid address, by field,
+    held to the static address's rule; an empty field is no feed."""
+    return {key: "invalid_source_url"
+            for key in (CONF_TRIP_UPDATE_URL, CONF_VEHICLE_POSITION_URL, CONF_ALERTS_URL)
+            if (url_fields.get(key) or "").strip() and not valid_feed_url(url_fields[key])}
+
+
 def _collect_source_rt_options(url_fields: Mapping[str, Any], key_fields: Mapping[str, Any],
                                previous: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """The options a datasource entry stores: what was typed, nothing empty.
@@ -420,7 +428,10 @@ class SourceScreens:
         errors: dict[str, str] = {}
         source = datasource_entry(self.hass, self._user_inputs.get(CONF_FILE))
         opts = source.options if source else {}
-        if user_input is None:
+        if user_input is not None and (errors := rt_url_errors(user_input)):
+            # shown again with what was typed, for the rider to correct
+            opts = {**opts, **user_input}
+        if user_input is None or errors:
             return self.async_show_form(
                 step_id="source_rt",
                 data_schema=vol.Schema(_source_rt_schema(opts)),

@@ -303,7 +303,7 @@ _UPDATE_GTFS_SCHEMA = vol.All(
 )
 _UPDATE_GTFS_RT_SCHEMA = vol.Schema({
     vol.Required("file"): cv.string,
-    vol.Required(CONF_URL): cv.string,
+    vol.Required(CONF_URL): vol.All(cv.string, _source_url),
     vol.Required("rt_type"): vol.In(["trip_data", "vehicle_positions", "alerts"]),
     **_KEY_FIELDS,
     vol.Optional("accept"): cv.boolean,

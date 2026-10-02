@@ -36,6 +36,7 @@ from .const import (
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
 from .flow_source import (
+    rt_url_errors,
     valid_feed_url,
     _collect_source_rt_options, _source_key_schema, _source_rt_key_schema, _source_rt_schema,
     _typed_key,
@@ -91,8 +92,10 @@ class OptionsScreens:
         """
         errors: dict[str, str] = {}
         opts = self._source().options
-
-        if user_input is None:
+        if user_input is not None and (errors := rt_url_errors(user_input)):
+            # shown again with what was typed, for the rider to correct
+            opts = {**opts, **user_input}
+        if user_input is None or errors:
             return self.async_show_form(
                 step_id="real_time",
                 data_schema=vol.Schema(_source_rt_schema(opts)),

@@ -1191,6 +1191,12 @@ def test_a_source_downloaded_from_a_url_keeps_its_address_and_its_realtime_feeds
         assert (gtfs_dir(hass) / "tao.zip").read_bytes() == zip_bytes("tao-journeys")
         meta = json.loads((gtfs_dir(hass) / "tao.zip.meta.json").read_text(encoding="utf-8"))
         assert meta["url"] == URL
+        # a realtime address is held to the static one's rule, the typed
+        # value kept for the rider to correct
+        feeds = shown(await submit(hass, feeds, trip_update_url="htps://rt.example/trips"),
+                      FORM, "source_rt")
+        assert feeds["errors"] == {"trip_update_url": "invalid_source_url"}
+        assert default(feeds, "trip_update_url") == "htps://rt.example/trips"
         key = shown(await submit(hass, feeds, trip_update_url=" https://rt.example/trips ",
                                  needs_api_key=True), FORM, "source_rt_key")
         assert (default(key, "api_key"), default(key, "api_key_name"),
@@ -1383,7 +1389,10 @@ def test_a_source_s_settings_are_reached_from_the_main_menu_too(world):
         assert offered(pick, "file") == ["sncf", "tao"]
         feeds = shown(await submit(hass, pick, file="tao"), FORM, "real_time")
         assert default(feeds, "alerts_url") == ""
-        done = shown(await submit(hass, feeds, alerts_url="https://rt.example/alerts"), ABORT)
+        refused = shown(await submit(hass, feeds, alerts_url="https://"), FORM, "real_time")
+        assert refused["errors"] == {"alerts_url": "invalid_source_url"}
+        assert "alerts_url" not in source.options
+        done = shown(await submit(hass, refused, alerts_url="https://rt.example/alerts"), ABORT)
         assert done["reason"] == "source_saved"
         assert dict(source.options) == {"alerts_url": "https://rt.example/alerts",
                                         "rt_enabled": False}
