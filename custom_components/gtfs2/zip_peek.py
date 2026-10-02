@@ -236,7 +236,7 @@ def inner_zips_in_file(path: str) -> list[str]:
     try:
         with zipfile.ZipFile(path) as zin:
             names = zin.namelist()
-    except Exception as ex:  # pylint: disable=broad-except
+    except (OSError, zipfile.BadZipFile) as ex:
         _LOGGER.debug("Could not read %s: %s", path, ex)
         return []
     if any(name.rsplit("/", 1)[-1] == "routes.txt" for name in names):

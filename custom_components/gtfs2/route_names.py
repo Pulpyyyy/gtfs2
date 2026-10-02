@@ -560,7 +560,7 @@ def _stop_times_size(zip_path: str) -> int | None:
             member = _member(zin, "stop_times.txt")
             if member is not None:
                 return zin.getinfo(member).file_size
-    except Exception as ex:  # pylint: disable=broad-except
+    except (OSError, zipfile.BadZipFile) as ex:
         _LOGGER.debug("Could not size the stops of %s: %s", zip_path, ex)
     return None
 

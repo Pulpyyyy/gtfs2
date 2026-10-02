@@ -147,8 +147,8 @@ def _holds_a_feed(zip_path: str) -> str | None:
     try:
         with zipfile.ZipFile(zip_path) as zin:
             members = {name.rsplit("/", 1)[-1] for name in zin.namelist()}
-    except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.exception("Could not read the source zip %s: %s", zip_path, ex)
+    except (OSError, zipfile.BadZipFile) as ex:
+        _LOGGER.error("Could not read the source zip %s: %s", zip_path, ex)
         return "no_zip_file"
     if "routes.txt" in members:
         return None
