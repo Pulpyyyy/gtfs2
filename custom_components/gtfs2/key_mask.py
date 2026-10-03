@@ -5,10 +5,10 @@ query string, in the headers, in the dicts the debug lines print, and in
 the exceptions requests raises, which quote the full url. Guarding each of
 the hundred-odd log lines one by one would miss the next one written, so a
 single filter sits on the integration's loggers and writes KEY_MASK
-wherever a known key shows up. The flow's key screens show the same mask
-for a stored key, so the key itself never goes back to the browser. And a
-key sent in a header goes to the host it was given for, not to the one a
-redirect points at (see fetch).
+wherever a known key shows up, raw, percent-encoded or base64-encoded as
+an HTTP Basic login sends it. The flow's key screens give a stored key
+back in a password field. And a key sent in a header goes to the host it
+was given for, not to the one a redirect points at (see fetch).
 """
 import base64
 from collections.abc import Iterable, Mapping
