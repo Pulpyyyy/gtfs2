@@ -7,7 +7,7 @@ is only needed to drop a line that is no longer followed.
 """
 from __future__ import annotations
 
-from collections.abc import Collection, Sequence
+from collections.abc import Collection
 import logging
 import os
 import sqlite3
@@ -215,7 +215,7 @@ def _keep_rows(cur: sqlite3.Cursor, table: str, keep_where: str, dry_run: bool) 
     return before, after
 
 
-def _rebuild_keep(cur: sqlite3.Cursor, table: str, keep_where: str, params: Sequence[object] = ()) -> None:
+def _rebuild_keep(cur: sqlite3.Cursor, table: str, keep_where: str) -> None:
     """Rebuild a table with only the rows keep_where accepts, aliased as src.
 
     A prune drops almost every row of the big tables, and a DELETE pays for
@@ -248,7 +248,7 @@ def _rebuild_keep(cur: sqlite3.Cursor, table: str, keep_where: str, params: Sequ
     cur.execute("pragma legacy_alter_table = OFF")
     cur.execute(table_sql)
     cur.execute(f"insert into {table} select * from gtfs2_prune_old src "  # noqa: S608
-                f"where {keep_where}", params)
+                f"where {keep_where}")
     cur.execute("drop table gtfs2_prune_old")
     for sql in index_sqls:
         cur.execute(sql)
