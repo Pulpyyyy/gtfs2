@@ -432,7 +432,6 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         if not self._data.get("next_departure"):
             _LOGGER.debug("GTFS RT: no scheduled departure left, realtime runs on config-entry fallbacks")
         self._get_next_service: dict[str, Any] = {}
-        self._route_delimiter: str | None = None
         self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
         self._vehicle_position_url = with_query_key(rt_cfg.get(CONF_VEHICLE_POSITION_URL), rt_cfg)
         self._vehicle_max_age = rt_cfg.get(CONF_VEHICLE_MAX_AGE, DEFAULT_VEHICLE_MAX_AGE)
@@ -441,7 +440,6 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         self._icon = ICONS.get(int(self._data["route_type"]), ICON)
         self._destination_id = id_of(data["destination"])
         self._follow_departure(data)
-        self._relative = False
 
     def _follow_departure(self, data: Mapping[str, Any]) -> None:
         """Point the realtime readers at the departure shown: its route,
@@ -638,7 +636,6 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             self._realtime = True
             self._get_next_service: dict[str, Any] = {}
             """Initialize the info object."""
-            self._route_delimiter: str | None = None
             self._headers = rt_headers(rt_cfg) or {}
             self._rt_group = "trip"
             self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)

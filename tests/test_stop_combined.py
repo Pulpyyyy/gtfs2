@@ -120,7 +120,7 @@ class _LocalStopContext:
     coordinator sets before calling `get_local_stops_next_departures`
     when `real_time` is enabled in options. The handful of other
     attributes are read by `get_rt_route_trip_statuses` itself
-    (`_vehicle_position_url`, `_route_delimiter`) or by the RT-fetch
+    (`_vehicle_position_url`) or by the RT-fetch
     block inside `_interpret_local_stop_rows` (`_headers`,
     `_trip_update_url`) -- verified against the real functions, not
     guessed.
@@ -134,7 +134,6 @@ class _LocalStopContext:
         self._headers = {}
         self._trip_update_url = "http://example.invalid/rt"
         self._vehicle_position_url = None
-        self._route_delimiter = None
 
 
 CASES = case_files.discover_cases(CASE_ROOT)

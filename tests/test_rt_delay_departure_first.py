@@ -31,7 +31,7 @@ def _context():
     return types.SimpleNamespace(
         _data={"file": "src", "next_departure": {"trip_id": "T1", "departure_time": SCHEDULED}},
         _rt_group="trip", _headers={}, _vehicle_position_url=None,
-        _trip_update_url="http://feed.invalid/rt", _route_delimiter=None, _route_id="R1",
+        _trip_update_url="http://feed.invalid/rt", _route_id="R1",
         _trip_id="T1", _trip_short_name="", _direction="0", _stop_id="S1", _stop_sequence=3,
         _trip_list=[])
 

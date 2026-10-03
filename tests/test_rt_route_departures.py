@@ -53,13 +53,13 @@ def update(trip, minutes, route="R1", direction=0, stop="S1", delay=None):
         "trip": tagged, "stop_time_update": [{"stop_id": stop, "departure": departure}]}}
 
 
-def sensor(trip="T1", board=(), direction="0", relative=False):
+def sensor(trip="T1", board=(), direction="0"):
     return types.SimpleNamespace(
         _data={"file": "src", "next_departure": {}}, _headers={}, _vehicle_position_url=None,
-        _trip_update_url="http://rt.test/trips", _route_delimiter=None,
+        _trip_update_url="http://rt.test/trips",
         _route_id="R1", _trip_id=trip, _trip_short_name="", _direction=direction,
         _stop_id="S1", _destination_id="S9", _stop_sequence=None,
-        _trip_list=list(board), _relative=relative)
+        _trip_list=list(board))
 
 
 def services(feed, me=None):
@@ -82,11 +82,6 @@ def test_the_line_and_way_followed_soonest_first_each_with_its_delay():
     assert [d.timestamp() for d in got[const.ATTR_NEXT_RT]] == [at(5), at(12)]
     # the first departure, as an instant
     assert got[const.ATTR_DUE_IN].timestamp() == at(5)
-
-
-def test_a_relative_sensor_counts_the_minutes():
-    got = services([update("T1", 5)], sensor(relative=True))
-    assert got[const.ATTR_DUE_IN] == 5
 
 
 def test_a_line_the_feed_qualifies_is_still_the_line():

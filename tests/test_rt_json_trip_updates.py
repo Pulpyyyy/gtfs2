@@ -26,7 +26,7 @@ IN_TEN = int((NOW + datetime.timedelta(minutes=10)).timestamp())
 def _context():
     return types.SimpleNamespace(
         _data={"file": "src"}, _rt_group="trip", _headers={}, _vehicle_position_url=None,
-        _trip_update_url="http://feed.invalid/rt", _route_delimiter=None,
+        _trip_update_url="http://feed.invalid/rt",
         _route_id="R1", _trip_id="T1", _trip_short_name="", _direction="0",
         _stop_id="S1", _stop_sequence=3, _trip_list=[])
 
@@ -73,17 +73,6 @@ def test_the_window_reads_a_stop_time_written_as_text():
             "owner", "http://feed.invalid/rt", ["R1"], IN_TEN + 60)
     finally:
         rt_feed._FEED_CACHE.pop(("owner", "http://feed.invalid/rt", "trip_data"), None)
-
-
-def test_a_line_qualified_by_the_feed_is_read_up_to_its_delimiter():
-    me = _context()
-    me._rt_group, me._route_delimiter = "route", "-"
-    feed = [{"id": "e1", "trip_update": {
-        "trip": {"trip_id": "T9", "route_id": "R1-2026", "direction_id": "0"},
-        "stop_time_update": [{"stop_id": "S1", "departure": {"time": IN_TEN}}]}}]
-    with freeze_time(NOW):
-        found = gtfs_rt_helper.get_rt_route_trip_statuses(me, feed)
-    assert found["R1"]["0"]["S1"]["trips"] == ["T9"]
 
 
 def test_a_delay_without_a_time_is_laid_on_the_timetable():

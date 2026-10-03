@@ -26,7 +26,6 @@ from .const import (
     ATTR_NEXT_RT_TRIPS,
     ATTR_RT_CANCELLED,
     ATTR_RT_SKIPPED,
-    ATTR_UNIT_OF_MEASUREMENT,
     ATTR_DEVICE_CLASS,
 
     TIME_STR_FORMAT,
@@ -76,18 +75,11 @@ def get_next_services(self: GTFSUpdateCoordinator) -> dict[str, Any]:
     if next_services:
         _LOGGER.debug("Next services: %s", next_services)
     
-    if self._relative :
-        due_in = (
-            due_in_minutes(next_services[0])
-            if len(next_services) > 0
-            else "-"
-        )
-    else:
-        due_in = (
-            dt_util.as_utc(next_services[0])
-            if len(next_services) > 0
-            else "-"
-        )
+    due_in = (
+        dt_util.as_utc(next_services[0])
+        if len(next_services) > 0
+        else "-"
+    )
     
     attrs = {
         ATTR_DUE_IN: due_in,
@@ -111,14 +103,11 @@ def get_next_services(self: GTFSUpdateCoordinator) -> dict[str, Any]:
         attrs[ATTR_NEXT_UP] = next_services[1].strftime(TIME_STR_FORMAT)
     if len(next_delays) > 0:
         attrs[ATTR_DELAY] = next_delays[0]
-    if self._relative :
-        attrs[ATTR_UNIT_OF_MEASUREMENT] = "min"
-    else :
-        attrs[ATTR_DEVICE_CLASS] = (
-            "timestamp" 
-            if len(next_services) > 0
-            else ""
-        )
+    attrs[ATTR_DEVICE_CLASS] = (
+        "timestamp"
+        if len(next_services) > 0
+        else ""
+    )
     
     _LOGGER.debug("Next services attributes: %s", attrs)
     return attrs
@@ -261,20 +250,11 @@ def _names_trip(watched: str | None, seen: str | None) -> bool:
 
 
 def _feed_route_id(self: _Coordinator, trip: Mapping[str, Any]) -> str:
-    ''' The line a trip update names, cut at the source's delimiter '''
+    ''' The line a trip update names '''
     # a json feed leaves out what it does not know, where the
     # protobuf reader writes every field: the line, the stop, the
     # arrival of a first stop are read with their defaults
-    feed_route_id = trip.get("route_id") or ""
-    # If delimiter specified split the route ID in the gtfs rt feed
-    if self._route_delimiter is not None:
-        route_id_split = feed_route_id.split(
-            self._route_delimiter
-        )
-        if route_id_split[0] == self._route_delimiter:
-            return feed_route_id
-        return route_id_split[0]
-    return feed_route_id
+    return trip.get("route_id") or ""
 
 
 def _trip_group_route_direction(self: _Coordinator, trip: Mapping[str, Any]) -> tuple[str, str, str]:

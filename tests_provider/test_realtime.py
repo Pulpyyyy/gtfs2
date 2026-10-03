@@ -111,10 +111,10 @@ def _follower(route_id, direction, trip_id, stop_id, trip_list=()):
     one departure: the entity's line, direction, trip and origin."""
     return types.SimpleNamespace(
         _vehicle_position_url=None, _trip_update_url="unused", _headers=None,
-        _route_delimiter=None, _rt_group="route", _route_id=route_id,
+        _rt_group="route", _route_id=route_id,
         _direction=str(direction), _trip_id=trip_id, _trip_short_name=None,
         _trip_list=list(trip_list), _stop_id=stop_id, _stop_sequence=None,
-        _destination_id=None, _relative=False, info={})
+        _destination_id=None, info={})
 
 
 class Check:
@@ -292,7 +292,7 @@ def test_a_cancelled_trip_is_not_a_local_departure(record_property, sncf, entiti
         me = types.SimpleNamespace(
             hass=_hass(where=(43.653344, 6.925549)), _realtime=realtime,
             _trip_update_url="file://unused", _headers={},
-            _vehicle_position_url=None, _route_delimiter=None,
+            _vehicle_position_url=None,
             _data={"schedule": sncf, "offset": 0, "file": "fixture", "gtfs_dir": ".",
                    "device_tracker_id": "person.rider", "radius": 100,
                    "timerange": 60, "timerange_history": 15, "name": "grasse"})
