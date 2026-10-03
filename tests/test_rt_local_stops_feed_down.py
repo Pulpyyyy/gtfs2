@@ -42,7 +42,7 @@ def test_a_failed_download_keeps_the_timetable():
 
             failing = combined._LocalStopContext(hass, 0, "local_stop_name")
             # the feed cache answers None for a download that failed
-            with patch.object(local_stops, "get_gtfs_feed_entities",
+            with patch.object(combined.rt_feed, "get_gtfs_feed_entities",
                               return_value=None) as feed:
                 got = local_stops._interpret_local_stop_rows(failing, rows)
         assert feed.call_count == 1, case_id

@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import sys
 import types
 import zoneinfo
 from pathlib import Path
@@ -286,7 +287,11 @@ def test_the_leg_file_says_what_is_struck(record_property, sncf, entities, tmp_p
 def test_a_cancelled_trip_is_not_a_local_departure(record_property, sncf, entities, monkeypatch):
     check = Check()
     cancelled = _trip_id(entities, "OCESA86017F5111")
-    monkeypatch.setattr(local_stops, "get_gtfs_feed_entities", lambda **_kw: entities)
+    # read through rt_feed's shared reader, or by local_stops itself in
+    # the trees from before it did
+    reader = (sys.modules[local_stops._read_feed.__module__]
+              if hasattr(local_stops, "_read_feed") else local_stops)
+    monkeypatch.setattr(reader, "get_gtfs_feed_entities", lambda **_kw: entities)
     listed = {}
     for realtime in (False, True):
         me = types.SimpleNamespace(

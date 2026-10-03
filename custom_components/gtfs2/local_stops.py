@@ -28,7 +28,7 @@ from .clocks import _day_offset, _on_service_day, _removed_on, _row_instant, _ru
 from .datasource import check_extracting
 from .gtfs_helper import _feed_now
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
-from .rt_feed import FeedEntities, get_gtfs_feed_entities, on_service_day
+from .rt_feed import FeedEntities, _read_feed, on_service_day
 from .stop_rules import _boards
 
 if TYPE_CHECKING:
@@ -345,9 +345,7 @@ def _local_stop_feed(self: GTFSLocalStopUpdateCoordinator) -> FeedEntities | Non
     if not self._realtime or not self._trip_update_url:
         return None
     self._rt_group = "trip"
-    feed_entities = get_gtfs_feed_entities(
-        url=self._trip_update_url, headers=self._headers, label="trip_data",
-        owner=self._data["file"])
+    feed_entities = _read_feed(self, self._trip_update_url, "trip_data")
     if feed_entities is None:
         # the timetable still stands: the departures are listed without
         # their delays this cycle, where they all went with the feed

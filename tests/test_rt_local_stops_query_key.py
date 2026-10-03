@@ -40,7 +40,7 @@ def _asked(location):
     asked = []
     at = captured_at.astimezone(datetime.timezone.utc).replace(tzinfo=None)
     with freeze_time(at, tz_offset=0), \
-            patch.object(local_stops, "get_gtfs_feed_entities", lambda **kw: asked.append(kw)):
+            patch.object(combined.rt_feed, "get_gtfs_feed_entities", lambda **kw: asked.append(kw)):
         local_stops._interpret_local_stop_rows(context, rows)
     return asked[0]
 

@@ -18,7 +18,7 @@ from google.transit import gtfs_realtime_pb2
 import ha_stub
 
 local_stops = ha_stub.load("local_stops")
-rt_feed = sys.modules[local_stops.get_gtfs_feed_entities.__module__]
+rt_feed = sys.modules[local_stops._read_feed.__module__]
 rt_window = ha_stub.load("rt_window")
 
 URL = "http://rt.test/local-trips"
