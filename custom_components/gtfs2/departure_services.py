@@ -23,6 +23,7 @@ from .clocks import _row_instant, zone_of
 from .datasource import get_gtfs
 from .gtfs_helper import (_fetch_departure_rows, departure_query_args,
                           get_next_service_date, journey_data)
+from .timetable import TIMETABLE_ROWS_MAX
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-def _route_departures_between(data: Mapping[str, Any], first: str, last: str, limit: int = 5000,
+def _route_departures_between(data: Mapping[str, Any], first: str, last: str, limit: int = TIMETABLE_ROWS_MAX,
                               at: str = "origin_depart_dt") -> list[datetime.datetime]:
     """Every departure of an entry over two service days, as UTC instants.
 
@@ -154,7 +155,7 @@ async def _route_times(hass: HomeAssistant, data: Mapping[str, Any], at: str) ->
         # departure is usually in it, a run of tomorrow's service after
         # midnight or the day after's first
         instants = await hass.async_add_executor_job(
-            _route_departures_between, _data, yesterday_date, day_after, 5000, at)
+            _route_departures_between, _data, yesterday_date, day_after, TIMETABLE_ROWS_MAX, at)
         later = [i for i in instants
                  if dt_util.as_local(i).strftime(dt_util.DATE_STR_FORMAT) > tomorrow_date]
         next_instant = later[0] if later else await hass.async_add_executor_job(
