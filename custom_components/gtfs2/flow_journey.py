@@ -374,13 +374,9 @@ class JourneyScreens:
         # The second flow can still refuse - a unique_id taken between the
         # check above and here, or an import step that aborts - and announcing
         # a sensor that was never created would send the user looking for it
-        result = await self.hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": config_entries.SOURCE_IMPORT},
-            data=dict(self._user_inputs),
-        )
-        if result.get("type") != data_entry_flow.FlowResultType.CREATE_ENTRY:
-            _LOGGER.error("The sensor was not created: %s", result.get("reason"))
+        refused = await self._import_entry(dict(self._user_inputs))
+        if refused:
+            _LOGGER.error("The sensor was not created: %s", refused)
             errors["base"] = "not_created"
             return _show(errors, user_input)
         self._created_name = user_input[CONF_NAME]
@@ -525,6 +521,18 @@ class JourneyScreens:
             CONF_NAME: self._return_name,
         }
 
+    async def _import_entry(self, data: dict) -> str | None:
+        """Create an entry through a second flow, on its import step: None
+        once created, else why that flow refused it."""
+        result = await self.hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": config_entries.SOURCE_IMPORT},
+            data=data,
+        )
+        if result.get("type") == data_entry_flow.FlowResultType.CREATE_ENTRY:
+            return None
+        return str(result.get("reason") or result.get("type"))
+
     async def _create_return_trip(self) -> None:
         """Create the return sensor through a second flow.
 
@@ -538,13 +546,8 @@ class JourneyScreens:
         _LOGGER.debug("Creating return journey: %s", data.get(CONF_NAME))
         # awaited rather than scheduled: a task created here is tied to a flow
         # that is about to finish, and would be cancelled with it
-        result = await self.hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": config_entries.SOURCE_IMPORT},
-            data=data,
-        )
+        refused = await self._import_entry(data)
         # the return is a convenience, so a refusal must not stop the outward
         # journey being created: log it and carry on
-        if result.get("type") != data_entry_flow.FlowResultType.CREATE_ENTRY:
-            _LOGGER.warning("The return journey was not created: %s",
-                            result.get("reason"))
+        if refused:
+            _LOGGER.warning("The return journey was not created: %s", refused)
