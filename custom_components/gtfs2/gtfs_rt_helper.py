@@ -92,6 +92,11 @@ def _scheduled_departures(self: _Coordinator) -> dict[str, int]:
     stamp = _as_epoch(departure.get("departure_time"))
     if departure.get("trip_id") and stamp:
         due.setdefault(str(departure["trip_id"]), stamp)
+    # a local stops departure lists no board: the row it is built from is
+    # its timetable time (local_stops._build_local_stop_element)
+    here = getattr(self, "_departure_datetime_utc", None)
+    if here is not None and getattr(self, "_trip_id", None):
+        due.setdefault(str(self._trip_id), int(here.timestamp()))
     return due
 
 

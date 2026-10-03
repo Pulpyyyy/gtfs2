@@ -87,3 +87,26 @@ def test_the_converter_keeps_a_delay_the_feed_does_not_give_apart():
     assert on_time_dict["arrival"]["delay"] == 0
     assert on_time_dict["departure"]["delay"] is None
     assert silent_dict["arrival"]["delay"] is None
+
+
+def test_a_local_stop_lays_the_delay_on_its_own_row():
+    # a local stops departure is no listed departure of a journey: its
+    # timetable time is the row it is built from, the only one it knows
+    local_stops = ha_stub.load("local_stops")
+    paris = datetime.timezone(datetime.timedelta(hours=2))
+    row = {"trip_id": "T1", "direction_id": 0, "trip_short_name": None,
+           "route_id": "R1", "stop_id": "S1", "stop_sequence": 3,
+           "stop_name": "Centre", "route_short_name": "20",
+           "route_long_name": "Centre - Gare", "trip_headsign": "Gare"}
+    feed = [{"id": "e1", "trip_update": {"trip": {"trip_id": "T1"}, "stop_time_update": [
+        {"stop_id": "", "stop_sequence": 3, "arrival": {"delay": 120, "time": 0},
+         "departure": {"delay": None, "time": 0}}]}}]
+    me = types.SimpleNamespace(_realtime=True, _icon="mdi:bus", _rt_group="trip",
+                               _data={"file": "src"}, _headers={},
+                               _vehicle_position_url=None, _trip_update_url="http://feed.invalid/rt")
+    with freeze_time(datetime.datetime(2026, 10, 3, 6, 0, tzinfo=UTC)):
+        element = local_stops._build_local_stop_element(
+            me, row, "2026-10-03 08:10:00", paris, paris,
+            datetime.datetime(2026, 10, 3, 8, 0, tzinfo=paris), feed_entities=feed)
+    assert element["departure_realtime"] == "08:12"
+    assert element["delay_realtime"] == 120
