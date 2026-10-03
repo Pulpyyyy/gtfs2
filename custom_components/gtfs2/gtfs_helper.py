@@ -203,27 +203,15 @@ def _feed_now(schedule: Schedule, route: str | None = None, offset: int = 0) -> 
     return moment.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedule: Schedule,
+def _departure_candidates(route_type: str, origin: str, destination: str,
                           direction: str | int | None = None, route: str | None = None,
                           line: str | None = None, origin_names: list[str] | None = None,
                           destination_names: list[str] | None = None,
-                          window: tuple[str, str] | None = None,
-                          limit: int = 30, offset: int = 0) -> tuple[list[dict[str, Any]], str]:
-    """Run the static-GTFS SQL query and return matching rows as plain dicts.
-
-    direction is only given by an entry at a loop's terminus
-    (get_pair_direction, stored as loop_direction); the pair and the order of
-    the stops decide it everywhere else, and the direction older entries
-    store is not read. line, origin_names and destination_names belong to
-    the train path: the line code the flow picked, and every station the
-    entry ticked at each end.
-
-    The sensor reads the next `limit` departures from now. The timetable
-    export (write_timetable_file) reads whole service days instead:
-    window is (first, last), two YYYY-MM-DD service dates, and every
-    departure from now on those days comes back, `limit` then being a
-    safeguard rather than the list's length. Without a window the query is
-    the sensor's, unchanged."""
+                          ) -> tuple[str, dict[str, Any], str]:
+    """(SQL, its parameters, the origin as matched) of the trips riding from
+    one end of an entry to the other, whatever the time: what
+    _fetch_departure_rows reads its departures among (_candidate_pairs).
+    See _fetch_departure_rows for the arguments."""
     if route_type == "2":
         route_type_where = f"route.route_type in ({RAIL_ROUTE_TYPES_SQL})"
         # The station is matched on the exact name the flow offered. A prefix
@@ -271,7 +259,6 @@ def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedu
         route_where = "AND trip.route_id = :route" if route else ""
         _LOGGER.debug("Setting up Route for start/end : %s / %s ", start_station_id, end_station_id)
 
-    window_where = "AND vd.date BETWEEN :window_first AND :window_last" if window else ""
     # the trips that ride from one end to the other, whatever the time: read
     # once for a database and a pair, then handed to the query (_candidate_pairs)
     candidates_sql = f"""
@@ -301,6 +288,42 @@ def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedu
               AND destination_stop_time.arrival_time IS NOT NULL
               AND destination_stop_time.departure_time IS NOT NULL
     """  # noqa: S608
+    params = {
+        "origin_station_id": start_station_id,
+        "end_station_id": end_station_id,
+        "direction": int(str(direction)) if str(direction) in ("0", "1") else None,
+        "route": route,
+        "line": line,
+        **name_params,
+    }
+    return candidates_sql, params, start_station_id
+
+
+def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedule: Schedule,
+                          direction: str | int | None = None, route: str | None = None,
+                          line: str | None = None, origin_names: list[str] | None = None,
+                          destination_names: list[str] | None = None,
+                          window: tuple[str, str] | None = None,
+                          limit: int = 30, offset: int = 0) -> tuple[list[dict[str, Any]], str]:
+    """Run the static-GTFS SQL query and return matching rows as plain dicts.
+
+    direction is only given by an entry at a loop's terminus
+    (get_pair_direction, stored as loop_direction); the pair and the order of
+    the stops decide it everywhere else, and the direction older entries
+    store is not read. line, origin_names and destination_names belong to
+    the train path: the line code the flow picked, and every station the
+    entry ticked at each end.
+
+    The sensor reads the next `limit` departures from now. The timetable
+    export (write_timetable_file) reads whole service days instead:
+    window is (first, last), two YYYY-MM-DD service dates, and every
+    departure from now on those days comes back, `limit` then being a
+    safeguard rather than the list's length. Without a window the query is
+    the sensor's, unchanged."""
+    candidates_sql, params, start_station_id = _departure_candidates(
+        route_type, origin, destination, direction, route, line,
+        origin_names, destination_names)
+    window_where = "AND vd.date BETWEEN :window_first AND :window_last" if window else ""
     ## QUERY candidate_trips and cal_expand are used to construct a list of valida_dates, i.e a list where services run
     ## valid_dates is then used in the main query
     sql_query = f"""
@@ -383,17 +406,12 @@ def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedu
     """  # noqa: S608
 
     query_params = {
-        "origin_station_id": start_station_id,
-        "end_station_id": end_station_id,
-        "direction": int(str(direction)) if str(direction) in ("0", "1") else None,
-        "route": route,
-        "line": line,
+        **params,
         "route_type": route_type,
         "window_first": window[0] if window else None,
         "window_last": window[1] if window else None,
         # this moment on the network's clock, see _feed_now
         "now": _feed_now(schedule, route, offset),
-        **name_params,
     }
     _LOGGER.debug("SQL statement:\n%s", sql_query)
     _LOGGER.debug("SQL parameters:\n%s", query_params)
