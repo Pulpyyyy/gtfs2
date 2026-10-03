@@ -68,14 +68,14 @@ def get_gtfs_rt(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> str:
             # line says it, the stack deep in requests adds nothing; an
             # error of our own keeps its stack
             log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
-            log("Ìssues with downloading GTFS RT SIRI data to: %s with error: %s", os.path.join(gtfs_dir, file), ex)
+            log("Issues with downloading GTFS RT SIRI data to: %s with error: %s", os.path.join(gtfs_dir, file), ex)
             return "no_rt_data_file" 
     try:
         r = fetch("get", url, headers=_with_user_agent(_headers), allow_redirects=True, timeout=20)
         if r.status_code != 200:
             # written first, an error page replaced the last good feed on
             # disk and the readers parsed that instead
-            _LOGGER.error("Ìssues with downloading GTFS RT data, error: %s, content: %s",
+            _LOGGER.error("Issues with downloading GTFS RT data, error: %s, content: %s",
                           r.status_code, r.content[:200])
             return "no_rt_data_file"
         open(os.path.join(gtfs_dir, file), "wb").write(r.content)
@@ -83,7 +83,7 @@ def get_gtfs_rt(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> str:
         # read at every refresh of the stops around a person: a host down
         # says so in one line each time, without the stack of requests
         log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
-        log("Ìssues with downloading GTFS RT data to: %s: %s", os.path.join(gtfs_dir, file), ex)
+        log("Issues with downloading GTFS RT data to: %s: %s", os.path.join(gtfs_dir, file), ex)
         return "no_rt_data_file"
 
     
@@ -136,7 +136,7 @@ def convert_realtime_siri_trips_to_json(url: str, headers: Mapping[str, str | No
     except (KeyError, IndexError, TypeError) as ex:
         # an answer of another shape, at every refresh it keeps it: the
         # missing key says it all, the stack is this line
-        _LOGGER.error("Ìssues getting GTFS RT SIRI data: %s", ex)
+        _LOGGER.error("Issues getting GTFS RT SIRI data: %s", ex)
         return 'issues with getting siri data'
         
     _LOGGER.debug("Feed entities: %s", feed_entities)
