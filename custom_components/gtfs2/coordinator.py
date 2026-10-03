@@ -109,6 +109,17 @@ async def schedule_for(coordinator: GTFSUpdateCoordinator | GTFSLocalStopUpdateC
     return schedule
 
 
+def _read_within(previous: Mapping[str, Any], minutes: float) -> bool:
+    """Whether the last timetable reading, at gtfs_updated_at, is younger
+    than minutes."""
+    # read back with fromisoformat, the reverse of the isoformat it was
+    # written with: a strptime on '.%f' failed the whole update on a
+    # reading made on a whole second, which isoformat writes without
+    # its microseconds
+    read = datetime.datetime.fromisoformat(previous["gtfs_updated_at"])
+    return read + timedelta(minutes=minutes) > dt_util.utcnow() + timedelta(seconds=1)
+
+
 def shown_departure_left(previous: Mapping[str, Any], now: datetime.datetime) -> bool:
     """Whether the departure the sensor shows has left, and nothing says otherwise.
 
@@ -337,14 +348,8 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         """Whether the departures are read again from the timetable this minute."""
         # determine static + rt or only static (refresh schedule depending)
         #1. sensor exists with data but refresh interval not yet reached, use existing data
-        # read back with fromisoformat, the reverse of the isoformat it was
-        # written with: a strptime on '.%f' failed the whole update on a
-        # reading made on a whole second, which isoformat writes without
-        # its microseconds
-        if "gtfs_updated_at" in previous_data and (
-            datetime.datetime.fromisoformat(previous_data["gtfs_updated_at"])
-            + timedelta(minutes=options.get("refresh_interval", DEFAULT_REFRESH_INTERVAL))
-        ) > dt_util.utcnow() + timedelta(seconds=1):
+        if "gtfs_updated_at" in previous_data and _read_within(
+                previous_data, options.get("refresh_interval", DEFAULT_REFRESH_INTERVAL)):
             _LOGGER.debug("No run static refresh: sensor exists but not yet refresh for name: %s", name)
             if shown_departure_left(previous_data, dt_util.utcnow()):
                 _LOGGER.debug("Run static refresh: the departure shown for %s has left", name)
@@ -575,9 +580,8 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         if previous_data.get("schedule") is not self._pygtfs:
             # a database swapped in or reopened: read it at once
             return False
-        pace = timedelta(minutes=options.get("local_stop_refresh_interval", DEFAULT_LOCAL_STOP_REFRESH_INTERVAL))
-        read = datetime.datetime.fromisoformat(previous_data["gtfs_updated_at"])
-        return read + pace > dt_util.utcnow() + timedelta(seconds=1)
+        return _read_within(previous_data, options.get(
+            "local_stop_refresh_interval", DEFAULT_LOCAL_STOP_REFRESH_INTERVAL))
 
     def _without_gone(self, previous_data: dict[str, Any]) -> dict[str, Any]:
         """The last answer without the departures gone since; the very
