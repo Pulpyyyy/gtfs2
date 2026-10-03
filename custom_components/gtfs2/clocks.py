@@ -1,6 +1,7 @@
 """The clocks of a feed: a stop time as the seconds past its service day's
 midnight (gtfs_seconds), and the time zone the feed, or one of its
-agencies, writes its times in (zone_of, agency_zone), and the SQL pieces that lay a
+agencies, writes its times in (zone_of, agency_zone, and _leg_timezone
+for a line's clocks with its fallbacks), and the SQL pieces that lay a
 stop time on its service day and tell whether the calendar runs on a
 date (_day_offset, _on_service_day, _runs_on, _removed_on).
 """
@@ -9,7 +10,8 @@ from __future__ import annotations
 import datetime
 import logging
 import re
-from typing import TYPE_CHECKING
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
 import homeassistant.util.dt as dt_util
 from sqlalchemy.exc import SQLAlchemyError
@@ -17,6 +19,7 @@ from sqlalchemy.sql import text
 
 if TYPE_CHECKING:
     # for the annotations only
+    from homeassistant.core import HomeAssistant
     from pygtfs import Schedule
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,6 +55,16 @@ def agency_zone(schedule: Schedule, route: str | None = None) -> datetime.tzinfo
     except SQLAlchemyError as ex:
         _LOGGER.debug("Could not read the agency's zone, using Home Assistant's: %s", ex)
     return zone_of(name)
+
+
+def _leg_timezone(schedule: Schedule, route_id: str | None, departure: Mapping[str, Any],
+                  hass: HomeAssistant) -> datetime.tzinfo:
+    """The zone the line's clocks are written in: the agency's, as the
+    departure query reads it, else the origin stop's, else Home Assistant's."""
+    zone = agency_zone(schedule, route_id)
+    if zone is not None:
+        return zone
+    return zone_of(departure.get("origin_stop_timezone"), hass.config.time_zone) or datetime.timezone.utc
 
 
 def gtfs_seconds(value: object) -> int | None:
