@@ -2,10 +2,10 @@
 
 The zip is the only complete record of a feed, so the integration keeps it
 next to the database it built from it. ensure_source_zip fetches it when a
-flow starts from a url, open_datasource reads a database without touching
-it, build_scratch_database unpacks a filtered copy into a scratch file, and
-refresh_datasource fetches a new edition and swaps it in. The staging and
-adopting of a download live in freshness, the import itself in gtfs_db.
+flow starts from a url, build_scratch_database unpacks a filtered copy into
+a scratch file, and refresh_datasource fetches a new edition and swaps it
+in. The staging and adopting of a download live in freshness, the import
+itself in db_build.
 Called from the config flow, from __init__ (the update service) and from
 source_refresh.
 """
@@ -33,7 +33,6 @@ from .datasource import IMPORT_IGNORED, drop_import_indexes
 if TYPE_CHECKING:
     # for the annotations only
     from homeassistant.core import HomeAssistant
-    from pygtfs import Schedule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -196,26 +195,6 @@ def ensure_source_zip(hass: HomeAssistant, path: str, data: dict[str, Any]) -> s
     # a host that refuses ranges answered the envelope whole: the networks
     # are offered from the file, and the pick taken out of it
     return _offer_or_take(data, zip_path) or _holds_a_feed(zip_path)
-
-
-def open_datasource(gtfs_dir: str, filename: str) -> Schedule | None:
-    """Open a datasource that is known to exist, with no extracting gate.
-
-    get_gtfs refuses to answer while anything writes to the file, because a
-    journal used to mean the legacy fork was still building it in place. In
-    the two database model the real file receives short legitimate writes
-    while the sensors live - an index being added, an intern - so a journal
-    can exist for milliseconds and means nothing. Callers that just proved
-    the datasource exists, like the step after a finished import, open it
-    here instead of walking into that gate.
-
-    Returns the schedule, or None when the file is not there.
-    """
-    sqlite_file = real_path(gtfs_dir, filename)
-    if not os.path.exists(sqlite_file):
-        _LOGGER.error("No datasource to open: %s", sqlite_file)
-        return None
-    return pygtfs.Schedule(f"{sqlite_file}?check_same_thread=False&timeout=60")
 
 
 def _stale_staging_gone(new_real: str, filename: str) -> bool:

@@ -1,7 +1,8 @@
 """A source's database as the readers open it: the schedule, or why there
-is none (get_gtfs), whether something is writing to it (check_extracting),
-and the indexes the queries lean on (check_datasource_index,
-drop_import_indexes).
+is none (get_gtfs), the same with no extracting gate for a caller that just
+built it (open_datasource), whether something is writing to it
+(check_extracting), and the indexes the queries lean on
+(check_datasource_index, drop_import_indexes).
 """
 from __future__ import annotations
 
@@ -56,6 +57,26 @@ def get_gtfs(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> Schedul
     if not os.path.exists(feed_zip(gtfs_dir, filename)):
         return "no_zip_file"
     return "not_built"
+
+
+def open_datasource(gtfs_dir: str, filename: str) -> Schedule | None:
+    """Open a datasource that is known to exist, with no extracting gate.
+
+    get_gtfs refuses to answer while anything writes to the file, because a
+    journal used to mean the legacy fork was still building it in place. In
+    the two database model the real file receives short legitimate writes
+    while the sensors live - an index being added, an intern - so a journal
+    can exist for milliseconds and means nothing. Callers that just proved
+    the datasource exists, like the step after a finished import, open it
+    here instead of walking into that gate.
+
+    Returns the schedule, or None when the file is not there.
+    """
+    sqlite_file = real_path(gtfs_dir, filename)
+    if not os.path.exists(sqlite_file):
+        _LOGGER.error("No datasource to open: %s", sqlite_file)
+        return None
+    return pygtfs.Schedule(f"{sqlite_file}?check_same_thread=False&timeout=60")
 
 
 # the tables an import leaves out: the integration never reads them from

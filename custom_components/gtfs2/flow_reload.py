@@ -35,12 +35,12 @@ from .const import (
 from .db_build import import_routes, on_a_copy, optimise_datasource
 from .gtfs_db import close_schedule, real_path, routes_in, scratch_path
 from .flow_journey import _Step
-from .datasource import check_datasource_index
 from .notifications import async_notify_import
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
 from .rt_source import source_readers
 from .source_refresh import source_lock
-from .source_zip import build_scratch_database, open_datasource
+from .datasource import check_datasource_index, open_datasource
+from .source_zip import build_scratch_database
 
 if TYPE_CHECKING:
     # for the annotations only
