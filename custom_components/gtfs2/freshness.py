@@ -35,7 +35,7 @@ from .const import (
 )
 from .gtfs_db import remove_files
 from .key_mask import fetch, hide_keys
-from .zip_peek import _MemberResponse, inner_zips_in_file, member_out_of, open_member
+from .zip_peek import FEED_MAX_BYTES, _MemberResponse, inner_zips_in_file, member_out_of, open_member
 from .rt_source import with_query_key
 
 _LOGGER = logging.getLogger(__name__)
@@ -283,10 +283,7 @@ def source_meta(zip_path: str) -> dict[str, Any]:
     return read_meta(source_meta_path(zip_path))
 
 
-# a download bigger than this is no feed anyone meant to serve: the
-# largest national feeds are a few hundred megabytes zipped
-FEED_MAX_BYTES = 2 * 1024 ** 3
-# and one that takes longer than this is a host trickling bytes: the
+# a download that takes longer than this is a host trickling bytes: the
 # request timeout counts between two reads, never the whole transfer
 FEED_DOWNLOAD_DEADLINE = 30 * 60
 _CHUNK = 1024 * 1024

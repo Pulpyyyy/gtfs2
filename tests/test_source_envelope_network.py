@@ -119,7 +119,7 @@ def test_a_host_without_ranges_still_offers_the_networks(tmp_path, monkeypatch):
 
 def test_a_member_cut_short_leaves_nothing(tmp_path, monkeypatch):
     envelope = _envelope(tmp_path / "envelope.zip")
-    monkeypatch.setattr(zip_peek, "_MEMBER_MAX", 1000)
+    monkeypatch.setattr(zip_peek, "FEED_MAX_BYTES", 1000)
     staged = tmp_path / "septa.zip.new.inner"
     assert not zip_peek.extract_member(str(envelope), "google_bus.zip", str(staged))
     assert not staged.exists()

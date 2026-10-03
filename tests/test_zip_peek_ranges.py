@@ -188,7 +188,7 @@ def test_a_download_that_is_already_the_feed_goes_through(tmp_path):
 def test_a_member_that_cannot_be_taken_leaves_the_download(tmp_path, monkeypatch):
     staged = tmp_path / "septa.zip.new"
     staged.write_bytes(_envelope())
-    monkeypatch.setattr(zip_peek, "_MEMBER_MAX", 1000)
+    monkeypatch.setattr(zip_peek, "FEED_MAX_BYTES", 1000)
     assert zip_peek.member_out_of(str(staged), "google_rail.zip") == str(staged)
     assert zipfile.ZipFile(staged).namelist() == ["google_bus.zip", "google_rail.zip"]
 

@@ -43,10 +43,12 @@ _LOGGER = logging.getLogger(__name__)
 # the end of central directory record, plus room for a zip comment
 _TAIL = 65536
 _CHUNK = 64 * 1024
-# a member taken out of an envelope is held to what a download is
-# (freshness.FEED_MAX_BYTES), and a directory to what a few thousand
-# members take: the sizes come from the remote file, which may lie
-_MEMBER_MAX = 2 * 1024 ** 3
+# a download bigger than this is no feed anyone meant to serve: the
+# largest national feeds are a few hundred megabytes zipped. A member
+# taken out of an envelope is held to it too
+FEED_MAX_BYTES = 2 * 1024 ** 3
+# and a directory to what a few thousand members take: the sizes come
+# from the remote file, which may lie
 _DIRECTORY_MAX = 16 * 1024 ** 2
 # what the directory says a member is stored with
 _STORED, _DEFLATED = 0, 8
@@ -273,8 +275,8 @@ def extract_member(path: str, name: str, staged: str) -> bool:
                     if not chunk:
                         break
                     written += len(chunk)
-                    if written > _MEMBER_MAX:
-                        raise ValueError(f"over {_MEMBER_MAX // 1024 ** 2} MB, cut there")
+                    if written > FEED_MAX_BYTES:
+                        raise ValueError(f"over {FEED_MAX_BYTES // 1024 ** 2} MB, cut there")
                     out.write(chunk)
         return True
     except Exception as ex:  # pylint: disable=broad-except
