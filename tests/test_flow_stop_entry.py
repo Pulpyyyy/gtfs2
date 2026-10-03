@@ -29,8 +29,8 @@ def test_a_name_holding_a_colon_reads_whole():
 
 def test_the_destinations_are_asked_with_the_origin_s_id(monkeypatch):
     asked = []
-    monkeypatch.setattr(config_flow, "get_towards", lambda schedule, route, origin: [])
-    monkeypatch.setattr(config_flow, "get_destination_stop_list",
+    monkeypatch.setattr(flow_journey, "get_towards", lambda schedule, route, origin: [])
+    monkeypatch.setattr(flow_journey, "get_destination_stop_list",
                         lambda schedule, route, _, origin, towards: asked.append(origin) or [])
 
     async def job(fn, *args):
