@@ -29,6 +29,7 @@ from .const import (
     DEFAULT_VEHICLE_MAX_AGE,
     CONF_ALERTS_URL,
     ATTR_NEXT_RT,
+    ATTR_RT_UPDATED_AT,
     ATTR_NEXT_RT_TRIPS,
     ATTR_RT_CANCELLED,
     ATTR_RT_SKIPPED,
@@ -209,7 +210,7 @@ async def drop_struck_trips(coordinator: GTFSUpdateCoordinator, data: Mapping[st
         coordinator._get_next_service = await coordinator.hass.async_add_executor_job(get_next_services, coordinator)
         coordinator._remember_struck()
         coordinator._data["next_departure_realtime_attr"] = coordinator._get_next_service
-        coordinator._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
+        coordinator._data["next_departure_realtime_attr"][ATTR_RT_UPDATED_AT] = dt_util.utcnow()
         # the alerts were read for the departure just struck out: its trip,
         # its stop, the board behind it. Read again for the one now shown,
         # or the old departure's sentence stayed on the new one. The feed
@@ -472,7 +473,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
         try:
             self._get_next_service = await self.hass.async_add_executor_job(get_next_services, self)
             self._data["next_departure_realtime_attr"] = self._get_next_service
-            self._data["next_departure_realtime_attr"]["gtfs_rt_updated_at"] = dt_util.utcnow()
+            self._data["next_departure_realtime_attr"][ATTR_RT_UPDATED_AT] = dt_util.utcnow()
             await drop_struck_trips(self, data, run_static)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.exception("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)

@@ -400,9 +400,9 @@ def realtime_attributes(attributes: dict[str, Any], departure_rt: Mapping[str, A
         return
     _LOGGER.debug("next dep realtime attr: %s", departure_rt)
     # Add next departure realtime to the right level, only if populated
-    if "gtfs_rt_updated_at" not in departure_rt:
+    if ATTR_RT_UPDATED_AT not in departure_rt:
         return
-    attributes["gtfs_rt_updated_at"] = departure_rt[ATTR_RT_UPDATED_AT]
+    attributes[ATTR_RT_UPDATED_AT] = departure_rt[ATTR_RT_UPDATED_AT]
     if departure_rt.get(ATTR_NEXT_RT, None):
         attributes["next_departure_realtime"] = departure_rt[ATTR_NEXT_RT][0]
         attributes["next_departures_realtime"] = departure_rt[ATTR_NEXT_RT]
