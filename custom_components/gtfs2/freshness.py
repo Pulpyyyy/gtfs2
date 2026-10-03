@@ -213,16 +213,7 @@ def fetch_if_new(data: Mapping[str, Any], zip_path: str, adopt: bool = True) -> 
         digest = file_digest(staged)[0]
         remove_files(staged)
         return digest
-    try:
-        adopt_zip(response, staged, zip_path)
-    except OSError as ex:
-        # a reader holding the kept zip open (Windows), a full disk: the
-        # check says it and leaves no half kept download behind, as a
-        # refresh does
-        _LOGGER.error("Could not keep the download of %s: %s", data.get("url"), ex)
-        remove_files(staged)
-        return None
-    return True
+    return True if keep_download(response, staged, zip_path, data.get("url")) else None
 
 
 def _record_validators(response: FeedResponse, zip_path: str, meta: Mapping[str, Any]) -> None:
@@ -412,3 +403,16 @@ def adopt_zip(response: FeedResponse, staged: str, zip_path: str) -> None:
         "downloaded_at": dt_util.utcnow().isoformat(),
     }
     write_meta(source_meta_path(zip_path), meta, "download", zip_path)
+
+
+def keep_download(response: FeedResponse, staged: str, zip_path: str, url: object) -> bool:
+    """Swap the verified download in (adopt_zip); False when it cannot be kept."""
+    try:
+        adopt_zip(response, staged, zip_path)
+    except OSError as ex:
+        # a reader holding the kept zip open (Windows), a full disk: said,
+        # and no half kept download left behind
+        _LOGGER.error("Could not keep the download of %s: %s", url, ex)
+        remove_files(staged)
+        return False
+    return True

@@ -22,7 +22,7 @@ import pygtfs
 
 from .const import CONF_INNER_ZIP
 from .direction_repair import repair_trip_directions
-from .freshness import adopt_zip, download_feed, source_request
+from .freshness import download_feed, keep_download, source_request
 from .db_build import import_routes, optimise_datasource, swap_in
 from .gtfs_db import feed_zip, real_path, remove_database, remove_files, routes_in, staging_name
 from .zip_peek import extract_member, inner_zips, inner_zips_in_file
@@ -288,13 +288,7 @@ def _fetch_zip(data: Mapping[str, Any], zip_path: str, envelope_ok: bool = False
     response, staged = download_feed(data, zip_path, envelope_ok)
     if response is None or staged is None:
         return False
-    try:
-        adopt_zip(response, staged, zip_path)
-    except Exception as ex:  # pylint: disable=broad-except
-        _LOGGER.exception("Could not keep the download of %s: %s", data.get("url"), ex)
-        remove_files(zip_path + ".new")
-        return False
-    return True
+    return keep_download(response, staged, zip_path, data.get("url"))
 
 
 def _refresh_route_by_route(gtfs_dir: str, filename: str, zip_name: str, routes: list[str],
