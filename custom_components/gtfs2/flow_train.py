@@ -1,17 +1,17 @@
-"""The train screens of the config flow: arrival station and sensor.
+"""The train screens of the config flow: departure station, arrival station and sensor.
 
-A train journey is configured by station name. After the departure
-station (async_step_stops_train, in config_flow with the other stop
-screens) come the arrival station, offered among the ones a train really
-reaches from there, and the sensor screen that names the entry. Mixed in
-ConfigFlow; every method reads and writes the flow's own state (self).
+A train journey is configured by station name. The departure station
+comes first, then the arrival station, offered among the ones a train
+really reaches from there, and the sensor screen that names the entry.
+Mixed in ConfigFlow; every method reads and writes the flow's own state
+(self).
 """
-# mixin: The two screens after the departure station of a train journey.
+# mixin: The three screens of a train journey: departure station, arrival station, sensor.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Coroutine
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import voluptuous as vol
 
@@ -25,10 +25,19 @@ from .const import (
     CONF_NAME,
     CONF_ORIGIN,
     CONF_ROUTE,
+    DEFAULT_PATH,
 )
+from .datasource import check_datasource_index, get_gtfs
 from .flow_journey import _Step
+from .gtfs_db import close_schedule
 from .notifications import _async_text
-from .stations import get_line_code, get_station_modes, get_train_destination_list, has_train_trip_between
+from .stations import (
+    get_line_code,
+    get_station_list,
+    get_station_modes,
+    get_train_destination_list,
+    has_train_trip_between,
+)
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -47,7 +56,7 @@ def _station_label(name: str, modes: set[str] | None, words: dict[str, str]) -> 
 
 
 class TrainScreens:
-    """The two screens after the departure station of a train journey."""
+    """The three screens of a train journey: departure station, arrival station, sensor."""
 
     # what these screens use of the flow they are mixed in (ConfigFlow)
     hass: HomeAssistant
@@ -58,9 +67,8 @@ class TrainScreens:
     _return_name: str
     async_show_form: Callable[..., FlowResult]
     async_abort: Callable[..., FlowResult]
-    async_step_stops_train: _Step
+    _import_missing: str
     async_step_extracting: _Step
-    _check_config: Callable[[dict], Coroutine[Any, Any, str | None]]
     _journey_placeholders: Callable[..., dict[str, str]]
     _suggested_name: Callable[[str], str]
     _name_and_create: _Step
@@ -75,6 +83,78 @@ class TrainScreens:
         return [selector.SelectOptionDict(
             value=name, label=_station_label(name, modes.get(name), words))
             for name in names]
+
+    async def async_step_stops_train(self, user_input: dict | None = None) -> FlowResult:
+        """Pick the departure station of a train journey.
+
+        Rail feeds rarely have stop ids a rider can use, and a station is
+        several stops in GTFS, so the distinct names are offered, and a name
+        can be typed for feeds that list none. One station only: an operator
+        can run the coaches that replace its trains from a coach station the
+        feed files under a name of its own (SNCF K8+: "Paris-Austerlitz
+        Routiere" beside "Paris Austerlitz"), and nothing in the feed ties the
+        two together. That coach station is the departure of a journey of its
+        own, which the closing screen offers to add on the same line.
+        """
+        errors: dict[str, str] = {}
+        route_id = self._user_inputs.get(CONF_ROUTE)
+        stations = await self.hass.async_add_executor_job(
+            get_station_list, self._pygtfs, route_id)
+        if not stations:
+            stations = await self.hass.async_add_executor_job(
+                get_station_list, self._pygtfs)
+        # a line that mixes trains and coaches says which one calls where:
+        # "Paris-Austerlitz Routiere" alone does not read as a coach station
+        modes = await self.hass.async_add_executor_job(
+            get_station_modes, self._pygtfs, route_id)
+
+        if user_input is None:
+            picked = None
+            if self._stops_error:
+                # back from the arrival screen: keep the pick, say why. Or
+                # the import that brought the line in left others out, and
+                # nothing was picked yet
+                errors["base"], self._stops_error = self._stops_error, None
+                picked = self._user_inputs.get(CONF_ORIGIN)
+            return self.async_show_form(
+                step_id="stops_train",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_ORIGIN, default=picked or vol.UNDEFINED):
+                        selector.SelectSelector(selector.SelectSelectorConfig(
+                            options=await self._station_options(stations, modes),
+                            custom_value=True)),
+                }),
+                description_placeholders=self._journey_placeholders(
+                    missing=self._import_missing),
+                errors=errors,
+            )
+
+        self._user_inputs[CONF_ORIGIN] = str(user_input.get(CONF_ORIGIN, "")).strip()
+        _LOGGER.debug(f"UserInputs Stops Train: {self._user_inputs}")
+        return await self.async_step_destination_train()
+
+    async def _check_config(self, data: dict) -> str | None:
+        schedule = await self.hass.async_add_executor_job(
+            get_gtfs, self.hass, DEFAULT_PATH, data
+        )
+        if schedule is None or isinstance(schedule, str):
+            # a sentinel of get_gtfs, not a schedule. It used to replace the
+            # flow's own, and the screen shown again with the error then read
+            # its stations from a string: the next submit ended the flow on
+            # no_stops_read. The flow keeps the schedule it has
+            if schedule in ("no_data_file", "no_zip_file", "not_built", "extracting"):
+                return schedule
+            return "generic_failure"
+        close_schedule(self._pygtfs)
+        self._pygtfs = schedule
+        # check and/or add indexes
+        await self.hass.async_add_executor_job(
+                    check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH, data["file"]
+                )
+        # no departure is looked for: the arrival was offered from the trips
+        # that ride it from the departure, so the journey exists (see
+        # async_step_destination_train)
+        return None
 
     async def async_step_destination_train(self, user_input: dict | None = None) -> FlowResult:
         """Pick the arrival station, among the ones a trip of the line really
