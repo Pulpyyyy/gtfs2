@@ -47,7 +47,7 @@ PLATFORMS = [Platform.SENSOR]
 DATASOURCE_PLATFORMS = [Platform.BUTTON, Platform.SENSOR, Platform.SWITCH, Platform.UPDATE]
 
 # constants used in helpers
-ATTR_API_KEY_LOCATIONS = ["not_applicable","header","query_string"]
+ATTR_API_KEY_LOCATIONS = ["not_applicable", "header", "query_string", "basic"]
 ATTR_ARRIVAL = "arrival"
 ATTR_BICYCLE = "trip_bikes_allowed_state"
 ATTR_DAY = "day"

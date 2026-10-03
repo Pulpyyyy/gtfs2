@@ -1291,7 +1291,10 @@ def test_a_source_downloaded_from_a_url_keeps_its_address_and_its_realtime_feeds
                                  needs_api_key=True), FORM, "source_rt_key")
         assert (default(key, "api_key"), default(key, "api_key_name"),
                 default(key, "api_key_location")) == ("", "api_key", "query_string")
-        assert offered(key, "api_key_location") == ["header", "query_string"]
+        # "not_applicable" is not offered on a key screen; HTTP Basic came
+        # after the trees that offer the two others alone
+        assert offered(key, "api_key_location") in (["header", "query_string"],
+                                                     ["header", "query_string", "basic"])
         shown(await submit(hass, key, api_key="rt-secret", api_key_location="header", accept=True),
               FORM, "route")
         source = hass.datasource("tao")

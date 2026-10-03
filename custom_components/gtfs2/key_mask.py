@@ -10,6 +10,7 @@ for a stored key, so the key itself never goes back to the browser. And a
 key sent in a header goes to the host it was given for, not to the one a
 redirect points at (see fetch).
 """
+import base64
 from collections.abc import Iterable, Mapping
 import logging
 import pkgutil
@@ -43,8 +44,22 @@ def note_key(key: object) -> None:
     if not isinstance(key, str) or len(key.strip()) < _KEY_MIN_LENGTH:
         return
     key = key.strip()
-    # in a url the key may travel percent-encoded
-    _known_keys = _known_keys | {key, quote(key, safe="")}
+    # in a url the key may travel percent-encoded, and in an HTTP Basic
+    # header base64-encoded
+    _known_keys = _known_keys | {key, quote(key, safe=""), _basic_login(key)}
+
+
+def _basic_login(key: str) -> str:
+    """The base64 login of an HTTP Basic header for a key: the key as the
+    user with no password, or the user:password it holds itself."""
+    login = key if ":" in key else key + ":"
+    return base64.b64encode(login.encode("utf-8")).decode("ascii")
+
+
+def basic_credentials(key: str) -> str:
+    """The Authorization header value that sends a key as an HTTP Basic
+    login (the CTS of Strasbourg takes its key so)."""
+    return "Basic " + _basic_login(key)
 
 
 def note_entry_keys(entry: ConfigEntry) -> None:

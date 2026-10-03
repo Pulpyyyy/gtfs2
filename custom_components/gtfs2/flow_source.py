@@ -120,7 +120,7 @@ def _source_key_schema(previous: Mapping[str, Any]) -> dict[vol.Marker, Any]:
     on screen, shown on demand by the field's own eye.
     """
     location = previous.get(CONF_API_KEY_LOCATION)
-    if location not in ("header", "query_string"):
+    if location not in ("header", "query_string", "basic"):
         location = "query_string"
     return {
         vol.Required(CONF_API_KEY, default=previous.get(CONF_API_KEY) or ""): selector.TextSelector(

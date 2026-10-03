@@ -58,6 +58,7 @@ update_gtfs:
             - "not_applicable"
             - "header"
             - "query_string"     
+            - "basic"
     clean_feed_info:
       name: Remove feed-info
       description: Removes feed_info.txt from zip (use in case file content incorrect)
@@ -118,6 +119,7 @@ update_gtfs_rt_local:
             - "not_applicable"
             - "header"
             - "query_string"     
+            - "basic"
     accept:
       name: Accept
       description: add application/protobuf to the header

@@ -74,7 +74,7 @@
         "data_description": {
           "api_key": "La clé elle-même, telle que le fournisseur vous l'a donnée.",
           "api_key_name": "Le nom sous lequel le fournisseur attend votre clé, à recopier exactement, majuscules comprises. Il change d'un fournisseur à l'autre : `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clé dans l'adresse : `…?`**`apikey`**`=VOTRE_CLE`\n- clé dans un en-tête : **`x-api-key`**`: VOTRE_CLE`\n- exemple TriMet : **`appID`**, dans l'adresse (`…/TripUpdate/?`**`appID`**`=VOTRE_CLE`)",
-          "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête.",
+          "api_key_location": "Dans l'adresse web, dans l'en-tête de la requête, ou en identifiant HTTP Basic (son nom ne sert alors pas).",
           "accept": "Effectif seulement si la clé va dans l'en-tête."
         }
       },
@@ -105,7 +105,7 @@
         "data_description": {
           "api_key": "La clé elle-même, telle que le fournisseur vous l'a donnée.",
           "api_key_name": "Le nom sous lequel le fournisseur attend votre clé, à recopier exactement, majuscules comprises. Il change d'un fournisseur à l'autre : `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clé dans l'adresse : `…?`**`apikey`**`=VOTRE_CLE`\n- clé dans un en-tête : **`x-api-key`**`: VOTRE_CLE`\n- exemple TriMet : **`appID`**, dans l'adresse (`…/TripUpdate/?`**`appID`**`=VOTRE_CLE`)",
-          "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête."
+          "api_key_location": "Dans l'adresse web, dans l'en-tête de la requête, ou en identifiant HTTP Basic (son nom ne sert alors pas)."
         }
       },
       "source": {
@@ -138,7 +138,7 @@
         "data_description": {
           "api_key": "La clé elle-même, telle que le fournisseur vous l'a donnée.",
           "api_key_name": "Le nom sous lequel le fournisseur attend votre clé, à recopier exactement, majuscules comprises. Il change d'un fournisseur à l'autre : `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clé dans l'adresse : `…?`**`apikey`**`=VOTRE_CLE`\n- clé dans un en-tête : **`x-api-key`**`: VOTRE_CLE`\n- exemple TriMet : **`appID`**, dans l'adresse (`…/TripUpdate/?`**`appID`**`=VOTRE_CLE`)",
-          "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête."
+          "api_key_location": "Dans l'adresse web, dans l'en-tête de la requête, ou en identifiant HTTP Basic (son nom ne sert alors pas)."
         }
       },
       "source_zip": {
@@ -304,7 +304,7 @@
         "data_description": {
           "api_key": "La clé elle-même, telle que le fournisseur vous l'a donnée.",
           "api_key_name": "Le nom sous lequel le fournisseur attend votre clé, à recopier exactement, majuscules comprises. Il change d'un fournisseur à l'autre : `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clé dans l'adresse : `…?`**`apikey`**`=VOTRE_CLE`\n- clé dans un en-tête : **`x-api-key`**`: VOTRE_CLE`\n- exemple TriMet : **`appID`**, dans l'adresse (`…/TripUpdate/?`**`appID`**`=VOTRE_CLE`)",
-          "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête.",
+          "api_key_location": "Dans l'adresse web, dans l'en-tête de la requête, ou en identifiant HTTP Basic (son nom ne sert alors pas).",
           "accept": "Effectif seulement si la clé va dans l'en-tête."
         }
       },
@@ -413,7 +413,7 @@
         "data_description": {
           "api_key": "La clé elle-même, telle que le fournisseur vous l'a donnée.",
           "api_key_name": "Le nom sous lequel le fournisseur attend votre clé, à recopier exactement, majuscules comprises. Il change d'un fournisseur à l'autre : `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clé dans l'adresse : `…?`**`apikey`**`=VOTRE_CLE`\n- clé dans un en-tête : **`x-api-key`**`: VOTRE_CLE`\n- exemple TriMet : **`appID`**, dans l'adresse (`…/TripUpdate/?`**`appID`**`=VOTRE_CLE`)",
-          "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête.",
+          "api_key_location": "Dans l'adresse web, dans l'en-tête de la requête, ou en identifiant HTTP Basic (son nom ne sert alors pas).",
           "accept": "Effectif seulement si la clé va dans l'en-tête."
         }
       },
@@ -444,7 +444,7 @@
         "data_description": {
           "api_key": "La clé elle-même, telle que le fournisseur vous l'a donnée.",
           "api_key_name": "Le nom sous lequel le fournisseur attend votre clé, à recopier exactement, majuscules comprises. Il change d'un fournisseur à l'autre : `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clé dans l'adresse : `…?`**`apikey`**`=VOTRE_CLE`\n- clé dans un en-tête : **`x-api-key`**`: VOTRE_CLE`\n- exemple TriMet : **`appID`**, dans l'adresse (`…/TripUpdate/?`**`appID`**`=VOTRE_CLE`)",
-          "api_key_location": "Dans l'adresse web, ou dans l'en-tête de la requête."
+          "api_key_location": "Dans l'adresse web, dans l'en-tête de la requête, ou en identifiant HTTP Basic (son nom ne sert alors pas)."
         }
       }
     },
@@ -460,7 +460,8 @@
       "options": {
         "not_applicable": "Aucune clé nécessaire (la plupart des sources)",
         "header": "Dans l'en-tête de la requête",
-        "query_string": "Dans l'adresse web"
+        "query_string": "Dans l'adresse web",
+        "basic": "En identifiant HTTP Basic (la clé est encodée pour vous)"
       }
     },
     "rt_type": {

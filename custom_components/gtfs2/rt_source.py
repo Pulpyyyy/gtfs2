@@ -27,6 +27,7 @@ from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
+from .key_mask import basic_credentials
 from .const import (
     id_of,
     DOMAIN,
@@ -213,11 +214,23 @@ def with_query_key(url: str | None, cfg: Mapping[str, Any]) -> str | None:
     return url
 
 
+def key_headers(cfg: Mapping[str, Any]) -> dict[str, str | None]:
+    """The headers that carry a source's key: under its name, or as an HTTP
+    Basic login, where the name plays no part; none when the key goes in the
+    url or nowhere. The static zip and the realtime feeds ask with them."""
+    location, key = cfg.get(CONF_API_KEY_LOCATION), cfg.get(CONF_API_KEY)
+    if location == "header":
+        return {cfg.get(CONF_API_KEY_NAME) or DEFAULT_API_KEY_NAME: key}
+    if location == "basic" and key:
+        return {"Authorization": basic_credentials(key)}
+    return {}
+
+
 def rt_headers(cfg: Mapping[str, Any]) -> dict[str, str | None] | None:
     """The request headers of a feed whose key travels in a header, else None."""
-    if cfg.get(CONF_API_KEY_LOCATION) != "header":
+    if cfg.get(CONF_API_KEY_LOCATION) not in ("header", "basic"):
         return None
-    headers = {cfg.get(CONF_API_KEY_NAME, DEFAULT_API_KEY_NAME): cfg.get(CONF_API_KEY)}
+    headers = key_headers(cfg)
     if cfg.get(CONF_ACCEPT_HEADER_PB, False):
         headers["Accept"] = "application/x-protobuf"
     return headers

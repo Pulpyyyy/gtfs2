@@ -74,7 +74,7 @@
         "data_description": {
           "api_key": "A chave em si, tal como o fornecedor a deu.",
           "api_key_name": "O nome com que o fornecedor espera a sua chave, a copiar exatamente, maiúsculas incluídas. Muda de um fornecedor para outro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- chave no endereço: `…?`**`apikey`**`=A_SUA_CHAVE`\n- chave num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`\n- exemplo TriMet: **`appID`**, no endereço (`…/TripUpdate/?`**`appID`**`=A_SUA_CHAVE`)",
-          "api_key_location": "No endereço web, ou no cabeçalho do pedido.",
+          "api_key_location": "No endereço web, no cabeçalho do pedido, ou como login HTTP Basic (o seu nome não é então usado).",
           "accept": "Só se aplica se a chave for no cabeçalho."
         }
       },
@@ -105,7 +105,7 @@
         "data_description": {
           "api_key": "A própria chave, copiada do fornecedor.",
           "api_key_name": "O nome com que o fornecedor espera a sua chave, a copiar exatamente, maiúsculas incluídas. Muda de um fornecedor para outro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- chave no endereço: `…?`**`apikey`**`=A_SUA_CHAVE`\n- chave num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`\n- exemplo TriMet: **`appID`**, no endereço (`…/TripUpdate/?`**`appID`**`=A_SUA_CHAVE`)",
-          "api_key_location": "No endereço web, ou no cabeçalho do pedido."
+          "api_key_location": "No endereço web, no cabeçalho do pedido, ou como login HTTP Basic (o seu nome não é então usado)."
         }
       },
       "source": {
@@ -138,7 +138,7 @@
         "data_description": {
           "api_key": "A chave em si, tal como o fornecedor a deu.",
           "api_key_name": "O nome com que o fornecedor espera a sua chave, a copiar exatamente, maiúsculas incluídas. Muda de um fornecedor para outro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- chave no endereço: `…?`**`apikey`**`=A_SUA_CHAVE`\n- chave num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`\n- exemplo TriMet: **`appID`**, no endereço (`…/TripUpdate/?`**`appID`**`=A_SUA_CHAVE`)",
-          "api_key_location": "No endereço web, ou no cabeçalho do pedido."
+          "api_key_location": "No endereço web, no cabeçalho do pedido, ou como login HTTP Basic (o seu nome não é então usado)."
         }
       },
       "source_zip": {
@@ -304,7 +304,7 @@
         "data_description": {
           "api_key": "A chave em si, tal como o fornecedor a deu.",
           "api_key_name": "O nome com que o fornecedor espera a sua chave, a copiar exatamente, maiúsculas incluídas. Muda de um fornecedor para outro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- chave no endereço: `…?`**`apikey`**`=A_SUA_CHAVE`\n- chave num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`\n- exemplo TriMet: **`appID`**, no endereço (`…/TripUpdate/?`**`appID`**`=A_SUA_CHAVE`)",
-          "api_key_location": "No endereço web, ou no cabeçalho do pedido.",
+          "api_key_location": "No endereço web, no cabeçalho do pedido, ou como login HTTP Basic (o seu nome não é então usado).",
           "accept": "Só se aplica se a chave for no cabeçalho."
         }
       },
@@ -405,7 +405,7 @@
         "data_description": {
           "api_key": "A chave em si, tal como o fornecedor a deu.",
           "api_key_name": "O nome com que o fornecedor espera a sua chave, a copiar exatamente, maiúsculas incluídas. Muda de um fornecedor para outro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- chave no endereço: `…?`**`apikey`**`=A_SUA_CHAVE`\n- chave num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`\n- exemplo TriMet: **`appID`**, no endereço (`…/TripUpdate/?`**`appID`**`=A_SUA_CHAVE`)",
-          "api_key_location": "No endereço web, ou no cabeçalho do pedido.",
+          "api_key_location": "No endereço web, no cabeçalho do pedido, ou como login HTTP Basic (o seu nome não é então usado).",
           "accept": "Só se aplica se a chave for no cabeçalho."
         }
       },
@@ -444,7 +444,7 @@
         "data_description": {
           "api_key": "A própria chave, copiada do fornecedor.",
           "api_key_name": "O nome com que o fornecedor espera a sua chave, a copiar exatamente, maiúsculas incluídas. Muda de um fornecedor para outro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- chave no endereço: `…?`**`apikey`**`=A_SUA_CHAVE`\n- chave num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`\n- exemplo TriMet: **`appID`**, no endereço (`…/TripUpdate/?`**`appID`**`=A_SUA_CHAVE`)",
-          "api_key_location": "No endereço web, ou no cabeçalho do pedido."
+          "api_key_location": "No endereço web, no cabeçalho do pedido, ou como login HTTP Basic (o seu nome não é então usado)."
         }
       }
     },
@@ -460,7 +460,8 @@
       "options": {
         "not_applicable": "Nenhuma chave necessária (a maioria das fontes)",
         "header": "No cabeçalho do pedido",
-        "query_string": "No endereço web"
+        "query_string": "No endereço web",
+        "basic": "Como login HTTP Basic (a chave é codificada por si)"
       }
     },
     "rt_type": {

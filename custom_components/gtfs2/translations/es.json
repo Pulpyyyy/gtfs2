@@ -74,7 +74,7 @@
         "data_description": {
           "api_key": "La clave en sí, tal como se la dio el proveedor.",
           "api_key_name": "El nombre con el que el proveedor espera su clave, a copiar tal cual, mayúsculas incluidas. Cambia de un proveedor a otro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clave en la dirección: `…?`**`apikey`**`=SU_CLAVE`\n- clave en una cabecera: **`x-api-key`**`: SU_CLAVE`\n- ejemplo TriMet: **`appID`**, en la dirección (`…/TripUpdate/?`**`appID`**`=SU_CLAVE`)",
-          "api_key_location": "En la dirección web, o en la cabecera de la petición.",
+          "api_key_location": "En la dirección web, en la cabecera de la petición, o como inicio de sesión HTTP Basic (su nombre no se usa entonces).",
           "accept": "Solo se aplica si la clave va en la cabecera."
         }
       },
@@ -105,7 +105,7 @@
         "data_description": {
           "api_key": "La clave en sí, copiada del proveedor.",
           "api_key_name": "El nombre con el que el proveedor espera su clave, a copiar tal cual, mayúsculas incluidas. Cambia de un proveedor a otro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clave en la dirección: `…?`**`apikey`**`=SU_CLAVE`\n- clave en una cabecera: **`x-api-key`**`: SU_CLAVE`\n- ejemplo TriMet: **`appID`**, en la dirección (`…/TripUpdate/?`**`appID`**`=SU_CLAVE`)",
-          "api_key_location": "En la dirección web, o en la cabecera de la petición."
+          "api_key_location": "En la dirección web, en la cabecera de la petición, o como inicio de sesión HTTP Basic (su nombre no se usa entonces)."
         }
       },
       "source": {
@@ -138,7 +138,7 @@
         "data_description": {
           "api_key": "La clave en sí, tal como se la dio el proveedor.",
           "api_key_name": "El nombre con el que el proveedor espera su clave, a copiar tal cual, mayúsculas incluidas. Cambia de un proveedor a otro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clave en la dirección: `…?`**`apikey`**`=SU_CLAVE`\n- clave en una cabecera: **`x-api-key`**`: SU_CLAVE`\n- ejemplo TriMet: **`appID`**, en la dirección (`…/TripUpdate/?`**`appID`**`=SU_CLAVE`)",
-          "api_key_location": "En la dirección web, o en la cabecera de la petición."
+          "api_key_location": "En la dirección web, en la cabecera de la petición, o como inicio de sesión HTTP Basic (su nombre no se usa entonces)."
         }
       },
       "source_zip": {
@@ -304,7 +304,7 @@
         "data_description": {
           "api_key": "La clave en sí, tal como se la dio el proveedor.",
           "api_key_name": "El nombre con el que el proveedor espera su clave, a copiar tal cual, mayúsculas incluidas. Cambia de un proveedor a otro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clave en la dirección: `…?`**`apikey`**`=SU_CLAVE`\n- clave en una cabecera: **`x-api-key`**`: SU_CLAVE`\n- ejemplo TriMet: **`appID`**, en la dirección (`…/TripUpdate/?`**`appID`**`=SU_CLAVE`)",
-          "api_key_location": "En la dirección web, o en la cabecera de la petición.",
+          "api_key_location": "En la dirección web, en la cabecera de la petición, o como inicio de sesión HTTP Basic (su nombre no se usa entonces).",
           "accept": "Solo se aplica si la clave va en la cabecera."
         }
       },
@@ -405,7 +405,7 @@
         "data_description": {
           "api_key": "La clave en sí, tal como se la dio el proveedor.",
           "api_key_name": "El nombre con el que el proveedor espera su clave, a copiar tal cual, mayúsculas incluidas. Cambia de un proveedor a otro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clave en la dirección: `…?`**`apikey`**`=SU_CLAVE`\n- clave en una cabecera: **`x-api-key`**`: SU_CLAVE`\n- ejemplo TriMet: **`appID`**, en la dirección (`…/TripUpdate/?`**`appID`**`=SU_CLAVE`)",
-          "api_key_location": "En la dirección web, o en la cabecera de la petición.",
+          "api_key_location": "En la dirección web, en la cabecera de la petición, o como inicio de sesión HTTP Basic (su nombre no se usa entonces).",
           "accept": "Solo se aplica si la clave va en la cabecera."
         }
       },
@@ -444,7 +444,7 @@
         "data_description": {
           "api_key": "La clave en sí, copiada del proveedor.",
           "api_key_name": "El nombre con el que el proveedor espera su clave, a copiar tal cual, mayúsculas incluidas. Cambia de un proveedor a otro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clave en la dirección: `…?`**`apikey`**`=SU_CLAVE`\n- clave en una cabecera: **`x-api-key`**`: SU_CLAVE`\n- ejemplo TriMet: **`appID`**, en la dirección (`…/TripUpdate/?`**`appID`**`=SU_CLAVE`)",
-          "api_key_location": "En la dirección web, o en la cabecera de la petición."
+          "api_key_location": "En la dirección web, en la cabecera de la petición, o como inicio de sesión HTTP Basic (su nombre no se usa entonces)."
         }
       }
     },
@@ -460,7 +460,8 @@
       "options": {
         "not_applicable": "No se necesita clave (la mayoría de las fuentes)",
         "header": "En la cabecera de la peticion",
-        "query_string": "En la dirección web"
+        "query_string": "En la dirección web",
+        "basic": "Como inicio de sesión HTTP Basic (la clave se codifica por usted)"
       }
     },
     "rt_type": {
