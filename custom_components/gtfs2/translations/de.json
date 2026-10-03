@@ -325,6 +325,7 @@
       "no_destination": "Von der gewählten Starthaltestelle ist in dieser Richtung keine Haltestelle erreichbar",
       "no_data_file": "Die Datei konnte nicht heruntergeladen werden. Prüfen Sie die Adresse und ob die Quelle von Home Assistant aus erreichbar ist. Manche Anbieter lehnen automatisierte Downloads ab.",
       "not_built": "Diese Quelle hat noch keinen Fahrplan. Aktualisieren Sie sie über ihren Eintrag auf der Integrationsseite, um ihn zu erstellen.",
+      "not_a_feed": "Diese ZIP-Datei ist kein GTFS-Feed: sie braucht routes.txt, trips.txt und stop_times.txt. Prüfen Sie, ob es der Fahrplan ist und nicht eine andere Datei desselben Anbieters.",
       "no_zip_file": "Problem bei der Datenerfassung: ZIP-Datei nicht im richtigen Ordner",
       "name_taken": "Ein Sensor trägt diesen Namen bereits. Wählen Sie einen anderen.",
       "not_created": "Der Sensor konnte nicht erstellt werden. Prüfen Sie das Protokoll und versuchen Sie einen anderen Namen.",

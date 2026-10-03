@@ -325,6 +325,7 @@
       "no_destination": "No stop can be reached from the selected origin in this direction",
       "no_data_file": "Could not download the file. Check the address, and that the source is reachable from Home Assistant. Some providers reject automated downloads.",
       "not_built": "This source has no timetable yet. Refresh it from its entry in the integration page to build it.",
+      "not_a_feed": "This zip is no GTFS feed: it needs routes.txt, trips.txt and stop_times.txt. Check that it is the timetable and not another file of the same provider.",
       "no_zip_file": "Data collection issue: ZIP file not in the correct folder",
       "name_taken": "A sensor already uses this name. Pick another one.",
       "not_created": "The sensor could not be created. Check the log, then try a different name.",

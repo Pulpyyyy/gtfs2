@@ -325,6 +325,7 @@
       "no_destination": "Ninguna parada es alcanzable desde el origen seleccionado en esta dirección",
       "no_data_file": "No se ha podido descargar el archivo. Compruebe la dirección y que la fuente sea accesible desde Home Assistant. Algunos proveedores rechazan las descargas automatizadas.",
       "not_built": "Esta fuente aún no tiene horarios. Actualícela desde su entrada en la página de la integración para crearlos.",
+      "not_a_feed": "Este zip no es un feed GTFS: necesita routes.txt, trips.txt y stop_times.txt. Compruebe que se trata de los horarios y no de otro archivo del mismo proveedor.",
       "no_zip_file": "Problema de recopilación de datos: el archivo ZIP no está en la carpeta correcta",
       "name_taken": "Ya hay un sensor con este nombre. Elija otro.",
       "not_created": "No se ha podido crear el sensor. Consulte el registro y pruebe con otro nombre.",

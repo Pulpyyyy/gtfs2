@@ -22,7 +22,7 @@ import pygtfs
 
 from .const import CONF_INNER_ZIP
 from .direction_repair import repair_trip_directions
-from .freshness import download_feed, keep_download, source_request
+from .freshness import _REQUIRED_TABLES, download_feed, keep_download, source_request
 from .db_build import import_routes, optimise_datasource, swap_in
 from .gtfs_db import feed_zip, real_path, remove_database, remove_files, routes_in, staging_name
 from .zip_peek import extract_member, inner_zips, inner_zips_in_file
@@ -150,14 +150,18 @@ def _holds_a_feed(zip_path: str) -> str | None:
     except (OSError, zipfile.BadZipFile) as ex:
         _LOGGER.error("Could not read the source zip %s: %s", zip_path, ex)
         return "no_zip_file"
-    if "routes.txt" in members:
+    # the tables a download is held to (stage_zip): without trips or calls
+    # no line has a departure to offer, said only screens later
+    missing = [table for table in _REQUIRED_TABLES if table not in members]
+    if not missing:
         return None
     inner = sorted(name for name in members if name.endswith(".zip"))
-    if inner:
+    if inner and "routes.txt" not in members:
         _LOGGER.error("%s holds zips, not a feed: %s", zip_path, ", ".join(inner))
         return "zip_holds_zips"
-    _LOGGER.error("No routes.txt in %s: %s", zip_path, ", ".join(sorted(members)[:6]))
-    return "no_data_file"
+    _LOGGER.error("%s is no GTFS feed, it has no %s (holds %s)", zip_path,
+                  ", ".join(missing), ", ".join(sorted(members)[:6]))
+    return "not_a_feed"
 
 
 def ensure_source_zip(hass: HomeAssistant, path: str, data: dict[str, Any]) -> str | None:
@@ -172,7 +176,7 @@ def ensure_source_zip(hass: HomeAssistant, path: str, data: dict[str, Any]) -> s
     and one that ends on a progress notification.
 
     Returns None when the zip is ready, else the code the flow already
-    words: "no_zip_file", "no_data_file", "zip_holds_zips". A source being
+    words: "no_zip_file", "no_data_file", "not_a_feed", "zip_holds_zips". A source being
     created has no database for anything to be writing to.
     """
     gtfs_dir = hass.config.path(path)

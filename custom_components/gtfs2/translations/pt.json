@@ -325,6 +325,7 @@
       "no_destination": "Nenhuma paragem é alcançável a partir da origem selecionada nesta direção",
       "no_data_file": "Não foi possível descarregar o ficheiro. Verifique o endereço e se a fonte está acessível a partir do Home Assistant. Alguns fornecedores recusam descargas automatizadas.",
       "not_built": "Esta fonte ainda não tem horários. Atualize-a a partir da sua entrada na página da integração para os criar.",
+      "not_a_feed": "Este zip não é um feed GTFS: precisa de routes.txt, trips.txt e stop_times.txt. Verifique se se trata dos horários e não de outro ficheiro do mesmo fornecedor.",
       "no_zip_file": "Problema de recolha de dados: Ficheiro ZIP não está na pasta correta",
       "name_taken": "Já existe um sensor com este nome. Escolha outro.",
       "not_created": "Não foi possível criar o sensor. Consulte o registo e tente outro nome.",

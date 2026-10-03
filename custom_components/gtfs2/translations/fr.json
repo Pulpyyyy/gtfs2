@@ -325,6 +325,7 @@
       "no_destination": "Aucun arrêt n'est atteignable depuis l'origine choisie dans cette direction",
       "no_data_file": "Impossible de télécharger le fichier. Vérifiez l'adresse, et que la source est joignable depuis Home Assistant. Certains fournisseurs refusent les téléchargements automatisés.",
       "not_built": "Cette source n'a pas encore d'horaires. Rafraîchissez-la depuis son entrée dans la page de l'intégration pour les construire.",
+      "not_a_feed": "Ce zip n'est pas un flux GTFS : il lui faut routes.txt, trips.txt et stop_times.txt. Vérifiez qu'il s'agit bien des horaires et non d'un autre fichier du même fournisseur.",
       "no_zip_file": "Problème de collecte de données : fichier ZIP ne se trouve pas dans le bon dossier",
       "name_taken": "Un capteur porte déjà ce nom. Choisissez-en un autre.",
       "not_created": "Le capteur n'a pas pu être créé. Consultez le journal, puis essayez un autre nom.",
