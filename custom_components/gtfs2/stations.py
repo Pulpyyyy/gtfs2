@@ -5,18 +5,24 @@ feed files one record per platform and the same station under several ids.
 So the flow asks which stations a line calls at (get_station_list), which
 of them a train reaches from a given one (get_train_destination_list),
 whether any train runs between two names (has_train_trip_between), and
-whether a line mixes coaches and trains (get_station_modes). The boarding
-rules and the station-name matching they lean on stay in gtfs_helper,
-where the departure query uses them too.
+whether a line mixes coaches and trains (get_station_modes), and which
+lines an entry rides, for its map files (train_entry_routes). The boarding
+rules and the station-name matching they lean on are stop_rules', where
+the departure query reads them too.
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 import logging
-from typing import TYPE_CHECKING
+import os
+import sqlite3
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import text
 
-from .stop_rules import COACH_STOP_PREFIX, RAIL_ROUTE_TYPES_SQL, _alights, _boards, station_names_in
+from .gtfs_db import real_path
+from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
+                         entry_stations, station_names_in)
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -191,3 +197,39 @@ def get_train_destination_list(schedule: Schedule, route_id: str | None, origin_
     _LOGGER.debug("Train destinations from %s (line %s, route %s): %s",
                   origin_name, line, route_id, len(reached))
     return dict(sorted(reached.items()))
+
+
+def train_entry_routes(gtfs_dir: str, data: Mapping[str, Any]) -> list[str]:
+    """The lines a trip of which runs from one of a train entry's stations
+    to one of the other's, read from its source's database; [] when it
+    cannot be read.
+
+    A train entry stores "train" for its line and rides whatever line
+    serves its two stations: the map files its departures wrote are named
+    after those lines, and removing the entry has to find them. Blocking,
+    made for the executor.
+    """
+    db_file = real_path(gtfs_dir, data.get("file") or "")
+    if not data.get("file") or not os.path.exists(db_file):
+        return []
+    origin_in, params = station_names_in("origin", entry_stations(data, "origin"))
+    dest_in, dest_params = station_names_in("dest", entry_stations(data, "destination"))
+    params.update(dest_params)
+    sql = f"""
+    select distinct t.route_id from trips t
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stops so on so.stop_id = o.stop_id
+    inner join stop_times d on d.trip_id = t.trip_id
+    inner join stops sd on sd.stop_id = d.stop_id
+    where so.stop_name in {origin_in} and sd.stop_name in {dest_in}
+      and o.stop_sequence < d.stop_sequence
+    """  # noqa: S608
+    try:
+        conn = sqlite3.connect(db_file, timeout=10)
+        try:
+            return [str(row[0]) for row in conn.execute(sql, params)]
+        finally:
+            conn.close()
+    except sqlite3.Error as ex:
+        _LOGGER.warning("Could not read the lines of train entry %s: %s", data.get("name"), ex)
+        return []

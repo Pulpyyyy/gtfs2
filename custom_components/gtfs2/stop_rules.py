@@ -7,11 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 import logging
-import os
-import sqlite3
 from typing import Any
-
-from .gtfs_db import real_path
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,42 +35,6 @@ def entry_stations(data: Mapping[str, Any], end: str) -> list[str]:
     an entry created before that screen took several holds."""
     names = data.get(f"{end}_stations") or [data.get(end)]
     return [str(name) for name in names if name]
-
-
-def train_entry_routes(gtfs_dir: str, data: Mapping[str, Any]) -> list[str]:
-    """The lines a trip of which runs from one of a train entry's stations
-    to one of the other's, read from its source's database; [] when it
-    cannot be read.
-
-    A train entry stores "train" for its line and rides whatever line
-    serves its two stations: the map files its departures wrote are named
-    after those lines, and removing the entry has to find them. Blocking,
-    made for the executor.
-    """
-    db_file = real_path(gtfs_dir, data.get("file") or "")
-    if not data.get("file") or not os.path.exists(db_file):
-        return []
-    origin_in, params = station_names_in("origin", entry_stations(data, "origin"))
-    dest_in, dest_params = station_names_in("dest", entry_stations(data, "destination"))
-    params.update(dest_params)
-    sql = f"""
-    select distinct t.route_id from trips t
-    inner join stop_times o on o.trip_id = t.trip_id
-    inner join stops so on so.stop_id = o.stop_id
-    inner join stop_times d on d.trip_id = t.trip_id
-    inner join stops sd on sd.stop_id = d.stop_id
-    where so.stop_name in {origin_in} and sd.stop_name in {dest_in}
-      and o.stop_sequence < d.stop_sequence
-    """  # noqa: S608
-    try:
-        conn = sqlite3.connect(db_file, timeout=10)
-        try:
-            return [str(row[0]) for row in conn.execute(sql, params)]
-        finally:
-            conn.close()
-    except sqlite3.Error as ex:
-        _LOGGER.warning("Could not read the lines of train entry %s: %s", data.get("name"), ex)
-        return []
 
 
 def station_names_in(prefix: str, names: Iterable[str] | None) -> tuple[str, dict[str, str]]:
