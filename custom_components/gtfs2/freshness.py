@@ -133,11 +133,6 @@ def probe_source(data: Mapping[str, Any], zip_path: str) -> dict[str, str | None
     return {"result": PROBE_CHANGED, **answer}
 
 
-def probe_source_freshness(data: Mapping[str, Any], zip_path: str) -> str | None:
-    """The probe's verdict alone, for callers with no use for the details."""
-    return probe_source(data, zip_path)["result"]
-
-
 def open_source(data: Mapping[str, Any], url: str, headers: Mapping[str, str]) -> FeedResponse:
     """The response whose body is this source's feed.
 

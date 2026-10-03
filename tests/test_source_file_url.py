@@ -147,7 +147,7 @@ def test_the_first_download_is_kept_and_recorded(source, feed):
 
 def test_the_probe_is_unchanged_while_the_file_stays(source):
     data, zip_path = source
-    assert freshness.probe_source_freshness(data, zip_path) == "unchanged"
+    assert freshness.probe_source(data, zip_path)["result"] == "unchanged"
 
 
 def test_the_probe_is_changed_once_the_file_is_written_again(source, feed):
@@ -164,7 +164,7 @@ def test_the_probe_is_changed_once_the_file_is_written_again(source, feed):
 def test_a_file_gone_is_an_error_and_its_download_brings_nothing(source, feed):
     data, zip_path = source
     os.remove(feed)
-    assert freshness.probe_source_freshness(data, zip_path) == "error"
+    assert freshness.probe_source(data, zip_path)["result"] == "error"
     assert freshness.download_feed(data, zip_path) == (None, None)
     assert not os.path.exists(zip_path + ".new")
     with open(zip_path, "rb") as kept:
@@ -176,10 +176,10 @@ def test_a_file_gone_is_an_error_and_its_download_brings_nothing(source, feed):
 def test_the_same_bytes_written_again_are_not_taken_in(source, feed):
     data, zip_path = source
     _write(feed, V1, LATER)
-    assert freshness.probe_source_freshness(data, zip_path) == "changed"
+    assert freshness.probe_source(data, zip_path)["result"] == "changed"
     assert freshness.fetch_if_new(data, zip_path) is False
     # the host's new time is kept, so the question is answered for free
-    assert freshness.probe_source_freshness(data, zip_path) == "unchanged"
+    assert freshness.probe_source(data, zip_path)["result"] == "unchanged"
 
 
 # --- itself -------------------------------------------------------------------
@@ -192,11 +192,11 @@ def test_a_source_fed_by_its_own_kept_zip_takes_a_new_edition_in(tmp_path):
     # the copy over itself has a time of its own: changed once, then the
     # hash finds the same bytes and the question settles
     assert freshness.fetch_if_new(data, zip_path) is False
-    assert freshness.probe_source_freshness(data, zip_path) == "unchanged"
+    assert freshness.probe_source(data, zip_path)["result"] == "unchanged"
     # a new edition dropped over the kept zip, with the time it was
     # published at, older than the copy's
     _write(zip_path, V2, LATER)
-    assert freshness.probe_source_freshness(data, zip_path) == "changed"
+    assert freshness.probe_source(data, zip_path)["result"] == "changed"
     assert freshness.fetch_if_new(data, zip_path) is True
     with open(zip_path, "rb") as kept:
         assert kept.read() == V2

@@ -123,7 +123,7 @@ def test_a_good_download_is_swapped_in_and_recorded(tmp_path):
 def test_a_304_is_unchanged_and_the_kept_etag_is_the_condition(kept, monkeypatch):
     asked = []
     monkeypatch.setattr(freshness, "fetch", _answering(_response(status=304), asked))
-    assert freshness.probe_source_freshness(DATA, kept) == "unchanged"
+    assert freshness.probe_source(DATA, kept)["result"] == "unchanged"
     assert asked[-1][1].get("If-None-Match") == '"aaa"'
 
 
@@ -132,7 +132,7 @@ def test_the_same_validators_are_unchanged_a_weak_etag_included(kept, monkeypatc
     # comparing to the client
     monkeypatch.setattr(freshness, "fetch", _answering(_response(headers={
         "ETag": 'W/"aaa"', "Last-Modified": "Mon, 01 Sep 2026 17:33:00 GMT"})))
-    assert freshness.probe_source_freshness(DATA, kept) == "unchanged"
+    assert freshness.probe_source(DATA, kept)["result"] == "unchanged"
 
 
 def test_new_validators_are_changed_and_name_the_new_version(kept, monkeypatch):
@@ -145,12 +145,12 @@ def test_new_validators_are_changed_and_name_the_new_version(kept, monkeypatch):
 
 def test_no_validators_is_unknown(kept, monkeypatch):
     monkeypatch.setattr(freshness, "fetch", _answering(_response(headers={})))
-    assert freshness.probe_source_freshness(DATA, kept) == "unknown"
+    assert freshness.probe_source(DATA, kept)["result"] == "unknown"
 
 
 def test_a_dead_host_is_an_error(kept, monkeypatch):
     monkeypatch.setattr(freshness, "fetch", _dead)
-    assert freshness.probe_source_freshness(DATA, kept) == "error"
+    assert freshness.probe_source(DATA, kept)["result"] == "error"
 
 
 def test_no_sidecar_is_changed(kept, monkeypatch):
@@ -158,7 +158,7 @@ def test_no_sidecar_is_changed(kept, monkeypatch):
     # nothing is asked of the host
     os.remove(freshness.source_meta_path(kept))
     monkeypatch.setattr(freshness, "fetch", _dead)
-    assert freshness.probe_source_freshness(DATA, kept) == "changed"
+    assert freshness.probe_source(DATA, kept)["result"] == "changed"
 
 
 def test_a_sidecar_holding_only_a_hash_is_unknown(kept, monkeypatch):
@@ -166,14 +166,14 @@ def test_a_sidecar_holding_only_a_hash_is_unknown(kept, monkeypatch):
     with open(freshness.source_meta_path(kept), "w", encoding="utf-8") as out:
         out.write('{"sha256": "abc"}')
     monkeypatch.setattr(freshness, "fetch", _dead)
-    assert freshness.probe_source_freshness(DATA, kept) == "unknown"
+    assert freshness.probe_source(DATA, kept)["result"] == "unknown"
 
 
 def test_a_host_refusing_head_is_asked_with_a_conditional_get(kept, monkeypatch):
     asked = []
     monkeypatch.setattr(freshness, "fetch", _answering(
         lambda method: _response(status=405 if method == "head" else 304), asked))
-    assert freshness.probe_source_freshness(DATA, kept) == "unchanged"
+    assert freshness.probe_source(DATA, kept)["result"] == "unchanged"
     assert [method for method, _ in asked] == ["head", "get"]
     assert asked[-1][1].get("If-None-Match") == '"aaa"'
 
