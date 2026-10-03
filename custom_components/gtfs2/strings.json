@@ -73,7 +73,7 @@
         },
         "data_description": {
           "api_key": "The key itself, copied from the provider.",
-          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_name": "The name under which the provider expects your key, to copy exactly, capitals included. It changes from one provider to another: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- key in the address: `…?`**`apikey`**`=YOUR_KEY`\n- key in a header: **`x-api-key`**`: YOUR_KEY`\n- TriMet example: **`appID`**, in the address (`…/TripUpdate/?`**`appID`**`=YOUR_KEY`)",
           "api_key_location": "In the web address, or in the request header.",
           "accept": "Only applies when the key goes in the header."
         }
@@ -104,7 +104,7 @@
         },
         "data_description": {
           "api_key": "The key itself, copied from the provider.",
-          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_name": "The name under which the provider expects your key, to copy exactly, capitals included. It changes from one provider to another: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- key in the address: `…?`**`apikey`**`=YOUR_KEY`\n- key in a header: **`x-api-key`**`: YOUR_KEY`\n- TriMet example: **`appID`**, in the address (`…/TripUpdate/?`**`appID`**`=YOUR_KEY`)",
           "api_key_location": "In the web address, or in the request header."
         }
       },
@@ -137,7 +137,7 @@
         "description": "The provider states these in its documentation.\n\n[documentation]({docu_extracting})",
         "data_description": {
           "api_key": "The key itself, copied from the provider.",
-          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_name": "The name under which the provider expects your key, to copy exactly, capitals included. It changes from one provider to another: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- key in the address: `…?`**`apikey`**`=YOUR_KEY`\n- key in a header: **`x-api-key`**`: YOUR_KEY`\n- TriMet example: **`appID`**, in the address (`…/TripUpdate/?`**`appID`**`=YOUR_KEY`)",
           "api_key_location": "In the web address, or in the request header."
         }
       },
@@ -303,7 +303,7 @@
         },
         "data_description": {
           "api_key": "The key itself, copied from the provider.",
-          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_name": "The name under which the provider expects your key, to copy exactly, capitals included. It changes from one provider to another: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- key in the address: `…?`**`apikey`**`=YOUR_KEY`\n- key in a header: **`x-api-key`**`: YOUR_KEY`\n- TriMet example: **`appID`**, in the address (`…/TripUpdate/?`**`appID`**`=YOUR_KEY`)",
           "api_key_location": "In the web address, or in the request header.",
           "accept": "Only applies when the key goes in the header."
         }
@@ -412,7 +412,7 @@
         },
         "data_description": {
           "api_key": "The key itself, copied from the provider.",
-          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_name": "The name under which the provider expects your key, to copy exactly, capitals included. It changes from one provider to another: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- key in the address: `…?`**`apikey`**`=YOUR_KEY`\n- key in a header: **`x-api-key`**`: YOUR_KEY`\n- TriMet example: **`appID`**, in the address (`…/TripUpdate/?`**`appID`**`=YOUR_KEY`)",
           "api_key_location": "In the web address, or in the request header.",
           "accept": "Only applies when the key goes in the header."
         }
@@ -443,7 +443,7 @@
         },
         "data_description": {
           "api_key": "The key itself, copied from the provider.",
-          "api_key_name": "The word placed before your key. In the address: `?`**`apikey`**`=YOUR_KEY`. In a header: **`x-api-key`**`: YOUR_KEY`. It differs between providers (`apikey`, `api_key`, `app_key`, `Authorization`) and is case sensitive.",
+          "api_key_name": "The name under which the provider expects your key, to copy exactly, capitals included. It changes from one provider to another: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- key in the address: `…?`**`apikey`**`=YOUR_KEY`\n- key in a header: **`x-api-key`**`: YOUR_KEY`\n- TriMet example: **`appID`**, in the address (`…/TripUpdate/?`**`appID`**`=YOUR_KEY`)",
           "api_key_location": "In the web address, or in the request header."
         }
       }

@@ -73,7 +73,7 @@
         },
         "data_description": {
           "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
-          "api_key_name": "Das Wort vor Ihrem Schlüssel. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. Im Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Er unterscheidet sich je nach Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`), Groß- und Kleinschreibung zählt.",
+          "api_key_name": "Der Name, unter dem der Anbieter Ihren Schlüssel erwartet, genau abzuschreiben, Groß- und Kleinschreibung inbegriffen. Er ist je nach Anbieter verschieden: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- Schlüssel in der Adresse: `…?`**`apikey`**`=IHR_SCHLUESSEL`\n- Schlüssel in einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`\n- Beispiel TriMet: **`appID`**, in der Adresse (`…/TripUpdate/?`**`appID`**`=IHR_SCHLUESSEL`)",
           "api_key_location": "In der Web-Adresse oder im Anfrage-Header.",
           "accept": "Nur wirksam, wenn der Schlüssel im Header steht."
         }
@@ -104,7 +104,7 @@
         },
         "data_description": {
           "api_key": "Der Schlüssel selbst, vom Anbieter kopiert.",
-          "api_key_name": "Das Wort, das vor Ihrem Schlüssel steht. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. In einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Es unterscheidet sich je Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`) und beachtet Groß- und Kleinschreibung.",
+          "api_key_name": "Der Name, unter dem der Anbieter Ihren Schlüssel erwartet, genau abzuschreiben, Groß- und Kleinschreibung inbegriffen. Er ist je nach Anbieter verschieden: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- Schlüssel in der Adresse: `…?`**`apikey`**`=IHR_SCHLUESSEL`\n- Schlüssel in einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`\n- Beispiel TriMet: **`appID`**, in der Adresse (`…/TripUpdate/?`**`appID`**`=IHR_SCHLUESSEL`)",
           "api_key_location": "In der Webadresse oder im Anfrage-Header."
         }
       },
@@ -137,7 +137,7 @@
         "description": "Der Anbieter nennt diese in seiner Dokumentation.\n\n[Dokumentation]({docu_extracting})",
         "data_description": {
           "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
-          "api_key_name": "Das Wort vor Ihrem Schlüssel. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. Im Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Er unterscheidet sich je nach Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`), Groß- und Kleinschreibung zählt.",
+          "api_key_name": "Der Name, unter dem der Anbieter Ihren Schlüssel erwartet, genau abzuschreiben, Groß- und Kleinschreibung inbegriffen. Er ist je nach Anbieter verschieden: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- Schlüssel in der Adresse: `…?`**`apikey`**`=IHR_SCHLUESSEL`\n- Schlüssel in einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`\n- Beispiel TriMet: **`appID`**, in der Adresse (`…/TripUpdate/?`**`appID`**`=IHR_SCHLUESSEL`)",
           "api_key_location": "In der Web-Adresse oder im Anfrage-Header."
         }
       },
@@ -303,7 +303,7 @@
         },
         "data_description": {
           "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
-          "api_key_name": "Das Wort vor Ihrem Schlüssel. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. Im Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Er unterscheidet sich je nach Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`), Groß- und Kleinschreibung zählt.",
+          "api_key_name": "Der Name, unter dem der Anbieter Ihren Schlüssel erwartet, genau abzuschreiben, Groß- und Kleinschreibung inbegriffen. Er ist je nach Anbieter verschieden: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- Schlüssel in der Adresse: `…?`**`apikey`**`=IHR_SCHLUESSEL`\n- Schlüssel in einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`\n- Beispiel TriMet: **`appID`**, in der Adresse (`…/TripUpdate/?`**`appID`**`=IHR_SCHLUESSEL`)",
           "api_key_location": "In der Web-Adresse oder im Anfrage-Header.",
           "accept": "Nur wirksam, wenn der Schlüssel im Header steht."
         }
@@ -404,7 +404,7 @@
         },
         "data_description": {
           "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
-          "api_key_name": "Das Wort vor Ihrem Schlüssel. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. Im Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Er unterscheidet sich je nach Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`), Groß- und Kleinschreibung zählt.",
+          "api_key_name": "Der Name, unter dem der Anbieter Ihren Schlüssel erwartet, genau abzuschreiben, Groß- und Kleinschreibung inbegriffen. Er ist je nach Anbieter verschieden: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- Schlüssel in der Adresse: `…?`**`apikey`**`=IHR_SCHLUESSEL`\n- Schlüssel in einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`\n- Beispiel TriMet: **`appID`**, in der Adresse (`…/TripUpdate/?`**`appID`**`=IHR_SCHLUESSEL`)",
           "api_key_location": "In der Web-Adresse oder im Anfrage-Header.",
           "accept": "Nur wirksam, wenn der Schlüssel im Header steht."
         }
@@ -443,7 +443,7 @@
         },
         "data_description": {
           "api_key": "Der Schlüssel selbst, vom Anbieter kopiert.",
-          "api_key_name": "Das Wort, das vor Ihrem Schlüssel steht. In der Adresse: `?`**`apikey`**`=IHR_SCHLUESSEL`. In einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`. Es unterscheidet sich je Anbieter (`apikey`, `api_key`, `app_key`, `Authorization`) und beachtet Groß- und Kleinschreibung.",
+          "api_key_name": "Der Name, unter dem der Anbieter Ihren Schlüssel erwartet, genau abzuschreiben, Groß- und Kleinschreibung inbegriffen. Er ist je nach Anbieter verschieden: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- Schlüssel in der Adresse: `…?`**`apikey`**`=IHR_SCHLUESSEL`\n- Schlüssel in einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`\n- Beispiel TriMet: **`appID`**, in der Adresse (`…/TripUpdate/?`**`appID`**`=IHR_SCHLUESSEL`)",
           "api_key_location": "In der Webadresse oder im Anfrage-Header."
         }
       }
