@@ -32,6 +32,8 @@ import time
 from typing import IO, Any, Literal, Self
 import zipfile
 
+from .gtfs_db import remove_files
+
 _LOGGER = logging.getLogger(__name__)
 
 # copied as they are: small, and the whole network must stay visible
@@ -272,11 +274,7 @@ def filter_gtfs_zip(src: str, dst: str, route_ids: Iterable[str],
         # on a guess
         _LOGGER.exception("Could not filter %s to %s routes: %s",
                       src, len(route_ids), ex)
-        if os.path.exists(dst):
-            try:
-                os.remove(dst)
-            except OSError:
-                pass
+        remove_files(dst)
         return None
 
     stats = {"trips": (len(trip_ids), trips_total),

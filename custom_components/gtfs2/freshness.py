@@ -33,6 +33,7 @@ from .const import (
     CONF_API_KEY_NAME,
     DEFAULT_API_KEY_NAME,
 )
+from .gtfs_db import remove_files
 from .key_mask import fetch, hide_keys
 from .zip_peek import _MemberResponse, inner_zips_in_file, member_out_of, open_member
 from .rt_source import with_query_key
@@ -175,12 +176,7 @@ def download_feed(data: Mapping[str, Any], zip_path: str,
         # own keeps its stack
         log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
         log("Could not download %s: %s", data.get("url"), ex)
-        fresh = zip_path + ".new"
-        if os.path.exists(fresh):
-            try:
-                os.remove(fresh)
-            except OSError:
-                pass
+        remove_files(zip_path + ".new")
         return None, None
     return (response, staged) if staged is not None else (None, None)
 
@@ -210,18 +206,12 @@ def fetch_if_new(data: Mapping[str, Any], zip_path: str, adopt: bool = True) -> 
     # compared once on disk: the body is not in memory to hash beforehand
     meta = source_meta(zip_path)
     if meta.get("sha256") and file_digest(staged)[0] == meta["sha256"]:
-        try:
-            os.remove(staged)
-        except OSError:
-            pass
+        remove_files(staged)
         _record_validators(response, zip_path, meta)
         return False
     if not adopt:
         digest = file_digest(staged)[0]
-        try:
-            os.remove(staged)
-        except OSError:
-            pass
+        remove_files(staged)
         return digest
     try:
         adopt_zip(response, staged, zip_path)
@@ -230,10 +220,7 @@ def fetch_if_new(data: Mapping[str, Any], zip_path: str, adopt: bool = True) -> 
         # check says it and leaves no half kept download behind, as a
         # refresh does
         _LOGGER.error("Could not keep the download of %s: %s", data.get("url"), ex)
-        try:
-            os.remove(staged)
-        except OSError:
-            pass
+        remove_files(staged)
         return None
     return True
 
@@ -384,10 +371,7 @@ def stage_zip(response: FeedResponse, zip_path: str, inner: str | None = None,
     if reason:
         _LOGGER.error("The download from %s %s, keeping the current data",
                       hide_keys(response.url), reason)
-        try:
-            os.remove(staged)
-        except OSError:
-            pass
+        remove_files(staged)
         return None
     return staged
 

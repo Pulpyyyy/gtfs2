@@ -35,6 +35,7 @@ import zlib
 
 import requests
 
+from .gtfs_db import remove_files
 from .key_mask import fetch, hide_keys
 
 _LOGGER = logging.getLogger(__name__)
@@ -280,8 +281,5 @@ def extract_member(path: str, name: str, staged: str) -> bool:
         return True
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.exception("Could not take %s out of %s: %s", name, path, ex)
-        try:
-            os.remove(staged)
-        except OSError:
-            pass
+        remove_files(staged)
         return False
