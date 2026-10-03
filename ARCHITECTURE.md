@@ -357,7 +357,7 @@ repairs.py         the fixes Settings > Repairs offers for gtfs2's issues
 ```
 config_flow.py     the flow itself, composed of the screen classes below
 flow_source.py     SourceScreens: where the timetable comes from
-flow_reload.py     ReloadScreens: load lines into a datasource, shrink it
+flow_reload.py     ReloadScreens: load lines into a datasource, shrink it, wait for another writer
 flow_journey.py    JourneyScreens: stops, direction, sensor name, mirror journey
 flow_train.py      TrainScreens: departure and arrival stations, sensor
 flow_options.py    OptionsScreens: realtime feeds and static refresh of a source

@@ -1,16 +1,14 @@
 """The source screens of the config flow: where the timetable comes from.
 
 A source is a zip, fetched from a url or already in the gtfs2 folder, with
-or without an api key, with or without realtime feeds of its own; once it
-is known the flow unpacks it or waits for an unpacking already running.
+or without an api key, with or without realtime feeds of its own.
 The schema builders for the realtime and key fields live here too, the
 options flow reuses them. Mixed in ConfigFlow; every method reads and
 writes the flow's own state (self).
 """
-# mixin: The screens that name a source: url or zip, its key, its realtime feeds, and the unpacking.
+# mixin: The screens that name a source: url or zip, its key, its realtime feeds.
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 import re
@@ -50,11 +48,9 @@ from .const import (
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
 from .flow_journey import _Step
-from .flow_reload import _database_size
 from .freshness import source_meta
 from .file_url import FILE_SCHEME
 from .gtfs_db import feed_zip, real_path, get_zipfiles
-from .datasource import check_extracting
 from .key_mask import KEY_MASK, note_key
 from .rt_source import async_ensure_datasource_entry, datasource_entry
 from .source_refresh import source_zip_url
@@ -214,7 +210,7 @@ def _collect_source_rt_options(url_fields: Mapping[str, Any], key_fields: Mappin
 
 
 class SourceScreens:
-    """The screens that name a source: url or zip, its key, its realtime feeds, and the unpacking."""
+    """The screens that name a source: url or zip, its key, its realtime feeds."""
 
     # what these screens use of the flow they are mixed in (ConfigFlow)
     hass: HomeAssistant
@@ -223,10 +219,6 @@ class SourceScreens:
     _source_step: str | None
     _inner_zips: list
     _source_rt_inputs: dict
-    _extract_job: asyncio.Task | None
-    _extract_task: asyncio.Task | None
-    _extract_size: str
-    _extract_next_step: str | None
     async_show_form: Callable[..., FlowResult]
     async_show_progress: Callable[..., FlowResult]
     async_show_progress_done: Callable[..., FlowResult]
@@ -541,65 +533,6 @@ class SourceScreens:
         """
         return await self._fresh_source_of(self._user_inputs[CONF_FILE])
 
-    async def async_step_extracting(self, user_input: dict | None = None) -> FlowResult:
-        """Wait, showing progress, while something writes to the datasource.
-
-        get_gtfs answers "extracting" while a write holds the file's journal:
-        a line import from another window, an optimisation, an index being
-        built. The write is not this flow's, so there is no task to await:
-        the journal is the only signal available from here.
-        """
-        gtfs_dir = self.hass.config.path(DEFAULT_PATH)
-        file = self._user_inputs.get(CONF_FILE, "")
-        if self._extract_job is None:
-            self._extract_job = self.hass.async_create_task(
-                self._wait_for_extraction())
-
-        if not self._extract_job.done():
-            # Home Assistant redraws a progress screen only when its
-            # progress_task finishes. Handing it the whole wait would freeze
-            # the figure on its first value, so it gets a short tick instead
-            # and the size is read again each time the step comes back.
-            self._extract_size = await self.hass.async_add_executor_job(
-                _database_size, gtfs_dir, file)
-
-            self._extract_task = self.hass.async_create_task(
-                asyncio.wait({self._extract_job}, timeout=3))
-            # The database file only grows while rows are written, so its size
-            # is the one honest sign that something is happening. There is no
-            # total to compare it against - it depends on the network - so it
-            # is shown as a running figure, not as a percentage.
-            return self.async_show_progress(
-                step_id="extracting",
-                progress_action="extracting",
-                progress_task=self._extract_task,
-                description_placeholders={
-                    **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                    "file": self._user_inputs.get(CONF_FILE, ""),
-                    "size": self._extract_size,
-                },
-            )
-
-        # the wait may have ended on an error rather than on a finished
-        # extraction: read it, or asyncio drops it with a "never retrieved"
-        # and the screen after this one is the first to know
-        failed = None if self._extract_job.cancelled() else self._extract_job.exception()
-        if failed is not None:
-            _LOGGER.error("Waiting for %s to be unpacked failed: %s",
-                          self._user_inputs.get(CONF_FILE, ""), failed)
-        self._extract_job = None
-        self._extract_task = None
-        return self.async_show_progress_done(
-            next_step_id=self._extract_next_step or "agency")
-
-    async def _wait_for_extraction(self) -> None:
-        """Poll until nothing writes to the datasource any more."""
-        gtfs_dir = self.hass.config.path(DEFAULT_PATH)
-        file = self._user_inputs.get(CONF_FILE, "")
-        while await self.hass.async_add_executor_job(
-            check_extracting, self.hass, gtfs_dir, file
-        ):
-            await asyncio.sleep(5)
 
     async def _back_to_source(self, reason: str) -> FlowResult:
         """Return to the step that picked the datasource, carrying the error.

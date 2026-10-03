@@ -115,7 +115,6 @@ from homeassistant import config_entries, data_entry_flow  # noqa: E402
 const = ha_stub.load("const")
 config_flow = ha_stub.load("config_flow")
 notifications = ha_stub.load("notifications")
-flow_source = ha_stub.load("flow_source")
 flow_reload = ha_stub.load("flow_reload")
 rt_source = ha_stub.load("rt_source")
 gtfs_db = ha_stub.load("gtfs_db")
@@ -1390,7 +1389,7 @@ def test_the_flow_waits_for_an_unpacking_and_goes_on_with_what_was_typed(world, 
 
     # the wait polls the files every five seconds: what is walked here is
     # the order of the screens, not the pace of the poll
-    monkeypatch.setattr(flow_source, "asyncio", types.SimpleNamespace(
+    monkeypatch.setattr(flow_reload, "asyncio", types.SimpleNamespace(
         sleep=a_moment, wait=asyncio.wait))
 
     async def scenario(hass):
@@ -1418,7 +1417,7 @@ def test_a_second_flow_for_the_same_tracker_is_told_why_it_stops(world, monkeypa
     async def a_moment(delay):
         await real_sleep(0.01)
 
-    monkeypatch.setattr(flow_source, "asyncio", types.SimpleNamespace(
+    monkeypatch.setattr(flow_reload, "asyncio", types.SimpleNamespace(
         sleep=a_moment, wait=asyncio.wait))
 
     async def scenario(hass):
