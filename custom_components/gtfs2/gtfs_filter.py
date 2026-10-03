@@ -195,12 +195,13 @@ def _filter_stops(zin: zipfile.ZipFile, zout: zipfile.ZipFile, stop_ids: Contain
     member = _member(zin, "stops.txt")
     if not member:
         return
-    header = _header(_rows(zin, member), "stops.txt")
+    rows = _rows(zin, member)
+    header = _header(rows, "stops.txt")
     i_stop = header.index("stop_id")
     parents = set()
     if "parent_station" in header:
         i_parent = header.index("parent_station")
-        for row in _skip_header(_rows(zin, member)):
+        for row in rows:
             if row[i_stop].strip() in stop_ids and row[i_parent].strip():
                 parents.add(row[i_parent].strip())
     _copy_filtered(
@@ -286,11 +287,6 @@ def filter_gtfs_zip(src: str, dst: str, route_ids: Iterable[str],
         os.path.basename(src), len(route_ids), stats["seconds"],
         len(trip_ids), trips_total, st_kept, st_total)
     return stats
-
-
-def _skip_header(rows: Iterator[list[str]]) -> Iterator[list[str]]:
-    next(rows)
-    return rows
 
 
 def feed_info_unreadable(zip_path: str) -> bool:
