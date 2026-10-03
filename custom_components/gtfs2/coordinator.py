@@ -640,8 +640,6 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         rt_cfg, rt_active = rt_feed_config(self.hass, self.config_entry)
         if rt_active:
             self._realtime = True
-            self._get_next_service: dict[str, Any] = {}
-            """Initialize the info object."""
             self._headers = rt_headers(rt_cfg) or {}
             self._rt_group = "trip"
             self._trip_update_url = with_query_key(rt_cfg.get(CONF_TRIP_UPDATE_URL), rt_cfg)
@@ -650,7 +648,6 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             # feed here would fetch it once per listed line and write the
             # map file of a route this entry does not speak for
             self._vehicle_position_url: str | None = None
-            self._alerts_url = rt_cfg.get(CONF_ALERTS_URL, None)
             if not self._trip_update_url:
                 # local stops read nothing but trip updates: a source living on
                 # alerts or vehicle positions alone has nothing for them, and

@@ -179,7 +179,6 @@ def _build_local_stop_element(self: GTFSLocalStopUpdateCoordinator, row: Mapping
 
     # Find RT if configured
     if self._realtime:
-        self._get_next_service = {}
         _LOGGER.debug("Find rt for local stop route: %s - direction: %s - stop: %s - stop_sequence: %s", self._route, self._direction, self._stop_id, self._stop_sequence)
         next_service = get_rt_route_trip_statuses(self, feed_entities)
         _LOGGER.debug("Next service: %s", next_service)
