@@ -11,7 +11,8 @@ tests_provider/fixture_db does the same for the fixtures of that suite.
     finally:
         schedule.engine.dispose()
 
-rows() reads a database file back, the way a test checks what a step
+STOP_TIMES and calls() write the stop_times.txt of trips calling a
+minute apart. rows() reads a database file back, the way a test checks what a step
 left on disk, and lets the file go after. marked_zip() is the bytes of the
 smallest feed a download can bring, told apart by a marker.
 """
@@ -59,3 +60,14 @@ def marked_zip(marker):
         zout.writestr("trips.txt", "route_id,service_id,trip_id\nR,S,T\n")
         zout.writestr("stop_times.txt", "trip_id,stop_id,stop_sequence\nT,A,1\n")
     return buffer.getvalue()
+
+
+# the header of the stop_times.txt calls() writes the rows of; a test whose
+# calls carry boarding rules writes its own, with pickup_type and drop_off_type
+STOP_TIMES = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+
+
+def calls(trip, stops):
+    """The stop_times.txt rows of a trip calling at stops in this order, a
+    minute apart from 08:01."""
+    return "".join(f"{trip},08:{n:02d}:00,08:{n:02d}:00,{s},{n}\n" for n, s in enumerate(stops, 1))

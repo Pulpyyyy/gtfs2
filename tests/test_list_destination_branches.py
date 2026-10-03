@@ -17,12 +17,11 @@ ha_stub.install()
 
 places = ha_stub.load("places")
 
-HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+HEAD = feed_db.STOP_TIMES
 STOPS = {"O": (45.0, 1.0), "X1": (45.1, 1.2), "X2": (45.2, 1.4), "Y1": (45.1, 0.8), "Y2": (45.2, 0.6)}
 
 
-def _calls(trip, stops):
-    return "".join(f"{trip},08:{n:02d}:00,08:{n:02d}:00,{s},{n}\n" for n, s in enumerate(stops, 1))
+_calls = feed_db.calls
 
 
 def _schedule(tmp_path, x_trips, y_trips):

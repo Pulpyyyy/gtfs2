@@ -20,7 +20,7 @@ ha_stub.install()
 
 gtfs_helper = ha_stub.load("gtfs_helper")
 
-HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+HEAD = feed_db.STOP_TIMES
 FEED = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,UTC\n",
     "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\nS1,One,47.0,1.0\nS2,Two,47.1,1.1\nS3,Three,47.2,1.2\n",

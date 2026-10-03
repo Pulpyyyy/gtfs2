@@ -13,7 +13,7 @@ import ha_stub
 db_prune = ha_stub.load("db_prune")
 db_intern = ha_stub.load("db_intern")
 
-HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+HEAD = feed_db.STOP_TIMES
 FEED = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,UTC\n",
     "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\nS1,One,0,0\nS2,Two,0,0.01\nS3,Three,0,0.02\n",

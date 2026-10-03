@@ -19,11 +19,10 @@ TRAIN = "StopPoint:OCETrain TER-87543009"
 COACH = "StopPoint:OCECar TER-87543009"
 COACH_ONLY = "StopPoint:OCECar TER-87547026"
 PARIS = "StopPoint:OCETrain TER-87547000"
-HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+HEAD = feed_db.STOP_TIMES
 
 
-def _calls(trip, stops):
-    return "".join(f"{trip},08:{n:02d}:00,08:{n:02d}:00,{s},{n}\n" for n, s in enumerate(stops, 1))
+_calls = feed_db.calls
 
 
 FEED = {
