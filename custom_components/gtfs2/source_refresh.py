@@ -141,6 +141,11 @@ def default_check_time(file: str) -> tuple[int, int, int]:
     return 3 + n % 3, (n // 3) % 60, (n // 180) % 60
 
 
+def refresh_mode(entry: ConfigEntry) -> str:
+    """How the source follows its feed: off, notify or auto; off until set."""
+    return str(entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF))
+
+
 def check_interval(entry: ConfigEntry) -> int:
     """The configured check frequency in hours, held to its bounds."""
     try:
@@ -185,7 +190,7 @@ def next_check_at(hass: HomeAssistant, entry: ConfigEntry,
     Indicative to the hour across a DST boundary: the real schedule is
     async_track_time_change's, which handles the fold itself.
     """
-    mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
+    mode = refresh_mode(entry)
     if mode == STATIC_REFRESH_OFF:
         return None
     file = entry.data.get(CONF_FILE)
@@ -495,7 +500,7 @@ async def _async_offer_update(hass: HomeAssistant, file: str) -> None:
 
 async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """One scheduled look at a source's host, then whatever the mode says."""
-    mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
+    mode = refresh_mode(entry)
     if mode == STATIC_REFRESH_OFF:
         return
     file = entry.data.get(CONF_FILE)
@@ -551,7 +556,7 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
 def async_arm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Give a source its scheduled check, or take it away, per its options."""
     async_disarm_source_check(hass, entry)
-    mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
+    mode = refresh_mode(entry)
     if mode not in (STATIC_REFRESH_NOTIFY, STATIC_REFRESH_AUTO):
         return
     interval = check_interval(entry)

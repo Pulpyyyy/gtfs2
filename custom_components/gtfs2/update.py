@@ -25,7 +25,6 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from .const import (
     CONF_FILE,
     CONF_KIND,
-    CONF_STATIC_REFRESH_MODE,
     CONF_URL,
     ENTRY_KIND_DATASOURCE,
     STATIC_REFRESH_OFF,
@@ -40,6 +39,7 @@ from .source_refresh import (
     installed_meta,
     next_check_at,
     probe_state,
+    refresh_mode,
     source_lock,
     source_meta,
     version_label,
@@ -141,8 +141,7 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
 
     @property
     def latest_version(self) -> str | None:
-        mode = self._entry.options.get(CONF_STATIC_REFRESH_MODE,
-                                       STATIC_REFRESH_OFF)
+        mode = refresh_mode(self._entry)
         if mode == STATIC_REFRESH_OFF:
             # nothing checks, so nothing is claimed: the entity never
             # pretends to know the host, and the button refreshes
@@ -222,8 +221,7 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
                                if self._entry.data.get(CONF_URL) else None),
             "source_size": meta.get("size"),
             # the schedule, so the entity says when it will look next
-            "refresh_mode": self._entry.options.get(CONF_STATIC_REFRESH_MODE,
-                                                    STATIC_REFRESH_OFF),
+            "refresh_mode": refresh_mode(self._entry),
             "check_interval": check_interval(self._entry),
             "next_check": next_check,
             # what the kept feed says of itself, and its last service day:
