@@ -16,13 +16,13 @@ import homeassistant.util.dt as dt_util
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from .const import DEFAULT_PATH, id_of
+from .const import DEFAULT_PATH
 from .feed_window import last_service_day
 from .gtfs_db import close_schedule, feed_zip
 from .clocks import _row_instant, zone_of
 from .datasource import get_gtfs
 from .gtfs_helper import (_fetch_departure_rows, departure_query_args,
-                          get_next_service_date, journey_data)
+                          first_departure_row, journey_data)
 from .timetable import TIMETABLE_ROWS_MAX
 
 if TYPE_CHECKING:
@@ -51,21 +51,26 @@ def _route_departures_between(data: Mapping[str, Any], first: str, last: str, li
         data["route_type"], data["origin"], data["destination"], data["schedule"],
         window=(first, last), limit=limit, **departure_query_args(data))
     instants, seen = [], set()
-    stop_zone = "dest_stop_timezone" if at == "dest_arrival_dt" else "origin_stop_timezone"
     for row in rows:
         key = (row.get(at), row.get("trip_id"))
         if key in seen or not row.get(at):
             continue
         seen.add(key)
-        # an arrival with no zone of its end is read in the origin's, as
-        # the sensor reads it (_departure_zones); Home Assistant's else
-        zone = (zone_of(row.get("agency_timezone"), row.get(stop_zone), row.get("origin_stop_timezone"))
-                or dt_util.DEFAULT_TIME_ZONE)
         try:
-            instants.append(dt_util.as_utc(_row_instant(row[at], zone)))
+            instants.append(_row_utc(row, at))
         except ValueError:
             continue
     return sorted(instants)
+
+
+def _row_utc(row: Mapping[str, Any], at: str) -> datetime.datetime:
+    """The row's time at (see _route_departures_between) as a UTC instant."""
+    stop_zone = "dest_stop_timezone" if at == "dest_arrival_dt" else "origin_stop_timezone"
+    # an arrival with no zone of its end is read in the origin's, as
+    # the sensor reads it (_departure_zones); Home Assistant's else
+    zone = (zone_of(row.get("agency_timezone"), row.get(stop_zone), row.get("origin_stop_timezone"))
+            or dt_util.DEFAULT_TIME_ZONE)
+    return dt_util.as_utc(_row_instant(row[at], zone))
 
 
 def _route_departure_from(data: Mapping[str, Any], first_day: str,
@@ -73,14 +78,13 @@ def _route_departure_from(data: Mapping[str, Any], first_day: str,
     """The entry's first departure on the service day first_day or after,
     as a UTC instant, or None when the calendar has none in its horizon;
     with at="dest_arrival_dt", that ride's arrival."""
-    day = get_next_service_date(
-        data["schedule"], id_of(data["origin"]), id_of(data["destination"]),
-        first_day, data["route_type"], **departure_query_args(data))
-    if not day:
+    row = first_departure_row(data, first_day)
+    if not row or not row.get(at):
         return None
-    # the rows come in time order: the first is the one
-    instants = _route_departures_between(data, day, day, limit=1, at=at)
-    return instants[0] if instants else None
+    try:
+        return _row_utc(row, at)
+    except ValueError:
+        return None
 
 
 async def get_route_departures(hass: HomeAssistant, data: Mapping[str, Any]) -> dict[str, Any]:

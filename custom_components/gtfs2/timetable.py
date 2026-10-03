@@ -13,10 +13,9 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
-from .const import id_of
 from .feed_window import last_service_day
 from .geojson import entry_file_part, map_file, write_json_if_changed
-from .gtfs_helper import _fetch_departure_rows, departure_query_args, get_next_service_date
+from .gtfs_helper import _fetch_departure_rows, departure_query_args, first_departure_row
 from .clocks import _leg_timezone
 
 _LOGGER = logging.getLogger(__name__)
@@ -119,19 +118,9 @@ def write_timetable_file(hass: HomeAssistant, data: Mapping[str, Any], today: st
         window=(yesterday, service_dates[-1]), limit=TIMETABLE_ROWS_MAX, **args)
     departure = data.get("next_departure") or {}
     zone = _leg_timezone(schedule, str(departure.get("route_id") or args["route"] or ""), departure, hass)
-    # the first run past the window: the next day the entry runs at all,
-    # then its first departure that day
-    next_departure = None
-    after = (first + datetime.timedelta(days=TIMETABLE_DAYS)).isoformat()
-    day = get_next_service_date(
-        schedule, id_of(data["origin"]), id_of(data["destination"]), after,
-        data["route_type"], **args)
-    if day:
-        later, _origin = _fetch_departure_rows(
-            data["route_type"], data["origin"], data["destination"], schedule,
-            window=(day, day), limit=1, **args)
-        if later:
-            next_departure = _local(later[0].get("origin_depart_dt"), zone)
+    # the first run past the window
+    later = first_departure_row(data, (first + datetime.timedelta(days=TIMETABLE_DAYS)).isoformat())
+    next_departure = _local(later.get("origin_depart_dt"), zone) if later else None
     doc = timetable_doc(name, rows, service_dates, zone, next_departure, last_service_day(zip_path))
     file = timetable_name(name)
     _LOGGER.debug("Creating timetable file: %s, %s departures", file, sum(len(d["departures"]) for d in doc["days"]))

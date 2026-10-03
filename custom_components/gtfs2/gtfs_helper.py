@@ -700,6 +700,23 @@ def departure_query_args(_data: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def first_departure_row(data: Mapping[str, Any], from_day: str) -> dict[str, Any] | None:
+    """The entry's first departure row on the service day from_day or
+    after: the next day it runs at all, then its first departure that day;
+    None when the calendar has none in its horizon."""
+    args = departure_query_args(data)
+    day = get_next_service_date(
+        data["schedule"], id_of(data["origin"]), id_of(data["destination"]),
+        from_day, data["route_type"], **args)
+    if not day:
+        return None
+    # the rows come in time order: the first is the one
+    rows, _origin = _fetch_departure_rows(
+        data["route_type"], data["origin"], data["destination"], data["schedule"],
+        window=(day, day), limit=1, **args)
+    return rows[0] if rows else None
+
+
 def shown_ends(data: Mapping[str, Any], departure: Mapping[str, Any]) -> tuple[str, str, str, str]:
     """(route_id, direction, origin stop id, destination stop id) of the
     departure shown, the entry's own where the departure names none: once
