@@ -285,11 +285,9 @@ class SourceScreens:
             )
 
         if user_input is None:
-            if self._pending_error:
+            if self._take_pending_error(errors):
                 # back from the key screen: what was typed is shown again,
                 # so the url or the name can be put right
-                errors["base"] = self._pending_error
-                self._pending_error = None
                 return _show(errors, self._user_inputs)
             return _show(errors)
         # the name becomes the source's file name: every path of the source
@@ -493,9 +491,7 @@ class SourceScreens:
             )
 
         if user_input is None:
-            if self._pending_error:
-                errors["base"] = self._pending_error
-                self._pending_error = None
+            self._take_pending_error(errors)
             return await _show(errors)
         # built from the zip where it lies, and fetched from it from then on,
         # by its file:// url, as a hosted source is by its own
@@ -533,6 +529,13 @@ class SourceScreens:
         """
         return await self._fresh_source_of(self._user_inputs[CONF_FILE])
 
+    def _take_pending_error(self, errors: dict[str, str]) -> bool:
+        """Show, once, the error another screen left for this one: whether
+        there was one."""
+        if not self._pending_error:
+            return False
+        errors["base"], self._pending_error = self._pending_error, None
+        return True
 
     async def _back_to_source(self, reason: str) -> FlowResult:
         """Return to the step that picked the datasource, carrying the error.

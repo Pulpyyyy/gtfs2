@@ -171,9 +171,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             # not leak into this one
             if self._created_name:
                 self._reset_for_next_journey()
-            if self._pending_error:
-                errors["base"] = self._pending_error
-                self._pending_error = None
+            self._take_pending_error(errors)
             datasources = datasource_files(self.hass)
             return self.async_show_form(
                 step_id="start_end",
@@ -222,9 +220,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             )
 
         if user_input is None:
-            if self._pending_error:
-                errors["base"] = self._pending_error
-                self._pending_error = None
+            if self._take_pending_error(errors):
                 return await _show(errors, self._user_inputs)
             if not self._user_inputs.get(CONF_DEVICE_TRACKER_ID):
                 return await _show(errors)
@@ -417,9 +413,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         errors: dict[str, str] = {}
         # coming back from a failed reload: say why, on the screen that lets
         # another line be picked
-        if self._pending_error:
-            errors["base"] = self._pending_error
-            self._pending_error = None
+        if self._take_pending_error(errors):
             user_input = None
         fresh = await self._fresh_source()
         if not fresh:
