@@ -36,7 +36,7 @@ import os
 import sqlite3
 from typing import Any
 
-from .db_intern import intern_gtfs_datasource
+from .db_intern import _is_interned, intern_gtfs_datasource
 from .db_prune import prune_gtfs_datasource
 from .gtfs_db import real_path, remove_database, remove_files, scratch_path, staging_name
 
@@ -60,13 +60,6 @@ SHARED_TABLES = ("_feed", "agency", "stops", "calendar", "calendar_dates",
 def _tables(cur: sqlite3.Cursor) -> set[str]:
     return {r[0] for r in cur.execute(
         "select name from sqlite_master where type = 'table'")}
-
-
-def _is_interned(cur: sqlite3.Cursor) -> bool:
-    """Whether this database keeps its stop_times interned behind a view."""
-    return bool(cur.execute(
-        "select 1 from sqlite_master where type = 'view' and name = 'stop_times'"
-    ).fetchone())
 
 
 def create_real_from(scratch_file: str, real_file: str) -> bool:

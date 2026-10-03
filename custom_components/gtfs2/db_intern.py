@@ -14,6 +14,13 @@ from .gtfs_db import real_path
 _LOGGER = logging.getLogger(__name__)
 
 
+def _is_interned(cur: sqlite3.Cursor) -> bool:
+    """Whether this database keeps its stop_times interned behind a view."""
+    return bool(cur.execute(
+        "select 1 from sqlite_master where type = 'view' and name = 'stop_times'"
+    ).fetchone())
+
+
 def intern_gtfs_datasource(gtfs_dir: str, filename: str, dry_run: bool = False) -> dict[str, Any] | None:
     """Replace the repeated trip_id/stop_id strings of stop_times by integer keys.
 
@@ -42,8 +49,7 @@ def intern_gtfs_datasource(gtfs_dir: str, filename: str, dry_run: bool = False) 
     conn = sqlite3.connect(sqlite_file, timeout=300)
     try:
         cur = conn.cursor()
-        if cur.execute("select count(*) from sqlite_master where type = 'view' "
-                       "and name = 'stop_times'").fetchone()[0]:
+        if _is_interned(cur):
             _LOGGER.info("Datasource %s is already interned, nothing to do", filename)
             return None
 
