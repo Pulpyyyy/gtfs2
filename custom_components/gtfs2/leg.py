@@ -297,7 +297,7 @@ def _time_call(run: Mapping[str, Any], update: Mapping[str, Any], by_sequence: M
         # the delay is the gap to the schedule
         delay = delay_of(delay, int(when), int(
             datetime.datetime.fromisoformat(stop["scheduled"]).timestamp()))
-    if delay or when:
+    if delay is not None or when:
         stop["delay"] = int(delay or 0)
         return True
     return False

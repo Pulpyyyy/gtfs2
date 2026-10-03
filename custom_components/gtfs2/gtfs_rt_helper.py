@@ -266,10 +266,11 @@ def _stop_time_and_delay(stop: Mapping[str, Any], trip_id: str,
     delay: int | None
     stop_time, delay = stop_update_clock(stop)
 
-    if not stop_time and delay and scheduled.get(trip_id):
+    if not stop_time and delay is not None and scheduled.get(trip_id):
         # the feed gives the delay and no time: read as
         # an epoch that would be 1970, which reads as
-        # long past and dropped the departure with it
+        # long past and dropped the departure with it.
+        # A delay of 0 is on time, not no update
         stop_time = scheduled[trip_id] + delay
         _LOGGER.debug("Trip %s carries a delay and no time: %s + %ss",
                       trip_id, scheduled[trip_id], delay)

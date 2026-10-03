@@ -343,6 +343,11 @@ def stop_relationship(stop_time_update: Mapping[str, Any] | None) -> str:
     return (stop_time_update or {}).get("schedule_relationship") or "SCHEDULED"
 
 
+def _given_delay(event: gtfs_realtime_pb2.TripUpdate.StopTimeEvent) -> int | None:
+    """The delay a stop time event gives, None when it gives none."""
+    return event.delay if event.HasField("delay") else None
+
+
 def convert_gtfs_realtime_to_json(gtfs_realtime_data: bytes) -> dict[str, Any]:
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(gtfs_realtime_data)
@@ -390,12 +395,14 @@ def convert_gtfs_realtime_to_json(gtfs_realtime_data: bytes) -> dict[str, Any]:
                 # SCHEDULED, SKIPPED (the vehicle does not call), NO_DATA
                 # (no prediction here, the timetable stands), UNSCHEDULED
                 "schedule_relationship": _relationship(stop_time_update),
+                # a delay the feed does not give is None, not 0: a feed may
+                # give a delay and no time, and its 0 means on time
                 "arrival": {
-                    "delay": stop_time_update.arrival.delay,
+                    "delay": _given_delay(stop_time_update.arrival),
                     "time": stop_time_update.arrival.time
                 },
                 "departure": {
-                    "delay": stop_time_update.departure.delay,
+                    "delay": _given_delay(stop_time_update.departure),
                     "time": stop_time_update.departure.time
                 }
             }
@@ -467,17 +474,23 @@ def _same_route(configured: str | None, seen: str | None) -> bool:
     return not seen[-len(configured) - 1].isalnum()
 
 
-def stop_update_clock(stop: Mapping[str, Any]) -> tuple[int, int]:
+def stop_update_clock(stop: Mapping[str, Any]) -> tuple[int, int | None]:
     ''' (time, delay) of a stop update: the departure's when it says
-    anything, the arrival's otherwise; 0 for what it leaves out '''
+    anything, the arrival's otherwise; time 0 when it gives none, delay
+    None when it gives none, where 0 is on time '''
     # a train that arrives late and makes up time while it stands at
     # the stop leaves with the departure's delay, not the arrival's.
     # A json feed writes its int64 times as strings
     arrival = stop.get("arrival") or {}
     departure = stop.get("departure") or {}
-    told = departure if (departure.get("time") or departure.get("delay")) else arrival
+    told = departure if (departure.get("time") or _delay_said(departure)) else arrival
     return (int(departure.get("time") or arrival.get("time") or 0),
-            int(told.get("delay") or 0))
+            int(told["delay"]) if _delay_said(told) else None)
+
+
+def _delay_said(event: Mapping[str, Any]) -> bool:
+    """Whether a stop time event gives a delay, 0 included."""
+    return event.get("delay") not in (None, "")
 
 
 def delay_of(delay: int | None, realtime: int | None, scheduled: int | None) -> int | None:
