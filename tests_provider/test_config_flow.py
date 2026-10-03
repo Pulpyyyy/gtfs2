@@ -80,8 +80,9 @@ What no walk reaches, and why:
     generic_failure  from remove, a file deletion refused; from optimise
                      on Linux, a copy that fails (reached on Windows, see
                      optimise)
-    zip_holds_zips   as an error: a zip of zips is offered its networks
-                     before anything could say so
+
+zip_holds_zips is no error and no abort: a zip of zips is offered its
+networks before anything could say so, and its words went with them.
 
     pytest tests_provider/test_config_flow.py
 """
