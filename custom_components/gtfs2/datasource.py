@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 import pygtfs
 from sqlalchemy.sql import text
 
-from .gtfs_db import feed_zip, file_edition, real_path
+from .gtfs_db import close_schedule, feed_zip, file_edition, real_path
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -52,7 +52,7 @@ def get_gtfs(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> Schedul
         gtfs = pygtfs.Schedule(f"{sqlite}?check_same_thread=False&timeout=60")
         if gtfs.feeds:
             return gtfs
-        gtfs.engine.dispose()
+        close_schedule(gtfs)
     _LOGGER.debug("Datasource %s has no timetable: a refresh of the source builds it", filename)
     if not os.path.exists(feed_zip(gtfs_dir, filename)):
         return "no_zip_file"
