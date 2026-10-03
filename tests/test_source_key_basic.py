@@ -13,6 +13,7 @@ import base64
 
 import ha_stub
 
+const = ha_stub.load("const")
 rt_source = ha_stub.load("rt_source")
 freshness = ha_stub.load("freshness")
 key_mask = ha_stub.load("key_mask")
@@ -44,7 +45,7 @@ def test_the_static_zip_asks_with_the_same_header_and_a_bare_url():
     url, headers = freshness.source_request({**BASIC, "url": "https://h/feed.zip"})
     assert url == "https://h/feed.zip"
     assert headers["Authorization"] == _basic(KEY + ":")
-    assert headers["User-Agent"] == "home-assistant-gtfs2"
+    assert headers["User-Agent"] == const.USER_AGENT
 
 
 def test_the_encoded_key_is_masked_in_the_logs():

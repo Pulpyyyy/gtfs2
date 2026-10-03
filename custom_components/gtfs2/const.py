@@ -16,6 +16,10 @@ DEFAULT_NAME = "GTFS Sensor2"
 DEFAULT_PATH = "gtfs2"
 DEFAULT_PATH_GEOJSON = "www/gtfs2"
 DEFAULT_PATH_RT = "www/gtfs2"
+# who the integration says it is to every host it asks, for the static zip,
+# its checks and the realtime feeds alike; the address lets an operator see
+# who is calling
+USER_AGENT = "GTFS2-HomeAssistant/1.0 (+https://github.com/Pulpyyyy/gtfs2)"
 DEFAULT_API_KEY_LOCATION = "not_applicable"
 
 

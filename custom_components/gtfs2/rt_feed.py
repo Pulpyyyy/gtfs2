@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 import requests
 from google.transit import gtfs_realtime_pb2
 
+from .const import USER_AGENT
 from .key_mask import fetch
 
 if TYPE_CHECKING:
@@ -74,8 +75,6 @@ FEED_PUBLISH_LAG = 10
 FEED_CACHE_MAX_AGE = 75
 FEED_BEAT_MAX = 300
 
-RT_USER_AGENT = "GTFS2-HomeAssistant/1.0 (+https://github.com/vingerha/gtfs2)"
-
 
 def _with_user_agent(headers: Mapping[str, str | None] | None) -> dict[str, str | None]:
     """The request headers with a User-Agent naming the integration.
@@ -85,7 +84,7 @@ def _with_user_agent(headers: Mapping[str, str | None] | None) -> dict[str, str 
     answers 403 to it. Naming the client is enough to pass, and the address
     lets an operator see who is calling.
     """
-    merged: dict[str, str | None] = {"User-Agent": RT_USER_AGENT}
+    merged: dict[str, str | None] = {"User-Agent": USER_AGENT}
     if headers:
         merged.update(headers)
     return merged

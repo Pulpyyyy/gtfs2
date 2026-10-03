@@ -26,7 +26,7 @@ import zipfile
 import homeassistant.util.dt as dt_util
 import requests
 
-from .const import CONF_INNER_ZIP
+from .const import CONF_INNER_ZIP, USER_AGENT
 from .gtfs_db import remove_files
 from .key_mask import fetch, hide_keys
 from .zip_peek import FEED_MAX_BYTES, _MemberResponse, inner_zips_in_file, member_out_of, open_member
@@ -50,7 +50,7 @@ def source_request(data: Mapping[str, Any]) -> tuple[str, dict[str, str]]:
     url = with_query_key(data["url"], data)
     if url is None:
         raise ValueError(f"source {data.get('file')} has no url to fetch its feed from")
-    headers = {"User-Agent": "home-assistant-gtfs2"}
+    headers = {"User-Agent": USER_AGENT}
     headers.update({name: value for name, value in key_headers(data).items() if value})
     return url, headers
 
