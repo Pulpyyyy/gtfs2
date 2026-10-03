@@ -17,7 +17,8 @@ from sqlalchemy.sql import text
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
-from .clocks import _day_offset, _on_service_day, _removed_on, _runs_on, agency_zone, zone_of
+from .clocks import (_day_offset, _on_service_day, _removed_on, _row_instant, _runs_on, agency_zone,
+                     zone_of)
 from .const import (
     id_of,
     CONF_DESTINATION_STATIONS,
@@ -444,11 +445,6 @@ def _candidate_pairs(schedule: Schedule, candidates_sql: str, params: Mapping[st
     return fed
 
 
-def _row_instant(value: str, zone: datetime.tzinfo | None) -> datetime.datetime:
-    """A "YYYY-MM-DD HH:MM:SS" of a departure row, laid in zone."""
-    return datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=zone)
-
-
 def _departure_timetable(rows: Iterable[Mapping[str, Any]], now: datetime.datetime,
                          now_local_tz: datetime.datetime) -> list[tuple[tuple[str, str], dict[str, Any]]]:
     """[((departure, trip_id), row)] of the rows not gone yet, in departure
@@ -758,5 +754,3 @@ def get_next_departure(hass: HomeAssistant, _data: dict[str, Any]) -> dict[str, 
 
 
     
-
-

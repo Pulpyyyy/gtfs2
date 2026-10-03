@@ -1,5 +1,6 @@
 """The clocks of a feed: a stop time as the seconds past its service day's
-midnight (gtfs_seconds), and the time zone the feed, or one of its
+midnight (gtfs_seconds), a departure row's clock laid in a zone
+(_row_instant), and the time zone the feed, or one of its
 agencies, writes its times in (zone_of, agency_zone, and _leg_timezone
 for a line's clocks with its fallbacks), and the SQL pieces that lay a
 stop time on its service day and tell whether the calendar runs on a
@@ -96,6 +97,11 @@ def gtfs_seconds(value: object) -> int | None:
         return None
     hours, minutes, seconds = (int(part) for part in parts)
     return days * 86400 + hours * 3600 + minutes * 60 + seconds
+
+
+def _row_instant(value: str, zone: datetime.tzinfo | None) -> datetime.datetime:
+    """A "YYYY-MM-DD HH:MM:SS" of a departure row, laid in zone."""
+    return datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=zone)
 
 
 def _day_offset(time_column: str) -> str:

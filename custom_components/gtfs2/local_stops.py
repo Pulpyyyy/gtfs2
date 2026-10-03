@@ -24,9 +24,9 @@ from .const import (
     ICONS,
     TIME_STR_FORMAT,
 )
-from .clocks import _day_offset, _on_service_day, _removed_on, _runs_on, zone_of
+from .clocks import _day_offset, _on_service_day, _removed_on, _row_instant, _runs_on, zone_of
 from .datasource import check_extracting
-from .gtfs_helper import _feed_now, _row_instant
+from .gtfs_helper import _feed_now
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
 from .rt_feed import FeedEntities, get_gtfs_feed_entities, on_service_day
 from .stop_rules import _boards
