@@ -7,7 +7,6 @@ nothing, and another source's files must stay.
 """
 from __future__ import annotations
 
-import types
 from pathlib import Path
 
 import ha_stub
@@ -24,7 +23,7 @@ DATABASE = {".sqlite", ".sqlite-journal", ".sqlite-wal", ".sqlite-shm", ".sqlite
 
 
 def _hass(root):
-    return types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(root / p)))
+    return ha_stub.config_at(root)
 
 
 def _lay_out(root):

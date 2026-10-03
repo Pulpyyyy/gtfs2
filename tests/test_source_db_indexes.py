@@ -48,7 +48,7 @@ def _datasource(tmp_path, interned=False):
         conn.execute("create table stop_times (trip_id varchar, stop_id varchar)")
     conn.commit()
     conn.close()
-    hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
+    hass = ha_stub.config_at(tmp_path)
     engine = create_engine(f"sqlite:///{gtfs_dir / 'src.sqlite'}")
     return hass, types.SimpleNamespace(engine=engine), gtfs_dir / "src.sqlite"
 
@@ -116,7 +116,7 @@ def test_an_import_fills_stop_times_before_indexing_it(tmp_path):
     assert source_zip.build_scratch_database(str(tmp_path), "feed.zip", str(scratch),
                                              only_routes=["R1"])
     assert _stop_times_indexes(scratch) == set()
-    hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
+    hass = ha_stub.config_at(tmp_path)
     schedule = types.SimpleNamespace(engine=create_engine(f"sqlite:///{scratch}"))
     datasource._INDEX_CHECKED.clear()
     datasource.check_datasource_index(hass, schedule, "gtfs2", "src")

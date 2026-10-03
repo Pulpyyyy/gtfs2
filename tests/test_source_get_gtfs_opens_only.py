@@ -11,7 +11,6 @@ it is. A refresh of the source builds it, under the source's lock.
 """
 from __future__ import annotations
 
-import types
 from pathlib import Path
 
 import pygtfs
@@ -30,7 +29,7 @@ def _built(tmp_path):
     schedule = pygtfs.Schedule(str(gtfs_dir / "src.sqlite"))
     pygtfs.append_feed(schedule, str(FEED))
     schedule.engine.dispose()
-    return types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
+    return ha_stub.config_at(tmp_path)
 
 
 def test_url_source_answers_from_its_database(tmp_path, monkeypatch):
@@ -52,7 +51,7 @@ def _unbuilt(tmp_path):
     gtfs_dir = tmp_path / "gtfs2"
     gtfs_dir.mkdir()
     (gtfs_dir / "src.zip").write_bytes(FEED.read_bytes())
-    return gtfs_dir, types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
+    return gtfs_dir, ha_stub.config_at(tmp_path)
 
 
 def test_no_database_is_not_built_from_here(tmp_path):

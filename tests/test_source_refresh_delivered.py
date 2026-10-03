@@ -10,7 +10,6 @@ string is a no.
 from __future__ import annotations
 
 import json
-import types
 
 import ha_stub
 
@@ -40,7 +39,7 @@ def test_refresh_source_answer(monkeypatch):
 
 
 def _hass(root):
-    return types.SimpleNamespace(config=types.SimpleNamespace(path=lambda *p: str(root.joinpath(*p))))
+    return ha_stub.config_at(root)
 
 
 def _write(path, meta):

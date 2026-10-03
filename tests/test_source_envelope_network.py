@@ -66,7 +66,7 @@ def test_the_refresh_download_takes_the_member_out(tmp_path, monkeypatch):
     monkeypatch.setattr(freshness, "stage_zip",
                         lambda response, path, inner=None, envelope_ok=False:
                         staged_with.append(inner) if not envelope_ok else None)
-    hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
+    hass = ha_stub.config_at(tmp_path)
     got = source_zip.refresh_datasource(hass, "gtfs2", {
         "file": "septa", "url": "https://h/gtfs_public.zip", "extract_from": "url",
         "inner_zip": "google_bus.zip"})
@@ -111,7 +111,7 @@ def test_a_host_without_ranges_still_offers_the_networks(tmp_path, monkeypatch):
     body = _envelope(tmp_path / "envelope.zip").read_bytes()
     monkeypatch.setattr(source_zip, "inner_zips", lambda url, headers: [])
     monkeypatch.setattr(freshness, "open_source", lambda data, url, headers: _Whole(body))
-    hass = types.SimpleNamespace(config=types.SimpleNamespace(path=lambda p: str(tmp_path / p)))
+    hass = ha_stub.config_at(tmp_path)
     data = {"file": "septa", "url": "https://h/gtfs_public.zip", "extract_from": "url"}
     assert source_zip.ensure_source_zip(hass, "gtfs2", data) == "zip_holds_zips"
     assert data["inner_zips"] == ["google_bus.zip", "google_rail.zip"]

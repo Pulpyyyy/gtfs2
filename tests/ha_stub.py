@@ -866,6 +866,14 @@ def _install_config_flow() -> None:
 # --- end of the config flows -------------------------------------------------
 
 
+def config_at(root: str | Path) -> types.SimpleNamespace:
+    """A hass whose config.path lays paths under root, as Home Assistant
+    lays them under its configuration folder: all a test of the files of
+    a source asks of it."""
+    return types.SimpleNamespace(config=types.SimpleNamespace(
+        path=lambda *parts: str(Path(root).joinpath(*parts))))
+
+
 def installed() -> bool:
     """Whether a Home Assistant, real or already stubbed, can be imported."""
     if "homeassistant" in sys.modules:
