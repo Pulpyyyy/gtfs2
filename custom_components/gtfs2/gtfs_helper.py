@@ -453,7 +453,7 @@ def _departure_timetable(rows: Iterable[Mapping[str, Any]], now: datetime.dateti
     for row in rows:
         depart_dt_str = row["origin_depart_dt"]    # already a correct full instant
         try:
-            depart_dt = datetime.datetime.strptime(depart_dt_str, "%Y-%m-%d %H:%M:%S")
+            depart_dt = _row_instant(depart_dt_str, None)
         except ValueError:
             _LOGGER.warning("Could not parse departure datetime: %s", depart_dt_str)
             continue
