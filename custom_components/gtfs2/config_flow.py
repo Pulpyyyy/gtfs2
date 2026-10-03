@@ -47,7 +47,7 @@ from .gtfs_db import remove_datasource, close_schedule
 from .route_names import get_agency_list, get_route_count, get_route_list
 from .local_stops import get_local_stop_list
 from .route_names import get_route_options_from_zip, get_agencies_in_zip
-from .line_labels import LINE_MODES, with_modes
+from .line_labels import LINE_MODES, line_number, with_modes
 from .notifications import _async_text
 from .source_refresh import source_lock, source_zip_path, source_zip_url
 
@@ -486,7 +486,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         user_input[CONF_ROUTE_TYPE] = _picked[0]
         user_input[CONF_ROUTE] = _picked[1]
         # the readable part is only used to suggest a sensor name
-        self._route_label = _picked[2].split(" : ")[0].split(" · ")[0] if len(_picked) > 2 else ""
+        self._route_label = line_number(_picked[2]) if len(_picked) > 2 else ""
         self._route_shown = _picked[2] if len(_picked) > 2 else ""
         was_pruned = len(_picked) > 3 and _picked[3] == "pruned"
         self._user_inputs.update(user_input)

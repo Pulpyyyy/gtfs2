@@ -105,6 +105,12 @@ def line_mode(route_type: str | int) -> str | None:
                  if n in basic or n in extended), None)
 
 
+def line_number(label: str) -> str:
+    """The number a line label starts with: "6" of "6 : Nation ↔ Charles de
+    Gaulle - Étoile" and of "6 · Nation"."""
+    return label.split(" : ")[0].split(" · ")[0]
+
+
 def with_modes(options: list[str], words: Mapping[str, str]) -> list[str]:
     """The labels to show for route options, the mode in brackets at the end
     where lines of one number run different modes.
@@ -120,7 +126,7 @@ def with_modes(options: list[str], words: Mapping[str, str]) -> list[str]:
     modes = [line_mode(option.split("##")[0]) for option in options]
 
     def number(label: str) -> str:
-        return label.split(" : ")[0].split(" · ")[0].strip().casefold()
+        return line_number(label).strip().casefold()
 
     seen: dict[str, set[str | None]] = {}
     for label, mode in zip(labels, modes):
