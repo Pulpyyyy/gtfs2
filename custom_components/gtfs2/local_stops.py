@@ -53,18 +53,24 @@ def _tracker_position(hass: HomeAssistant, entity_id: str) -> tuple[float | None
     return state.attributes.get("latitude", None), state.attributes.get("longitude", None)
 
 
+# a stop around the tracker: within the radius, in degrees, either way
+# of its latitude and its longitude
+_NEARBY = "abs(stop_lat - :latitude) < :radius AND abs(stop_lon - :longitude) < :radius"
+
+
+def _radius_degrees(data: Mapping[str, Any]) -> float:
+    """The entry's radius in metres, as the degrees _NEARBY compares."""
+    return float(data.get("radius", DEFAULT_LOCAL_STOP_RADIUS)) / 111111
+
+
 def get_local_stop_list(hass: HomeAssistant, schedule: Schedule, data: Mapping[str, Any]) -> int:
     _LOGGER.debug("Getting local stops list with data: %s", data)
     latitude, longitude = _tracker_position(hass, data['device_tracker_id'])
     if not latitude or not longitude:
         # nowhere to look around: no stop is near
         return 0
-    radius= data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
-    sql_query = """
-        SELECT count(*)
-        FROM stops stop
-        where abs(stop.stop_lat - :latitude) < :radius and abs(stop.stop_lon - :longitude) < :radius
-        """
+    radius = _radius_degrees(data)
+    sql_query = f"SELECT count(*) FROM stops WHERE {_NEARBY}"
     with schedule.engine.connect() as conn:
         rowcount = conn.execute(text(sql_query), {"latitude": latitude, "longitude": longitude, "radius": radius}).scalar() or 0
     _LOGGER.debug("Local stops list output: %s", rowcount)
@@ -84,17 +90,16 @@ def local_stops_nearby(hass: HomeAssistant, data: Mapping[str, Any]) -> list[dic
         return []
     # the stops within the radius first, then their calls, as the
     # departures are read (_fetch_local_stop_rows)
-    sql_query = """
+    sql_query = f"""
         WITH nearby AS MATERIALIZED (
-            SELECT stop_id, stop_name FROM stops
-            WHERE abs(stop_lat - :latitude) < :radius AND abs(stop_lon - :longitude) < :radius
+            SELECT stop_id, stop_name FROM stops WHERE {_NEARBY}
         )
         SELECT DISTINCT nearby.stop_id, nearby.stop_name
         FROM nearby
         CROSS JOIN stop_times st ON st.stop_id = nearby.stop_id
         ORDER BY nearby.stop_id
         """
-    radius = data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
+    radius = _radius_degrees(data)
     try:
         with schedule.engine.connect() as conn:
             rows = conn.execute(text(sql_query), {"latitude": latitude, "longitude": longitude,
@@ -258,8 +263,7 @@ def _fetch_local_stop_rows(schedule: Schedule, latitude: float, longitude: float
           -- planner cannot see, and it read every call of the network to
           -- keep those of a few stops (4 to 8 s on the Orleans feed)
           nearby AS MATERIALIZED (
-            SELECT stop_id FROM stops
-            WHERE abs(stop_lat - :latitude) < :radius AND abs(stop_lon - :longitude) < :radius
+            SELECT stop_id FROM stops WHERE {_NEARBY}
           ),
           candidate_stops AS MATERIALIZED (
             SELECT stop.stop_id, stop.stop_name, stop.stop_lat AS latitude, stop.stop_lon AS longitude,
@@ -444,7 +448,7 @@ def get_local_stops_next_departures(self: GTFSLocalStopUpdateCoordinator) -> lis
     latitude, longitude= _tracker_position(self.hass, self._data['device_tracker_id'])
     time_range= str('+' + str(self._data.get("timerange", DEFAULT_LOCAL_STOP_TIMERANGE)) + ' minute')
     time_range_history = str('-' + str(self._data.get("timerange_history", DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY)) + ' minute')
-    radius = self._data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
+    radius = _radius_degrees(self._data)
     if not latitude or not longitude:
         _LOGGER.error("No latitude and/or longitude for : %s", self._data['device_tracker_id'])
         return []
