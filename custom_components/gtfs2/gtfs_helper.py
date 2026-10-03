@@ -742,6 +742,3 @@ def get_next_departure(hass: HomeAssistant, _data: dict[str, Any]) -> dict[str, 
         hass, rows, start_station_id, now, now_local_tz,
         now_date_local_tz, now_time
     )
-
-
-    
