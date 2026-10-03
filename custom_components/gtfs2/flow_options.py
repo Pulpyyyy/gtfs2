@@ -128,7 +128,7 @@ class OptionsScreens:
         _LOGGER.debug("UserInput Source realtime key received")
         return self._save_source(
             _collect_source_rt_options(
-                self._user_inputs, _typed_key(user_input, opts),
+                self._user_inputs, _typed_key(user_input),
                 previous=self._source().options))
 
     async def async_step_static_refresh(
@@ -217,8 +217,7 @@ class OptionsScreens:
                 errors={},
             )
         _LOGGER.debug("UserInput Source static key received")
-        return self._finish_static_refresh(_typed_key(
-            user_input, static_feed_config(self.hass, self._source())))
+        return self._finish_static_refresh(_typed_key(user_input))
 
     def _finish_static_refresh(self, key_fields: Mapping[str, Any]) -> FlowResult:
         """Store what the static feed screens collected.

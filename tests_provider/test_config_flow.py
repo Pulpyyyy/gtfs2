@@ -122,7 +122,6 @@ gtfs_db = ha_stub.load("gtfs_db")
 # in a checkout run with --component that keeps it there
 db_build = (ha_stub.load("db_build") if (ha_stub.COMPONENT / "db_build.py").is_file()
             else gtfs_db)
-key_mask = ha_stub.load("key_mask")
 source_refresh = ha_stub.load("source_refresh")
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -1324,9 +1323,11 @@ def test_a_source_behind_a_key_asks_for_it_and_sends_it(world):
         assert downloads()[-1] == f"{URL}?api_key=wrong"
         key = shown(await submit(hass, back, url=URL, file="tao", needs_api_key=True),
                     FORM, "source_key")
-        # the key typed before comes back as the mask, which stands for it
-        assert default(key, "api_key") == key_mask.KEY_MASK
-        back = shown(await submit(hass, key, api_key=key_mask.KEY_MASK), FORM, "source_url")
+        # the key typed before comes back in a password field, hidden on
+        # screen until asked for, and sent back as it is
+        assert default(key, "api_key") == "wrong"
+        assert fields(key)["api_key"].config["type"] == "password"
+        back = shown(await submit(hass, key, api_key="wrong"), FORM, "source_url")
         assert downloads()[-1] == f"{URL}?api_key=wrong"
         key = await submit(hass, back, url=URL, file="tao", needs_api_key=True)
         feeds = shown(await submit(hass, key, api_key="static-secret"), FORM, "source_rt")

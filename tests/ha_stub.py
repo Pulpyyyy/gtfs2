@@ -705,6 +705,22 @@ class _NumberSelectorMode(enum.StrEnum):
     SLIDER = "slider"
 
 
+class _TextSelectorType(enum.StrEnum):
+    COLOR = "color"
+    DATE = "date"
+    DATETIME_LOCAL = "datetime-local"
+    EMAIL = "email"
+    MONTH = "month"
+    NUMBER = "number"
+    PASSWORD = "password"
+    SEARCH = "search"
+    TEL = "tel"
+    TEXT = "text"
+    TIME = "time"
+    URL = "url"
+    WEEK = "week"
+
+
 class _Selector:
     """A selector keeps its config, completed with the defaults the real
     CONFIG_SCHEMA fills in, and refuses a config the real one refuses."""
@@ -844,7 +860,8 @@ def _install_config_flow() -> None:
             NumberSelector=_NumberSelector, NumberSelectorConfig=dict,
             NumberSelectorMode=_NumberSelectorMode,
             EntitySelector=_EntitySelector, EntitySelectorConfig=dict,
-            TextSelector=_TextSelector, TextSelectorConfig=dict)
+            TextSelector=_TextSelector, TextSelectorConfig=dict,
+            TextSelectorType=_TextSelectorType)
 
 # --- end of the config flows -------------------------------------------------
 
