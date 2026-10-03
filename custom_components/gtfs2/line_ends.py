@@ -6,7 +6,6 @@ days its services run (route_spans).
 from __future__ import annotations
 
 from collections.abc import Container, Iterable, Mapping
-import csv
 import json
 import logging
 import os
@@ -208,25 +207,21 @@ def _read_trip_calls(zin: zipfile.ZipFile, route_ids: Container[str]) -> tuple[
     first: dict[str, tuple[int, str]]
     last: dict[str, tuple[int, str]]
     trips, calls, first, last = {}, Counter(), {}, {}
-    files = {n.rsplit("/", 1)[-1]: n for n in zin.namelist()}
-
-    def rows(name: str) -> csv.DictReader[str]:
-        return table_reader(zin.open(files[name]))
-
-    for row in rows("trips.txt"):
-        if row.get("route_id") in route_ids:
-            trips[row["trip_id"]] = row["route_id"]
-    for row in rows("stop_times.txt"):
-        trip = row.get("trip_id")
-        if trip not in trips:
+    for row in table_rows(zin, "trips.txt"):
+        route_id, trip = row.get("route_id"), row.get("trip_id")
+        if route_id and trip and route_id in route_ids:
+            trips[trip] = route_id
+    for row in table_rows(zin, "stop_times.txt"):
+        trip, stop_id = row.get("trip_id"), row.get("stop_id")
+        if not trip or trip not in trips or not stop_id:
             continue
-        sequence = int(row["stop_sequence"])
+        sequence = int(str(row.get("stop_sequence")))
         calls[trip] += 1
         if trip not in first or sequence < first[trip][0]:
-            first[trip] = (sequence, row["stop_id"])
+            first[trip] = (sequence, stop_id)
         if trip not in last or sequence > last[trip][0]:
-            last[trip] = (sequence, row["stop_id"])
-    names = {row["stop_id"]: row.get("stop_name") for row in rows("stops.txt")}
+            last[trip] = (sequence, stop_id)
+    names = {str(row["stop_id"]): row.get("stop_name") for row in table_rows(zin, "stops.txt")}
     return trips, calls, first, last, names
 
 
