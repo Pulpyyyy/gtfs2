@@ -17,8 +17,7 @@ from homeassistant.helpers import entity_registry as er
 import requests
 
 from .const import id_of
-from .key_mask import fetch
-from .rt_feed import _with_user_agent, get_gtfs_feed_entities
+from .rt_feed import _feed_body, get_gtfs_feed_entities
 from .rt_source import rt_headers, with_query_key
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,20 +69,18 @@ def get_gtfs_rt(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> str:
             log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
             log("Issues with downloading GTFS RT SIRI data to: %s with error: %s", os.path.join(gtfs_dir, file), ex)
             return "no_rt_data_file" 
+    # read at every refresh of the stops around a person: a host down says
+    # so once, without the stack of requests, and an error page is not
+    # written first, where it replaced the last good feed on disk and the
+    # readers parsed that instead
+    content = _feed_body(url, _headers, "local GTFS RT")
+    if content is None:
+        return "no_rt_data_file"
     try:
-        r = fetch("get", url, headers=_with_user_agent(_headers), allow_redirects=True, timeout=20)
-        if r.status_code != 200:
-            # written first, an error page replaced the last good feed on
-            # disk and the readers parsed that instead
-            _LOGGER.error("Issues with downloading GTFS RT data, error: %s, content: %s",
-                          r.status_code, r.content[:200])
-            return "no_rt_data_file"
-        open(os.path.join(gtfs_dir, file), "wb").write(r.content)
-    except Exception as ex:  # pylint: disable=broad-except
-        # read at every refresh of the stops around a person: a host down
-        # says so in one line each time, without the stack of requests
-        log = _LOGGER.error if isinstance(ex, requests.RequestException) else _LOGGER.exception
-        log("Issues with downloading GTFS RT data to: %s: %s", os.path.join(gtfs_dir, file), ex)
+        with open(os.path.join(gtfs_dir, file), "wb") as out:
+            out.write(content)
+    except OSError as ex:
+        _LOGGER.error("Issues with writing GTFS RT data to: %s: %s", os.path.join(gtfs_dir, file), ex)
         return "no_rt_data_file"
 
     
@@ -122,13 +119,11 @@ def convert_realtime_siri_trips_to_json(url: str, headers: Mapping[str, str | No
     
     # the url may already carry a query of its own, or none at all
     url = url + ("&" if "?" in url else "?") + f"MonitoringRef={quote(str(stop_id))}"
-    response = fetch("get", url, headers=_with_user_agent(headers), timeout=20)
-    if response.status_code != 200:
-        _LOGGER.error("Trying to read the SIRI feed, and got response(code): %s with text: %s",
-                      response.status_code, response.text[:200])
+    content = _feed_body(url, headers, "SIRI")
+    if content is None:
         return {"entity": []}
 
-    json_object = json.loads(response.content)
+    json_object = json.loads(content)
     # the delivery under a Siri root (Strasbourg) or at the top (MTA)
     feed = json_object.get('Siri') or json_object
     try:

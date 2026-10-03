@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import datetime
 import json
-import types
 
 import ha_stub
 
@@ -29,8 +28,8 @@ DELIVERY = {"ServiceDelivery": {
 
 
 def _converted(monkeypatch, answer):
-    monkeypatch.setattr(rt_local, "fetch", lambda *args, **kwargs: types.SimpleNamespace(
-        status_code=200, content=json.dumps(answer).encode(), text=""))
+    monkeypatch.setattr(rt_local, "_feed_body",
+                        lambda url, headers, label: json.dumps(answer).encode())
     return rt_local.convert_realtime_siri_trips_to_json("https://h/siri?k=1", {}, "S1")
 
 
