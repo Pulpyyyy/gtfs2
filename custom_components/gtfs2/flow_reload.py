@@ -91,11 +91,8 @@ class ReloadScreens:
     _stops_error: str | None
     _return_trip: dict | None
     _extract_job: asyncio.Task | None
-    _extract_task: asyncio.Task | None
-    _extract_size: str
     _extract_next_step: str | None
     _import_job: asyncio.Task | None
-    _import_task: asyncio.Task | None
     _import_routes: list
     _import_missing: str
     async_show_form: Callable[..., FlowResult]
@@ -237,19 +234,19 @@ class ReloadScreens:
             # seconds, the step is called again, and the size is read afresh.
             # Watching the import directly would freeze the figure at 0 - the
             # scratch file does not exist yet when the screen first appears.
-            self._extract_size = await self.hass.async_add_executor_job(
+            size = await self.hass.async_add_executor_job(
                 _scratch_size, gtfs_dir, filename)
 
-            self._import_task = self.hass.async_create_task(
+            tick = self.hass.async_create_task(
                 asyncio.wait({self._import_job}, timeout=3))
             return self.async_show_progress(
                 step_id="importing",
                 progress_action="importing",
-                progress_task=self._import_task,
+                progress_task=tick,
                 description_placeholders={
                     **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                     "file": filename,
-                    "size": self._extract_size,
+                    "size": size,
                     "routes": str(len(self._import_routes)),
                 },
             )
@@ -262,7 +259,6 @@ class ReloadScreens:
             _LOGGER.exception("Import into %s failed: %s", filename, ex)
             added = None
         self._import_job = None
-        self._import_task = None
         if not added:
             return self.async_show_progress_done(next_step_id="reload_failed")
         # the import stops at the first line that fails and leaves the ones
@@ -398,10 +394,10 @@ class ReloadScreens:
             # progress_task finishes. Handing it the whole wait would freeze
             # the figure on its first value, so it gets a short tick instead
             # and the size is read again each time the step comes back.
-            self._extract_size = await self.hass.async_add_executor_job(
+            size = await self.hass.async_add_executor_job(
                 _database_size, gtfs_dir, file)
 
-            self._extract_task = self.hass.async_create_task(
+            tick = self.hass.async_create_task(
                 asyncio.wait({self._extract_job}, timeout=3))
             # The database file only grows while rows are written, so its size
             # is the one honest sign that something is happening. There is no
@@ -410,11 +406,11 @@ class ReloadScreens:
             return self.async_show_progress(
                 step_id="extracting",
                 progress_action="extracting",
-                progress_task=self._extract_task,
+                progress_task=tick,
                 description_placeholders={
                     **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                     "file": self._user_inputs.get(CONF_FILE, ""),
-                    "size": self._extract_size,
+                    "size": size,
                 },
             )
 
@@ -426,7 +422,6 @@ class ReloadScreens:
             _LOGGER.error("Waiting for %s to be unpacked failed: %s",
                           self._user_inputs.get(CONF_FILE, ""), failed)
         self._extract_job = None
-        self._extract_task = None
         return self.async_show_progress_done(
             next_step_id=self._extract_next_step or "agency")
 

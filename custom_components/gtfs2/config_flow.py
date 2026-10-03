@@ -100,7 +100,6 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         # screen sent the rider back to it, or that an import left lines out
         self._stops_error: str | None = None
         self._extract_job = None
-        self._extract_task = None
         self._extract_next_step: str | None = None
         self._route_label: str = ""
         # the networks an envelope of zips offers, while one is being picked
@@ -109,11 +108,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         self._route_shown: str = ""
         # the lines the route screen offered: only those are taken
         self._routes_offered: set[str] = set()
-        # how big the database has grown, shown while it is being built
-        self._extract_size: str = "0 MB"
         # the import running behind the progress screen, and its routes
         self._import_job = None
-        self._import_task = None
         self._import_routes: list = []
         # the lines the import was asked for and did not bring in, as named
         # to the rider
