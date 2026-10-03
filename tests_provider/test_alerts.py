@@ -26,6 +26,7 @@ from freezegun import freeze_time
 ha_stub.install()
 
 import fixture_db  # noqa: E402
+import test_journeys as tj  # noqa: E402
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
 rt_feed = ha_stub.load("rt_feed")
@@ -39,26 +40,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "sncf"
 CAPTURED = datetime.datetime(2026, 8, 26, 8, 0, tzinfo=datetime.timezone.utc)
 
 
-class Check:
-    def __init__(self):
-        self.records = []
-
-    def note(self, ok, text, **fields):
-        self.records.append({"ok": bool(ok), "text": text, **fields})
-
-    def same(self, got, want, text, **fields):
-        self.note(got == want, f"{text}: expected {want!r}, got {got!r}",
-                  expected=want, got=got, **fields)
-
-    @property
-    def failures(self):
-        return [r["text"] for r in self.records if not r["ok"]]
-
-
-def _done(record_property, check, **case):
-    record_property("case", case)
-    record_property("checks", check.records)
-    assert not check.failures, "\n".join(check.failures)
+Check, _done = tj.Check, tj.done
 
 
 def test_alerts_reach_the_listed_trips(record_property, monkeypatch):

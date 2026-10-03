@@ -45,6 +45,7 @@ ha_stub.install()
 import homeassistant.util.dt as dt_util  # noqa: E402
 
 import fixture_db  # noqa: E402
+import test_journeys as tj  # noqa: E402
 
 gtfs_helper = ha_stub.load("gtfs_helper")
 try:
@@ -127,31 +128,7 @@ def _follower(route_id, direction, trip_id, stop_id, trip_list=()):
         _destination_id=None, info={})
 
 
-class Check:
-    def __init__(self):
-        self.records = []
-
-    def note(self, ok, text, **fields):
-        self.records.append({"ok": bool(ok), "text": text, **fields})
-
-    def same(self, got, want, text, **fields):
-        self.note(got == want, f"{text}: expected {want!r}, got {got!r}",
-                  expected=want, got=got, **fields)
-
-    def not_here(self, name, text):
-        """A promise this tree cannot be asked: kept on record, not judged."""
-        self.note(True, f"{text}: {name} is not in this tree, not checked here",
-                  not_checked=name)
-
-    @property
-    def failures(self):
-        return [r["text"] for r in self.records if not r["ok"]]
-
-
-def _done(record_property, check, **case):
-    record_property("case", case)
-    record_property("checks", check.records)
-    assert not check.failures, "\n".join(check.failures)
+Check, _done = tj.Check, tj.done
 
 
 def test_the_converter_spells_out_what_the_feed_struck(record_property, entities):

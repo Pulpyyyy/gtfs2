@@ -878,9 +878,26 @@ class Check:
     def note(self, ok, text, **fields):
         self.records.append({"ok": bool(ok), "text": text, **fields})
 
+    def same(self, got, want, text, **fields):
+        self.note(got == want, f"{text}: expected {want!r}, got {got!r}",
+                  expected=want, got=got, **fields)
+
+    def not_here(self, name, text):
+        """A promise this tree cannot be asked: kept on record, not judged."""
+        self.note(True, f"{text}: {name} is not in this tree, not checked here",
+                  not_checked=name)
+
     @property
     def failures(self):
         return [r["text"] for r in self.records if not r["ok"]]
+
+
+def done(record_property, check, **case):
+    """Hand the case and its checks over (conftest.py writes them), and
+    fail on the first broken promise of the case."""
+    record_property("case", case)
+    record_property("checks", check.records)
+    assert not check.failures, "\n".join(check.failures)
 
 
 # Cases known to fail, each with what breaks the promise. The marks are
@@ -977,10 +994,8 @@ def test_journeys(record_property, fixture, route_id, direction, kind):
         check_train_route(check, fx, route_id, direction, kind)
     else:
         check_route(check, fx, route_id, direction, kind)
-    record_property("case", {"fixture": fixture, "route": route_id,
-                             "direction": direction, "kind": kind})
-    record_property("checks", check.records)
-    assert not check.failures, "\n".join(check.failures)
+    done(record_property, check, fixture=fixture, route=route_id,
+         direction=direction, kind=kind)
 
 
 def check_route(check, fx, route_id, direction, kind):
