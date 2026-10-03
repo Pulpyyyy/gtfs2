@@ -21,6 +21,7 @@ import homeassistant.util.dt as dt_util
 from .const import DEFAULT_PATH_GEOJSON
 from .geojson import entry_file_part, safe_file_part, write_json_if_changed
 from .clocks import _leg_timezone, gtfs_seconds
+from .gtfs_db import remove_files
 from .gtfs_helper import shown_ends
 from .stop_rules import _call_type
 from .rt_feed import (
@@ -93,6 +94,15 @@ def owns_leg_file(path: str, name: str) -> bool:
             prefix = f"_{base[:-len(ending)]}_"
             return not any(f"_{d}_leg_" in prefix for d in LEG_DIRECTIONS)
     return False
+
+
+def leg_files(geojson_dir: str, name: str) -> list[str]:
+    """The leg files of the entry called name under geojson_dir, whatever
+    line each was written under."""
+    return [path for pattern in leg_geojson_pattern(name)
+            for path in glob.glob(os.path.join(geojson_dir, pattern))
+            # the glob can reach another entry's file, see owns_leg_file
+            if owns_leg_file(path, name)]
 
 
 def _listed_trips(departure: Mapping[str, Any]) -> tuple[str | None, list[str], dict[str, str]]:
@@ -416,12 +426,5 @@ def _drop_other_legs(geojson_dir: str, name: str, kept: str) -> None:
     until the entry was removed, and a card still found it. Looked for once
     per new name, with the globs the entry's removal uses.
     """
-    for pattern in leg_geojson_pattern(name):
-        for path in glob.glob(os.path.join(geojson_dir, pattern)):
-            if os.path.abspath(path) == os.path.abspath(kept) or not owns_leg_file(path, name):
-                continue
-            try:
-                os.remove(path)
-                _LOGGER.debug("Removed the leg file of an earlier line: %s", path)
-            except OSError as ex:
-                _LOGGER.warning("Could not remove %s: %s", path, ex)
+    remove_files(*(path for path in leg_files(geojson_dir, name)
+                   if os.path.abspath(path) != os.path.abspath(kept)))

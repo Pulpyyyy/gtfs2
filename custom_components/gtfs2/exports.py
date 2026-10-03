@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import timedelta
-import glob
 import json
 import logging
 import os
@@ -28,7 +27,7 @@ from .gtfs_db import feed_zip, file_edition, real_path, remove_files
 from .gtfs_helper import shown_ends
 from .stations import train_entry_routes
 from .geojson import write_route_file, route_geojson_name, get_representative_trip, vehicle_positions_name
-from .leg import write_leg_file, leg_geojson_name, leg_geojson_pattern, owns_leg_file
+from .leg import write_leg_file, leg_files, leg_geojson_name
 from .rt_feed import FeedEntities
 from .timetable import write_timetable_file, timetable_name
 
@@ -370,9 +369,6 @@ def _remove_geojson_files(geojson_dir: str, leg_owner: str | None, names: list[s
     """Delete the leg files of the entry named leg_owner and the named files
     under geojson_dir, logging each removal. Blocking file work, made for
     the executor."""
-    paths = [path for pattern in (leg_geojson_pattern(leg_owner) if leg_owner else ())
-             for path in glob.glob(os.path.join(geojson_dir, pattern))
-             # the glob can reach another entry's file, see owns_leg_file
-             if leg_owner and owns_leg_file(path, leg_owner)]
-    paths += [os.path.join(geojson_dir, name) for name in dict.fromkeys(names)]
+    paths = leg_files(geojson_dir, leg_owner) if leg_owner else []
+    paths +=[os.path.join(geojson_dir, name) for name in dict.fromkeys(names)]
     remove_files(*paths)
