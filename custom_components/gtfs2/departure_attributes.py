@@ -256,19 +256,13 @@ def alert_details(attributes: dict[str, Any], alert: Mapping[str, Any]) -> None:
     # the feed states them, its cause and effect, and the names of the
     # journey's stops it is addressed to. Written only when there is
     # something to say, and removed when there is not.
-    for key in ("origin_stop_alerts", "destination_stop_alerts"):
-        value = alert.get(key, None)
-        if value:
-            attributes[key] = value
-        elif key in attributes:
-            del attributes[key]
-
+    #
     # What kind of alert, in the feed's own vocabulary: a cause out of
     # twelve and an effect out of eleven. A card can draw roadworks from
     # CONSTRUCTION; it cannot draw them from a free sentence. Written only
     # when the feed says so, and removed when it stops saying so, so the
     # attribute's presence is itself the answer to "is there one".
-    for key in ("alert_cause", "alert_effect"):
+    for key in ("origin_stop_alerts", "destination_stop_alerts", "alert_cause", "alert_effect"):
         value = alert.get(key, None)
         if value:
             attributes[key] = value
