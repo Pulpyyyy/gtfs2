@@ -386,7 +386,6 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         self._nothing_said = None
 
         # fetch next departures
-        self._departure = self.coordinator.data["next_departure"]
         self._next_departures = self._departure.get("next_departures") if self._departure else None
 
         if self._agency is False:
@@ -462,7 +461,6 @@ class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
 
         self._attr_unique_id = self._name
         self._attr_device_info = _entry_device(name)
-        self._stop = stop
         # same as the departures sensor: keep the dict when the first update
         # returns early because the source is still extracting
         self._update_attrs()
