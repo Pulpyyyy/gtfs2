@@ -406,8 +406,8 @@ def refresh_datasource(hass: HomeAssistant, path: str,
         _LOGGER.info("Datasource %s follows no route yet, building it whole",
                      filename)
 
-    zip_name = filename + ".zip"
-    zip_path = os.path.join(gtfs_dir, zip_name)
+    zip_path = feed_zip(gtfs_dir, filename)
+    zip_name = os.path.basename(zip_path)
     if data.get("extract_from", "url") == "url" and not _fetch_zip(data, zip_path):
         return False
     if not os.path.exists(zip_path):
