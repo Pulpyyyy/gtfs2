@@ -71,3 +71,24 @@ def calls(trip, stops):
     """The stop_times.txt rows of a trip calling at stops in this order, a
     minute apart from 08:01."""
     return "".join(f"{trip},08:{n:02d}:00,08:{n:02d}:00,{s},{n}\n" for n, s in enumerate(stops, 1))
+
+
+def line_feed(stops, trips):
+    """The tables of a feed whose trips ride lines of one agency, every day:
+    stops is {stop_id: name}, trips [(trip_id, route_id, direction_id or
+    None, the stop ids it calls at in order)]."""
+    routes = sorted({route for _trip, route, _direction, _calls in trips})
+    return {
+        "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,UTC\n",
+        "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\n" + "".join(
+            f"{stop},{name},45.{n},1.{n}\n" for n, (stop, name) in enumerate(stops.items(), 1)),
+        "routes.txt": "route_id,agency_id,route_short_name,route_long_name,route_type\n" + "".join(
+            f"{route},A,{route},{route},3\n" for route in routes),
+        "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                         "start_date,end_date\nD,1,1,1,1,1,1,1,20260101,20271231\n"),
+        "trips.txt": "route_id,service_id,trip_id,direction_id\n" + "".join(
+            f"{route},D,{trip},{'' if direction is None else direction}\n"
+            for trip, route, direction, _calls in trips),
+        "stop_times.txt": STOP_TIMES + "".join(calls(trip, list(stop_ids))
+                                               for trip, _route, _direction, stop_ids in trips),
+    }

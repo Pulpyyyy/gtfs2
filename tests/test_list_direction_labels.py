@@ -7,10 +7,7 @@ end of the other.
 """
 from __future__ import annotations
 
-import types
-
-from sqlalchemy import create_engine, text
-
+import feed_db
 import ha_stub
 
 pair_direction = ha_stub.load("pair_direction")
@@ -19,19 +16,9 @@ STOPS = {"A": "Gare", "B": "Centre", "C": "Hopital", "D": "Stade", "E": "Lac"}
 
 
 def _schedule(tmp_path, trips):
-    engine = create_engine(f"sqlite:///{tmp_path / 'labels.sqlite'}")
-    with engine.begin() as conn:
-        conn.execute(text("create table stops (stop_id varchar, stop_name varchar)"))
-        conn.execute(text("create table trips (trip_id varchar, route_id varchar, direction_id integer)"))
-        conn.execute(text("create table stop_times (trip_id varchar, stop_id varchar, stop_sequence integer)"))
-        for stop_id, name in STOPS.items():
-            conn.execute(text("insert into stops values (:s, :n)"), {"s": stop_id, "n": name})
-        for trip_id, direction, calls in trips:
-            conn.execute(text("insert into trips values (:t, 'R', :d)"), {"t": trip_id, "d": direction})
-            for seq, stop_id in enumerate(calls, 1):
-                conn.execute(text("insert into stop_times values (:t, :s, :q)"),
-                             {"t": trip_id, "s": stop_id, "q": seq})
-    return types.SimpleNamespace(engine=engine)
+    """The trips [(trip_id, direction_id, stops)] of line R, imported by pygtfs."""
+    return feed_db.build(tmp_path, feed_db.line_feed(
+        STOPS, [(trip, "R", direction, calls) for trip, direction, calls in trips]))
 
 
 def test_trips_without_direction_count_as_direction_zero(tmp_path):
