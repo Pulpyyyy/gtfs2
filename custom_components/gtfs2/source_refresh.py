@@ -550,10 +550,7 @@ async def async_check_source(hass: HomeAssistant, entry: ConfigEntry) -> None:
 @callback
 def async_arm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Give a source its scheduled check, or take it away, per its options."""
-    unsubs = _store(hass).setdefault("source_check_unsub", {})
-    previous = unsubs.pop(entry.entry_id, None)
-    if previous:
-        previous()
+    async_disarm_source_check(hass, entry)
     mode = entry.options.get(CONF_STATIC_REFRESH_MODE, STATIC_REFRESH_OFF)
     if mode not in (STATIC_REFRESH_NOTIFY, STATIC_REFRESH_AUTO):
         return
@@ -581,7 +578,7 @@ def async_arm_source_check(hass: HomeAssistant, entry: ConfigEntry) -> None:
         cancel_tick()
         cancel_catch_up()
 
-    unsubs[entry.entry_id] = _cancel
+    _store(hass).setdefault("source_check_unsub", {})[entry.entry_id] = _cancel
     _LOGGER.debug(
         "Source %s checks for new versions every %d h, at minute %02d:%02d "
         "of hours %s (%s)",
