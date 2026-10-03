@@ -265,11 +265,18 @@ _KEY_FIELDS: dict[vol.Marker, Any] = {
 def _without_legacy_none(data: dict) -> dict:
     """update_gtfs once defaulted its address to "na", meant as none, and
     an automation written then still sends it, for the key too: read as
-    not given, and said, so the call can be mended."""
+    not given, and said, so the call can be mended. extract_from the same:
+    where the feed is read from is its url's to say, http(s) or file
+    alike. Said at WARNING: Home Assistant's cv.removed said it at ERROR,
+    every call, for an automation written against an older version."""
     legacy = [key for key in (CONF_URL, CONF_API_KEY) if data.get(key) == "na"]
     if legacy:
         _LOGGER.warning("update_gtfs: %s given as \"na\", read as not given; "
                         "leave the field out instead", " and ".join(legacy))
+    if CONF_EXTRACT_FROM in data:
+        _LOGGER.warning("update_gtfs: extract_from is no longer read, the url says "
+                        "where the feed comes from; leave the field out")
+        legacy.append(CONF_EXTRACT_FROM)
     return {key: value for key, value in data.items() if key not in legacy}
 
 
@@ -284,9 +291,6 @@ def _source_url(value: str) -> str:
 # missing one used to surface as a KeyError from deep inside. Extra keys
 # still pass, for the automations written against older field lists
 _UPDATE_GTFS_SCHEMA = vol.All(
-    # where the feed is read from is its url's to say, http(s) or file
-    # alike: a call still naming it is told the option is gone
-    cv.removed(CONF_EXTRACT_FROM, raise_if_present=False),
     _without_legacy_none,
     vol.Schema({
         vol.Required("file"): cv.string,

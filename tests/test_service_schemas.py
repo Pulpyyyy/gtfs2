@@ -66,8 +66,11 @@ def test_update_gtfs_drops_extract_from_and_the_old_na(caplog):
         assert schema({"file": "tao", "extract_from": "zip", "url": "na",
                        "api_key": "na"}) == {"file": "tao"}
     said = " ".join(r.getMessage() for r in caplog.records)
-    assert "'extract_from' option has been removed" in said
+    assert "extract_from is no longer read" in said
     assert "url and api_key given as \"na\"" in said
+    # an automation written for an older version is no error: Home
+    # Assistant's cv.removed said it at ERROR, every call
+    assert [r.levelname for r in caplog.records] == ["WARNING", "WARNING"]
 
 
 def test_update_gtfs_rt_local():
