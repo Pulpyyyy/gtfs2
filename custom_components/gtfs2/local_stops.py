@@ -61,17 +61,14 @@ def get_local_stop_list(hass: HomeAssistant, schedule: Schedule, data: Mapping[s
         return 0
     radius= data.get("radius", DEFAULT_LOCAL_STOP_RADIUS) / 111111
     sql_query = """
-        SELECT stop.stop_id, stop.stop_name
+        SELECT count(*)
         FROM stops stop
         where abs(stop.stop_lat - :latitude) < :radius and abs(stop.stop_lon - :longitude) < :radius
-        """  
+        """
     with schedule.engine.connect() as conn:
-        rows = conn.execute(text(sql_query), {"latitude": latitude, "longitude": longitude, "radius": radius}).fetchall()
-    rowcount = 0
-    for row_cursor in rows:
-        rowcount += 1
+        rowcount = conn.execute(text(sql_query), {"latitude": latitude, "longitude": longitude, "radius": radius}).scalar() or 0
     _LOGGER.debug("Local stops list output: %s", rowcount)
-    return rowcount
+    return int(rowcount)
 
 
 def local_stops_nearby(hass: HomeAssistant, data: Mapping[str, Any]) -> list[dict[str, Any]]:
