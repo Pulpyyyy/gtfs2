@@ -15,7 +15,8 @@ from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
 from .departure_services import get_route_departures, get_route_arrivals, get_trip_stops
 from .local_stops import update_gtfs_local_stops
-from .notifications import async_notify_line_orphaned, clear_line_orphaned
+from .notifications import (async_notify_line_orphaned, async_notify_source_unused,
+                            clear_line_orphaned, clear_source_unused)
 from .exports import remove_entry_geojson
 from .datasource_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
 from .gtfs_db import real_path, routes_in, route_name_in, get_datasources, close_schedule
@@ -182,8 +183,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # the entry's own, on the entry: hass.data[DOMAIN] is the store the
     # sources share, their locks, checks and flags
     entry.runtime_data = coordinator
-    # a sensor on a line said to be read by nobody: it is read again
+    # a sensor on a line said to be read by nobody: it is read again, and
+    # so is its source
     clear_line_orphaned(hass, entry.data.get(CONF_FILE), id_of(entry.data.get("route")))
+    clear_source_unused(hass, entry.data.get(CONF_FILE))
 
     entry.async_on_unload(entry.add_update_listener(update_listener))
       
@@ -217,7 +220,9 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """
     if entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
         # the datasource entry only carries config: removing it deletes no
-        # file and no journey entry, they fall back on their own options
+        # file and no journey entry, they fall back on their own options.
+        # Only the word that the source served nobody goes with it
+        clear_source_unused(hass, entry.data.get(CONF_FILE))
         return
     await remove_entry_geojson(hass, entry)
     await _notify_orphaned_line(hass, entry)
@@ -253,6 +258,11 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
     label = await hass.async_add_executor_job(
         route_name_in, database, route)
     label = label or (entry.data.get("route") or "").split(": ", 1)[-1]
+    if set(loaded) == {route}:
+        # the source's last line: it is not dropped alone, the source is
+        # what to remove (async_prune_line answers last_line)
+        await async_notify_source_unused(hass, filename, label or route)
+        return
     await async_notify_line_orphaned(hass, filename, route, label or route)
      
 

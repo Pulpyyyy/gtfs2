@@ -10,7 +10,10 @@ the walk that gives every source its datasource entry, and only the first.
 Unloading a journey entry closes the schedule its coordinator held open,
 once its platforms are down. Removing a datasource entry deletes nothing;
 removing a journey entry clears its map files and says when it was the
-last sensor of a line whose timetable is still in the database.
+last sensor of a line whose timetable is still in the database, or of
+the source itself when that line was its last: a line alone cannot be
+dropped, the source is what to remove. A sensor set up on the source
+again, or the source removed, takes that back.
 """
 from __future__ import annotations
 
@@ -167,6 +170,9 @@ def test_unloading_a_datasource_takes_its_platforms_only(monkeypatch):
 def _removal_hooks(monkeypatch):
     heard = []
 
+    def unused_cleared(hass, filename):
+        heard.append(("unused cleared", filename))
+
     async def geojson(hass, entry):
         heard.append(("geojson", entry.entry_id))
 
@@ -175,13 +181,15 @@ def _removal_hooks(monkeypatch):
 
     monkeypatch.setattr(integration, "remove_entry_geojson", geojson)
     monkeypatch.setattr(integration, "_notify_orphaned_line", orphaned)
+    monkeypatch.setattr(integration, "clear_source_unused", unused_cleared)
     return heard
 
 
 def test_removing_a_datasource_entry_deletes_nothing(monkeypatch):
     heard = _removal_hooks(monkeypatch)
     asyncio.run(integration.async_remove_entry(_Hass(), _Entry("d1", file="tao", kind="datasource")))
-    assert heard == []
+    # only the word that the source served no sensor any more goes with it
+    assert heard == [("unused cleared", "tao")]
 
 
 def test_removing_a_journey_clears_its_files_then_names_its_line(monkeypatch):
@@ -190,17 +198,21 @@ def test_removing_a_journey_clears_its_files_then_names_its_line(monkeypatch):
     assert heard == [("geojson", "j1"), ("orphaned", "j1")]
 
 
-def _orphans(monkeypatch, loaded):
+def _orphans(monkeypatch, loaded, unused=None):
     said, looked = [], []
 
     async def notify(hass, filename, route, line):
         said.append((filename, route, line))
+
+    async def notify_unused(hass, filename, line):
+        (unused if unused is not None else said).append(("unused", filename, line))
 
     def routes_in(path):
         looked.append(path)
         return loaded
 
     monkeypatch.setattr(integration, "async_notify_line_orphaned", notify)
+    monkeypatch.setattr(integration, "async_notify_source_unused", notify_unused)
     monkeypatch.setattr(integration, "routes_in", routes_in)
     return said, looked
 
@@ -223,7 +235,7 @@ def test_the_last_sensor_of_a_line_names_it(monkeypatch):
 def test_the_line_is_named_as_the_database_names_it(monkeypatch):
     # the flow keeps the id alone: the issue read "ORLEANS:Line:12" where
     # riders say 12 (field test of 2026-09-29)
-    said, _ = _orphans(monkeypatch, {"ORLEANS:Line:12"})
+    said, _ = _orphans(monkeypatch, {"ORLEANS:Line:12", "ORLEANS:Line:A"})
     asked = []
 
     def route_name_in(path, route):
@@ -276,3 +288,24 @@ def test_an_entry_on_no_line_names_nothing(monkeypatch):
                   _Entry("j2", route="R1")):
         asyncio.run(integration._notify_orphaned_line(_Hass([entry]), entry))
     assert said == [] and looked == []
+
+
+def test_the_last_line_of_a_source_names_the_source_not_the_line(monkeypatch):
+    # its line cannot be dropped alone (async_prune_line answers
+    # last_line): the issue that offered it offered what it refused
+    unused = []
+    said, _ = _orphans(monkeypatch, {"R1"}, unused)
+    gone = _Entry("j1", file="tao", route="R1: Line 1")
+    asyncio.run(integration._notify_orphaned_line(_Hass([gone]), gone))
+    assert said == []
+    assert unused == [("unused", "tao", "Line 1")]
+
+
+def test_a_sensor_set_up_on_the_source_takes_its_unused_word_back(monkeypatch):
+    _quiet_setup(monkeypatch)
+    cleared = []
+    monkeypatch.setattr(integration, "clear_source_unused",
+                        lambda hass, filename: cleared.append(filename))
+    entry = _Entry("j1", file="tao", route="R1")
+    asyncio.run(integration.async_setup_entry(_Hass([entry]), entry))
+    assert cleared == ["tao"]

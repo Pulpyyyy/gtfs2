@@ -89,6 +89,33 @@ def clear_line_orphaned(hass: HomeAssistant, filename: str, route: str) -> None:
     ir.async_delete_issue(hass, DOMAIN, f"line_orphaned_{filename}_{route}")
 
 
+def source_unused_issue(filename: str) -> str:
+    return f"source_unused_{filename}"
+
+
+async def async_notify_source_unused(hass: HomeAssistant, filename: str, line: str) -> None:
+    """Say that a source's last sensor is gone, on its last line.
+
+    The line orphaned issue cannot stand for it: a source's last line is
+    not dropped alone (async_prune_line answers last_line), the source is
+    what goes, and only the user removes it, from the integration's menu.
+    So this one has no fix; a sensor set up on the source again, or the
+    source removed, takes it back.
+    """
+    _LOGGER.info("No sensor reads source %s any more (its last line was %s)", filename, line)
+    ir.async_create_issue(
+        hass, DOMAIN, source_unused_issue(filename),
+        is_fixable=False, is_persistent=True, severity=ir.IssueSeverity.WARNING,
+        translation_key="source_unused",
+        translation_placeholders={"file": filename, "line": line})
+
+
+def clear_source_unused(hass: HomeAssistant, filename: str | None) -> None:
+    """A sensor reads the source again, or the source is gone."""
+    if filename:
+        ir.async_delete_issue(hass, DOMAIN, source_unused_issue(filename))
+
+
 async def async_notify_lines_missing(hass: HomeAssistant, filename: str,
                                      routes: Iterable[str]) -> None:
     """Say that a refresh was refused: the new edition lost lines sensors read.

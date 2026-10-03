@@ -657,6 +657,10 @@
     "agency_all": "All operators"
   },
   "issues": {
+    "source_unused": {
+      "title": "GTFS: {file} no longer feeds any sensor",
+      "description": "The last sensor of **{file}** was removed (line **{line}**). Its timetable and its zip stay on disk until you remove the source: on the integration's page, add an entry and pick \"Remove a data source and free up disk space\". Adding a sensor on {file} uses it again."
+    },
     "refresh_failed": {
       "title": "GTFS: {file} was not updated",
       "fix_flow": {

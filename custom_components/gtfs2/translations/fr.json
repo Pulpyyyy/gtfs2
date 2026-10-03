@@ -657,6 +657,10 @@
     "agency_all": "Tous les exploitants"
   },
   "issues": {
+    "source_unused": {
+      "title": "GTFS : {file} ne sert plus à aucun capteur",
+      "description": "Le dernier capteur de **{file}** a été supprimé (ligne **{line}**). Ses horaires et son zip restent sur le disque tant que vous ne supprimez pas la source : sur la page de l'intégration, ajoutez une entrée et choisissez « Supprimer une source de données et libérer de l'espace disque ». Ajouter un capteur sur {file} s'en sert de nouveau."
+    },
     "refresh_failed": {
       "title": "GTFS : {file} n'a pas été mis à jour",
       "fix_flow": {

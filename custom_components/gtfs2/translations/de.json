@@ -657,6 +657,10 @@
     "agency_all": "Alle Betreiber"
   },
   "issues": {
+    "source_unused": {
+      "title": "GTFS: {file} versorgt keinen Sensor mehr",
+      "description": "Der letzte Sensor von **{file}** wurde entfernt (Linie **{line}**). Fahrplan und ZIP-Datei bleiben auf der Festplatte, bis Sie die Quelle entfernen: auf der Seite der Integration einen Eintrag hinzufügen und „Eine Datenquelle entfernen und Speicherplatz freigeben“ wählen. Ein neuer Sensor auf {file} nutzt sie wieder."
+    },
     "refresh_failed": {
       "title": "GTFS: {file} wurde nicht aktualisiert",
       "fix_flow": {

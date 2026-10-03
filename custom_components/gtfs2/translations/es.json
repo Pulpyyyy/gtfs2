@@ -657,6 +657,10 @@
     "agency_all": "Todos los operadores"
   },
   "issues": {
+    "source_unused": {
+      "title": "GTFS: {file} ya no alimenta ningún sensor",
+      "description": "Se eliminó el último sensor de **{file}** (línea **{line}**). Sus horarios y su zip siguen en el disco hasta que elimine la fuente: en la página de la integración, añada una entrada y elija «Eliminar una fuente de datos y liberar espacio en disco». Añadir un sensor sobre {file} la vuelve a usar."
+    },
     "refresh_failed": {
       "title": "GTFS: {file} no se ha actualizado",
       "fix_flow": {
