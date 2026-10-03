@@ -336,17 +336,9 @@ def zip_only_future_dates(zip_path: str) -> bool:
         with zipfile.ZipFile(zip_path) as zin:
             for name, column in (("calendar.txt", "start_date"),
                                  ("calendar_dates.txt", "date")):
-                member = _member(zin, name)
-                if member is None:
-                    continue
-                rows = _rows(zin, member)
-                header = [c.strip() for c in next(rows, None) or []]
-                if column not in header:
-                    continue
-                index = header.index(column)
-                for row in rows:
+                for row in table_rows(zin, name):
                     # a row short of the column says nothing about dates
-                    value = row[index].strip() if len(row) > index else ""
+                    value = (row.get(column) or "").strip()
                     if value and (earliest is None or value < earliest):
                         earliest = value
     except (OSError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
