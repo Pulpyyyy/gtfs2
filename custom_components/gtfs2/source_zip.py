@@ -180,8 +180,7 @@ def ensure_source_zip(hass: HomeAssistant, path: str, data: dict[str, Any]) -> s
     if data["extract_from"] == "zip":
         if not os.path.exists(zip_path):
             return "no_zip_file"
-        return _offer_or_take(data, zip_path) or _holds_a_feed(zip_path)
-    if not os.path.exists(zip_path):
+    elif not os.path.exists(zip_path):
         # what the url answers is read before it is fetched: an envelope
         # of zips holds one network per member, and the user picks which
         # before a byte of the wrong one is downloaded
@@ -193,7 +192,8 @@ def ensure_source_zip(hass: HomeAssistant, path: str, data: dict[str, Any]) -> s
         if not _fetch_zip(data, zip_path, envelope_ok=not data.get(CONF_INNER_ZIP)):
             return "no_data_file"
     # a host that refuses ranges answered the envelope whole: the networks
-    # are offered from the file, and the pick taken out of it
+    # are offered from the file, and the pick taken out of it, as from a
+    # zip the user put in the folder
     return _offer_or_take(data, zip_path) or _holds_a_feed(zip_path)
 
 
