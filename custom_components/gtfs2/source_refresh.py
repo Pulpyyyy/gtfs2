@@ -201,8 +201,7 @@ def next_check_at(hass: HomeAssistant, entry: ConfigEntry,
     if interval > 24:
         last_dt = _last_look_in(hass, file, zip_meta)
         if last_dt:
-            earliest = max(
-                now, dt_util.as_local(last_dt + timedelta(hours=interval - 12)))
+            earliest = max(now, dt_util.as_local(_look_again_at(last_dt, interval)))
     # the pattern repeats daily, so the first eligible tick is days away at
     # most as many days as the slowest interval allows
     for day in range((MAX_STATIC_CHECK_INTERVAL // 24) + 2):
@@ -421,9 +420,15 @@ async def _async_look_due(hass: HomeAssistant, entry: ConfigEntry, file: str) ->
         # drifting past its own slot, and a lost record just means one
         # extra conditional request, not a download
         last_dt = await hass.async_add_executor_job(last_look, hass, file)
-        if last_dt and dt_util.utcnow() - last_dt < timedelta(hours=interval - 12):
+        if last_dt and dt_util.utcnow() < _look_again_at(last_dt, interval):
             return False
     return True
+
+
+def _look_again_at(last_dt: datetime, interval: int) -> datetime:
+    """When a source checked slower than daily is looked at again: its
+    interval after the last look, less the 12 hour slack."""
+    return last_dt + timedelta(hours=interval - 12)
 
 
 async def _async_probe(hass: HomeAssistant, file: str, data: Mapping[str, Any],
