@@ -18,7 +18,7 @@ from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
 from .clocks import (_day_offset, _on_service_day, _removed_on, _row_instant, _runs_on, agency_zone,
-                     zone_of)
+                     row_zone, zone_of)
 from .const import (
     id_of,
     CONF_DESTINATION_STATIONS,
@@ -462,9 +462,9 @@ def _departure_timetable(rows: Iterable[Mapping[str, Any]], now: datetime.dateti
         # in the network's zone before it is compared: read naive against
         # Home Assistant's clock, a network in another zone lost or kept
         # the wrong hour of departures
-        row_zone = zone_of(row.get("agency_timezone"), row.get("origin_stop_timezone"))
-        if row_zone is not None:
-            if depart_dt.replace(tzinfo=row_zone) <= now_local_tz:
+        zone = zone_of(row.get("agency_timezone"), row.get("origin_stop_timezone"))
+        if zone is not None:
+            if depart_dt.replace(tzinfo=zone) <= now_local_tz:
                 continue
         elif depart_dt <= now:
             continue
@@ -496,16 +496,8 @@ def _departure_zones(hass: HomeAssistant,
     nothing is said."""
     if hass.config.time_zone is None:
         _LOGGER.error("Timezone is not set in Home Assistant configuration")
-    # a zone Home Assistant does not know, misspelt or missing from the
-    # host's zone database, reads as None: Home Assistant's own then, as
-    # the departures service does, not a clock with no zone
-    timezone = zone_of(
-        item["agency_timezone"], item["origin_stop_timezone"], hass.config.time_zone, "UTC"
-    ) or dt_util.DEFAULT_TIME_ZONE
-    if item["dest_stop_timezone"] is not None and item["agency_timezone"] is None:
-        timezone_dest = zone_of(item["dest_stop_timezone"]) or timezone
-    else:
-        timezone_dest = timezone
+    # as the departures service reads them (row_zone)
+    timezone, timezone_dest = row_zone(item, "origin"), row_zone(item, "dest")
     _LOGGER.debug("Defined orig timezone: %s, dest timezone: %s", timezone, timezone_dest)
     return timezone, timezone_dest
 

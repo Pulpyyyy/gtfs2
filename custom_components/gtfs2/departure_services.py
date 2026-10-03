@@ -19,7 +19,7 @@ from homeassistant.helpers import entity_registry as er
 from .const import DEFAULT_PATH
 from .feed_window import last_service_day
 from .gtfs_db import close_schedule, feed_zip
-from .clocks import _row_instant, zone_of
+from .clocks import _row_instant, row_zone
 from .datasource import get_gtfs
 from .gtfs_helper import (_fetch_departure_rows, departure_query_args,
                           first_departure_row, journey_data)
@@ -65,11 +65,9 @@ def _route_departures_between(data: Mapping[str, Any], first: str, last: str, li
 
 def _row_utc(row: Mapping[str, Any], at: str) -> datetime.datetime:
     """The row's time at (see _route_departures_between) as a UTC instant."""
-    stop_zone = "dest_stop_timezone" if at == "dest_arrival_dt" else "origin_stop_timezone"
     # an arrival with no zone of its end is read in the origin's, as
     # the sensor reads it (_departure_zones); Home Assistant's else
-    zone = (zone_of(row.get("agency_timezone"), row.get(stop_zone), row.get("origin_stop_timezone"))
-            or dt_util.DEFAULT_TIME_ZONE)
+    zone = row_zone(row, "dest" if at == "dest_arrival_dt" else "origin")
     return dt_util.as_utc(_row_instant(row[at], zone))
 
 

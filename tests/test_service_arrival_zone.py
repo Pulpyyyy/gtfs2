@@ -10,6 +10,7 @@ departure does.
 from __future__ import annotations
 
 import datetime
+import zoneinfo
 
 import ha_stub
 
@@ -54,3 +55,20 @@ def test_an_arrival_with_no_zone_said_is_read_in_home_assistant_s(monkeypatch):
         assert _arrivals(monkeypatch) == [datetime.datetime(2026, 10, 1, 7, 0, tzinfo=UTC)]
     finally:
         dt_util.set_default_time_zone(UTC)
+
+
+def test_an_arrival_in_a_zone_unknown_to_home_assistant_is_read_in_the_origin_s(monkeypatch):
+    # as the sensor reads it (test_departure_unknown_zone): the service
+    # read it in Home Assistant's
+    def as_home_assistant(name):
+        """Home Assistant's get_time_zone: None for a name it cannot find."""
+        try:
+            return zoneinfo.ZoneInfo(name)
+        except zoneinfo.ZoneInfoNotFoundError:
+            return None
+
+    monkeypatch.setattr(dt_util, "get_time_zone", as_home_assistant)
+    dt_util.set_default_time_zone(UTC)
+    assert _arrivals(monkeypatch, origin_stop_timezone="America/New_York",
+                     dest_stop_timezone="Mars/Olympus_Mons") == [
+        datetime.datetime(2026, 10, 1, 13, 0, tzinfo=UTC)]

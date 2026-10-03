@@ -34,6 +34,21 @@ def zone_of(*names: str | None) -> datetime.tzinfo | None:
     return dt_util.get_time_zone(name) if name else None
 
 
+def row_zone(row: Mapping[str, Any], end: str = "origin") -> datetime.tzinfo:
+    """The zone a departure row's clock is read in at one of its ends,
+    "origin" or "dest": the agency's at both, else the origin stop's, with
+    the destination stop's at its end when the agency gives none; Home
+    Assistant's when nothing is said."""
+    # a zone Home Assistant does not know, misspelt or missing from the
+    # host's zone database, reads as None: Home Assistant's own then, not
+    # a clock with no zone, and the origin's at the destination
+    origin = (zone_of(row.get("agency_timezone"), row.get("origin_stop_timezone"))
+              or dt_util.DEFAULT_TIME_ZONE)
+    if end == "origin" or row.get("agency_timezone"):
+        return origin
+    return zone_of(row.get("dest_stop_timezone")) or origin
+
+
 def agency_zone(schedule: Schedule, route: str | None = None) -> datetime.tzinfo | None:
     """The time zone the feed writes its clocks in: the route's agency's,
     else the first agency that names one; None when the feed names none or
