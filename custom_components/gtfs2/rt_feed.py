@@ -1,4 +1,5 @@
-"""Reading a realtime feed, for every reader in gtfs_rt_helper.
+"""Reading a realtime feed, for every reader of one: the trip updates of
+gtfs_rt_helper and local_stops, the vehicles, the alerts.
 
 One download per feed and per publication, shared by every sensor that
 reads it (get_gtfs_feed_entities, and _read_feed for one of a

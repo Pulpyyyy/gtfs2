@@ -41,9 +41,10 @@ def build_scratch_database(gtfs_dir: str, file: str, scratch_file: str, clean_fe
                            only_routes: Iterable[str] | None = None) -> bool:
     """Unpack a zip into the scratch database, synchronously.
 
-    The counterpart of extract_from_zip, minus the fork: the caller is already
-    off the event loop, and an import has to be finished before its routes can
-    be copied out. Nothing here touches the real database.
+    The counterpart of the legacy extract (extract_from_zip, retired), minus
+    the fork: the caller is already off the event loop, and an import has
+    to be finished before its routes can be copied out. Nothing here
+    touches the real database.
 
     only_routes cuts the feed down to those routes before pygtfs sees it.
     pygtfs pays per row, so this is what makes a national feed usable:
@@ -162,8 +163,9 @@ def _holds_a_feed(zip_path: str) -> str | None:
 def ensure_source_zip(hass: HomeAssistant, path: str, data: dict[str, Any]) -> str | None:
     """Make sure the source zip is in place, without starting any import.
 
-    The front half of get_gtfs: same checks, same download, same error codes,
-    minus the part that unpacks the feed into a database. The config flow
+    The front half of what get_gtfs did before it only opened a built
+    database: the same checks, download and error codes, minus the part
+    that unpacked the feed into a database. The config flow
     calls this when a source is submitted, so the lines can be chosen from
     the zip alone and the import can wait until it knows which routes to
     keep - on a national feed, the difference between a flow that continues
