@@ -217,9 +217,7 @@ def _line_of(conn: Connection, route_id: str, direction: str | int | None = None
     rows = _line_rows(conn, _STOP_ROWS, {
         "route_id": route_id, "direction": _direction_param(direction)})
     heading = _line_rows(conn, _HEADING_ROWS, {"route_id": route_id})
-    kept, station_names, place = _ride_of(rows, heading)
-    trips, _info = _trips_of(rows)
-    return kept, station_names, place, trips
+    return _ride_of(rows, heading)
 
 
 def _loop_termini(trips: _Trips, place: Mapping[str, str]) -> set[str | None]:

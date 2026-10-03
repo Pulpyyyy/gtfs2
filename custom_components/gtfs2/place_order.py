@@ -245,12 +245,13 @@ def _heading_of(order: Sequence[str], place: Mapping[str, str], heading: Iterabl
 
 
 def _ride_of(rows: Iterable[Sequence[Any]], heading: Iterable[Sequence[Any]] = (),
-             ) -> tuple[list[list[Any]], dict[str, str | None], dict[str, str]]:
+             ) -> tuple[list[list[Any]], dict[str, str | None], dict[str, str], _Trips]:
     """One entry per place, in riding order, out of _STOP_ROWS shaped rows.
 
     Returns the kept [stop_id, name, sequence], stop_id being the record that
     names the place, the station names by stop_id, which the labels read,
-    and the {stop_id: place} the entries were drawn from. heading, the
+    the {stop_id: place} the entries were drawn from, and the trips read
+    out of the rows. heading, the
     _HEADING_ROWS of the line, says which end comes first.
     """
     trips, info = _trips_of(rows)
@@ -264,4 +265,4 @@ def _ride_of(rows: Iterable[Sequence[Any]], heading: Iterable[Sequence[Any]] = (
             first_seq.setdefault(stop_id, seq)
     kept = [[p, info[p][0], first_seq[p]] for p in order]
     station_names = {stop_id: values[4] for stop_id, values in info.items()}
-    return kept, station_names, place
+    return kept, station_names, place, trips
