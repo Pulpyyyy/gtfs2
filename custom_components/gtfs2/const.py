@@ -90,8 +90,6 @@ ATTR_RT_CANCELLED = "Cancelled Trips RT"
 ATTR_RT_SKIPPED = "Skipped Trips RT"
 ATTR_UNIT_OF_MEASUREMENT = "unit_of_measurement"
 ATTR_DEVICE_CLASS = "device_class"
-ATTR_LATITUDE = "latitude"
-ATTR_LONGITUDE = "longitude"
 ATTR_RT_UPDATED_AT = "gtfs_rt_updated_at"
 
 
