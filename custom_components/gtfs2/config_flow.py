@@ -250,7 +250,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         check_data = await self._check_data(self._user_inputs)
         if check_data :
             # "extracting" is not a user error: the datasource is being unpacked,
-            # there is nothing to correct, so it keeps its own abort message.
+            # there is nothing to correct, so the progress screen waits for it.
             if check_data == "extracting":
                 return await self.async_step_extracting()
             errors["base"] = check_data
@@ -364,7 +364,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             if check_data :
                 # nothing to re-type on this step: the problem is the datasource picked
                 # earlier, so send the user back there with the message instead of
-                # closing the flow. "extracting" keeps its own abort message.
+                # closing the flow. "extracting" goes to the progress screen.
                 if check_data == "extracting":
                     # the step is reached on its way in too, with no answer
                     # to keep: there is only something to merge when the
