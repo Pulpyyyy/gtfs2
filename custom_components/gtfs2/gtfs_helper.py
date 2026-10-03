@@ -99,37 +99,11 @@ def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_
     if schedule is None or isinstance(schedule, str):
         _LOGGER.warning("No usable schedule to look up the next service date (%s)", schedule or "empty")
         return None
-    line_join = line_where = ""
-    params: dict[str, Any]
-    if route_type == "2":
-        # trains match on the exact stop_name, like get_next_departure does
-        origin_in, params = station_names_in("origin", origin_names or [origin_id])
-        dest_in, dest_params = station_names_in("dest", destination_names or [dest_id])
-        params.update(dest_params)
-        origin_where = ("o.stop_id in (select stop_id from stops "
-                        f"where stop_name in {origin_in})")
-        dest_where = ("x.stop_id in (select stop_id from stops "
-                      f"where stop_name in {dest_in})")
-        # held to rail, as the departures are: two stations of one name can
-        # also be served by a bus the train sensor never lists
-        line_join = "inner join routes r on r.route_id = t.route_id"
-        line_where = f"and r.route_type in ({RAIL_ROUTE_TYPES_SQL})"
-        if line:
-            # without it, a day the line rests but another one serves the
-            # same stations (P8 beside K8+) read as a day it runs
-            line_where += " and r.route_short_name = :line"
-            params["line"] = line
-    else:
-        # the whole place at each end, as the departures are matched
-        origin_where = "o.stop_id in " + _place_group("origin")
-        dest_where = "x.stop_id in " + _place_group("dest")
-        params = {"origin": origin_id, "dest": dest_id}
-        if route:
-            line_where = "and t.route_id = :route"
-            params["route"] = route
-        if str(direction) in ("0", "1"):
-            line_where += " and (t.direction_id = :direction or t.direction_id is null)"
-            params["direction"] = int(str(direction))
+    # the trips the departures are read among (_departure_candidates),
+    # read once for a schedule and a pair whichever of the two asks first
+    candidates_sql, params, _origin = _departure_candidates(
+        route_type, origin_id, dest_id, direction, route, line,
+        origin_names, destination_names)
 
     sql = f"""
         with recursive dates(d) as (
@@ -139,18 +113,7 @@ def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_
             where d < date(:from_date, :horizon)
         ),
         serving as (
-            select distinct t.service_id
-            from trips t
-            inner join stop_times o on o.trip_id = t.trip_id
-            inner join stop_times x on x.trip_id = t.trip_id
-            {line_join}
-            where {origin_where} and {dest_where}
-              and o.stop_sequence < x.stop_sequence
-              and {_boards("o")} and {_alights("x")}
-              -- an untimed call is no departure, as the departures read it
-              and o.arrival_time is not null and o.departure_time is not null
-              and x.arrival_time is not null and x.departure_time is not null
-              {line_where}
+            select distinct service_id from ({_CANDIDATES_FED})
         )
         select min(dates.d) from dates
         where exists (
@@ -166,9 +129,10 @@ def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_
     """  # noqa: S608
 
     try:
+        candidates = _candidate_pairs(schedule, candidates_sql, params)
         with schedule.engine.connect() as conn:
             row = conn.execute(text(sql), {
-                **params,
+                "candidates": candidates,
                 "from_date": from_date,
                 "horizon": f"+{int(horizon)} days",
             }).fetchone()
