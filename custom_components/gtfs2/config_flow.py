@@ -546,10 +546,9 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
             if self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None):
                 # a copy: the entry's data is only needed for the check,
                 # and written into user_input it ended up in the options
-                _data = dict(user_input)
-                _data["file"] = self.config_entry.data["file"]
-                _data["device_tracker_id"] = self.config_entry.data["device_tracker_id"]
-                _data["radius"] = user_input["radius"]
+                _data = {**user_input,
+                         "file": self.config_entry.data["file"],
+                         "device_tracker_id": self.config_entry.data["device_tracker_id"]}
                 stop_limit = await _check_stop_list(self, _data)
                 if stop_limit :
                     return self.async_abort(reason=stop_limit)
