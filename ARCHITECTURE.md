@@ -1101,13 +1101,18 @@ query string, in headers, in the dicts debug lines print, and in the
 exceptions `requests` raises, which quote the full url (`key_mask.py`,
 bb4f8f6).
 
+- A key goes in the url (`with_query_key`), in a header under its name,
+  or as an HTTP Basic login the integration encodes, `Authorization:
+  Basic base64("key:")` (`key_headers`, `rt_source.py`). The static zip
+  and the realtime feeds ask with the same two functions.
 - One logging filter sits on the logger of every module of the
-  integration and writes `*****` wherever a known key shows, tracebacks
-  included. Keys are known from the entries at setup and from the flow and
-  service calls on arrival. Guarding each log line one by one would miss
-  the next one written.
-- The flow's key screens show the same mask for a stored key: the key
-  never goes back to the browser, and a mask sent back keeps the key.
+  integration and writes `*****` wherever a known key shows, raw,
+  percent-encoded or base64-encoded, tracebacks included. Keys are known
+  from the entries at setup and from the flow and service calls on
+  arrival. Guarding each log line one by one would miss the next one
+  written.
+- The flow's key screens give a stored key back in a password field:
+  hidden on screen, shown on demand by the field's own eye.
 - A url that carries a key is masked before it is stored or shown: the zip
   sidecar and the update entity's `source_url` and `configured_url`.
 - A key sent in a header goes to the host it was given for. `requests`
