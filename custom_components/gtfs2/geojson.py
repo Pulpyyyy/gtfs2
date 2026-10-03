@@ -3,7 +3,8 @@
 Their names, so that the writer, the sensor attribute and the removal on
 entry deletion agree (route_geojson_name, vehicle_positions_name); the
 route file, the line drawn from its fullest trip with the shape read out
-of the zip and the boarding rules per stop (write_route_file); and what
+of the zip (trip_shape_id, read_shape) and the boarding rules per stop
+(write_route_file); and what
 every file here shares: an id or an entry's name as a file name part
 (safe_file_part, entry_file_part), a write no reader catches half done
 (write_json_file) and a write skipped when nothing changed
@@ -13,7 +14,9 @@ positions file itself is written by vehicles.get_rt_vehicle_positions.
 """
 from __future__ import annotations
 
+import csv
 import hashlib
+import io
 import json
 import logging
 import os
@@ -21,6 +24,7 @@ import re
 import threading
 import time
 import unicodedata
+import zipfile
 from collections import Counter
 from collections.abc import Collection, Container, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
@@ -30,11 +34,11 @@ from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH_GEOJSON
 from .gtfs_db import feed_zip
+from .gtfs_filter import _member, table_rows
 from .clocks import gtfs_seconds
 from .gtfs_helper import shown_ends
 from .places import _line_ways
 from .stop_rules import _call_type
-from .gtfs_shape import read_shape, trip_shape_id
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -54,8 +58,6 @@ def _fmt_gtfs_time(value: object) -> str | None:
     if seconds is None:
         return str(value) if value is not None else None
     return f"{seconds // 3600:02d}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
-
-
 
 
 def map_file(hass: HomeAssistant, name: str) -> str:
@@ -226,6 +228,95 @@ def get_representative_trip(schedule: Schedule | str | None, route_id: str | Non
     return trip_id
 
 
+# shapes.txt is never imported: pygtfs pays per row and the file is the bulk
+# of a regional feed (26 MB of the Zou zip, 244 MB of the Dutch national one)
+# for points no departure query ever reads. What a map needs is one polyline
+# per line and direction, a few hundred points, and the zip the integration
+# keeps beside the database still holds every one of them. So the shape of
+# the trip that stands for the line is read from the zip when the route file
+# is written, in one streaming pass, and nothing of it reaches the database.
+# Measured on the TAO feed: a shape of tram A is 150 points, 7 kB of csv, and
+# the pass over its 25,000-row shapes.txt takes well under a second.
+def trip_shape_id(zip_path: str | None, trip_id: str | None) -> str | None:
+    """The shape_id the zip's own trips.txt gives a trip.
+
+    The number and the points have to come from one edition. A shape_id is
+    the publisher's to reuse: IDFM renumbers its shapes at every export, and
+    shp_1_162 was a metro 6 shape on 2026-09-19 and a metro 9 one on
+    2026-09-27. The database is built from the zip, but not at the same
+    moment: a refresh adopts the zip first and builds after, and a shape_id
+    read from the database then points into the wrong edition.
+
+    None when the zip has no trips.txt, or no row for that trip (an edition
+    whose trip ids moved on), or names no shape for it.
+    """
+    if not trip_id or not zip_path:
+        return None
+    trip_id = str(trip_id)
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            for row in table_rows(zin, "trips.txt"):
+                if row.get("trip_id") == trip_id:
+                    # trip_id is the table's key: the first row is the one
+                    return (row.get("shape_id") or "").strip() or None
+    except (OSError, zipfile.BadZipFile, UnicodeDecodeError, csv.Error) as ex:
+        _LOGGER.warning("Could not read the shape of trip %s from %s: %s", trip_id, zip_path, ex)
+    return None
+
+
+def read_shape(zip_path: str | None, shape_id: str | None) -> list[list[float]] | None:
+    """The points of one shape, as [lon, lat] pairs in shape_pt_sequence
+    order, geojson's way round.
+
+    None when there is nothing to draw from: no zip, no shapes.txt in it
+    (the historic import strips it in place, the SNCF never ships one), a
+    shapes.txt without the required columns, or no row of that shape. A
+    caller draws the stops joined up in that case, as it did before.
+    """
+    if not shape_id or not zip_path:
+        return None
+    shape_id = str(shape_id)
+    points = []
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            # wherever the feed nested it, as the import finds it
+            member = _member(zin, "shapes.txt")
+            if member is None:
+                return None
+            with zin.open(member) as raw:
+                # utf-8-sig: some editors write the header behind a BOM
+                reader = csv.reader(io.TextIOWrapper(raw, encoding="utf-8-sig", newline=""))
+                header = next(reader, None)
+                if header is None:
+                    return None
+                columns = {name.strip(): index for index, name in enumerate(header)}
+                try:
+                    c_id = columns["shape_id"]
+                    c_lat = columns["shape_pt_lat"]
+                    c_lon = columns["shape_pt_lon"]
+                    c_seq = columns["shape_pt_sequence"]
+                except KeyError:
+                    _LOGGER.warning("shapes.txt of %s lacks a required column: %s", zip_path, header)
+                    return None
+                width = max(c_id, c_lat, c_lon, c_seq) + 1
+                for row in reader:
+                    if len(row) < width or row[c_id] != shape_id:
+                        continue
+                    try:
+                        points.append((int(row[c_seq]), float(row[c_lon]), float(row[c_lat])))
+                    except ValueError:
+                        # one bad row does not lose the shape, the others draw it
+                        continue
+    except (OSError, zipfile.BadZipFile, UnicodeDecodeError, csv.Error) as ex:
+        _LOGGER.warning("Could not read shape %s from %s: %s", shape_id, zip_path, ex)
+        return None
+    if not points:
+        return None
+    # the feed may list the points in any order: the sequence is the order
+    points.sort(key=lambda point: point[0])
+    return [[lon, lat] for _, lon, lat in points]
+
+
 def write_route_file(hass: HomeAssistant, data: Mapping[str, Any], route_id: str,
                      direction: str | int | None, trip_id: str | None = None) -> None:
     """Write the line's ordered stops to www/gtfs2/<route>_<direction>_route.json.
@@ -238,7 +329,7 @@ def write_route_file(hass: HomeAssistant, data: Mapping[str, Any], route_id: str
     LineString, in the trip's travel direction, so a map card draws the
     street or the track rather than a straight line between stops: on the
     tram A of Orleans the stops sit within 26 m of it. The polyline is read
-    from the zip, never from the database (see gtfs_shape). Without it, a
+    from the zip, never from the database (see read_shape). Without it, a
     card joins the points in stop_sequence order, as before.
 
     The line drawn is the whole line: its fullest trip in this direction, not

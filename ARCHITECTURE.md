@@ -402,8 +402,7 @@ source_refresh.py     automatic refresh of the static feeds, per source and mode
 rt_window.py          when the realtime feeds are worth reading, off the timetable
 gtfs_filter.py        cut a zip down to chosen routes before any import
 direction_repair.py   repair trip direction_id after import
-gtfs_shape.py         read one shape out of the zip (shapes.txt is never imported)
-geojson.py            the files written under www/gtfs2 for a map card: names, route file, writing
+geojson.py            the files written under www/gtfs2 for a map card: names, route file and its shape out of the zip, writing
 leg.py                the leg file: the ride of the next departure, stop by stop
 timetable.py          the timetable file: every departure over three service days
 places.py             the places of a line the flow offers: origin, way, destination
@@ -765,8 +764,8 @@ db_build.py    build, swap
 <file>.sqlite
 ```
 
-The map files take a third way: `gtfs_shape.py` reads shapes straight from
-the kept zip.
+The map files take a third way: `geojson.py` reads shapes straight from
+the kept zip (`read_shape`).
 
 ### Refresh modes: when a source is looked at
 

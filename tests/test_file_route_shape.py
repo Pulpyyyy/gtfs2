@@ -2,7 +2,7 @@
 the route file carries when the zip beside the database still holds
 shapes.txt.
 
-shapes.txt is never imported (see gtfs_shape), so the route file reads the
+shapes.txt is never imported (see geojson.read_shape), so the route file reads the
 shape of the trip it draws straight out of the zip, and a map card draws
 the street or the track between the stops instead of a straight line. The
 cases are the feeds' own: TAO ships a shapes.txt, its trips all name a
@@ -30,7 +30,6 @@ import ha_stub
 # the coordinator and the platforms, and with them the rest of Home Assistant.
 gtfs_helper = ha_stub.load("gtfs_helper")
 geojson = ha_stub.load("geojson")
-gtfs_shape = ha_stub.load("gtfs_shape")
 
 ROUTE = "ORLEANS:Line:A"
 SHAPE = "VER2-LAM2-BUS2-HOP1"
@@ -134,23 +133,23 @@ def route_file(tmp_path):
 
 def test_shape_points_come_in_sequence_order_as_lon_lat(tmp_path):
     write_zip(tmp_path / "feed.zip")
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_shape_without_dist_traveled_reads_the_same(tmp_path):
     write_zip(tmp_path / "feed.zip", columns=("shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence"))
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_shape_columns_may_come_in_any_order(tmp_path):
     rows = [(seq, lon, sid, lat) for sid, lat, lon, seq, _ in SHAPE_ROWS]
     write_zip(tmp_path / "feed.zip", shapes=rows, columns=("shape_pt_sequence", "shape_pt_lon", "shape_id", "shape_pt_lat"))
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_a_bad_row_does_not_lose_the_shape(tmp_path):
     write_zip(tmp_path / "feed.zip", shapes=SHAPE_ROWS + [(SHAPE, "not-a-number", "1.0", "9", ""), (SHAPE, "47.0")])
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_a_feed_nested_in_a_folder_has_its_shape(tmp_path):
@@ -161,32 +160,32 @@ def test_a_feed_nested_in_a_folder_has_its_shape(tmp_path):
             zipfile.ZipFile(tmp_path / "feed.zip", "w") as zout:
         for name in zin.namelist():
             zout.writestr("gtfs/" + name, zin.read(name))
-    assert gtfs_shape.trip_shape_id(tmp_path / "feed.zip", "T1") == SHAPE
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert geojson.trip_shape_id(tmp_path / "feed.zip", "T1") == SHAPE
+    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_unknown_shape_reads_none(tmp_path):
     write_zip(tmp_path / "feed.zip")
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", "NOPE") is None
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", None) is None
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", "") is None
+    assert geojson.read_shape(tmp_path / "feed.zip", "NOPE") is None
+    assert geojson.read_shape(tmp_path / "feed.zip", None) is None
+    assert geojson.read_shape(tmp_path / "feed.zip", "") is None
 
 
 def test_zip_without_shapes_reads_none(tmp_path):
     # the SNCF ships none, and the historic import strips it out in place
     write_zip(tmp_path / "feed.zip", shapes=None)
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", SHAPE) is None
+    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) is None
 
 
 def test_missing_zip_reads_none(tmp_path):
-    assert gtfs_shape.read_shape(tmp_path / "gone.zip", SHAPE) is None
+    assert geojson.read_shape(tmp_path / "gone.zip", SHAPE) is None
     (tmp_path / "junk.zip").write_bytes(b"not a zip")
-    assert gtfs_shape.read_shape(tmp_path / "junk.zip", SHAPE) is None
+    assert geojson.read_shape(tmp_path / "junk.zip", SHAPE) is None
 
 
 def test_shapes_without_the_required_columns_read_none(tmp_path):
     write_zip(tmp_path / "feed.zip", columns=("shape_id", "shape_pt_lat"))
-    assert gtfs_shape.read_shape(tmp_path / "feed.zip", SHAPE) is None
+    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) is None
 
 
 # --- the route file -----------------------------------------------------------
@@ -306,19 +305,19 @@ def test_a_trip_the_zip_does_not_carry_draws_the_stops_alone(tmp_path, schedule)
 
 def test_trip_shape_id_reads_the_zip(tmp_path):
     write_zip(tmp_path / "feed.zip", trips={"T0": "OTHER", "T1": SHAPE, "T3": None})
-    assert gtfs_shape.trip_shape_id(tmp_path / "feed.zip", "T1") == SHAPE
-    assert gtfs_shape.trip_shape_id(tmp_path / "feed.zip", "T3") is None
-    assert gtfs_shape.trip_shape_id(tmp_path / "feed.zip", "NOPE") is None
-    assert gtfs_shape.trip_shape_id(tmp_path / "feed.zip", None) is None
+    assert geojson.trip_shape_id(tmp_path / "feed.zip", "T1") == SHAPE
+    assert geojson.trip_shape_id(tmp_path / "feed.zip", "T3") is None
+    assert geojson.trip_shape_id(tmp_path / "feed.zip", "NOPE") is None
+    assert geojson.trip_shape_id(tmp_path / "feed.zip", None) is None
 
 
 def test_trip_shape_id_without_the_table_or_the_column(tmp_path):
     with zipfile.ZipFile(tmp_path / "bare.zip", "w") as zout:
         zout.writestr("routes.txt", "route_id\nR\n")
-    assert gtfs_shape.trip_shape_id(tmp_path / "bare.zip", "T1") is None
+    assert geojson.trip_shape_id(tmp_path / "bare.zip", "T1") is None
     with zipfile.ZipFile(tmp_path / "noshape.zip", "w") as zout:
         zout.writestr("trips.txt", "route_id,service_id,trip_id\nR,S,T1\n")
-    assert gtfs_shape.trip_shape_id(tmp_path / "noshape.zip", "T1") is None
-    assert gtfs_shape.trip_shape_id(tmp_path / "gone.zip", "T1") is None
+    assert geojson.trip_shape_id(tmp_path / "noshape.zip", "T1") is None
+    assert geojson.trip_shape_id(tmp_path / "gone.zip", "T1") is None
     (tmp_path / "junk.zip").write_bytes(b"not a zip")
-    assert gtfs_shape.trip_shape_id(tmp_path / "junk.zip", "T1") is None
+    assert geojson.trip_shape_id(tmp_path / "junk.zip", "T1") is None
