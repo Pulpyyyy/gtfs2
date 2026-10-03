@@ -1,9 +1,9 @@
 """A local stop's departure names its line and where it goes, whatever
 the feed fills.
 
-TriMet leaves every trip_headsign empty and puts the destination on each
-call, as stop_headsign; its MAX lines have no route_short_name, only a
-long name. Each departure the local stops listed read route None and
+A feed may leave every trip_headsign empty and put the destination on
+each call, as stop_headsign, and give some lines no route_short_name,
+only a long name. Each departure the local stops listed read route None and
 headsign None, and a card showed neither the line nor where it goes.
 """
 from __future__ import annotations

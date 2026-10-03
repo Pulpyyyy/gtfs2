@@ -1,8 +1,8 @@
 """The journey sensor's lists name the line and where each departure goes,
 whatever the feed fills.
 
-TriMet leaves every trip_headsign empty and puts the destination on each
-call (stop_headsign); its MAX lines have no route_short_name. The sensor
+A feed may leave every trip_headsign empty and put the destination on
+each call (stop_headsign), and give some lines no route_short_name. The sensor
 listed "(None)" as every departure's headsign and "(None/MAX Blue Line)"
 as its line (vingerha/gtfs2#208).
 """

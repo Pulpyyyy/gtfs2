@@ -496,9 +496,9 @@ def _next_departure_lists(upcoming: list[tuple[datetime.datetime, dict[str, Any]
         # dest_arrival_dt is already the correct instant - no rollover guessing needed
         arrival = _row_instant(value["dest_arrival_dt"], timezone_dest)
         at = dt_util.as_utc(departure).isoformat()
-        # a line named by its long name only (TriMet's MAX) read
-        # "None/MAX Blue Line"; a trip with no headsign, its destination
-        # given on each call (TriMet), read "None"
+        # a line named by its long name only read "None/<long name>";
+        # a trip with no headsign, its destination given on each call,
+        # read "None"
         line = "/".join(name for name in (value["route_short_name"], value["route_long_name"]) if name)
         headsign = value["trip_headsign"] or value.get("origin_stop_headsign")
         lists["next_departures"].append(at)

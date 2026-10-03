@@ -238,8 +238,8 @@ def _build_local_stop_element(self: GTFSLocalStopUpdateCoordinator, row: Mapping
         "date": scheduled.date().isoformat(),
         "stop_name": row["stop_name"],
         "stop_id": row["stop_id"],
-        # a line named by its long name only (TriMet's MAX), a destination
-        # given on each call rather than on the trip (TriMet): the card
+        # a line named by its long name only, a destination given on
+        # each call rather than on the trip: the card
         # showed neither the line nor where it goes
         "route": row["route_short_name"] or row["route_long_name"],
         "route_long": row["route_long_name"],
