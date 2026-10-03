@@ -80,8 +80,9 @@ def test_the_line_and_way_followed_soonest_first_each_with_its_delay():
     assert trips(got) == ["T1", "T2"]
     assert got[const.ATTR_NEXT_RT_DELAYS] == [120, 60]
     assert [d.timestamp() for d in got[const.ATTR_NEXT_RT]] == [at(5), at(12)]
-    # the first departure, as an instant
-    assert got[const.ATTR_DUE_IN].timestamp() == at(5)
+    # the first departure, as an instant (the "Due in" key that said it
+    # too was read by nothing and went)
+    assert got[const.ATTR_NEXT_RT][0].utcoffset() is not None
 
 
 def test_a_line_the_feed_qualifies_is_still_the_line():

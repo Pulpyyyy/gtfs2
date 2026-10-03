@@ -94,16 +94,6 @@
     ]
   },
   'next_departure_realtime_attr': {
-    'Due in': datetime.datetime(2026,
-    9,
-    3,
-    12,
-    17,
-    tzinfo=datetime.timezone.utc),
-    'Stop ID': 'origin_stop_id',
-    'Route': 'route_id',
-    'Trip': 'trip_id_1',
-    'Direction ID': '0',
     'Next Services RT': [
       datetime.datetime(2026,
       9,
@@ -119,7 +109,6 @@
       22,
       tzinfo=datetime.timezone.utc)
     ],
-    'Next Service': '13:14',
     'Next Services RT Delays': [
       180,
       22
@@ -127,9 +116,6 @@
     'Next Services RT Trips': ['trip_id_1', 'trip_id_3'],
     'Cancelled Trips RT': [],
     'Skipped Trips RT': [],
-    'Due at': '12:17',
-    'Delay': 180,
-    'device_class': 'timestamp',
     'gtfs_rt_updated_at': datetime.datetime(2026,
     9,
     3,

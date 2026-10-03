@@ -12,21 +12,9 @@ from sqlalchemy.sql import text as sql_text
 _LOGGER = logging.getLogger(__name__)
 
 from .const import (
-
-    ATTR_STOP_ID,
-    ATTR_ROUTE,
-    ATTR_TRIP,
-    ATTR_DIRECTION_ID,
-    ATTR_DUE_IN,
-    ATTR_DUE_AT,
-    ATTR_DELAY,
-    ATTR_NEXT_UP,
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
     ATTR_NEXT_RT_TRIPS,
-    ATTR_DEVICE_CLASS,
-
-    TIME_STR_FORMAT,
 )
 from .alerts import journey_alerts
 from .rt_feed import (
@@ -66,37 +54,12 @@ def get_next_services(self: GTFSUpdateCoordinator) -> dict[str, Any]:
 
     if next_services:
         _LOGGER.debug("Next services: %s", next_services)
-    
-    due_in = (
-        dt_util.as_utc(next_services[0])
-        if len(next_services) > 0
-        else "-"
-    )
-    
+
     attrs = {
-        ATTR_DUE_IN: due_in,
-        ATTR_STOP_ID: self._stop_id,
-        ATTR_ROUTE: self._route_id,
-        ATTR_TRIP: self._trip_id,
-        ATTR_DIRECTION_ID: self._direction,
         ATTR_NEXT_RT: next_services,
         ATTR_NEXT_RT_DELAYS: next_delays,
         ATTR_NEXT_RT_TRIPS: next_trips,
     }
-    
-    if len(next_services) > 0:
-        attrs[ATTR_DUE_AT] = next_services[0].strftime(TIME_STR_FORMAT)
-
-    if len(next_services) > 1:
-        attrs[ATTR_NEXT_UP] = next_services[1].strftime(TIME_STR_FORMAT)
-    if len(next_delays) > 0:
-        attrs[ATTR_DELAY] = next_delays[0]
-    attrs[ATTR_DEVICE_CLASS] = (
-        "timestamp"
-        if len(next_services) > 0
-        else ""
-    )
-    
     _LOGGER.debug("Next services attributes: %s", attrs)
     return attrs
 

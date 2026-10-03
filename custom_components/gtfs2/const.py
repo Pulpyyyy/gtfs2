@@ -72,14 +72,6 @@ ATTR_TIMEZONE_ORIGIN = "origin_station_time_zone"
 ATTR_TIMEZONE_DESTINATION = "destination_station_time_zone"
 
 #gtfs_rt
-ATTR_STOP_ID = "Stop ID"
-ATTR_ROUTE = "Route"
-ATTR_TRIP = "Trip"
-ATTR_DIRECTION_ID = "Direction ID"
-ATTR_DUE_IN = "Due in"
-ATTR_DUE_AT = "Due at"
-ATTR_DELAY = "Delay"
-ATTR_NEXT_UP = "Next Service"
 ATTR_NEXT_RT = "Next Services RT"
 ATTR_NEXT_RT_DELAYS = "Next Services RT Delays"
 # the trip behind each realtime departure, in the same order as the two
@@ -88,8 +80,6 @@ ATTR_NEXT_RT_DELAYS = "Next Services RT Delays"
 ATTR_NEXT_RT_TRIPS = "Next Services RT Trips"
 ATTR_RT_CANCELLED = "Cancelled Trips RT"
 ATTR_RT_SKIPPED = "Skipped Trips RT"
-ATTR_UNIT_OF_MEASUREMENT = "unit_of_measurement"
-ATTR_DEVICE_CLASS = "device_class"
 ATTR_RT_UPDATED_AT = "gtfs_rt_updated_at"
 
 
