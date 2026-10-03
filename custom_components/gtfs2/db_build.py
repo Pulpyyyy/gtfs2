@@ -38,7 +38,7 @@ from typing import Any
 
 from .db_intern import intern_gtfs_datasource
 from .db_prune import prune_gtfs_datasource
-from .gtfs_db import real_path, remove_files, scratch_path, staging_name
+from .gtfs_db import real_path, remove_database, remove_files, scratch_path, staging_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -317,7 +317,7 @@ def import_routes(gtfs_dir: str, filename: str, route_ids: Iterable[str],
             # nothing came into the file this import created: left with its
             # schema only, it read as a datasource that follows no line,
             # which the flows then sent down the legacy extract
-            remove_files(real, real + "-journal")
+            remove_database(real)
         return added
     finally:
         discard_scratch(gtfs_dir, filename)
@@ -350,8 +350,7 @@ def discard_scratch(gtfs_dir: str, filename: str) -> None:
     Called when an import ends, whether it worked or not: the real database is
     untouched either way, which is the whole point of importing elsewhere.
     """
-    base = scratch_path(gtfs_dir, filename)
-    remove_files(base, base + "-journal", base + "-wal", base + "-shm")
+    remove_database(scratch_path(gtfs_dir, filename))
 
 
 def on_a_copy[T](gtfs_dir: str, filename: str, work: Callable[..., T], *args: object,
@@ -374,9 +373,7 @@ def on_a_copy[T](gtfs_dir: str, filename: str, work: Callable[..., T], *args: ob
     real = real_path(gtfs_dir, filename)
     staging = staging_name(filename)
     copy = real_path(gtfs_dir, staging)
-    for leftover in (copy, copy + "-journal"):
-        if os.path.exists(leftover):
-            os.remove(leftover)
+    remove_database(copy)
     try:
         src = sqlite3.connect(real, timeout=60)
         dst = sqlite3.connect(copy)
@@ -394,7 +391,7 @@ def on_a_copy[T](gtfs_dir: str, filename: str, work: Callable[..., T], *args: ob
         _LOGGER.exception("Could not rewrite %s on a copy: %s", filename, ex)
         return None
     finally:
-        remove_files(copy, copy + "-journal")
+        remove_database(copy)
     # the stats name the file they were made on: the staging copy
     for stats in (result, *(result.values() if isinstance(result, dict) else ())):
         if isinstance(stats, dict) and stats.get("file") == staging:

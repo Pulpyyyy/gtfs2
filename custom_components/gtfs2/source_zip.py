@@ -24,7 +24,7 @@ from .const import CONF_INNER_ZIP
 from .direction_repair import repair_trip_directions
 from .freshness import adopt_zip, download_feed, source_request
 from .db_build import import_routes, optimise_datasource, swap_in
-from .gtfs_db import feed_zip, real_path, remove_files, routes_in, staging_name
+from .gtfs_db import feed_zip, real_path, remove_database, remove_files, routes_in, staging_name
 from .zip_peek import extract_member, inner_zips, inner_zips_in_file
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
@@ -267,7 +267,7 @@ def _refresh_whole_feed(gtfs_dir: str, filename: str, zip_name: str, zip_path: s
     finally:
         # swapped in, the file is gone already; refused or failed, it goes
         # here, so the next refresh starts from nothing it left behind
-        remove_files(new_real, new_real + "-journal")
+        remove_database(new_real)
     _LOGGER.info("Refreshed datasource %s from its source, whole: %s lines",
                  filename, len(loaded))
     # the same answer as the route by route refresh, for refresh_source
@@ -344,7 +344,7 @@ def _refresh_route_by_route(gtfs_dir: str, filename: str, zip_name: str, routes:
         if not swap_in(new_real, real):
             return False
     finally:
-        remove_files(new_real, new_real + "-journal")
+        remove_database(new_real)
     _LOGGER.info("Refreshed datasource %s from its source: %s stop_times "
                  "per route", filename, added)
     return added

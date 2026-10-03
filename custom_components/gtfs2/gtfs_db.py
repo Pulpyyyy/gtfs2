@@ -85,6 +85,11 @@ def remove_files(*paths: str) -> None:
                 _LOGGER.warning("Could not remove %s: %s", path, ex)
 
 
+def remove_database(path: str) -> None:
+    """Remove a database file and whatever SQLite left beside it."""
+    remove_files(path, path + "-journal", path + "-wal", path + "-shm")
+
+
 def routes_in(db_file: str) -> set[str] | None:
     """The route_ids a database actually carries trips for.
 
