@@ -3,7 +3,7 @@
 get_rt_alerts in gtfs_rt_helper reads the alert feed; everything here says
 what to make of one alert for the entry at hand: what kind of message it is
 (_alert_kind), whether it concerns this sensor's route, trip or stops
-(_alert_scope, with the stop's siblings and the whole ride from _stop_aliases
+(_scope_of, with the stop's siblings and the whole ride from _stop_aliases
 and _journey_stops), which of the texts to show and in which language
 (_alert_text, _alert_language), and how many to keep and in what order
 (_rank_alerts). Nothing here fetches or parses a feed.
@@ -546,12 +546,13 @@ def _read_stop_entity(fields: _Fields, hits: dict[str, Any], origin_ids: Collect
         hits["stops"].append(e_stop)
 
 
-def _alert_scope(alert: gtfs_realtime_pb2.Alert, origin_ids: Collection[str],
-                 destination_ids: Collection[str], route_id: str, trip_id: str | None = None,
-                 journey_ids: Collection[str] | None = None, trip_ids: Iterable[str] = (),
-                 route_facts: tuple[str | None, ...] = (None, None),
-                 direction: str | int | None = None) -> dict[str, Any]:
-    """Which end of this journey an alert names, over ALL its informed entities.
+def _scope_of(entities: list[_Fields], origin_ids: Collection[str],
+              destination_ids: Collection[str], route_id: str, trip_id: str | None = None,
+              journey_ids: Collection[str] | None = None, trip_ids: Iterable[str] = (),
+              route_facts: tuple[str | None, ...] = (None, None),
+              direction: str | int | None = None) -> dict[str, Any]:
+    """Which end of this journey an alert names, over ALL its informed entities:
+    their fields, read once for the feed (_prepared).
 
     The loop used to reassign stop_id and route_id on every turn and compare
     only once it had ended, so an alert naming ten stops was matched on the
@@ -580,18 +581,6 @@ def _alert_scope(alert: gtfs_realtime_pb2.Alert, origin_ids: Collection[str],
     the trip updates are (_same_route): a feed that qualifies its ids
     named the line and was read as another one.
     """
-    return _scope_of([_entity_fields(x) for x in alert.informed_entity],
-                     origin_ids, destination_ids, route_id, trip_id,
-                     journey_ids, trip_ids, route_facts, direction)
-
-
-def _scope_of(entities: list[_Fields], origin_ids: Collection[str],
-              destination_ids: Collection[str], route_id: str, trip_id: str | None = None,
-              journey_ids: Collection[str] | None = None, trip_ids: Iterable[str] = (),
-              route_facts: tuple[str | None, ...] = (None, None),
-              direction: str | int | None = None) -> dict[str, Any]:
-    """_alert_scope over the fields of an alert's informed entities, read
-    once for the feed (_prepared)."""
     journey_ids = journey_ids or set()
     direction = str(direction) if str(direction) in ("0", "1") else None
     hits: dict[str, Any] = {"origin": False, "destination": False, "route": False,

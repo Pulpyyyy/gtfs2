@@ -24,8 +24,9 @@ def _alert(**fields):
 
 
 def _scope(alert, facts=("TAO", "3"), direction="0"):
-    return alerts._alert_scope(alert, {"S1"}, {"S9"}, "R1", "T1", set(), (),
-                               route_facts=facts, direction=direction)
+    return alerts._scope_of([alerts._entity_fields(x) for x in alert.informed_entity],
+                            {"S1"}, {"S9"}, "R1", "T1", set(), (),
+                            route_facts=facts, direction=direction)
 
 
 def test_the_line_by_a_qualified_id():
