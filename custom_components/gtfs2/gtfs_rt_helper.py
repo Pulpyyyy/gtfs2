@@ -58,16 +58,10 @@ def due_in_minutes(timestamp: datetime) -> int:
 
 
 def get_next_services(self: GTFSUpdateCoordinator) -> dict[str, Any]:
-    self._stop = self._stop_id
-    self._destination = self._destination_id
-    self._route = self._route_id
-    self._trip = self._trip_id
-    self._direction = self._direction
-    self._trip_short_name = self._trip_short_name
-    _LOGGER.debug("Configuration for RT route: %s, RT trip: %s, RT stop: %s, RT direction: %s, trip short name: %s", self._route, self._trip, self._stop, self._direction, self._trip_short_name)
+    _LOGGER.debug("Configuration for RT route: %s, RT trip: %s, RT stop: %s, RT direction: %s, trip short name: %s", self._route_id, self._trip_id, self._stop_id, self._direction, self._trip_short_name)
     self._rt_group = "route"
     rt_departures = get_rt_route_trip_statuses(self)
-    at_stop = rt_departures.get(self._route, {}).get(self._direction, {}).get(self._stop, {})
+    at_stop = rt_departures.get(self._route_id, {}).get(self._direction, {}).get(self._stop_id, {})
     next_services = at_stop.get("departures", [])
     next_delays = at_stop.get("delays", [])
     next_trips = at_stop.get("trips", [])
@@ -83,9 +77,9 @@ def get_next_services(self: GTFSUpdateCoordinator) -> dict[str, Any]:
     
     attrs = {
         ATTR_DUE_IN: due_in,
-        ATTR_STOP_ID: self._stop,
-        ATTR_ROUTE: self._route,
-        ATTR_TRIP: self._trip,
+        ATTR_STOP_ID: self._stop_id,
+        ATTR_ROUTE: self._route_id,
+        ATTR_TRIP: self._trip_id,
         ATTR_DIRECTION_ID: self._direction,
         ATTR_NEXT_RT: next_services,
         ATTR_NEXT_RT_DELAYS: next_delays,
