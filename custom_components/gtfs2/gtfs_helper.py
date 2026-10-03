@@ -24,7 +24,6 @@ from .const import (
     CONF_DESTINATION_STATIONS,
     CONF_ORIGIN_STATIONS,
     DEFAULT_PATH,
-    TIME_STR_FORMAT
     )
 from .datasource import check_extracting
 from .rt_feed import on_service_day
@@ -538,8 +537,7 @@ def _stop_time(item: Mapping[str, Any], end: str, arrival: datetime.datetime,
 
 def _interpret_departure_rows(hass: HomeAssistant, rows: Iterable[Mapping[str, Any]],
                                start_station_id: str | None, now: datetime.datetime,
-                               now_local_tz: datetime.datetime, now_date_local_tz: str,
-                               now_time: str) -> dict[str, Any]:
+                               now_local_tz: datetime.datetime) -> dict[str, Any]:
     """Turn raw SQL-shaped rows into the `next_departure` dict."""
     _LOGGER.debug("Interpret rows: %s", rows)
     timetable = _departure_timetable(rows, now, now_local_tz)
@@ -597,14 +595,13 @@ def _interpret_departure_rows(hass: HomeAssistant, rows: Iterable[Mapping[str, A
         **_next_departure_lists(upcoming, timezone_dest),
     }
 
-def _departure_clocks(_data: Mapping[str, Any]) -> tuple[datetime.datetime, datetime.datetime, str, str]:
-    """now (naive, offset applied), now in the local zone, its date and
-    the clock, the way the departures are read against them."""
+def _departure_clocks(_data: Mapping[str, Any]) -> tuple[datetime.datetime, datetime.datetime]:
+    """now (naive, offset applied) and now in the local zone, the way the
+    departures are read against them."""
     offset = _data["offset"]
     now = dt_util.now().replace(tzinfo=None) + datetime.timedelta(minutes=offset)
     now_local_tz = dt_util.now() + datetime.timedelta(minutes=offset)
-    return (now, now_local_tz, now_local_tz.strftime(dt_util.DATE_STR_FORMAT),
-            now.strftime(TIME_STR_FORMAT))
+    return now, now_local_tz
 
 
 def drop_departure_trips(hass: HomeAssistant, _data: Mapping[str, Any],
@@ -627,10 +624,9 @@ def drop_departure_trips(hass: HomeAssistant, _data: Mapping[str, Any],
     if len(kept) == len(rows):
         return _data.get("next_departure") or {}
     _LOGGER.debug("Dropping %s struck departures out of %s", len(rows) - len(kept), len(rows))
-    now, now_local_tz, now_date_local_tz, now_time = _departure_clocks(_data)
+    now, now_local_tz = _departure_clocks(_data)
     return _interpret_departure_rows(
-        hass, kept, _data.get("departure_rows_origin"), now, now_local_tz,
-        now_date_local_tz, now_time)
+        hass, kept, _data.get("departure_rows_origin"), now, now_local_tz)
 
 
 def journey_data(schedule: Schedule | str | None, data: Mapping[str, Any],
@@ -722,7 +718,7 @@ def get_next_departure(hass: HomeAssistant, _data: dict[str, Any]) -> dict[str, 
         return {}
     route_type = _data["route_type"]
 
-    now, now_local_tz, now_date_local_tz, now_time = _departure_clocks(_data)
+    now, now_local_tz = _departure_clocks(_data)
 
     # Fetch all departures
 
@@ -738,7 +734,4 @@ def get_next_departure(hass: HomeAssistant, _data: dict[str, Any]) -> dict[str, 
     _data["departure_rows"] = rows
     _data["departure_rows_origin"] = start_station_id
 
-    return _interpret_departure_rows(
-        hass, rows, start_station_id, now, now_local_tz,
-        now_date_local_tz, now_time
-    )
+    return _interpret_departure_rows(hass, rows, start_station_id, now, now_local_tz)

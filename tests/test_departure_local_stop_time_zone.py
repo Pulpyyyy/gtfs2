@@ -21,7 +21,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+const = ha_stub.load("const")
 local_stops = ha_stub.load("local_stops")
 
 NEW_YORK = zoneinfo.ZoneInfo("America/New_York")
@@ -57,4 +57,4 @@ def test_a_departure_to_come_is_listed_in_the_stop_clock(stop_zone):
     element = _element("2026-09-22 12:10:00", stop_zone)
     assert element is not None
     shown = datetime.datetime(2026, 9, 22, 12, 10, tzinfo=NEW_YORK).astimezone(stop_zone)
-    assert element["departure"] == shown.strftime(gtfs_helper.TIME_STR_FORMAT)
+    assert element["departure"] == shown.strftime(const.TIME_STR_FORMAT)

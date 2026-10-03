@@ -41,7 +41,6 @@ import homeassistant.util.dt as dt_util  # noqa: E402
 # the coordinator and the platforms, and with them the rest of Home Assistant.
 gtfs_helper = ha_stub.load("gtfs_helper")
 _interpret_departure_rows = gtfs_helper._interpret_departure_rows
-TIME_STR_FORMAT = gtfs_helper.TIME_STR_FORMAT
 
 CASE_ROOT = Path(__file__).parent / "case_route"
 
@@ -126,13 +125,9 @@ def test_route_static(case_id: str, case_dir: Path):
     with freeze_time(captured_at_utc.replace(tzinfo=None), tz_offset=0):
         now = dt_util.now().replace(tzinfo=None)
         now_local_tz = dt_util.now()
-        now_date_local_tz = now_local_tz.strftime(dt_util.DATE_STR_FORMAT)
-        now_time = now.strftime(TIME_STR_FORMAT)
 
         result = _interpret_departure_rows(
-            hass, rows, start_station_id, now, now_local_tz,
-            now_date_local_tz, now_time
-        )
+            hass, rows, start_station_id, now, now_local_tz)
 
     # 1. The real function, given this case's real inputs, must
     #    reproduce this case's real output capture.

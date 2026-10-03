@@ -73,7 +73,6 @@ rt_feed_mod = sys.modules["gtfs2_under_test.rt_feed"]
 exports_mod = sys.modules["gtfs2_under_test.exports"]
 
 _interpret_departure_rows = gtfs_helper._interpret_departure_rows
-TIME_STR_FORMAT = gtfs_helper.TIME_STR_FORMAT
 
 CASE_ROOT = Path(__file__).parent / "case_route_combined"
 
@@ -191,8 +190,6 @@ def test_coordinator_case(case_id: str, case_dir: Path):
     with freeze_time(captured_at_utc.replace(tzinfo=None), tz_offset=0):
         now = dt_util.now().replace(tzinfo=None)
         now_local_tz = dt_util.now()
-        now_date_local_tz = now_local_tz.strftime(dt_util.DATE_STR_FORMAT)
-        now_time = now.strftime(TIME_STR_FORMAT)
         yesterday_date = (now - datetime.timedelta(days=1)).strftime(dt_util.DATE_STR_FORMAT)
         tomorrow = now + datetime.timedelta(days=1)
         tomorrow_date = tomorrow.strftime(dt_util.DATE_STR_FORMAT)
@@ -202,9 +199,7 @@ def test_coordinator_case(case_id: str, case_dir: Path):
 
         start_station_id = rows[0]["origin_stop_id"]
         precomputed_next_departure = _interpret_departure_rows(
-            hass, rows, start_station_id, now, now_local_tz,
-            now_date_local_tz, now_time
-        )
+            hass, rows, start_station_id, now, now_local_tz)
 
         def next_departure_from_rows(_hass, data):
             # what the real get_next_departure leaves beside its answer: the
