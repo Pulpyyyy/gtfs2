@@ -44,6 +44,7 @@ from pathlib import Path
 
 import pytest
 
+import feed_db
 import ha_stub
 
 freshness = ha_stub.load("freshness")
@@ -55,16 +56,7 @@ DATA = {"file": "tao", "url": URL}
 FIRST_HEADERS = {"ETag": '"aaa"', "Last-Modified": "Mon, 01 Sep 2026 17:33:00 GMT"}
 
 
-def _zip_bytes(marker):
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        zout.writestr("agency.txt", "agency_id,agency_name\nX," + marker)
-        # the three tables a staged download must carry to be a feed at
-        # all: stage_zip refuses a zip without them
-        zout.writestr("routes.txt", "route_id\nR\n")
-        zout.writestr("trips.txt", "route_id,service_id,trip_id\nR,S,T\n")
-        zout.writestr("stop_times.txt", "trip_id,stop_id,stop_sequence\nT,A,1\n")
-    return buffer.getvalue()
+_zip_bytes = feed_db.marked_zip
 
 
 def _response(content=b"", headers=None, status=200):

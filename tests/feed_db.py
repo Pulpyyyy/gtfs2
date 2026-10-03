@@ -12,10 +12,12 @@ tests_provider/fixture_db does the same for the fixtures of that suite.
         schedule.engine.dispose()
 
 rows() reads a database file back, the way a test checks what a step
-left on disk, and lets the file go after.
+left on disk, and lets the file go after. marked_zip() is the bytes of the
+smallest feed a download can bring, told apart by a marker.
 """
 from __future__ import annotations
 
+import io
 import sqlite3
 import zipfile
 from pathlib import Path
@@ -43,3 +45,17 @@ def rows(path, sql):
         return conn.execute(sql).fetchall()
     finally:
         conn.close()
+
+
+def marked_zip(marker):
+    """The bytes of a zip holding the smallest feed, the agency's name
+    saying marker: what a host sends, one edition told from another."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zout:
+        zout.writestr("agency.txt", "agency_id,agency_name\nX," + marker)
+        # the three tables a staged download must carry to be a feed at
+        # all: stage_zip refuses a zip without them
+        zout.writestr("routes.txt", "route_id\nR\n")
+        zout.writestr("trips.txt", "route_id,service_id,trip_id\nR,S,T\n")
+        zout.writestr("stop_times.txt", "trip_id,stop_id,stop_sequence\nT,A,1\n")
+    return buffer.getvalue()

@@ -25,13 +25,12 @@ opens, which answers file:// itself (file_url.FileAdapter). The promises:
 """
 from __future__ import annotations
 
-import io
 import os
-import zipfile
 
 import pytest
 import requests
 
+import feed_db
 import ha_stub
 
 file_url = ha_stub.load("file_url")
@@ -44,14 +43,7 @@ EARLY = 1_788_000_000
 LATER = EARLY + 3600
 
 
-def _zip_bytes(marker):
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as zout:
-        zout.writestr("agency.txt", "agency_id,agency_name\nX," + marker)
-        zout.writestr("routes.txt", "route_id\nR\n")
-        zout.writestr("trips.txt", "route_id,service_id,trip_id\nR,S,T\n")
-        zout.writestr("stop_times.txt", "trip_id,stop_id,stop_sequence\nT,A,1\n")
-    return buffer.getvalue()
+_zip_bytes = feed_db.marked_zip
 
 
 # built once: a zip records when each member was written, and two
