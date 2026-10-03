@@ -53,7 +53,9 @@ def intern_gtfs_datasource(gtfs_dir: str, filename: str, dry_run: bool = False) 
             _LOGGER.info("Datasource %s is already interned, nothing to do", filename)
             return None
 
-        columns = [row[1] for row in cur.execute("pragma table_info(stop_times)")]
+        # declared type of each column, none for no affinity
+        types = {row[1]: row[2] or "" for row in cur.execute("pragma table_info(stop_times)")}
+        columns = list(types)
         if not columns:
             _LOGGER.error("Cannot intern %s: no stop_times table", filename)
             return None
@@ -81,7 +83,7 @@ def intern_gtfs_datasource(gtfs_dir: str, filename: str, dry_run: bool = False) 
 
         # columns carried over as-is, in their original order minus the interned pair
         carried = [c for c in columns if c not in ("trip_id", "stop_id", "stop_sequence")]
-        carried_ddl = ", ".join(f"{c} {_column_type(cur, 'stop_times', c)}" for c in carried)
+        carried_ddl = ", ".join(f"{c} {types[c]}" for c in carried)
 
         # one transaction for the whole change: sqlite3 opens none before a
         # create table, so the first one was committed on its own, and a run
@@ -139,11 +141,3 @@ def intern_gtfs_datasource(gtfs_dir: str, filename: str, dry_run: bool = False) 
                  stats["size_before_mb"], stats["size_after_mb"], stats["rows"],
                  stats["trip_ids"], stats["stop_ids"])
     return stats
-
-
-def _column_type(cur: sqlite3.Cursor, table: str, column: str) -> str:
-    """Return the declared type of a column, defaulting to no affinity."""
-    for row in cur.execute(f"pragma table_info({table})"):
-        if row[1] == column:
-            return row[2] or ""
-    return ""
