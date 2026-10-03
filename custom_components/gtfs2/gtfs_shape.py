@@ -21,7 +21,7 @@ import io
 import logging
 import zipfile
 
-from .gtfs_filter import _member
+from .gtfs_filter import _member, table_rows
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,24 +44,10 @@ def trip_shape_id(zip_path: str | None, trip_id: str | None) -> str | None:
     trip_id = str(trip_id)
     try:
         with zipfile.ZipFile(zip_path) as zin:
-            # wherever the feed nested it, as the import finds it
-            member = _member(zin, "trips.txt")
-            if member is None:
-                return None
-            with zin.open(member) as raw:
-                reader = csv.reader(io.TextIOWrapper(raw, encoding="utf-8-sig", newline=""))
-                header = next(reader, None)
-                if header is None:
-                    return None
-                columns = {name.strip(): index for index, name in enumerate(header)}
-                if "trip_id" not in columns or "shape_id" not in columns:
-                    return None
-                c_trip, c_shape = columns["trip_id"], columns["shape_id"]
-                width = max(c_trip, c_shape) + 1
-                for row in reader:
-                    if len(row) >= width and row[c_trip] == trip_id:
-                        # trip_id is the table's key: the first row is the one
-                        return row[c_shape].strip() or None
+            for row in table_rows(zin, "trips.txt"):
+                if row.get("trip_id") == trip_id:
+                    # trip_id is the table's key: the first row is the one
+                    return (row.get("shape_id") or "").strip() or None
     except (OSError, zipfile.BadZipFile, UnicodeDecodeError, csv.Error) as ex:
         _LOGGER.warning("Could not read the shape of trip %s from %s: %s", trip_id, zip_path, ex)
     return None
