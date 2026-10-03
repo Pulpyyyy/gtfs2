@@ -41,7 +41,7 @@ def test_a_line_with_no_short_name_and_trips_with_no_headsign(tmp_path):
             schedule, 47.0, 1.0, 0.001, "+60 minute", "-15 minute", NOW.replace(tzinfo=None))]
         element = local_stops._build_local_stop_element(
             types.SimpleNamespace(_realtime=False, _icon="mdi:tram"), row,
-            row["departure_dt"], UTC, UTC, NOW, True)
+            row["departure_dt"], UTC, UTC, NOW)
     finally:
         schedule.engine.dispose()
     assert element["route"] == "MAX Blue Line"

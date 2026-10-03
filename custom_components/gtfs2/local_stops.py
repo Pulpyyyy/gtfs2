@@ -146,7 +146,7 @@ def drop_gone_local_departures(stops: list[dict[str, Any]], now: datetime.dateti
 
 def _build_local_stop_element(self: GTFSLocalStopUpdateCoordinator, row: Mapping[str, Any], base_datetime: str,
                               timezone_agency: datetime.tzinfo | None, timezone_stop: datetime.tzinfo | None,
-                              now_tz: datetime.datetime, apply_now_filter: bool,
+                              now_tz: datetime.datetime,
                               feed_entities: FeedEntities | None = None) -> dict[str, Any] | None:
     """Build one departure element incl. realtime, for a given service date.
 
@@ -225,7 +225,7 @@ def _build_local_stop_element(self: GTFSLocalStopUpdateCoordinator, row: Mapping
         scheduled, depart_time_corrected_time, delay_rt)
     #_LOGGER.debug("Departure time corrected: %s", depart_time_corrected)
 
-    if apply_now_filter and not (depart_time_corrected > now_tz):
+    if not (depart_time_corrected > now_tz):
         _LOGGER.debug("Departure time corrected: %s, NOT after now in tz with offset: %s", depart_time_corrected, now_tz)
         return None
 
@@ -421,7 +421,6 @@ def _interpret_local_stop_rows(self: GTFSLocalStopUpdateCoordinator,
         element = _build_local_stop_element(
             self, row, row["departure_dt"],
             timezone_agency, timezone_stop, now_tz,
-            apply_now_filter=True,
             feed_entities=_trip_entities(self, feed_entities, feed_index, row))
         if element is not None and element not in timetable:
             timetable.append(element)

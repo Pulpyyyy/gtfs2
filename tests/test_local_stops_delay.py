@@ -42,7 +42,7 @@ def _element(monkeypatch, realtime=None, delay=0):
     monkeypatch.setattr(local_stops, "get_rt_route_trip_statuses", lambda self, feed=None: statuses)
     monkeypatch.setattr(local_stops, "struck_trips", lambda self: {})
     me = types.SimpleNamespace(_realtime=True, _icon="mdi:bus")
-    return local_stops._build_local_stop_element(me, ROW, SCHEDULED, PARIS, PARIS, NOW, True)
+    return local_stops._build_local_stop_element(me, ROW, SCHEDULED, PARIS, PARIS, NOW)
 
 
 def test_a_zero_delay_beside_a_later_time_is_the_gap(monkeypatch):
