@@ -105,17 +105,8 @@ def get_gtfs_rt(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> str:
 
 def convert_realtime_siri_trips_to_json(url: str, headers: Mapping[str, str | None] | None,
                                         stop_id: str) -> dict[str, Any] | str:
-    
-    #Used for Strasbourg, but they differ on output too
-    ##the Basic token is a base64 conversion of: d6452e5d-4894-4ee1-8d5b-11ce235eeef6	
-    ## ZDY0NTJlNWQtNDg5NC00ZWUxLThkNWItMTFjZTIzNWVlZWY2
-    ## ZDY0NTJlNWQtNDg5NC00ZWUxLThkNWItMTFjZTIzNWVlZWY2Og==    
-    #_encoded = base64.b64encode(b'd6452e5d-4894-4ee1-8d5b-11ce235eeef6:').decode("utf-8") 
-    #_headers = { "Authorization": f"Basic {_encoded}" }
-    #url = "https://api.cts-strasbourg.eu/v1/siri/2.0/stop-monitoring?MonitoringRef=GACEN_20"
-
-    #url = "https://bustime.mta.info/api/siri/stop-monitoring.json?key=f4f9c18e-0550-4cc7-bc36-275715015673&OperatorRef=MTA"
-    
+    # Used for Strasbourg (CTS, its key sent as HTTP Basic) and the MTA's bus
+    # time, but they differ on output too
     # the url may already carry a query of its own, or none at all
     url = url + ("&" if "?" in url else "?") + f"MonitoringRef={quote(str(stop_id))}"
     content = _feed_body(url, headers, "SIRI")
