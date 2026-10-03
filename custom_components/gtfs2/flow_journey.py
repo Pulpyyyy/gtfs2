@@ -367,6 +367,15 @@ class JourneyScreens:
         if not exists:
             _LOGGER.debug("Return journey: no trip runs it")
             return
+        # a journey of this source already rides it, under a name of its
+        # own: offered, it was made a second time, its sensor a _2
+        if any(entry.data.get(CONF_FILE) == self._user_inputs.get(CONF_FILE)
+               and entry.data.get(CONF_ROUTE) == route
+               and id_of(entry.data.get(CONF_ORIGIN)) == id_of(destination)
+               and id_of(entry.data.get(CONF_DESTINATION)) == id_of(origin)
+               for entry in self.hass.config_entries.async_entries(DOMAIN)):
+            _LOGGER.debug("Return journey: %s already rides it", route)
+            return
         trip = await self._trip_name(destination, origin, loop_direction)
         self._return_name = self._suggested_name(trip)
         # only what differs: this runs when the screen opens, before the

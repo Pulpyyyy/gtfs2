@@ -694,7 +694,9 @@ async def bus_journey(hass, file, *, route=1, origin=1, way=1, destination=1,
     naming = shown(await submit(hass, arrivals,
                                 destination=offered(arrivals, "destination")[destination]),
                    FORM, "sensor")
-    return await submit(hass, naming, name=name or default(naming, "name"), add_return=add_return)
+    # the return is asked only when there is one to make
+    asked = {"add_return": add_return} if "add_return" in fields(naming) else {}
+    return await submit(hass, naming, name=name or default(naming, "name"), **asked)
 
 
 # --- the promises ---------------------------------------------------------------------
@@ -789,6 +791,49 @@ def test_the_return_journey_is_created_beside_the_outward_one(world):
             **outward.data, "origin": outward.data["destination"],
             "destination": outward.data["origin"], "name": back}
         assert ride_back.unique_id == f"gtfs-{back}"
+    walk(world, scenario)
+
+
+def test_no_return_is_offered_that_a_journey_already_rides(world):
+    # the return of B -> A is A -> B: offered when A -> B was made already,
+    # under another name, it was made a second time, its sensor a _2 of
+    # the first
+    async def scenario(hass):
+        await install_source(hass, "tao-journeys", "tao")
+        lines = await to_lines(hass, "tao")
+        route = offered(lines, "route")[1]
+        stops = await submit(hass, lines, route=route)
+        ways = await submit(hass, stops, origin=offered(stops, "origin")[1])
+        arrivals = await submit(hass, ways, towards=offered(ways, "towards")[1])
+        naming = shown(await submit(hass, arrivals,
+                                    destination=offered(arrivals, "destination")[1]),
+                       FORM, "sensor")
+        shown(await submit(hass, naming, name="to work", add_return=False), MENU, "finished")
+        [outward] = hass.journeys()
+
+        def same_stop(options, entry):
+            return next(o for o in options if o.split(": ")[0] == entry.split(": ")[0])
+
+        # the same ride the other way round, under a name of its own
+        naming = None
+        for way in range(4):
+            lines = await to_lines(hass, "tao")
+            stops = await submit(hass, lines, route=route)
+            result = await submit(hass, stops,
+                                  origin=same_stop(offered(stops, "origin"), outward.data["destination"]))
+            if result["step_id"] == "towards":
+                if way >= len(offered(result, "towards")):
+                    break
+                result = await submit(hass, result, towards=offered(result, "towards")[way])
+            wanted = [o for o in offered(result, "destination")
+                      if o.split(": ")[0] == outward.data["origin"].split(": ")[0]]
+            if wanted:
+                naming = shown(await submit(hass, result, destination=wanted[0]), FORM, "sensor")
+                break
+        assert naming is not None
+        back = shown(await submit(hass, naming, name="back home"), MENU, "finished")
+        assert back["step_id"] == "finished"
+        assert sorted(e.data["name"] for e in hass.journeys()) == ["back home", "to work"]
     walk(world, scenario)
 
 
@@ -1170,11 +1215,20 @@ def test_a_name_in_use_is_refused_for_the_journey_and_for_its_return(world):
         again = shown(await bus_journey(hass, "tao", name="to work"), FORM, "sensor")
         assert again["errors"] == {"base": "name_taken"}
         assert default(again, "name") == "to work"
-        # the return of the same pair is already there under its name
-        again = shown(await bus_journey(hass, "tao", name="to work again", add_return=True),
+        # the return of the same pair is already there: it is not made again
+        shown(await bus_journey(hass, "tao", name="to work again", add_return=True),
+              MENU, "finished")
+        assert [e.data["name"] for e in hass.journeys()] == [
+            "to work", back.data["name"], "to work again"]
+        # a return whose name another journey holds, for another ride
+        hass.config_entries.entries.remove(back)
+        held = Entry(domain=DOMAIN, title=back.data["name"],
+                     data={"file": "tao", "name": back.data["name"], "route": "elsewhere"},
+                     options={}, unique_id=back.unique_id, version=10, source="user")
+        hass.config_entries.entries.append(held)
+        again = shown(await bus_journey(hass, "tao", name="to work once more", add_return=True),
                       FORM, "sensor")
         assert again["errors"] == {"base": "return_name_taken"}
-        assert hass.journeys() == [outward, back]
     walk(world, scenario)
 
 
