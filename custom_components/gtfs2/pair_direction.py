@@ -228,26 +228,14 @@ def get_direction_labels(schedule: Schedule, route_id: str) -> dict[str, str]:
     return labels
 
 
-def has_trip_between(schedule: Schedule, route_id: str, origin_id: str, destination_id: str,
-                     direction: str | int | None = None) -> bool:
+def has_trip_between(schedule: Schedule, route_id: str, origin_id: str, destination_id: str) -> bool:
     """Whether any trip of a route calls at both stops, in this order.
 
     This asks whether the journey exists at all, not whether a bus is due:
     a sensor set up in the evening, or on a day the line does not run, is
-    still a valid sensor. Times are the coordinator's business. The stop
-    pair usually implies the direction, except on a circular line where
-    both rotations run it in the same order: pass direction to tell them
-    apart, trips without a direction_id still matching.
+    still a valid sensor. Times are the coordinator's business.
     """
-    direction_where = ""
-    params: dict[str, Any] = {
-        "route_id": route_id,
-        "origin_id": origin_id,
-        "destination_id": destination_id,
-    }
-    if direction is not None:
-        direction_where = "and (t.direction_id = :direction or t.direction_id is null)"
-        params["direction"] = int(direction)
+    params = {"route_id": route_id, "origin_id": origin_id, "destination_id": destination_id}
     sql = f"""
     SELECT 1
     from trips t
@@ -258,11 +246,10 @@ def has_trip_between(schedule: Schedule, route_id: str, origin_id: str, destinat
       and d.stop_id in {_place_group("destination_id")}
       and o.stop_sequence < d.stop_sequence
       and {_boards("o")} and {_alights("d")}
-      {direction_where}
     limit 1
     """
     with schedule.engine.connect() as conn:
         row = conn.execute(text(sql), params).fetchone()
-    _LOGGER.debug("Trip between %s and %s on %s (direction %s): %s",
-                  origin_id, destination_id, route_id, direction, bool(row))
+    _LOGGER.debug("Trip between %s and %s on %s: %s",
+                  origin_id, destination_id, route_id, bool(row))
     return bool(row)
