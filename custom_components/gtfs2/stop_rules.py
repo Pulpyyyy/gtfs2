@@ -1,5 +1,6 @@
 """What a stop is to the rider, as the queries write it: whether a call
-lets them on or off (_boards, _alights), the records of one place
+lets them on or off (_boards, _alights, and _call_type for a call's
+pickup_type or drop_off_type read in Python), the records of one place
 (_place_group), the station names a train entry matches at each end
 (station_names_in), and which route types are trains.
 """
@@ -117,3 +118,11 @@ def _boards(alias: str) -> str:
 def _alights(alias: str) -> str:
     """SQL: the rider can get off at this stop_times row."""
     return f"coalesce(cast({alias}.drop_off_type as integer), 0) <> 1"
+
+
+def _call_type(value: str | int | None) -> int:
+    """A pickup_type / drop_off_type as the feed meant it: 0 when blank."""
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0

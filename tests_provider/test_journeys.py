@@ -442,7 +442,7 @@ def _repair_directions(schedule):
 
 
 # a pickup_type / drop_off_type as the feed meant it: the component's own
-_flag = places._call_type
+_flag = getattr(stop_rules, "_call_type", None) or places._call_type
 
 
 def line_places(fx, route_id):

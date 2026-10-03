@@ -22,7 +22,7 @@ from .const import DEFAULT_PATH_GEOJSON
 from .geojson import entry_file_part, safe_file_part, write_json_if_changed
 from .clocks import agency_zone, gtfs_seconds, zone_of
 from .gtfs_helper import shown_ends
-from .places import _call_type
+from .stop_rules import _call_type
 from .rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, delay_of, stop_relationship, stop_update_clock,
     FeedEntities, trip_relationship,

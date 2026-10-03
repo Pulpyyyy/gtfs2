@@ -69,14 +69,6 @@ _STOP_ROWS = f"""
 _STOP_GROUP = _place_group("origin")
 
 
-def _call_type(value: str | int | None) -> int:
-    """A pickup_type / drop_off_type as the feed meant it: 0 when blank."""
-    try:
-        return int(value or 0)
-    except (TypeError, ValueError):
-        return 0
-
-
 def _calls_where(can: Callable[[str], str]) -> str:
     """SQL: the records of a line where some trip of it this way lets
     riders do what can(alias) says, _boards or _alights."""
@@ -508,5 +500,3 @@ def get_destination_stop_list(schedule: Schedule, route_id: str, direction: str 
     stops = _entries_of(kept, _labels_of(line, station_names))
     _LOGGER.debug(f"Destinations from {origin_stop_id}: {stops}")
     return stops
-
-

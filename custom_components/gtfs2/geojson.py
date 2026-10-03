@@ -32,7 +32,8 @@ from .const import DEFAULT_PATH_GEOJSON
 from .gtfs_db import feed_zip
 from .clocks import gtfs_seconds
 from .gtfs_helper import shown_ends
-from .places import _call_type, _line_ways
+from .places import _line_ways
+from .stop_rules import _call_type
 from .gtfs_shape import read_shape, trip_shape_id
 
 if TYPE_CHECKING:
