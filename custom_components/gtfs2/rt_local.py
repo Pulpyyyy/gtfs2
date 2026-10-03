@@ -27,7 +27,6 @@ def get_gtfs_rt(hass: HomeAssistant, path: str, data: Mapping[str, Any]) -> str:
     """Get gtfs rt data."""
     _LOGGER.debug("Getting gtfs rt locally with data: %s", data)
     _headers = data.get('headers','')
-    _source_format = data.get('source_format',None)                                                  
     gtfs_dir = hass.config.path(path)
     os.makedirs(gtfs_dir, exist_ok=True)
     url = data["url"]
