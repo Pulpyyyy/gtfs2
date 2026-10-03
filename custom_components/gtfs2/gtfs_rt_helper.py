@@ -332,13 +332,7 @@ def _stop_time_and_delay(stop: Mapping[str, Any], trip_id: str,
 def _departure_slot(departure_times: _DepartureTimes, route_id: str, direction_id: str,
                     stop_id: str) -> _Slot:
     ''' The departures, delays and trips listed for one stop '''
-    if route_id not in departure_times:
-        departure_times[route_id] = {}
-    if direction_id not in departure_times[route_id]:
-        departure_times[route_id][direction_id] = {}
-    if not departure_times[route_id][direction_id].get(stop_id):
-        departure_times[route_id][direction_id][stop_id] = {}
-    slot = departure_times[route_id][direction_id][stop_id]
+    slot = departure_times.setdefault(route_id, {}).setdefault(direction_id, {}).setdefault(stop_id, {})
     if not slot.get("departures"):
         slot["departures"] = []
         slot["delays"] = []
@@ -399,10 +393,9 @@ def _sort_departure_slots(departure_times: _DepartureTimes) -> None:
     ''' Sort by time, carrying each delay and trip with its own departure '''
     # the three lists are appended together (_read_stop_updates): sorting
     # them apart breaks the pairing
-    for route in departure_times:
-        for direction in departure_times[route]:
-            for stop in departure_times[route][direction]:
-                slot = departure_times[route][direction][stop]
+    for directions in departure_times.values():
+        for stops in directions.values():
+            for slot in stops.values():
                 paired = sorted(zip(slot["departures"], slot["delays"], slot["trips"]),
                                 key=lambda p: p[0])
                 slot["departures"] = [p[0] for p in paired]
