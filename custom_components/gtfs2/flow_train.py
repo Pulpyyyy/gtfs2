@@ -137,14 +137,12 @@ class TrainScreens:
         schedule = await self.hass.async_add_executor_job(
             get_gtfs, self.hass, DEFAULT_PATH, data
         )
-        if schedule is None or isinstance(schedule, str):
+        if isinstance(schedule, str):
             # a sentinel of get_gtfs, not a schedule. It used to replace the
             # flow's own, and the screen shown again with the error then read
             # its stations from a string: the next submit ended the flow on
             # no_stops_read. The flow keeps the schedule it has
-            if schedule in ("no_data_file", "no_zip_file", "not_built", "extracting"):
-                return schedule
-            return "generic_failure"
+            return schedule
         close_schedule(self._pygtfs)
         self._pygtfs = schedule
         # check and/or add indexes

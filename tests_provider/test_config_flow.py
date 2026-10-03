@@ -77,10 +77,9 @@ What no walk reaches, and why:
 
     no_stops_read    the stop, way and arrival queries raising: every
                      database the flow can open answers them
-    generic_failure  from remove, a file deletion refused; from
-                     _check_config, get_gtfs answering neither a schedule
-                     nor one of its sentinels; from optimise on Linux, a
-                     copy that fails (reached on Windows, see optimise)
+    generic_failure  from remove, a file deletion refused; from optimise
+                     on Linux, a copy that fails (reached on Windows, see
+                     optimise)
     zip_holds_zips   as an error: a zip of zips is offered its networks
                      before anything could say so
 
