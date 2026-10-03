@@ -8,15 +8,14 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 import datetime
 import logging
-import os
 from typing import Any
 
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
-from .const import DEFAULT_PATH_GEOJSON, id_of
+from .const import id_of
 from .feed_window import last_service_day
-from .geojson import entry_file_part, write_json_if_changed
+from .geojson import entry_file_part, map_file, write_json_if_changed
 from .gtfs_helper import _fetch_departure_rows, departure_query_args, get_next_service_date
 from .clocks import _leg_timezone
 
@@ -134,9 +133,8 @@ def write_timetable_file(hass: HomeAssistant, data: Mapping[str, Any], today: st
         if later:
             next_departure = _local(later[0].get("origin_depart_dt"), zone)
     doc = timetable_doc(name, rows, service_dates, zone, next_departure, last_service_day(zip_path))
-    geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     file = timetable_name(name)
     _LOGGER.debug("Creating timetable file: %s, %s departures", file, sum(len(d["departures"]) for d in doc["days"]))
-    write_json_if_changed(os.path.join(geojson_dir, file), doc,
+    write_json_if_changed(map_file(hass, file), doc,
                           {k: v for k, v in doc.items() if k != "generated"})
     return file

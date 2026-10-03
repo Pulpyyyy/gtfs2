@@ -26,7 +26,7 @@ from .const import DEFAULT_PATH, DEFAULT_PATH_GEOJSON, DOMAIN, id_of
 from .gtfs_db import feed_zip, file_edition, real_path, remove_files
 from .gtfs_helper import shown_ends
 from .stations import train_entry_routes
-from .geojson import write_route_file, route_geojson_name, get_representative_trip, vehicle_positions_name
+from .geojson import write_route_file, route_geojson_name, get_representative_trip, map_file, vehicle_positions_name
 from .leg import write_leg_file, leg_files, leg_geojson_name
 from .rt_feed import FeedEntities
 from .timetable import write_timetable_file, timetable_name
@@ -154,7 +154,7 @@ async def export_route_shape(coordinator: GTFSUpdateCoordinator, data: Mapping[s
     # rewritten when the trip changes, when the zip or the database does,
     # and when the file is gone: a folder cleaned by hand must not leave
     # the map without its line until the next restart
-    file = os.path.join(coordinator.hass.config.path(DEFAULT_PATH_GEOJSON), route_geojson_name(route_id, direction))
+    file = map_file(coordinator.hass, route_geojson_name(route_id, direction))
     gtfs_dir = coordinator.hass.config.path(coordinator._data["gtfs_dir"])
     source = str(coordinator._data["file"])
     zip_path, db_path = feed_zip(gtfs_dir, source), real_path(gtfs_dir, source)
@@ -218,7 +218,7 @@ async def export_timetable(coordinator: GTFSUpdateCoordinator, data: Mapping[str
         return
     name = timetable_name(data["name"])
     today = (dt_util.now() + timedelta(minutes=coordinator._data.get("offset", 0) or 0)).strftime("%Y-%m-%d")
-    file = os.path.join(coordinator.hass.config.path(DEFAULT_PATH_GEOJSON), name)
+    file = map_file(coordinator.hass, name)
     zip_path = feed_zip(coordinator.hass.config.path(coordinator._data["gtfs_dir"]), str(coordinator._data["file"]))
     edition, present = await coordinator.hass.async_add_executor_job(_route_export_state, zip_path, file)
     # the database edition too: the runs are read from it, and a refresh

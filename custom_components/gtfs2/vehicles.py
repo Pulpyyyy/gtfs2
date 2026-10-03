@@ -9,7 +9,6 @@ from collections.abc import Iterable, Mapping
 import binascii
 import json
 import logging
-import os
 import re
 import time
 from typing import TYPE_CHECKING, Any
@@ -17,8 +16,8 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text as sql_text
 
-from .const import DEFAULT_PATH_GEOJSON, DEFAULT_VEHICLE_MAX_AGE
-from .geojson import vehicle_positions_name, write_json_file
+from .const import DEFAULT_VEHICLE_MAX_AGE
+from .geojson import map_file, vehicle_positions_name, write_json_file
 from .line_ends import _names_a_place
 from .rt_feed import FeedEntities, _Coordinator, _read_feed, _same_route
 
@@ -239,7 +238,6 @@ def get_rt_vehicle_positions(self: _Coordinator) -> list[dict[str, Any]]:
 
 
 def update_geojson(self: _Coordinator) -> None:
-    geojson_dir = self.hass.config.path(DEFAULT_PATH_GEOJSON)
-    file = os.path.join(geojson_dir, vehicle_positions_name(self._route_id, self._direction))
+    file = map_file(self.hass, vehicle_positions_name(self._route_id, self._direction))
     _LOGGER.debug("Creating geojson file: %s", file)
     write_json_file(file, self.geojson)

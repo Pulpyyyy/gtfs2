@@ -58,6 +58,12 @@ def _fmt_gtfs_time(value: object) -> str | None:
 
 
 
+def map_file(hass: HomeAssistant, name: str) -> str:
+    """Where a file for a map card goes: www/gtfs2, which Home Assistant
+    serves as /local/gtfs2."""
+    return os.path.join(hass.config.path(DEFAULT_PATH_GEOJSON), name)
+
+
 def route_geojson_name(route_id: str, direction: str | int | None) -> str:
     """File name of the route export, in one place because three callers need
     the same answer: the writer, the sensor attribute and the removal on entry
@@ -81,8 +87,7 @@ def clear_vehicle_file(hass: HomeAssistant, route_id: str, direction: str | int 
     Returns whether it wrote. A file already empty, or one that was never
     written, is left alone, so a paused source costs no write per minute.
     """
-    file = os.path.join(hass.config.path(DEFAULT_PATH_GEOJSON),
-                        vehicle_positions_name(route_id, direction))
+    file = map_file(hass, vehicle_positions_name(route_id, direction))
     if not os.path.exists(file):
         return False
     try:
@@ -320,10 +325,9 @@ def write_route_file(hass: HomeAssistant, data: Mapping[str, Any], route_id: str
                 "alights": alights(row[0]),
             },
         })
-    geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     # the ids come out of the datasource, so they are not file names until
     # they are made ones: see safe_file_part
-    file = os.path.join(geojson_dir, route_geojson_name(route_id, direction))
+    file = map_file(hass, route_geojson_name(route_id, direction))
     _LOGGER.debug("Creating route geojson file: %s", file)
     write_json_file(file, {
         "type": "FeatureCollection",
