@@ -390,7 +390,6 @@ attributes dict and what it reads, "nothing of the entity" (3f01c10).
 ### 4. Data management layer
 
 ```
-gtfs_db.py            the files a source is made of, the sources on disk, letting a schedule go
 db_build.py           an import into a scratch database, the followed lines copied, the swap
 db_intern.py          stop_times keyed by integers instead of repeated id strings
 db_prune.py           a datasource trimmed down to the lines it follows
@@ -426,6 +425,7 @@ zip_peek.py         read a remote zip's contents, take one member out of it
 freshness.py        ask the host whether the feed changed, without downloading
 rt_feed.py          a realtime feed read once per publication, decoded
 rt_local.py         one realtime feed, or a SIRI answer, downloaded to a local file
+gtfs_db.py          the files a source is made of, the sources on disk, letting a schedule go
 ```
 
 ## Glossary
