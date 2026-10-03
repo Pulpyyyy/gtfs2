@@ -126,6 +126,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         self._inner_zips: list = []
         # the line as the route screen showed it, recalled on the stop screens
         self._route_shown: str = ""
+        # the lines the route screen offered: only those are taken
+        self._routes_offered: set[str] = set()
         # how big the database has grown, shown while it is being built
         self._extract_size: str = "0 MB"
         # the import running behind the progress screen, and its routes
@@ -487,6 +489,7 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
                 selector.SelectOptionDict(value=r, label=label)
                 for r, label in zip(usable, with_modes(usable, words))
                 ]
+            self._routes_offered = set(usable)
             placeholders = dict(TRANSLATION_DESCRIPTION_PLACEHOLDERS)
             placeholders["routes"] = str(len(usable))
             placeholders["routes_total"] = str(total)
@@ -501,11 +504,12 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
                 errors=errors,
             )
         _picked = str(user_input.get(CONF_ROUTE) or "").split('##')
-        if len(_picked) < 2 or not _picked[1]:
+        if user_input.get(CONF_ROUTE) not in self._routes_offered:
             # the field takes typed text, which is what makes a long list
             # searchable; text that is not one of the lines left the value
-            # without its route and the step raised. The list comes back,
-            # saying so
+            # without its route and the step raised, and text shaped like a
+            # line the list does not hold, or holds without its timetable,
+            # read the stops of nothing. The list comes back, saying so
             self._pending_error = "route_not_listed"
             return await self.async_step_route()
         user_input[CONF_ROUTE_TYPE] = _picked[0]

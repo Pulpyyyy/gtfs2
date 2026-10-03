@@ -1143,6 +1143,13 @@ def test_a_screen_refuses_what_it_does_not_offer(world):
         # searchable; text that names no line brings the list back
         again = shown(await submit(hass, lines, route="the blue one"), FORM, "route")
         assert again["errors"] == {"base": "route_not_listed"}
+        # text shaped like an option, naming a line the list does not hold
+        # (or one held without its timetable, sent without the flag that
+        # imports it): the flow read its stops from nothing and ended on
+        # no_stops_read, an error in the log
+        again = shown(await submit(hass, again, route="3##NOWHERE##NOWHERE : Nowhere"),
+                      FORM, "route")
+        assert again["errors"] == {"base": "route_not_listed"}
         with pytest.raises(vol.Invalid):
             await submit(hass, again, route=["a", "list"])
         stops = shown(await submit(hass, again, route=offered(again, "route")[1]), FORM, "stops")
