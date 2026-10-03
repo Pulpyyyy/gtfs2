@@ -25,7 +25,7 @@ dropped in the folder themselves.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Collection, Iterator, Mapping
 import logging
 import os
 import struct
@@ -125,8 +125,11 @@ def _directory(url: str, headers: Mapping[str, str] | None,
     return members, response
 
 
-def _zips_among(names: Iterable[str]) -> list[str]:
-    """The members that are zips themselves, in the order a reader expects."""
+def _zips_among(names: Collection[str]) -> list[str]:
+    """The members that are zips themselves, in the order a reader expects;
+    none when a routes.txt among them makes the zip a feed of its own."""
+    if any(name.rsplit("/", 1)[-1] == "routes.txt" for name in names):
+        return []
     return sorted(name for name in names if name.lower().endswith(".zip"))
 
 
@@ -142,10 +145,7 @@ def inner_zips(url: str, headers: Mapping[str, str] | None) -> list[str]:
     except (requests.RequestException, OSError, struct.error) as ex:
         _LOGGER.debug("Could not read the directory of %s: %s", hide_keys(url), ex)
         return []
-    if not members or any(
-            name.rsplit("/", 1)[-1] == "routes.txt" for name in members):
-        return []
-    return _zips_among(members)
+    return _zips_among(members or [])
 
 
 class _MemberResponse:
@@ -239,8 +239,6 @@ def inner_zips_in_file(path: str) -> list[str]:
             names = zin.namelist()
     except (OSError, zipfile.BadZipFile) as ex:
         _LOGGER.debug("Could not read %s: %s", path, ex)
-        return []
-    if any(name.rsplit("/", 1)[-1] == "routes.txt" for name in names):
         return []
     return _zips_among(names)
 
