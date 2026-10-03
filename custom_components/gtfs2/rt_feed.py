@@ -300,10 +300,6 @@ def _protobuf_feed_entities(url: str, label: str,
     return feed.get('entity'), int((feed.get("header") or {}).get("timestamp") or 0) or None
 
 
-def _fetch_gtfs_feed_entities(url: str, headers: Mapping[str, str | None] | None, label: str) -> FeedEntities | None:
-    return _fetch_feed(url, headers, label)[0]
-
-
 def _fetch_feed(url: str, headers: Mapping[str, str | None] | None, label: str) -> tuple[FeedEntities | None, int | None]:
     """(the entities of a feed, when it says it was published), (None,
     None) when it could not be read."""

@@ -63,6 +63,15 @@ except FileNotFoundError:  # a tree that reads its feeds in gtfs_rt_helper
 # the service day rule, where the tree keeps it
 on_service_day = getattr(rt_feed, "on_service_day", None) or gtfs_rt_helper.on_service_day
 
+
+def _read_once(url, headers, label):
+    """A feed read once, without the cache: _fetch_feed's entities, or what
+    the trees from before it read with _fetch_gtfs_feed_entities."""
+    if hasattr(rt_feed, "_fetch_feed"):
+        return rt_feed._fetch_feed(url, headers, label)[0]
+    return rt_feed._fetch_gtfs_feed_entities(url, headers, label)
+
+
 FIXTURE = Path(__file__).parent / "fixtures" / "sncf"
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
 UTC = datetime.timezone.utc
@@ -318,9 +327,9 @@ def test_a_feed_left_on_disk_is_read_as_its_download(record_property, tmp_path):
     check = Check()
     copy = tmp_path / "around_me_localstop.rt"
     copy.write_bytes((FIXTURE / "trip_updates.pb").read_bytes())
-    read = rt_feed._fetch_gtfs_feed_entities(copy.as_uri(), {}, "trip_data")
+    read = _read_once(copy.as_uri(), {}, "trip_data")
     sent = rt_feed.convert_gtfs_realtime_to_json((FIXTURE / "trip_updates.pb").read_bytes())
     check.same(read, sent["entity"], "the file reads as the download")
-    check.same(rt_feed._fetch_gtfs_feed_entities(
+    check.same(_read_once(
         (tmp_path / "gone.rt").as_uri(), {}, "trip_data"), None, "a file gone is no feed")
     _done(record_property, check, fixture="sncf", promise="local_file")

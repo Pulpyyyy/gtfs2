@@ -37,18 +37,18 @@ def test_an_outage_is_said_once_and_its_end_too(monkeypatch, caplog):
     monkeypatch.setattr(rt_feed, "fetch", fetch)
     caplog.set_level(logging.DEBUG, logger=rt_feed.__name__)
     for _ in range(3):
-        assert rt_feed._fetch_gtfs_feed_entities(URL, {}, "trip_data") is None
+        assert rt_feed._fetch_feed(URL, {}, "trip_data")[0] is None
     assert len(_errors(caplog)) == 1
 
     answer["fail"] = False
-    assert rt_feed._fetch_gtfs_feed_entities(URL, {}, "trip_data") == [1]
+    assert rt_feed._fetch_feed(URL, {}, "trip_data")[0] == [1]
     assert any("answers again" in r.getMessage() for r in caplog.records)
-    assert rt_feed._fetch_gtfs_feed_entities(URL, {}, "trip_data") == [1]
+    assert rt_feed._fetch_feed(URL, {}, "trip_data")[0] == [1]
     assert sum("answers again" in r.getMessage() for r in caplog.records) == 1
 
     # a new outage is news again
     answer["fail"] = True
-    rt_feed._fetch_gtfs_feed_entities(URL, {}, "trip_data")
+    rt_feed._fetch_feed(URL, {}, "trip_data")[0]
     assert len(_errors(caplog)) == 2
 
 
@@ -63,7 +63,7 @@ def test_each_url_speaks_for_itself(monkeypatch, caplog):
     monkeypatch.setattr(rt_feed, "fetch", fetch)
     caplog.set_level(logging.DEBUG, logger=rt_feed.__name__)
     for url in (URL, URL, URL + "?other", URL + "?other"):
-        rt_feed._fetch_gtfs_feed_entities(url, {}, "trip_data")
+        rt_feed._fetch_feed(url, {}, "trip_data")[0]
     assert len(_errors(caplog)) == 2
 
 
@@ -81,11 +81,11 @@ def test_a_json_alert_feed_says_it_is_back(monkeypatch, caplog):
 
     monkeypatch.setattr(rt_feed, "fetch", fetch)
     caplog.set_level(logging.DEBUG, logger=rt_feed.__name__)
-    assert rt_feed._fetch_gtfs_feed_entities(URL, {}, "alerts") is None
+    assert rt_feed._fetch_feed(URL, {}, "alerts")[0] is None
     answer["fail"] = False
-    assert list(rt_feed._fetch_gtfs_feed_entities(URL, {}, "alerts")) == []
+    assert list(rt_feed._fetch_feed(URL, {}, "alerts")[0]) == []
     assert any("answers again" in r.getMessage() for r in caplog.records)
     # so the next outage is news again
     answer["fail"] = True
-    rt_feed._fetch_gtfs_feed_entities(URL, {}, "alerts")
+    rt_feed._fetch_feed(URL, {}, "alerts")[0]
     assert len(_errors(caplog)) == 2
