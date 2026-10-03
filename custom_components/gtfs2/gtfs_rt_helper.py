@@ -24,8 +24,6 @@ from .const import (
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
     ATTR_NEXT_RT_TRIPS,
-    ATTR_RT_CANCELLED,
-    ATTR_RT_SKIPPED,
     ATTR_DEVICE_CLASS,
 
     TIME_STR_FORMAT,
@@ -84,10 +82,6 @@ def get_next_services(self: GTFSUpdateCoordinator) -> dict[str, Any]:
         ATTR_NEXT_RT: next_services,
         ATTR_NEXT_RT_DELAYS: next_delays,
         ATTR_NEXT_RT_TRIPS: next_trips,
-        # what the feed struck out among the entity's trips: a card can
-        # say "cancelled" where the static list would have shown a time
-        ATTR_RT_CANCELLED: sorted(getattr(self, "_rt_cancelled", None) or {}),
-        ATTR_RT_SKIPPED: sorted(getattr(self, "_rt_skipped", None) or {}),
     }
     
     if len(next_services) > 0:

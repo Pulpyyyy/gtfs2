@@ -221,7 +221,8 @@ async def drop_struck_trips(coordinator: GTFSUpdateCoordinator, data: Mapping[st
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.exception("Error reading the alerts again for %s: %s", data["origin"], ex)
     # the trips struck since the last static refresh, whichever
-    # reading turned them up
+    # reading turned them up: a card can say "cancelled" where the
+    # static list would have shown a time
     coordinator._get_next_service[ATTR_RT_CANCELLED] = sorted(coordinator._struck_cancelled)
     coordinator._get_next_service[ATTR_RT_SKIPPED] = sorted(coordinator._struck_skipped)
 
