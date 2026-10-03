@@ -19,7 +19,7 @@ from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
-from .geojson import entry_file_part, safe_file_part, write_json_if_changed
+from .geojson import entry_file_part, line_file_part, write_json_if_changed
 from .clocks import _leg_timezone, gtfs_seconds
 from .gtfs_db import remove_files
 from .gtfs_helper import shown_ends
@@ -55,7 +55,7 @@ def leg_geojson_name(route_id: str, direction: str | int | None, name: str) -> s
     must not overwrite each other's. Kept in one place, like the other
     two, so the writer and the sensor attribute agree; the removal finds
     it back by its entry part alone (see leg_geojson_pattern)."""
-    return f"{safe_file_part(route_id)}_{safe_file_part(direction)}_leg_{entry_file_part(name)}.json"
+    return f"{line_file_part(route_id, direction)}_leg_{entry_file_part(name)}.json"
 
 
 # the direction part of a leg file name: what str() makes of a departure's

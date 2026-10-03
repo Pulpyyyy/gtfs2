@@ -64,16 +64,21 @@ def map_file(hass: HomeAssistant, name: str) -> str:
     return os.path.join(hass.config.path(DEFAULT_PATH_GEOJSON), name)
 
 
+def line_file_part(route_id: str, direction: str | int | None) -> str:
+    """The line and direction part every map file name starts with."""
+    return f"{safe_file_part(route_id)}_{safe_file_part(direction)}"
+
+
 def route_geojson_name(route_id: str, direction: str | int | None) -> str:
     """File name of the route export, in one place because three callers need
     the same answer: the writer, the sensor attribute and the removal on entry
     deletion. A file nobody can name again is a file nobody can delete."""
-    return f"{safe_file_part(route_id)}_{safe_file_part(direction)}_route.json"
+    return f"{line_file_part(route_id, direction)}_route.json"
 
 
 def vehicle_positions_name(route_id: str, direction: str | int | None) -> str:
     """Same, for the realtime positions file written by get_rt_vehicle_positions."""
-    return f"{safe_file_part(route_id)}_{safe_file_part(direction)}.json"
+    return f"{line_file_part(route_id, direction)}.json"
 
 
 def clear_vehicle_file(hass: HomeAssistant, route_id: str, direction: str | int | None) -> bool:
