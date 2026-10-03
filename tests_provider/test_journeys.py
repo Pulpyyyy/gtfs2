@@ -194,6 +194,11 @@ class Fixture:
                 text("SELECT route_id, route_type FROM routes")).fetchall())
             self.route_short_names = dict(conn.execute(
                 text("SELECT route_id, route_short_name FROM routes")).fetchall())
+            # the name a line is read by: its short name, its long name when
+            # the feed gives none (TriMet's MAX lines)
+            self.line_names = dict(conn.execute(
+                text("SELECT route_id, coalesce(nullif(route_short_name, ''), route_long_name) "
+                     "FROM routes")).fetchall())
             self.stop_names = dict(conn.execute(
                 text("SELECT stop_id, stop_name FROM stops")).fetchall())
             self.stations = dict(conn.execute(
@@ -1324,7 +1329,7 @@ def check_route(check, fx, route_id, direction, kind):
                     if result:
                         # the answer is the entry's own line, listed in
                         # time order with one item per list per departure
-                        shape = shape_of(result, fx.route_short_names[route_id])
+                        shape = shape_of(result, fx.line_names[route_id])
                         check.note(shape["ok"], shaped(asked, shape),
                                    asked=asked, got=got, shape=shape)
                         # each departure names the record it leaves from, a
@@ -1390,7 +1395,7 @@ PARALLEL = ("next_departures_lines", "next_departures_headsign",
             "next_departures_origin_stop_id")
 
 
-def shape_of(result, short_name):
+def shape_of(result, line_name):
     """How the answer's lists hold together: departures in time order
     without a trip repeated, every companion list one item per departure, one line
     only and it is the entry's, durations that are whole minutes at or
@@ -1414,7 +1419,7 @@ def shape_of(result, short_name):
         "parallel": all(n == len(departures) for n in lengths.values()),
         "lengths": lengths,
         "lines": lines,
-        "one_line": lines == [str(short_name)],
+        "one_line": lines == [str(line_name)],
         "duration": result.get("duration"),
         "durations_sane": (isinstance(result.get("duration"), int)
                            and result["duration"] >= 0
