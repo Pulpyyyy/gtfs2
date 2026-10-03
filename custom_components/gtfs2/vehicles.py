@@ -19,6 +19,7 @@ from sqlalchemy.sql import text as sql_text
 
 from .const import DEFAULT_PATH_GEOJSON, DEFAULT_VEHICLE_MAX_AGE
 from .geojson import vehicle_positions_name, write_json_file
+from .line_ends import _names_a_place
 from .rt_feed import FeedEntities, _Coordinator, _read_feed, _same_route
 
 if TYPE_CHECKING:
@@ -40,7 +41,6 @@ def _trip_destinations(schedule: Schedule | str | None, trip_ids: Iterable[str])
     trip_ids = sorted({str(t) for t in trip_ids if t})
     if not trip_ids or schedule is None or isinstance(schedule, str):
         return {}
-    from .line_ends import _names_a_place
     sql = """
     SELECT t.trip_id, t.trip_headsign,
            (SELECT s.stop_name FROM stop_times st
