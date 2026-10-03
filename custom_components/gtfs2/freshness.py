@@ -205,12 +205,12 @@ def fetch_if_new(data: Mapping[str, Any], zip_path: str, adopt: bool = True) -> 
         return None
     # compared once on disk: the body is not in memory to hash beforehand
     meta = source_meta(zip_path)
-    if meta.get("sha256") and file_digest(staged)[0] == meta["sha256"]:
+    digest = file_digest(staged)[0]
+    if digest == meta.get("sha256"):
         remove_files(staged)
         _record_validators(response, zip_path, meta)
         return False
     if not adopt:
-        digest = file_digest(staged)[0]
         remove_files(staged)
         return digest
     return True if keep_download(response, staged, zip_path, data.get("url")) else None
