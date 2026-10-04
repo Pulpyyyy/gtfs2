@@ -1067,3 +1067,16 @@ def load(module_name: str, component: str | Path | None = None,
     sys.modules[full] = module
     spec.loader.exec_module(module)
     return module
+
+
+def forget_keys() -> None:
+    """Forget the api keys every loaded key_mask noted.
+
+    key_mask keeps them for the whole process, as Home Assistant does, so a
+    key one test typed ("wrong" in the flow's key screens) was masked in
+    the text of the tests after it ("https://tao/*****.zip"). The suites
+    call this before each test.
+    """
+    for name, module in list(sys.modules.items()):
+        if name.endswith(".key_mask") and hasattr(module, "_known_keys"):
+            module._known_keys = frozenset()

@@ -26,6 +26,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
+import ha_stub
+
 TESTS_DIR = Path(__file__).parent
 RESULTS_DIR = TESTS_DIR.parent / "test-results" / "tests"
 
@@ -38,6 +42,11 @@ _TEST_FILE_TO_CASE_FOLDER = {
 }
 
 _CASE_NODEID_RE = re.compile(r"^(?P<file>[^:]+)::test_\w+\[")
+
+
+@pytest.fixture(autouse=True)
+def _no_key_from_another_test():
+    ha_stub.forget_keys()
 
 
 def pytest_sessionfinish(session, exitstatus):  # noqa: ARG001 - exitstatus required by hook signature

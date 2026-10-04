@@ -51,6 +51,11 @@ _progress = {"total": 0, "done": 0, "start": time.monotonic()}
 _worker_process = False
 
 
+@pytest.fixture(autouse=True)
+def _no_key_from_another_test():
+    ha_stub.forget_keys()
+
+
 def _worker(config):
     return hasattr(config, "workerinput")
 
