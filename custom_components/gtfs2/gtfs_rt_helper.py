@@ -100,28 +100,76 @@ def _scheduled_departures(self: _Coordinator) -> dict[str, int]:
     return due
 
 
-def _off_board_times(self: _Coordinator, feed_entities: FeedEntities,
-                     scheduled: Mapping[str, int]) -> dict[str, tuple[str | None, int]]:
-    """{trip_id: (the service day the feed names or None, the time it
-    gives at this entity's stop)} of the followed trips the board does not
-    list."""
-    found = {}
+def _sequence(value: object) -> int | None:
+    """A stop_sequence as a number, None when none is given (the SIRI path
+    writes "n.a")."""
+    try:
+        return int(str(value))
+    except ValueError:
+        return None
+
+
+def _calls_here(updates: list[Mapping[str, Any]], stop_id: str,
+                sequence: int | None) -> list[Mapping[str, Any]]:
+    """The stop updates of one trip that time this entity's stop: by its
+    stop_id, or, for an update naming no stop, by the stop_sequence the
+    trip calls here with. A sequence is the trip's own: two patterns of a
+    line call at one stop under two numbers."""
+    return [stop for stop in updates
+            if (stop.get("stop_id") or "") == stop_id
+            or (not stop.get("stop_id") and sequence is not None and _sequence(stop.get("stop_sequence")) == sequence)]
+
+
+def _followed(self: _Coordinator, feed_entities: FeedEntities) -> list[tuple[Mapping[str, Any], str, str, str, str]]:
+    """(entity, group, route_id, direction_id, trip_id) of the trip updates
+    this entity follows."""
+    followed = []
     for entity in feed_entities:
-        if not entity.get("trip_update"):
+        if not entity.get('trip_update', False):
             continue
         trip = entity["trip_update"]["trip"]
         group, route_id, direction_id = _trip_group_route_direction(self, trip)
         trip_id = trip.get("trip_id") or ""
-        if (not trip_id or trip_id in scheduled
-                or not _follows_trip(self, group, route_id, direction_id, trip_id, entity.get("id") or "")):
+        if _follows_trip(self, group, route_id, direction_id, trip_id, entity.get("id") or ""):
+            followed.append((entity, group, route_id, direction_id, trip_id))
+    return followed
+
+
+def _timetable_here(self: _Coordinator, followed: list[tuple[Mapping[str, Any], str, str, str, str]],
+                    scheduled: Mapping[str, int]) -> dict[str, tuple[int, float | None]] | None:
+    """{trip_id: (stop_sequence, seconds past its service day's midnight)}
+    at this entity's stop, read from the database for the followed trips
+    only it can tell about: the ones the board does not list, and the ones
+    whose updates do not name the stop. A trip calling twice keeps its
+    first call. None when there is no database to read."""
+    wanted = set()
+    for entity, _group, _route_id, _direction_id, trip_id in followed:
+        if not trip_id or trip_relationship(entity) in CANCELLED_TRIP:
             continue
-        for stop in entity["trip_update"].get("stop_time_update") or []:
-            if (stop.get("stop_id") or "") == self._stop_id:
-                when, _delay = stop_update_clock(stop)
-                if when:
-                    found[trip_id] = (trip.get("start_date") or None, when)
-                break
-    return found
+        updates = entity["trip_update"].get("stop_time_update") or []
+        if trip_id not in scheduled or not any(
+                (stop.get("stop_id") or "") == self._stop_id for stop in updates):
+            wanted.add(trip_id)
+    if not wanted:
+        return {}
+    schedule = (getattr(self, "_data", None) or {}).get("schedule")
+    if schedule is None or not hasattr(schedule, "engine"):
+        return None
+    sql = """
+    SELECT trip_id, stop_sequence, (julianday(departure_time) - julianday('1970-01-01')) * 86400
+    FROM stop_times
+    WHERE stop_id = :stop AND trip_id IN (SELECT value FROM json_each(:trips))
+    ORDER BY trip_id, stop_sequence DESC
+    """
+    try:
+        with schedule.engine.connect() as conn:
+            rows = conn.execute(sql_text(sql), {"stop": self._stop_id,
+                                                "trips": json.dumps(sorted(wanted))}).fetchall()
+    except SQLAlchemyError as ex:
+        _LOGGER.debug("Could not read the timetable of the followed trips: %s", ex)
+        return None
+    # the first call last, so that it is the one kept
+    return {str(trip_id): (int(sequence), seconds) for trip_id, sequence, seconds in rows}
 
 
 def _due_on_its_day(start_date: str | None, seconds: int, near: int, zone: tzinfo) -> int:
@@ -143,40 +191,38 @@ def _due_on_its_day(start_date: str | None, seconds: int, near: int, zone: tzinf
     return min(due, key=lambda when: abs(when - near))
 
 
-def _scheduled_off_board(self: _Coordinator, feed_entities: FeedEntities,
-                         scheduled: Mapping[str, int]) -> dict[str, int]:
+def _scheduled_off_board(self: _Coordinator, followed: list[tuple[Mapping[str, Any], str, str, str, str]],
+                         scheduled: Mapping[str, int],
+                         here: Mapping[str, tuple[int, float | None]]) -> dict[str, int]:
     """When the timetable has the followed trips the board does not list,
     at this entity's stop, by trip id, epoch seconds.
 
     The board lists the departures still to come by the timetable: a train
     late past its own time has left it while the feed still announces it,
     and its delay was then the feed's alone, 0 on IDFM for a train four
-    minutes late. Read from the database for those trips only.
+    minutes late. Read from the database for those trips only (here), for
+    the ones the feed says something of at this stop: a time, or a delay
+    to lay on the timetable's time.
     """
-    realtime = _off_board_times(self, feed_entities, scheduled)
-    schedule = (getattr(self, "_data", None) or {}).get("schedule")
-    if not realtime or schedule is None or not hasattr(schedule, "engine"):
-        return {}
-    sql = """
-    SELECT trip_id, (julianday(departure_time) - julianday('1970-01-01')) * 86400
-    FROM stop_times
-    WHERE stop_id = :stop AND trip_id IN (SELECT value FROM json_each(:trips))
-    """
-    try:
-        with schedule.engine.connect() as conn:
-            rows = conn.execute(sql_text(sql), {"stop": self._stop_id,
-                                                "trips": json.dumps(sorted(realtime))}).fetchall()
-    except SQLAlchemyError as ex:
-        _LOGGER.debug("Could not read the timetable of the trips off the board: %s", ex)
-        return {}
     # the clocks the board's own departures are written in
-    shown = (self._data.get("next_departure") or {}).get("departure_time")
+    shown = ((getattr(self, "_data", None) or {}).get("next_departure") or {}).get("departure_time")
     zone = getattr(shown, "tzinfo", None) or dt_util.DEFAULT_TIME_ZONE
     found = {}
-    for trip_id, seconds in rows:
-        if seconds is not None and str(trip_id) in realtime:
-            start_date, when = realtime[str(trip_id)]
-            found[str(trip_id)] = _due_on_its_day(start_date, round(seconds), when, zone)
+    for entity, _group, _route_id, _direction_id, trip_id in followed:
+        if not trip_id or trip_id in scheduled or trip_id not in here:
+            continue
+        sequence, seconds = here[trip_id]
+        calls = _calls_here(entity["trip_update"].get("stop_time_update") or [], self._stop_id, sequence)
+        if seconds is None or not calls:
+            continue
+        when, delay = stop_update_clock(calls[0])
+        if not when and delay is None:
+            continue
+        # the day is the one that puts the timetable nearest to what the
+        # feed says, when it names none
+        near = when or int(dt_util.utcnow().timestamp()) + (delay or 0)
+        start_date = entity["trip_update"]["trip"].get("start_date") or None
+        found[trip_id] = _due_on_its_day(start_date, round(seconds), near, zone)
     return found
 
 
@@ -300,17 +346,14 @@ def _departure_slot(departure_times: _DepartureTimes, route_id: str, direction_i
 
 def _read_stop_updates(self: _Coordinator, entity: Mapping[str, Any], trip_id: str, direction_id: str,
                        start_date: str | None, departure_times: _DepartureTimes,
-                       scheduled: Mapping[str, int]) -> None:
-    ''' Add the departures a trip update gives at this entity's stop '''
+                       scheduled: Mapping[str, int], sequence: int | None) -> None:
+    ''' Add the departures a trip update gives at this entity's stop, the
+    trip calling there with this stop_sequence '''
     entity_id = entity.get("id") or ""
-    for stop in entity["trip_update"].get("stop_time_update") or []:
+    for stop in _calls_here(entity["trip_update"].get("stop_time_update") or [], self._stop_id, sequence):
         stop_id = stop.get("stop_id") or ""
-        stop_sequence = stop.get("stop_sequence")
-        if not (stop_id == self._stop_id or (stop_id == "" and stop_sequence == self._stop_sequence)):
-            continue
         _LOGGER.debug("Stop found: %s", stop)
-        # if the data does not contain a stop_id but only a stop_sequence, assume stop_id being the correct stop based on sequence
-        # this does not have to be always correct but best-guess
+        # if the data does not contain a stop_id but only a stop_sequence, the stop is the one the trip calls at with that sequence
         if stop_id == "":
             stop_id = self._stop_id
         called = stop_relationship(stop)
@@ -402,26 +445,27 @@ def get_rt_route_trip_statuses(self: _Coordinator,
     # when the feed publishes one without a time, and to read a delay the
     # feed writes as 0; the trips it no longer lists as well
     scheduled = _scheduled_departures(self)
-    scheduled.update(_scheduled_off_board(self, feed_entities, scheduled))
+    followed = _followed(self, feed_entities)
+    here = _timetable_here(self, followed, scheduled)
+    scheduled.update(_scheduled_off_board(self, followed, scheduled, here or {}))
+    # the stop_sequence each trip calls here with: the shown trip's is
+    # known; with no database to tell, the board's trips are taken to call
+    # with it, as they all were before
+    sequences = {trip_id: sequence for trip_id, (sequence, _seconds) in (here or {}).items()}
+    shown = _sequence(getattr(self, "_stop_sequence", None))
+    if shown is not None:
+        sequences.setdefault(str(self._trip_id), shown)
+        if here is None:
+            sequences.update({trip_id: shown for trip_id in scheduled})
 
     if self._rt_group == "route":
         _LOGGER.debug("Search departure times for route: %s, trip: %s, type: %s, direction: %s, short_name: %s, trip_list: %s", self._route_id, self._trip_id, self._rt_group, self._direction, self._trip_short_name, self._trip_list)
     else:
         _LOGGER.debug("Search departure times for trip: %s, type: %s, short_name: %s", self._trip_id, self._rt_group, self._trip_short_name)
 
-    for entity in feed_entities:
-
-        if not entity.get('trip_update', False):
-            continue
-
+    for entity, group, route_id, direction_id, trip_id in followed:
         trip = entity["trip_update"]["trip"]
-        group, route_id, direction_id = _trip_group_route_direction(self, trip)
-        trip_id = trip.get("trip_id") or ""
-        entity_id = entity.get("id") or ""
-
-        if not _follows_trip(self, group, route_id, direction_id, trip_id, entity_id):
-            continue
-        _LOGGER.debug("Entity found params - group: %s, route_id: %s, direction_id: %s, self_trip_id: %s, with rt trip: %s, rt id: %s", group, route_id, direction_id, self._trip_id, trip, entity_id)
+        _LOGGER.debug("Entity found params - group: %s, route_id: %s, direction_id: %s, self_trip_id: %s, with rt trip: %s, rt id: %s", group, route_id, direction_id, self._trip_id, trip, entity.get("id"))
 
         start_date = trip.get("start_date") or None
         relationship = trip_relationship(entity)
@@ -435,7 +479,8 @@ def get_rt_route_trip_statuses(self: _Coordinator,
             _LOGGER.debug("Trip %s is %s on %s, not a departure", trip_id, relationship, start_date)
             continue
 
-        _read_stop_updates(self, entity, trip_id, direction_id, start_date, departure_times, scheduled)
+        _read_stop_updates(self, entity, trip_id, direction_id, start_date, departure_times, scheduled,
+                           sequences.get(trip_id))
 
     _sort_departure_slots(departure_times)
 
