@@ -15,6 +15,7 @@ import ha_stub
 
 vehicles = ha_stub.load("vehicles")
 rt_feed = ha_stub.load("rt_feed")
+const = ha_stub.load("const")
 
 
 def _schedule(tmp_path):
@@ -44,6 +45,7 @@ def test_each_vehicle_titled_after_its_trip(tmp_path, monkeypatch):
     me = types.SimpleNamespace(
         _vehicle_position_url="http://feed.invalid/vp", _headers={}, _trip_id="T1",
         _trip_list=["T1", "T2"], _direction="0", _route_id="R1", _icon="mdi:bus",
+        _vehicle_max_age=const.DEFAULT_VEHICLE_MAX_AGE,
         _data={"file": "src", "schedule": schedule,
                "next_departure": {"route_short_name": "N1"}},
         # the rider's destination, which the title used to show
@@ -73,6 +75,7 @@ def test_the_database_direction_places_the_vehicle(tmp_path, monkeypatch):
     me = types.SimpleNamespace(
         _vehicle_position_url="http://feed.invalid/vp", _headers={}, _trip_id="T9",
         _trip_list=[], _direction="0", _route_id="R1", _icon="mdi:bus",
+        _vehicle_max_age=const.DEFAULT_VEHICLE_MAX_AGE,
         _data={"file": "src", "schedule": schedule, "next_departure": {"route_short_name": "N1"}})
     body = vehicles.get_rt_vehicle_positions(me)
     assert [e["properties"]["trip_id"] for e in body] == ["T1"]

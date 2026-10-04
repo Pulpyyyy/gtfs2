@@ -16,14 +16,15 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text as sql_text
 
-from .const import DEFAULT_VEHICLE_MAX_AGE
 from .geojson import map_file, vehicle_positions_name, write_json_file
 from .line_ends import _names_a_place
-from .rt_feed import FeedEntities, _Coordinator, _read_feed, _same_route
+from .rt_feed import FeedEntities, _read_feed, _same_route
 
 if TYPE_CHECKING:
     # for the annotations only
     from pygtfs import Schedule
+
+    from .coordinator import GTFSUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -165,7 +166,7 @@ def _candidate_trips(feed_entities: FeedEntities, board: set[str], route_id: str
                  or _same_route(route_id, e["vehicle"]["trip"]["route_id"]))]
 
 
-def _title_vehicles(self: _Coordinator, schedule: Schedule | str | None, titles: list[_Title]) -> None:
+def _title_vehicles(self: GTFSUpdateCoordinator, schedule: Schedule | str | None, titles: list[_Title]) -> None:
     """Title each vehicle kept on the map."""
     # each vehicle titled after where its own trip goes, read for all of
     # them at once: the entry's destination was used, which is where the
@@ -182,9 +183,9 @@ def _title_vehicles(self: _Coordinator, schedule: Schedule | str | None, titles:
             element["properties"]["title"] = str(self._route_id) + "(" + direction + ")" + crc + "_" + icon
 
 
-def get_rt_vehicle_positions(self: _Coordinator) -> list[dict[str, Any]]:
+def get_rt_vehicle_positions(self: GTFSUpdateCoordinator) -> list[dict[str, Any]]:
     if not self._vehicle_position_url:
-        # read only for a source with a vehicle feed (get_rt_route_trip_statuses)
+        # read only for a source with a vehicle feed (the coordinator's _read_realtime)
         return []
     feed_entities = _read_feed(self, self._vehicle_position_url, "vehicle_positions")
     geojson_body: list[dict[str, Any]] = []
@@ -206,10 +207,10 @@ def get_rt_vehicle_positions(self: _Coordinator) -> list[dict[str, Any]]:
     # repairs direction_id where the provider mixed its trips up (80 trips
     # of four GVB trams), and the vehicle feed still carries the provider's,
     # which put those vehicles on the other direction's map
-    board = {str(t) for t in (getattr(self, "_trip_list", None) or ())}
-    max_age = getattr(self, "_vehicle_max_age", DEFAULT_VEHICLE_MAX_AGE)
+    board = {str(t) for t in self._trip_list}
+    max_age = self._vehicle_max_age
     now = time.time()
-    schedule = (getattr(self, "_data", None) or {}).get("schedule")
+    schedule = self._data.get("schedule")
     static_direction = _trip_directions(
         schedule, _candidate_trips(feed_entities, board, self._route_id))
     for entity in feed_entities:
@@ -237,7 +238,7 @@ def get_rt_vehicle_positions(self: _Coordinator) -> list[dict[str, Any]]:
     return geojson_body
 
 
-def update_geojson(self: _Coordinator) -> None:
+def update_geojson(self: GTFSUpdateCoordinator) -> None:
     file = map_file(self.hass, vehicle_positions_name(self._route_id, self._direction))
     _LOGGER.debug("Creating geojson file: %s", file)
     write_json_file(file, self.geojson)

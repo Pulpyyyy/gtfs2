@@ -22,6 +22,7 @@ import ha_stub
 
 vehicles = ha_stub.load("vehicles")
 rt_feed = ha_stub.load("rt_feed")
+const = ha_stub.load("const")
 
 NOW = datetime.datetime(2026, 9, 25, 19, 53, tzinfo=datetime.timezone.utc)
 FRESH = [2] * 7
@@ -58,7 +59,8 @@ def _on_the_map(monkeypatch, entities, **context):
         _vehicle_position_url="http://feed.invalid/vp", _headers={}, _trip_id="T0",
         _trip_list=[], _direction="0", _route_id="A", _icon="mdi:tram",
         _data={"file": "tao", "schedule": None, "next_departure": {"route_short_name": "A"}},
-        **context)
+        # the source's limit, the default when it sets none, as the coordinator reads it
+        **{"_vehicle_max_age": const.DEFAULT_VEHICLE_MAX_AGE, **context})
     with freeze_time(NOW):
         body = vehicles.get_rt_vehicle_positions(me)
     return sorted(e["properties"]["trip_id"] for e in body)
