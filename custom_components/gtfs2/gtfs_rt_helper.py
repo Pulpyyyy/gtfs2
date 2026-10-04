@@ -23,7 +23,6 @@ from .rt_feed import (
     delay_of, stop_relationship, stop_update_clock,
     trip_relationship,
 )
-from .vehicles import get_rt_vehicle_positions
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -447,12 +446,10 @@ def get_rt_route_trip_statuses(self: _Coordinator,
     self._rt_cancelled = {}
     self._rt_skipped = {}
 
-    if self._vehicle_position_url:
-        get_rt_vehicle_positions(self)
-
     # a source can publish alerts or vehicle positions without trip updates
     # (the TTC subway is alerts-only): no times to match then, the vehicles
-    # above still land on the map and the static timetable keeps the board
+    # the coordinator read still land on the map and the static timetable
+    # keeps the board
     if not self._trip_update_url:
         self._feed_entities = None
         return {}

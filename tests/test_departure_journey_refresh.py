@@ -202,6 +202,7 @@ class Refresh:
             (coordinator_mod, "next_service_date_for"): self._async_stand_in("next_service_date_for"),
             (coordinator_mod, "rt_window_gate"): self._stand_in("rt_window_gate"),
             (coordinator_mod, "clear_vehicle_file"): self._stand_in("clear_vehicle_file"),
+            (coordinator_mod, "get_rt_vehicle_positions"): self._stand_in("get_rt_vehicle_positions"),
             (coordinator_mod, "get_rt_alerts"): self._stand_in("get_rt_alerts"),
             (coordinator_mod, "get_next_services"): self._stand_in(
                 "get_next_services", self._next_services),
@@ -614,6 +615,28 @@ def test_failing_alerts_leave_the_trip_updates(tmp_path):
     assert result["alert"] == {}
     assert result["next_departure_realtime_attr"][const.ATTR_NEXT_RT]
     assert refresh.count("export_leg") == 1
+
+
+def test_failing_vehicles_leave_the_trip_updates(tmp_path):
+    refresh = Refresh(tmp_path, options={**REALTIME, "vehicle_position_url": "http://rt.test/vehicles"})
+    refresh.failing.add("get_rt_vehicle_positions")
+    result = refresh.run()
+    assert result["next_departure_realtime_attr"][const.ATTR_NEXT_RT]
+    assert result["alert"] == ALERTS
+
+
+def test_the_vehicles_are_read_without_a_trip_update_feed(tmp_path):
+    # the vehicles still land on the map, the board keeps the timetable
+    refresh = Refresh(tmp_path, options={**REALTIME, "trip_update_url": "",
+                                         "vehicle_position_url": "http://rt.test/vehicles"})
+    refresh.run()
+    assert refresh.calls["get_rt_vehicle_positions"] == [(refresh.coordinator,)]
+
+
+def test_a_journey_without_a_vehicle_feed_reads_none(tmp_path):
+    refresh = Refresh(tmp_path, options=REALTIME)
+    refresh.run()
+    assert refresh.count("get_rt_vehicle_positions") == 0
 
 
 def test_failing_trip_updates_leave_the_timetable(tmp_path):

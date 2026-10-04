@@ -633,6 +633,8 @@ default.
      rt_window_gate                    outside the window: feeds not read,
                                        vehicle file cleared
      get_rt_alerts                     alerts first, on their own
+     get_rt_vehicle_positions          the vehicle file, on its own, when the
+                                       source has a vehicle feed
      get_next_services                 delays of the listed trips
      drop_struck_trips                 a struck trip goes, the next takes its place
    realtime off or paused:             delays and alerts emptied, never

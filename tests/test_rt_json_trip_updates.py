@@ -95,15 +95,15 @@ def test_a_departure_gone_by_is_not_listed():
     assert (got["departures"], got["delays"], got["trips"]) == ([], [], [])
 
 
-def test_no_trip_update_feed_reads_nothing(monkeypatch):
-    # the vehicles still land on the map, the board keeps the timetable
+def test_no_trip_update_feed_reads_nothing():
+    # the board keeps the timetable; the vehicles are the coordinator's to
+    # read (test_departure_journey_refresh), not this reader's
     me = _context()
     me._trip_update_url, me._vehicle_position_url = None, "http://feed.invalid/vp"
-    read = []
-    monkeypatch.setattr(gtfs_rt_helper, "get_rt_vehicle_positions", lambda self: read.append(self))
     me._feed_entities = "stale"
     assert gtfs_rt_helper.get_rt_route_trip_statuses(me) == {}
-    assert read == [me] and me._feed_entities is None
+    assert me._feed_entities is None
+    assert not hasattr(gtfs_rt_helper, "get_rt_vehicle_positions")
 
 
 def _trip_feed(relationship):

@@ -45,7 +45,7 @@ from .geojson import clear_vehicle_file, vehicle_positions_name
 from .gtfs_rt_helper import _names_trip, get_next_services, get_rt_alerts, merge_struck
 from .rt_source import rt_feed_config, rt_headers, with_query_key
 from .rt_window import rt_window_gate
-from .vehicles import marker_ids
+from .vehicles import get_rt_vehicle_positions, marker_ids
 from .departure_attributes import departure_records
 from .exports import export_leg, export_route_shape, export_timetable
 
@@ -471,6 +471,15 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             self._data["alert"] = await self.hass.async_add_executor_job(get_rt_alerts, self)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.exception("Error getting gtfs realtime alerts, for origin: %s with error: %s", data["origin"], ex)
+        # the vehicles on their own as well, and here: only a journey draws
+        # them, a local stops entry reads no vehicle feed. Read by the trip
+        # updates' reader, a failed vehicle feed took the departure times
+        # down with it
+        if self._vehicle_position_url:
+            try:
+                await self.hass.async_add_executor_job(get_rt_vehicle_positions, self)
+            except Exception as ex:  # pylint: disable=broad-except
+                _LOGGER.exception("Error getting gtfs realtime vehicle positions, for origin: %s with error: %s", data["origin"], ex)
         try:
             self._get_next_service = await self.hass.async_add_executor_job(get_next_services, self)
             self._data["next_departure_realtime_attr"] = self._get_next_service
