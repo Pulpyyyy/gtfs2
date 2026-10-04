@@ -390,7 +390,10 @@ def convert_gtfs_realtime_to_json(gtfs_realtime_data: bytes) -> dict[str, Any]:
             entity.trip_update.trip)
         for stop_time_update in entity.trip_update.stop_time_update:
             stop_time_update_dict = {
-                "stop_sequence": stop_time_update.stop_sequence,
+                # None when the feed gives none: protobuf reads 0 then, a
+                # sequence a feed numbering its calls from 0 does use
+                "stop_sequence": (stop_time_update.stop_sequence
+                                  if stop_time_update.HasField("stop_sequence") else None),
                 "stop_id": stop_time_update.stop_id,
                 # SCHEDULED, SKIPPED (the vehicle does not call), NO_DATA
                 # (no prediction here, the timetable stands), UNSCHEDULED

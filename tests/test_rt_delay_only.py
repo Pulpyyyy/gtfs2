@@ -89,6 +89,25 @@ def test_the_converter_keeps_a_delay_the_feed_does_not_give_apart():
     assert silent_dict["arrival"]["delay"] is None
 
 
+def test_the_converter_keeps_a_sequence_the_feed_does_not_give_apart():
+    # a feed naming its calls by stop_id alone: protobuf reads their
+    # sequence as 0, which a feed numbering from 0 gives its first call
+    feed = gtfs_realtime_pb2.FeedMessage()
+    feed.header.gtfs_realtime_version = "2.0"
+    entity = feed.entity.add()
+    entity.id = "e1"
+    entity.trip_update.trip.trip_id = "T1"
+    first = entity.trip_update.stop_time_update.add()
+    first.stop_sequence = 0
+    first.stop_id = "S0"
+    by_id = entity.trip_update.stop_time_update.add()
+    by_id.stop_id = "S1"
+    converted = rt_feed.convert_gtfs_realtime_to_json(feed.SerializeToString())
+    first_dict, by_id_dict = converted["entity"][0]["trip_update"]["stop_time_update"]
+    assert first_dict["stop_sequence"] == 0
+    assert by_id_dict["stop_sequence"] is None
+
+
 def test_a_local_stop_lays_the_delay_on_its_own_row():
     # a local stops departure is no listed departure of a journey: its
     # timetable time is the row it is built from, the only one it knows
