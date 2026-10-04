@@ -51,6 +51,8 @@ CALLS = [
     ("N1", "P1b", 1, "23:50"), ("N1", "S2", 2, "24:10"),
     ("X1", "X", 1, "06:00"), ("X1", "S2", 2, "06:30"),
     ("U1", "S1", 1, None), ("U1", "S2", 2, "09:10"),
+    ("D1", "S1", 1, "10:00"), ("D1", "S2", 2, "10:10"), ("D1", "S3", 3, "10:20"),
+    ("D1", "X", 4, "10:30"), ("D1", "P1", 5, "10:40"),
 ]
 
 
@@ -201,6 +203,33 @@ def test_the_service_day_is_found_from_the_listed_departure(tmp_path):
     assert "GONE" not in trips
     assert leg["properties"]["realtime"] is False
     assert [f["properties"]["stop_id"] for f in leg["features"]] == ["P1b", "S2"]
+
+
+def _carried(tmp_path, *updates):
+    """{stop: delay} the leg file gives D1, ridden from S1, for its updates."""
+    leg = _leg(tmp_path, _departure("D1", "S1", datetime.datetime(2026, 9, 25, 10, 0, tzinfo=PARIS)),
+               [_update("D1", *updates)])
+    return {stop: call.get("delay") for stop, call in leg["trips"]["D1"]["stops"].items()}
+
+
+def test_a_delay_holds_for_the_rest_of_the_ride(tmp_path):
+    # one update, at the next stop, by its sequence alone: the stops after
+    # it are that late too, the one before it is not told
+    got = _carried(tmp_path, {"stop_sequence": 2, "arrival": {"delay": 300}})
+    assert got == {"S1": None, "S2": 300, "S3": 300, "X": 300, "P1": 300}
+
+
+def test_a_later_update_takes_over(tmp_path):
+    got = _carried(tmp_path, {"stop_sequence": 2, "arrival": {"delay": 300}},
+                   {"stop_sequence": 4, "arrival": {"delay": 60}})
+    assert got == {"S1": None, "S2": 300, "S3": 300, "X": 60, "P1": 60}
+
+
+def test_a_skipped_stop_is_passed_over_and_no_data_ends_it(tmp_path):
+    got = _carried(tmp_path, {"stop_sequence": 2, "arrival": {"delay": 300}},
+                   {"stop_sequence": 3, "schedule_relationship": "SKIPPED"},
+                   {"stop_sequence": 4, "schedule_relationship": "NO_DATA"})
+    assert got == {"S1": None, "S2": 300, "S3": None, "X": None, "P1": None}
 
 
 def test_no_departure_writes_an_empty_leg(tmp_path):

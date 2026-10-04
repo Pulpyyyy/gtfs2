@@ -332,7 +332,27 @@ def _time_leg_trips(trips: dict[str, dict[str, Any]], called_twice: Mapping[str,
             for update in trip_update.get("stop_time_update") or []:
                 if _time_call(run, update, by_sequence, called_twice.get(t, ())):
                     realtime = True
+            _carry_delays(run)
     return realtime
+
+
+def _carry_delays(run: Mapping[str, Any]) -> None:
+    """Lay the delay of each timed call on the calls after it the feed
+    says nothing of, until the next one it times: the GTFS-RT rule, a delay
+    holds for the rest of the ride. A feed may time only the vehicle's next
+    stop (SEPTA rail), and the rest of the ride read as the timetable. A
+    skipped call is passed over; nothing is carried past a NO_DATA one,
+    which says there is no prediction."""
+    carried: int | None = None
+    for stop in sorted(run["stops"].values(), key=lambda call: call["sequence"]):
+        if stop.get("no_data"):
+            carried = None
+        elif stop.get("skipped"):
+            continue
+        elif "delay" in stop:
+            carried = stop["delay"]
+        elif carried is not None:
+            stop["delay"] = carried
 
 
 def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: FeedEntities | None = None) -> None:
