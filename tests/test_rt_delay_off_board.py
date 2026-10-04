@@ -98,3 +98,37 @@ def test_without_a_service_day_the_nearest_one_is_taken(schedule):
 
 def test_a_trip_the_timetable_does_not_know_keeps_the_feed_s_word(schedule):
     assert _delays(schedule, {"ADDED": (_epoch(19, 3), None)}) == {"ADDED": 0}
+
+
+def _delay_only(schedule, delays, now=NOW):
+    """[(trip, departure epoch, delay)] the sensor reads, the feed giving
+    each trip a delay and no time, delays being {trip: seconds}."""
+    feed = [{"id": trip, "trip_update": {
+        "trip": {"trip_id": trip, "route_id": "R1", "direction_id": 0},
+        "stop_time_update": [{"stop_id": "S1", "stop_sequence": 3,
+                              "arrival": {"time": 0, "delay": delay},
+                              "departure": {"time": 0, "delay": delay}}]}}
+        for trip, delay in delays.items()]
+    with freeze_time(now):
+        found = gtfs_rt_helper.get_rt_route_trip_statuses(_context(schedule), feed)
+    slot = found.get("R1", {}).get("0", {}).get("S1", {"departures": [], "delays": [], "trips": []})
+    return [(trip, int(when.timestamp()), delay)
+            for trip, when, delay in zip(slot["trips"], slot["departures"], slot["delays"])]
+
+
+def test_a_trip_late_past_its_own_time_with_a_delay_alone_is_announced(schedule):
+    # a feed that gives delays and no time: the bus due 18:58:36,
+    # 6 minutes late, leaves at 19:04:36, before the board's 19:05 one
+    got = _delay_only(schedule, {"LATE": 360, "LISTED": 0})
+    assert got == [("LATE", _epoch(19, 4, 36), 360), ("LISTED", _epoch(19, 5), 0)]
+
+
+def test_a_trip_gone_by_with_a_delay_alone_is_dropped(schedule):
+    # due 18:58:36 and on time, it left 84 s ago: past, not a departure
+    assert _delay_only(schedule, {"LATE": 0}) == []
+
+
+def test_a_delay_alone_on_a_trip_the_timetable_does_not_know_says_nothing(schedule):
+    # no time of its own to lay the delay on: dropped, not given another
+    # trip's time
+    assert _delay_only(schedule, {"ADDED": 120}) == []
