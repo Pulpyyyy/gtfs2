@@ -116,6 +116,11 @@ def _runs_forward(shared: Sequence[int]) -> bool:
     return up >= down
 
 
+def _closes_loop(rest: Sequence[str], position: Mapping[str, int]) -> bool:
+    """Whether the next place of a piece the chain holds is its first."""
+    return next((position[q] for q in rest if q in position), None) == 0
+
+
 def _lay_piece(order: list[str], piece: Sequence[str]) -> bool:
     """Slot the places of a piece into the chain, each after the place
     preceding it, the piece read forward or backward as the places it
@@ -131,10 +136,18 @@ def _lay_piece(order: list[str], piece: Sequence[str]) -> bool:
     else:
         forward = _runs_forward(shared)
     prev = -1
-    for p in (piece if forward else reversed(piece)):
+    ridden = list(piece if forward else reversed(piece))
+    for n, p in enumerate(ridden):
         if p in position:
             prev = position[p]
             continue
+        if n and ridden[n - 1] in position and _closes_loop(ridden[n + 1:], position):
+            # new places riding on to the chain's first place close a
+            # loop: they go at its end, where the list wraps round, and
+            # not after the place they leave from. A line out by one road
+            # and back by another (GTT 4155E) had its way back laid in
+            # the middle of the way out
+            prev = len(order) - 1
         prev += 1
         order.insert(prev, p)
         position = {q: i for i, q in enumerate(order)}
