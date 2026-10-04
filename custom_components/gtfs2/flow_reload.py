@@ -94,6 +94,7 @@ class ReloadScreens:
     _extract_next_step: str | None
     _import_job: asyncio.Task | None
     _import_routes: list
+    _progress_tick: asyncio.Task | None
     _import_missing: str
     async_show_form: Callable[..., FlowResult]
     async_show_progress: Callable[..., FlowResult]
@@ -237,12 +238,10 @@ class ReloadScreens:
             size = await self.hass.async_add_executor_job(
                 _scratch_size, gtfs_dir, filename)
 
-            tick = self.hass.async_create_task(
-                asyncio.wait({self._import_job}, timeout=3))
             return self.async_show_progress(
                 step_id="importing",
                 progress_action="importing",
-                progress_task=tick,
+                progress_task=self._tick(self._import_job),
                 description_placeholders={
                     **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                     "file": filename,
@@ -397,8 +396,6 @@ class ReloadScreens:
             size = await self.hass.async_add_executor_job(
                 _database_size, gtfs_dir, file)
 
-            tick = self.hass.async_create_task(
-                asyncio.wait({self._extract_job}, timeout=3))
             # The database file only grows while rows are written, so its size
             # is the one honest sign that something is happening. There is no
             # total to compare it against - it depends on the network - so it
@@ -406,7 +403,7 @@ class ReloadScreens:
             return self.async_show_progress(
                 step_id="extracting",
                 progress_action="extracting",
-                progress_task=tick,
+                progress_task=self._tick(self._extract_job),
                 description_placeholders={
                     **TRANSLATION_DESCRIPTION_PLACEHOLDERS,
                     "file": self._user_inputs.get(CONF_FILE, ""),
@@ -424,6 +421,22 @@ class ReloadScreens:
         self._extract_job = None
         return self.async_show_progress_done(
             next_step_id=self._extract_next_step or "agency")
+
+    def _tick(self, job: asyncio.Task) -> asyncio.Task:
+        """The short wait a progress screen is handed: up to 3 s of the
+        job, the same task for as long as it runs.
+
+        Home Assistant calls the step again when a progress task it has not
+        seen yet finishes, and forgets none it was handed. The screen also
+        calls the step itself each time the figure it shows changes, and a
+        new wait made at each call started one more chain of calls that never
+        ended: at the end of an import every chain ran what follows at once
+        (database locked, the schedule closed under another chain, the stops
+        unread, the event loop held for seconds).
+        """
+        if self._progress_tick is None or self._progress_tick.done():
+            self._progress_tick = self.hass.async_create_task(asyncio.wait({job}, timeout=3))
+        return self._progress_tick
 
     async def _wait_for_extraction(self) -> None:
         """Poll until nothing writes to the datasource any more."""
