@@ -114,10 +114,31 @@ def _calls_here(updates: list[Mapping[str, Any]], stop_id: str,
     """The stop updates of one trip that time this entity's stop: by its
     stop_id, or, for an update naming no stop, by the stop_sequence the
     trip calls here with. A sequence is the trip's own: two patterns of a
-    line call at one stop under two numbers."""
-    return [stop for stop in updates
-            if (stop.get("stop_id") or "") == stop_id
-            or (not stop.get("stop_id") and sequence is not None and _sequence(stop.get("stop_sequence")) == sequence)]
+    line call at one stop under two numbers.
+
+    With none for this stop, the GTFS-RT rule: the delay of the trip's
+    latest update before it holds until the next one, a stop it skips
+    left aside. A feed may give one update per trip, at the vehicle's next
+    stop (SEPTA rail), and the rest of the ride is that late too. Not past
+    a NO_DATA, which says no prediction, nor from an update that gives a
+    time and no delay, the timetable's time there being unknown here.
+    """
+    own = [stop for stop in updates
+           if (stop.get("stop_id") or "") == stop_id
+           or (not stop.get("stop_id") and sequence is not None and _sequence(stop.get("stop_sequence")) == sequence)]
+    if own or sequence is None:
+        return own
+    before = [(number, stop) for stop in updates
+              if (number := _sequence(stop.get("stop_sequence"))) is not None and number < sequence
+              and stop_relationship(stop) != SKIPPED_STOP]
+    if not before:
+        return []
+    _number, latest = max(before, key=lambda pair: pair[0])
+    _when, delay = stop_update_clock(latest)
+    if stop_relationship(latest) == NO_DATA_STOP or delay is None:
+        return []
+    return [{"stop_id": stop_id, "stop_sequence": sequence,
+             "arrival": {"delay": delay, "time": 0}, "departure": {"delay": delay, "time": 0}}]
 
 
 def _followed(self: _Coordinator, feed_entities: FeedEntities) -> list[tuple[Mapping[str, Any], str, str, str, str]]:
