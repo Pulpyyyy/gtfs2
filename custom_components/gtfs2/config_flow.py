@@ -113,6 +113,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         self._import_routes: list = []
         # the short wait the progress screens are handed (ReloadScreens._tick)
         self._progress_tick = None
+        # the reopening after an import, shared by the calls that step there
+        self._reload_done_job = None
         # the lines the import was asked for and did not bring in, as named
         # to the rider
         self._import_missing: str = ""

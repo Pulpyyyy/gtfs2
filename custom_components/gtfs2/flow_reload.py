@@ -95,6 +95,7 @@ class ReloadScreens:
     _import_job: asyncio.Task | None
     _import_routes: list
     _progress_tick: asyncio.Task | None
+    _reload_done_job: asyncio.Task | None
     _import_missing: str
     async_show_form: Callable[..., FlowResult]
     async_show_progress: Callable[..., FlowResult]
@@ -225,6 +226,7 @@ class ReloadScreens:
                         import_routes, gtfs_dir, filename, routes, _build)
 
             self._import_job = self.hass.async_create_task(_import())
+            self._reload_done_job = None
             self.hass.async_create_background_task(
                 _watch(self._import_job), name=f"gtfs2 watch import {filename}")
 
@@ -281,7 +283,21 @@ class ReloadScreens:
 
     async def async_step_reload_done(self, user_input: dict | None = None) -> FlowResult:
         """Carry on picking the journey, with the lines now loaded, and
-        naming the ones that were asked for and did not come in."""
+        naming the ones that were asked for and did not come in.
+
+        Home Assistant can step here twice at once: it steps on from a
+        progress done each time the flow is configured, and both the screen,
+        once the import ended, and the end of the last wait configure it.
+        Two runs closed the schedule under each other; the second now waits
+        for the first and shows the same screen.
+        """
+        if self._reload_done_job is None:
+            self._reload_done_job = self.hass.async_create_task(self._reopen_after_import())
+        result: FlowResult = await self._reload_done_job
+        return result.copy()
+
+    async def _reopen_after_import(self) -> FlowResult:
+        """reload_done's work, run once per import."""
         # reopen directly, without get_gtfs's extracting gate: the import
         # just succeeded so the file exists, and a coordinator adding an
         # index at this very moment leaves a journal that the gate mistakes
