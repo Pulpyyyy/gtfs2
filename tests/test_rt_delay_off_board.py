@@ -132,3 +132,22 @@ def test_a_delay_alone_on_a_trip_the_timetable_does_not_know_says_nothing(schedu
     # no time of its own to lay the delay on: dropped, not given another
     # trip's time
     assert _delay_only(schedule, {"ADDED": 120}) == []
+
+
+def test_with_the_board_empty_the_timetable_is_read_on_the_network_s_clocks(schedule):
+    # a network in New York followed from a Home Assistant on UTC: with no
+    # departure on the board to give the zone, LATE's 18:58:36 is New
+    # York's, 22:58:36 UTC, not 18:58:36 UTC
+    with schedule.engine.begin() as conn:
+        conn.execute(text("create table agency (agency_id text, agency_timezone text)"))
+        conn.execute(text("create table routes (route_id text, agency_id text)"))
+        conn.execute(text("insert into agency values ('A', 'America/New_York')"))
+        conn.execute(text("insert into routes values ('R1', 'A')"))
+    feed = [{"id": "LATE", "trip_update": {
+        "trip": {"trip_id": "LATE", "route_id": "R1", "direction_id": 0},
+        "stop_time_update": [{"stop_id": "S1", "stop_sequence": 3, "departure": {"time": 0, "delay": 120}}]}}]
+    context = _context(schedule)
+    context._data["next_departure"] = {}
+    with freeze_time(datetime.datetime(2026, 9, 29, 22, 50, tzinfo=UTC)):
+        slot = gtfs_rt_helper.get_rt_route_trip_statuses(context, feed)["R1"]["0"]["S1"]
+    assert [int(when.timestamp()) for when in slot["departures"]] == [_epoch(23, 0, 36)]

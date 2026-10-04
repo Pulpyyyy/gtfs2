@@ -17,6 +17,7 @@ from .const import (
     ATTR_NEXT_RT_TRIPS,
 )
 from .alerts import journey_alerts
+from .clocks import agency_zone
 from .rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, FeedEntities, _Coordinator, _read_feed, _same_route,
     delay_of, stop_relationship, stop_update_clock,
@@ -225,9 +226,14 @@ def _scheduled_off_board(self: _Coordinator, followed: list[tuple[Mapping[str, A
     the ones the feed says something of at this stop: a time, or a delay
     to lay on the timetable's time.
     """
-    # the clocks the board's own departures are written in
-    shown = ((getattr(self, "_data", None) or {}).get("next_departure") or {}).get("departure_time")
-    zone = getattr(shown, "tzinfo", None) or dt_util.DEFAULT_TIME_ZONE
+    # the clocks the board's own departures are written in; with the board
+    # empty, the agency's, as the board reads them, not Home Assistant's
+    data = getattr(self, "_data", None) or {}
+    shown = (data.get("next_departure") or {}).get("departure_time")
+    zone = getattr(shown, "tzinfo", None)
+    if zone is None and here and hasattr(data.get("schedule"), "engine"):
+        zone = agency_zone(data["schedule"], self._route_id)
+    zone = zone or dt_util.DEFAULT_TIME_ZONE
     found = {}
     for entity, _group, _route_id, _direction_id, trip_id in followed:
         if not trip_id or trip_id in scheduled or trip_id not in here:
