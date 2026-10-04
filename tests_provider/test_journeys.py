@@ -907,11 +907,6 @@ def done(record_property, check, **case):
 # this branch passes every one of them; a case that regresses gets its mark
 # back with the reason, and so does a defect a new fixture brings to light.
 KNOWN: dict[str, str] = {
-    # TriMet line 20, direction 1: the whole-line origin list does not
-    # follow the main ride 9971 .. 14201 (31 trips), which steps back in it
-    # along SW Barnes and W Burnside; the list order family of the
-    # destination list chantier, not fixed yet
-    "trimet-20-d1-stop_list": "the origin list contradicts TriMet 20's main ride back",
 }
 
 
@@ -1072,6 +1067,19 @@ def check_route(check, fx, route_id, direction, kind):
         known_of = {pattern: [entry_of[stop] for stop in pattern if stop in entry_of]
                     for pattern in grouped}
         after = calls_next(piece for known in known_of.values() for piece in pieces_of(known))
+        # the steps the rides of the other way make along the list the way
+        # they read it, as list positions: a ride filed under the other
+        # direction that runs this way (GVB files a third of tram 1 so)
+        # makes its steps against its own reading, and is not counted
+        other_way = set()
+        for pattern in everything:
+            if pattern in grouped:
+                continue
+            for piece in pieces_of([entry_of[stop] for stop in pattern if stop in entry_of]):
+                steps = list(zip(piece, piece[1:]))
+                up = sum(1 for x, y in steps if y > x)
+                down = sum(1 for x, y in steps if y < x)
+                other_way.update((x, y) for x, y in steps if (y > x and up > down) or (y < x and down > up))
         for pattern in grouped:
             unoffered = [stop for stop in pattern
                          if stop not in entry_of
@@ -1090,13 +1098,27 @@ def check_route(check, fx, route_id, direction, kind):
             # so the other direction's rides are not in it
             disagree = []
 
-            def excused(a, b):
-                if rides_lead_back(after, a, b):
-                    disagree.append([ids[a], ids[b]])
-                    return True
-                return False
+            def excuses(piece):
+                steps = list(zip(piece, piece[1:]))
+                ascending = sum(1 for x, y in steps if y > x) >= sum(1 for x, y in steps if y < x)
 
-            ordered = all(rides_in_order(piece, len(ids), ends, excused=excused)
+                def excused(a, b):
+                    if rides_lead_back(after, a, b):
+                        disagree.append([ids[a], ids[b]])
+                        return True
+                    # a stretch both ways ride in one sense, a loop round a
+                    # hospital out and back: the list reads one way out and
+                    # the other back, so one of them goes against it there.
+                    # Only against the way the ride mostly reads the list:
+                    # read the other way round, every step of it would be
+                    # excused by a ride of its own way filed under the other
+                    if (a, b) in other_way and (b > a) != ascending:
+                        disagree.append([ids[a], ids[b]])
+                        return True
+                    return False
+                return excused
+
+            ordered = all(rides_in_order(piece, len(ids), ends, excused=excuses(piece))
                           for piece in pieces_of(known))
             check.note(ordered, "the list contradicts the riding order "
                                 f"{pattern[0]} .. {pattern[-1]}"
