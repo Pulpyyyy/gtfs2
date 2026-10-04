@@ -1,7 +1,8 @@
 """The two database model: an import goes into a scratch database, the
 followed routes are copied from it into the real one (import_routes,
-copy_route, create_real_from), and a rebuilt file is swapped in once whole
-(swap_in, on_a_copy).
+copy_route, create_real_from) or, for a new datasource it holds nothing
+else for, it becomes the real one (take_scratch_whole), and a rebuilt file
+is swapped in once whole (swap_in, on_a_copy).
 
 A datasource used to be a single file playing two incompatible parts. It was
 the source of truth the sensors query, and it was also the workspace an import
@@ -271,7 +272,9 @@ def import_routes(gtfs_dir: str, filename: str, route_ids: Iterable[str],
     The whole point of the two file model lives here: the feed is unpacked into
     a file the sensors never open, the wanted routes are copied across, and the
     scratch file goes away. Whatever happens, the real database is either
-    untouched or has gained routes - it is never left half built.
+    untouched or has gained routes - it is never left half built. A new
+    datasource whose scratch file holds only the routes asked is that file,
+    renamed (take_scratch_whole).
 
     build_scratch is a callable taking the scratch path and doing the actual
     unpacking; it is passed in rather than imported so this module keeps no
@@ -279,6 +282,7 @@ def import_routes(gtfs_dir: str, filename: str, route_ids: Iterable[str],
 
     Returns {route_id: stop_times added}, or None when the scratch build failed.
     """
+    route_ids = list(route_ids)  # read twice: to take the file whole, to copy
     real = real_path(gtfs_dir, filename)
     scratch = scratch_path(gtfs_dir, filename)
     # a scratch file left by an interrupted run holds an unknown state
@@ -293,6 +297,10 @@ def import_routes(gtfs_dir: str, filename: str, route_ids: Iterable[str],
             return None
 
         fresh = not os.path.exists(real)
+        if fresh:
+            taken = take_scratch_whole(scratch, real, route_ids)
+            if taken is not None:
+                return taken
         if fresh and not create_real_from(scratch, real):
             return None
         _index_scratch(scratch)
@@ -314,6 +322,41 @@ def import_routes(gtfs_dir: str, filename: str, route_ids: Iterable[str],
         return added
     finally:
         discard_scratch(gtfs_dir, filename)
+
+
+def take_scratch_whole(scratch_file: str, real_file: str,
+                       route_ids: Iterable[str]) -> dict[str, int] | None:
+    """Make the scratch database the real one, when it holds nothing else.
+
+    A new datasource starts as an empty schema, and the copy fills it with
+    the network tables whole and every trip of the routes asked. When the
+    scratch file holds no trip of any other route - the filter cut the feed
+    to those routes, or every route was asked - that copy rebuilds the
+    scratch file row for row: 11 s of index and copy on TriMet's 81 lines.
+    The file is renamed instead, its content the same.
+
+    Returns the stop_times each route brings, as the copy counts them, or
+    None when the routes have to be copied.
+    """
+    wanted = list(route_ids)
+    try:
+        conn = sqlite3.connect(scratch_file)
+        try:
+            present = {r for (r,) in conn.execute("select distinct route_id from trips")}
+            if not present <= set(wanted):
+                return None
+            counts = dict(conn.execute(
+                "select t.route_id, count(*) from stop_times st "
+                "join trips t on t.trip_id = st.trip_id group by t.route_id").fetchall())
+        finally:
+            conn.close()
+        os.replace(scratch_file, real_file)
+    except (sqlite3.Error, OSError) as ex:
+        # the copy still works where this did not
+        _LOGGER.warning("Could not take %s whole, copying its routes: %s", scratch_file, ex)
+        return None
+    _LOGGER.info("Took the import database of %s whole: %s routes", real_file, len(wanted))
+    return {route_id: counts.get(route_id, 0) for route_id in wanted}
 
 
 def _index_scratch(scratch_file: str) -> None:

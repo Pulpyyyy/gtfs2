@@ -159,10 +159,34 @@ def test_the_real_file_keeps_its_own_schema(tmp_path):
 
 def test_a_first_import_that_brings_nothing_leaves_no_database(tmp_path, monkeypatch):
     # a file with the schema alone read as a datasource that follows no
-    # line, which the flows then sent down the legacy extract
+    # line, which the flows then sent down the legacy extract. One route of
+    # the two: the scratch file holds another, so the route is copied
     monkeypatch.setattr(db_build, "copy_route", lambda *args, **kwargs: None)
-    assert _import(tmp_path, ["A", "B"]) == {}
+    assert _import(tmp_path, ["A"]) == {}
     assert sorted(p.name for p in tmp_path.iterdir()) == []
+
+
+def test_a_new_datasource_of_every_route_is_the_scratch_file(tmp_path, monkeypatch):
+    # nothing else in the scratch file: renamed, not copied row by row
+    def refuse(*args, **kwargs):
+        raise AssertionError("copied a scratch file that held only the routes asked")
+    monkeypatch.setattr(db_build, "copy_route", refuse)
+    assert _import(tmp_path, ["B", "A"]) == {"B": 2, "A": 4}
+    conn = sqlite3.connect(tmp_path / "src.sqlite")
+    assert conn.execute("select count(*) from trips").fetchone()[0] == 3
+    assert conn.execute("select count(*) from stop_times").fetchone()[0] == 6
+    conn.close()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["src.sqlite"]
+
+
+def test_a_new_datasource_of_some_routes_copies_them(tmp_path):
+    # the scratch file holds B as well: only A comes across
+    assert _import(tmp_path, ["A"]) == {"A": 4}
+    conn = sqlite3.connect(tmp_path / "src.sqlite")
+    assert [r for (r,) in conn.execute("select distinct route_id from trips")] == ["A"]
+    assert conn.execute("select count(*) from stop_times").fetchone()[0] == 4
+    conn.close()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["src.sqlite"]
 
 
 def test_a_later_import_that_brings_nothing_keeps_the_database(tmp_path, monkeypatch):
