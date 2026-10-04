@@ -197,55 +197,62 @@ def route_spans(gtfs_dir: str | None, filename: str | None, route_ids: Iterable[
 
 
 def _read_trip_calls(zin: zipfile.ZipFile, route_ids: Container[str]) -> tuple[
-        dict[str, str], Counter[str], dict[str, tuple[int, str]], dict[str, tuple[int, str]],
-        dict[str, str | None]]:
-    """({trip_id: route_id} of these lines, Counter of each trip's calls,
-    {trip_id: (sequence, stop_id)} of its first and of its last call,
-    {stop_id: stop_name}), read from the zip's tables."""
-    trips: dict[str, str]
+        dict[str, tuple[str, str]], Counter[str], dict[str, tuple[int, str]],
+        dict[str, tuple[int, str]]]:
+    """({trip_id: (route_id, direction_id)} of these lines, Counter of each
+    trip's calls, {trip_id: (sequence, stop_name)} of its first and of its
+    last call at a stop with a name), read from the zip's tables."""
+    trips: dict[str, tuple[str, str]]
     calls: Counter[str]
     first: dict[str, tuple[int, str]]
     last: dict[str, tuple[int, str]]
     trips, calls, first, last = {}, Counter(), {}, {}
+    names = {str(row["stop_id"]): row.get("stop_name") for row in table_rows(zin, "stops.txt")}
     for row in table_rows(zin, "trips.txt"):
         route_id, trip = row.get("route_id"), row.get("trip_id")
         if route_id and trip and route_id in route_ids:
-            trips[trip] = route_id
+            # no direction is direction 0, as the database reads it
+            trips[trip] = (route_id, row.get("direction_id") or "0")
     for row in table_rows(zin, "stop_times.txt"):
         trip, stop_id = row.get("trip_id"), row.get("stop_id")
         if not trip or trip not in trips or not stop_id:
             continue
         sequence = int(str(row.get("stop_sequence")))
         calls[trip] += 1
+        # a stop with no name says nothing: the ends are the named stops
+        name = names.get(stop_id)
+        if not name:
+            continue
         if trip not in first or sequence < first[trip][0]:
-            first[trip] = (sequence, stop_id)
+            first[trip] = (sequence, name)
         if trip not in last or sequence > last[trip][0]:
-            last[trip] = (sequence, stop_id)
-    names = {str(row["stop_id"]): row.get("stop_name") for row in table_rows(zin, "stops.txt")}
-    return trips, calls, first, last, names
+            last[trip] = (sequence, name)
+    return trips, calls, first, last
 
 
 def _read_stop_ends(zip_path: str, route_ids: Container[str]) -> dict[str, str]:
-    """{route_id: "A > B"} for these lines: the first and last stop of the
-    trip that calls at the most stops, read from the zip's stop_times.txt,
-    as _route_endpoints reads it from the database."""
+    """{route_id: "A > B"} for these lines: the first and last named stop of
+    the trip that calls at the most stops, direction 0 first, read from the
+    zip's stop_times.txt, as _route_endpoints reads it from the database."""
     try:
         with zipfile.ZipFile(zip_path) as zin:
-            trips, calls, first, last, names = _read_trip_calls(zin, route_ids)
+            trips, calls, first, last = _read_trip_calls(zin, route_ids)
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.warning("Could not read the stops of %s: %s", zip_path, ex)
         return {}
-    most: dict[str, int] = {}
-    for trip, route_id in trips.items():
-        most[route_id] = max(most.get(route_id, 0), calls[trip])
+    # the longest trips of each line, direction 0 first among them
+    most: dict[str, tuple[int, str]] = {}
+    for trip, (route_id, direction) in trips.items():
+        if calls[trip] and (route_id not in most or (-calls[trip], direction) < most[route_id]):
+            most[route_id] = (-calls[trip], direction)
     ends: dict[str, tuple[str, str]] = {}
-    for trip, route_id in trips.items():
-        if not calls[trip] or calls[trip] < most[route_id]:
+    for trip, (route_id, direction) in trips.items():
+        if route_id not in most or (-calls[trip], direction) != most[route_id] or trip not in first:
             continue
-        a, b = names.get(first[trip][1]), names.get(last[trip][1])
-        # a loop ends where it starts, and a stop with no name says nothing:
-        # "A > A" and "None > B" told two look-alikes apart by nothing
-        if not a or not b or a == b:
+        a, b = first[trip][1], last[trip][1]
+        # a loop ends where it starts: "A > A" told two look-alikes apart
+        # by nothing
+        if a == b:
             continue
         # among the longest, the one whose ends come first by name, in the
         # order it rides them, as _route_endpoints chooses

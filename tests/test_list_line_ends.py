@@ -47,6 +47,19 @@ def test_a_line_each_way_keeps_its_way(tmp_path):
     lines.engine.dispose()
 
 
+def test_the_zip_and_the_database_read_the_same_ends(tmp_path):
+    # W rides Lac > Gare in direction 0 and back the other way: direction 0
+    # is read, not the pair first by name; N ends on a stop with no name:
+    # its ends are its first and last named stops
+    stops = {**STOPS, "D": ""}
+    schedule = feed_db.build(tmp_path, feed_db.line_feed(
+        stops, [("W1", "W", 1, "ABC"), ("W0", "W", 0, "CBA"), ("N0", "N", 0, "ABD")]))
+    from_db = line_ends._route_endpoints(schedule, ["W", "N"])
+    schedule.engine.dispose()
+    from_zip = line_ends._read_stop_ends(str(tmp_path / "feed.zip"), {"W", "N"})
+    assert from_zip == from_db == {"W": "Lac > Gare", "N": "Gare > Centre"}
+
+
 def test_the_zip_ends_follow_the_same_rules(tmp_path):
     import zipfile
     with zipfile.ZipFile(tmp_path / "src.zip", "w") as zout:
