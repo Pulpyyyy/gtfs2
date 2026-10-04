@@ -1096,7 +1096,12 @@ def test_an_import_that_stops_at_a_line_names_the_lines_left_out(world, monkeypa
         also = shown(await submit(hass, lines, route=picked), FORM, "route_reload")
         others = offered(also, "also_reload")
         # the second line asked along fails to copy: the import stops there,
-        # and the lines after it are not tried
+        # and the lines after it are not tried. A new source holding only
+        # the lines asked is its scratch file renamed, every line or none
+        # (take_scratch_whole): the copy, where an import can stop part
+        # way, is what a source with lines already in goes through, and a
+        # rename that fails. Taken here.
+        monkeypatch.setattr(db_build, "take_scratch_whole", lambda *args: None)
         copy = db_build.copy_route
         monkeypatch.setattr(db_build, "copy_route", lambda real, scratch, route_id, shared=True:
                             None if route_id == others[1] else copy(real, scratch, route_id, shared))
