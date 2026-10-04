@@ -112,10 +112,12 @@ async def export_route_shape(coordinator: GTFSUpdateCoordinator, data: Mapping[s
 
     A file already there, newer than the zip and the database and drawing the same trip,
     is kept: a restart knows nothing of what the last run wrote, and
-    read the shape again for every entry. When it has to be written, it
-    is written in the background: the sensor waits for this refresh, and
-    a large shapes.txt held the sensor platform past Home Assistant's
-    minute at startup.
+    read the shape again for every entry. The file is looked at and
+    written in the background, the pick of the trip included: the sensor
+    waits for this refresh, and a large shapes.txt held the sensor platform
+    past Home Assistant's minute at startup. The pick then held every
+    sensor in turn: 18 entries picking at once on a test VM took up to
+    13.5 s each, the sensors back 24 s after the start.
     """
     route_id, direction, origin_id, destination_id = shown_ends(
         data, coordinator._data.get("next_departure") or {})
@@ -130,6 +132,18 @@ async def export_route_shape(coordinator: GTFSUpdateCoordinator, data: Mapping[s
         coordinator._data["route_geojson_file"] = route_geojson_name(route_id, direction)
     if not route_id:
         return
+    if coordinator._route_task is not None and not coordinator._route_task.done():
+        # one drawing at a time: the next refresh looks again
+        return
+    coordinator._route_task = coordinator.hass.async_create_background_task(
+        _draw_route(coordinator, route_id, direction, origin_id, destination_id),
+        f"gtfs2 route {route_id} {direction}")
+
+
+async def _draw_route(coordinator: GTFSUpdateCoordinator, route_id: str, direction: str,
+                      origin_id: str, destination_id: str) -> None:
+    """Pick the trip that draws the route, then write its file unless the
+    one there already draws it (see export_route_shape)."""
     # the trip drawn has to be one the sensor rides, or a card places its
     # stops where nothing it lists calls: the stops of the next
     # departure, the entry's once the last one of the day is gone
@@ -172,23 +186,11 @@ async def export_route_shape(coordinator: GTFSUpdateCoordinator, data: Mapping[s
             # written by an earlier run, and still the line of this zip
             coordinator._route_export_trip = export_key
             return
-    if coordinator._route_task is not None and not coordinator._route_task.done():
-        # one writing at a time: the next refresh looks again
-        return
     _LOGGER.info("Writing the route file %s for trip %s: %s", os.path.basename(file),
                  trip_id, _route_write_reason(present, previous, drawn, export_key))
-    coordinator._route_task = coordinator.hass.async_create_background_task(
-        _write_route(coordinator, coordinator._data, route_id, direction, trip_id, export_key),
-        f"gtfs2 route {route_id} {direction}")
-
-
-async def _write_route(coordinator: GTFSUpdateCoordinator, source: Mapping[str, Any], route_id: str,
-                       direction: str, trip_id: str,
-                       export_key: tuple[str, str, tuple[int, int, int] | None,
-                                         tuple[int, int, int] | None]) -> None:
-    """Write the route file off the refresh (see export_route_shape)."""
     try:
-        await coordinator.hass.async_add_executor_job(write_route_file, coordinator.hass, source, route_id, direction, trip_id)
+        await coordinator.hass.async_add_executor_job(
+            write_route_file, coordinator.hass, coordinator._data, route_id, direction, trip_id)
         coordinator._route_export_trip = export_key
     except Exception as ex:  # pylint: disable=broad-except
         _LOGGER.exception("Error writing route geojson: %s", ex)

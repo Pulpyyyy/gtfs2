@@ -4,7 +4,9 @@ The route file is drawn from the fullest trip and from the shape read out of
 the zip. On IDFM shapes.txt is 131 MB to scan for one line, and at every
 restart every entry read it again: the coordinator knew nothing of the file
 the last run left. A file newer than the zip, drawing the trip picked, is
-now kept, and a file that has to be written is written off the refresh.
+now kept, and the file is looked at and written off the refresh, the
+pick of the trip included: at startup 18 entries picking at once held
+their sensors up to 13.5 s each.
 Newer than the database too: a file written between the zip's adoption and
 the database's rebuild drew metro 6 along metro 9 on IDFM.
 """
@@ -115,7 +117,9 @@ def _run(tmp_path, monkeypatch):
 
 def test_a_restart_keeps_the_route_file_of_this_zip(tmp_path, monkeypatch):
     _files(tmp_path)
-    assert _run(tmp_path, monkeypatch) == ([], [])
+    written, started = _run(tmp_path, monkeypatch)
+    # looked at in the background, and kept
+    assert written == [] and len(started) == 1
 
 
 def test_a_new_zip_or_another_trip_writes_it_in_the_background(tmp_path, monkeypatch):
@@ -196,6 +200,8 @@ def test_the_trip_drawn_is_picked_once_per_database(tmp_path, monkeypatch):
         me._pygtfs_edition = edition
         await exports_mod.export_route_shape(me, {"route": ROUTE, "direction": DIRECTION,
                                                   "origin": origin, "destination": "B: b"})
+        if me._route_task is not None:
+            await me._route_task
 
     async def main():
         async def executor(fn, *args):
@@ -220,3 +226,41 @@ def test_the_trip_drawn_is_picked_once_per_database(tmp_path, monkeypatch):
 
     asyncio.run(main())
     assert len(picked) == 4
+
+
+def test_a_slow_pick_does_not_hold_the_refresh(tmp_path, monkeypatch):
+    # the pick reads every trip of the line: at startup, with every entry
+    # picking at once, it took seconds, and the sensor waited for it
+    _files(tmp_path, file_newer=False)
+    release = __import__("threading").Event()
+    written = []
+    monkeypatch.setattr(exports_mod, "get_representative_trip", lambda *args: release.wait(5) and TRIP)
+    monkeypatch.setattr(exports_mod, "write_route_file",
+                        lambda hass, data, route_id, direction, trip_id: written.append(trip_id))
+
+    async def main():
+        loop = asyncio.get_running_loop()
+
+        async def executor(fn, *args):
+            return await loop.run_in_executor(None, fn, *args)
+
+        me = object.__new__(coordinator_mod.GTFSUpdateCoordinator)
+        me.hass = types.SimpleNamespace(
+            config=types.SimpleNamespace(path=lambda *parts: str(tmp_path.joinpath(*parts))),
+            async_add_executor_job=executor,
+            async_create_background_task=lambda coro, name: loop.create_task(coro))
+        me._route_export_trip = None
+        me._route_task = None
+        me._pygtfs_edition = None
+        me._representative_pick = me._representative_trip = None
+        me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "IDFM",
+                    "next_departure": {"route_id": ROUTE, "trip_direction_id": DIRECTION}}
+        await asyncio.wait_for(exports_mod.export_route_shape(
+            me, {"route": ROUTE, "direction": DIRECTION, "origin": "A: a", "destination": "B: b"}), 1)
+        # the refresh is over, the pick still running
+        assert me._representative_trip is None and not me._route_task.done()
+        release.set()
+        await me._route_task
+        assert me._representative_trip == TRIP and written == [TRIP]
+
+    asyncio.run(main())
