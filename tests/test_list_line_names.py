@@ -62,6 +62,15 @@ def test_look_alikes_of_one_agency_get_their_ends():
                    "3##I2##INCONNU : A ↔ B"]
 
 
+def test_a_line_named_unknown_is_named_by_its_ends():
+    # SNCF's "INCONNU" lines: the ends say where they go, the word nothing
+    assert line_labels._route_label("INCONNU", " -", "Alès > Mende", "R1") == "Alès > Mende"
+    options = ["3##S1##INCONNU", "3##S2##INCONNU", "3##S3##INCONNU"]
+    got = line_labels._set_apart_by_ends(options, {"S1": "Alès > Mende", "S2": "Cerbère > Portbou"})
+    # without ends the word stays: it is all the feed says
+    assert got == ["3##S1##Alès > Mende", "3##S2##Cerbère > Portbou", "3##S3##INCONNU"]
+
+
 def test_look_alikes_of_two_modes_are_left_to_the_mode():
     # Zou's P18 train and P18 coach: the flow says "(train)" and "(coach)"
     options = ["2##P18T##P18 : Nîmes-Avignon", "3##P18C##P18 : Nîmes-Avignon"]

@@ -32,6 +32,16 @@ def _says_something(part: str | None) -> bool:
     return any(character.isalnum() for character in str(part or ""))
 
 
+# the number a feed gives a line it has no name for: SNCF files 54 lines
+# (35 in its TER feed) as "INCONNU", the only such word in 50 feeds surveyed
+_NO_NAME = frozenset({"inconnu"})
+
+
+def _names_nothing(part: str | None) -> bool:
+    """Whether a line number only says the line has none."""
+    return str(part or "").strip().casefold() in _NO_NAME
+
+
 def _adds_to(short: str | None, long_name: str | None) -> bool:
     """Whether the long name tells the reader more than the number does.
 
@@ -59,7 +69,8 @@ def _route_label(short: str | None, long_name: str | None, endpoints: str | None
         # the long name repeats the number: "1 : 1" says it twice
         parts = parts[:1]
     if len(parts) < 2 and endpoints:
-        parts = parts[:1] + [endpoints]
+        # "INCONNU : Alès > Mende" says nothing the ends do not
+        parts = [part for part in parts[:1] if not _names_nothing(part)] + [endpoints]
     if parts:
         return " : ".join(parts)
     return str(route_id or "")
@@ -273,14 +284,15 @@ def _set_apart_by_ends(options: list[str], ends: Mapping[str, str]) -> list[str]
 
     ends is {route_id: ends} as route_ends or headsign_ends read them. A
     label that already shows its ends (a line without a long name) is left
-    as it is, the words would only be said twice.
+    as it is, the words would only be said twice. A label that says the line
+    has no name ("INCONNU") gives way to them.
     """
     out = []
     for option in options:
         parts = option.split("##")
         found = ends.get(parts[1])
         if found and found.casefold() not in parts[2].casefold():
-            parts[2] = f"{parts[2]} · {found}"
+            parts[2] = found if _names_nothing(parts[2]) else f"{parts[2]} · {found}"
             option = "##".join(parts)
         out.append(option)
     return out
