@@ -392,7 +392,9 @@
           "timerange": "Comprobación de salidas en el futuro a partir de 'ahora' (en minutos: entre 15 y 120)",
           "radius": "Radio de búsqueda de paradas (en metros entre 50 y 500)",
           "source_timezone_correction": "Corregir el huso horario de la fuente (en horas)",
-          "check_source_dates": "Experimental: rechazar un archivo nuevo sin datos actuales"
+          "check_source_dates": "Experimental: rechazar un archivo nuevo sin datos actuales",
+          "board_also": "Subir también en",
+          "alight_also": "Bajar también en"
         },
         "data_description": {
           "refresh_interval": "Con qué frecuencia se releen los horarios, en minutos.",
@@ -402,7 +404,9 @@
           "radius": "Distancia de búsqueda de paradas alrededor de la persona o zona, en metros.",
           "max_local_stops": "Por encima de este número de paradas el sensor se vuelve lento. Auméntelo bajo su responsabilidad.",
           "source_timezone_correction": "Solo si la fuente publica sus horas en otro huso, en horas.",
-          "check_source_dates": "Experimental: rechazar un archivo nuevo cuyas fechas estén todas en el futuro."
+          "check_source_dates": "Experimental: rechazar un archivo nuevo cuyas fechas estén todas en el futuro.",
+          "board_also": "Estaciones en el camino donde también puede subir. Cada tren aparece una sola vez, a la hora de la primera de estas estaciones donde admite viajeros.",
+          "alight_also": "Estaciones en el camino donde también puede bajar. Un tren que termina allí, antes de su estación de llegada, se conserva."
         }
       },
       "real_time": {
@@ -480,7 +484,9 @@
       "stop_limit_reached": "Se detectó una gran cantidad de paradas para este radio, \nlo que posiblemente afecte el rendimiento del sistema. \nPuedes cambiar el límite bajo tu propia responsabilidad antes de cambiar el radio"
     },
     "error": {
-      "invalid_source_url": "Esta dirección no es válida (http://, https:// o file://)"
+      "invalid_source_url": "Esta dirección no es válida (http://, https:// o file://)",
+      "station_both_ends": "Una misma estación no puede estar a la vez en «Subir también en» y en «Bajar también en».",
+      "no_train_between": "Ningún tren de este trayecto une estas estaciones: marque otras estaciones."
     }
   },
   "selector": {

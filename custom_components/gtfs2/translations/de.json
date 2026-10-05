@@ -392,7 +392,9 @@
           "timerange": "Prüfung auf zukünftige Abfahrten ab ‚jetzt‘ (in Minuten: zwischen 15 und 120)",
           "radius": "Radius für die Suche nach Haltestellen (in Metern zwischen 50 und 500)",
           "source_timezone_correction": "Zeitzone der Quelle korrigieren (in Stunden)",
-          "check_source_dates": "Experimentell: eine neue Datei ohne aktuelle Daten ablehnen"
+          "check_source_dates": "Experimentell: eine neue Datei ohne aktuelle Daten ablehnen",
+          "board_also": "Auch einsteigen in",
+          "alight_also": "Auch aussteigen in"
         },
         "data_description": {
           "refresh_interval": "Wie oft der Fahrplan neu gelesen wird, in Minuten.",
@@ -402,7 +404,9 @@
           "radius": "Suchradius für Haltestellen um die Person oder Zone, in Metern.",
           "max_local_stops": "Ab dieser Anzahl Haltestellen wird der Sensor langsam. Erhöhung auf eigenes Risiko.",
           "source_timezone_correction": "Nur wenn die Quelle ihre Zeiten in einer anderen Zeitzone angibt, in Stunden.",
-          "check_source_dates": "Experimentell: eine neue Datei ablehnen, deren Daten alle in der Zukunft liegen."
+          "check_source_dates": "Experimentell: eine neue Datei ablehnen, deren Daten alle in der Zukunft liegen.",
+          "board_also": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls einsteigen können. Jeder Zug erscheint nur einmal, zur Zeit des ersten dieser Bahnhöfe, in dem er Fahrgäste aufnimmt.",
+          "alight_also": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls aussteigen können. Ein Zug, der dort vor Ihrem Zielbahnhof endet, wird behalten."
         }
       },
       "real_time": {
@@ -480,7 +484,9 @@
       "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern"
     },
     "error": {
-      "invalid_source_url": "Diese Adresse ist nicht gültig (http://, https:// oder file://)"
+      "invalid_source_url": "Diese Adresse ist nicht gültig (http://, https:// oder file://)",
+      "station_both_ends": "Ein Bahnhof kann nicht zugleich unter „Auch einsteigen in“ und unter „Auch aussteigen in“ stehen.",
+      "no_train_between": "Kein Zug dieser Fahrt verbindet diese Bahnhöfe: haken Sie andere Bahnhöfe an."
     }
   },
   "selector": {

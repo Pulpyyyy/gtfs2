@@ -392,7 +392,9 @@
           "timerange": "Période dans la future pour départs depuis 'maintenant' (en minutes entre 15 et 120)",
           "radius": "Radius pour la recherche des stops (en metres entre 50 et 500)",
           "source_timezone_correction": "Corriger le fuseau horaire de la source (en heures)",
-          "check_source_dates": "Expérimental : refuser un nouveau fichier sans données actuelles"
+          "check_source_dates": "Expérimental : refuser un nouveau fichier sans données actuelles",
+          "board_also": "Monter aussi à",
+          "alight_also": "Descendre aussi à"
         },
         "data_description": {
           "refresh_interval": "Fréquence de relecture des horaires, en minutes.",
@@ -402,7 +404,9 @@
           "radius": "Distance de recherche des arrêts autour de la personne ou de la zone, en mètres.",
           "max_local_stops": "Au-delà de ce nombre d'arrêts le capteur devient lent. À augmenter à vos risques.",
           "source_timezone_correction": "Seulement si la source publie ses heures dans un autre fuseau, en heures.",
-          "check_source_dates": "Expérimental : refuse un nouveau fichier dont toutes les dates sont dans le futur."
+          "check_source_dates": "Expérimental : refuse un nouveau fichier dont toutes les dates sont dans le futur.",
+          "board_also": "Gares sur le chemin où vous pouvez aussi monter. Chaque train n'apparaît qu'une fois, à l'heure de la première de ces gares où il prend des voyageurs.",
+          "alight_also": "Gares sur le chemin où vous pouvez aussi descendre. Un train qui s'y arrête, avant votre gare d'arrivée, est gardé."
         }
       },
       "source_menu": {
@@ -480,7 +484,9 @@
       "stop_limit_reached": "Un nombre élevé d'arrêts a été détecté pour ce rayon, \nrisque d'impact sur les performances du système. \n Vous pouvez modifier la limite à votre propre risque avant de modifier le rayon"
     },
     "error": {
-      "invalid_source_url": "Cette adresse n'est pas valide (http://, https:// ou file://)"
+      "invalid_source_url": "Cette adresse n'est pas valide (http://, https:// ou file://)",
+      "station_both_ends": "Une même gare ne peut pas être à la fois dans « Monter aussi à » et dans « Descendre aussi à ».",
+      "no_train_between": "Aucun train de ce trajet ne relie ces gares : cochez d'autres gares."
     }
   },
   "selector": {

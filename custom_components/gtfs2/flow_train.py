@@ -12,7 +12,7 @@ reads and writes the flow's own state (self).
 from __future__ import annotations
 
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -52,6 +52,7 @@ from .stations import (
     train_line_ends,
     train_routes_both_ways,
 )
+from .stop_rules import entry_lines
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -90,6 +91,45 @@ def _options_schema(between: list[str], lines: dict[str, str], previous: dict) -
         fields[vol.Optional("alight_also", default=previous.get("alight_also", []))] = _many(stations)
     fields[vol.Optional("lines", default=previous.get("lines", []))] = _many(line_options)
     return vol.Schema(fields)
+
+
+def train_stations_between(schedule: Schedule, data: Mapping[str, Any]) -> list[str]:
+    """The stations a train entry's options screen offers to get on or off
+    at as well: those strictly between its two ends, on its line. Blocking,
+    for the executor."""
+    return get_train_stations_between(schedule, str(data.get(CONF_ORIGIN) or ""),
+                                      str(data.get(CONF_DESTINATION) or ""), entry_lines(data) or None)
+
+
+def train_station_fields(data: Mapping[str, Any], between: list[str],
+                         previous: Mapping[str, Any] | None = None) -> dict[vol.Marker, Any]:
+    """The two fields of a train entry's options screen, the stations it
+    gets on or off at as well ticked; {} when there is none to offer."""
+    if not between:
+        return {}
+    ends = {"board_also": data.get(CONF_ORIGIN_STATIONS) or [],
+            "alight_also": data.get(CONF_DESTINATION_STATIONS) or []}
+    ticked = {key: [s for s in (previous or {}).get(key, names) if s in between]
+              for key, names in ends.items()}
+    stations = [selector.SelectOptionDict(value=name, label=name) for name in between]
+    return {vol.Optional(key, default=ticked[key]): selector.SelectSelector(selector.SelectSelectorConfig(
+        options=stations, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN))
+        for key in ("board_also", "alight_also")}
+
+
+def kept_train_stations(schedule: Schedule, data: Mapping[str, Any], board_also: list[str],
+                        alight_also: list[str]) -> tuple[str | None, dict[str, list[str]]]:
+    """(error, the entry's stations) of a train entry's options screen:
+    the stations of each end its line serves, of those ticked, as the
+    creation keeps them (train_line_ends). Blocking, for the executor."""
+    if set(board_also) & set(alight_also):
+        return "station_both_ends", {}
+    origins = [str(data.get(CONF_ORIGIN) or ""), *board_also]
+    destinations = [str(data.get(CONF_DESTINATION) or ""), *alight_also]
+    ons, offs = train_line_ends(schedule, origins, destinations, entry_lines(data) or None)
+    if not ons or not offs:
+        return "no_train_between", {}
+    return None, {CONF_ORIGIN_STATIONS: ons, CONF_DESTINATION_STATIONS: offs}
 
 
 def _station_label(name: str, modes: set[str] | None, words: dict[str, str]) -> str:

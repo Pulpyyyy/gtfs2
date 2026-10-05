@@ -57,7 +57,7 @@ from .rt_source import (
     journey_entry_data,
 )
 from .const import TRANSLATION_DESCRIPTION_PLACEHOLDERS
-from .flow_train import ALL_TRAINS, TrainScreens
+from .flow_train import ALL_TRAINS, TrainScreens, kept_train_stations, train_station_fields, train_stations_between
 from .stop_rules import RAIL_ROUTE_TYPES
 from .flow_reload import ReloadScreens
 from .flow_source import SourceScreens
@@ -592,45 +592,76 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
         errors: dict[str, str] = {}
         if self.config_entry.data.get(CONF_KIND) == ENTRY_KIND_DATASOURCE:
             return await self.async_step_source_menu()
+        if not self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None):
+            return await self._journey_options(user_input)
+        # the stops around a person or a zone
         if user_input is not None:
-            if self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None):
-                # a copy: the entry's data is only needed for the check,
-                # and written into user_input it ended up in the options
-                _data = {**user_input,
-                         "file": self.config_entry.data["file"],
-                         "device_tracker_id": self.config_entry.data["device_tracker_id"]}
-                stop_limit = await _check_stop_list(self, _data)
-                if stop_limit :
-                    return self.async_abort(reason=stop_limit)
+            # a copy: the entry's data is only needed for the check,
+            # and written into user_input it ended up in the options
+            _data = {**user_input,
+                     "file": self.config_entry.data["file"],
+                     "device_tracker_id": self.config_entry.data["device_tracker_id"]}
+            stop_limit = await _check_stop_list(self, _data)
+            if stop_limit :
+                return self.async_abort(reason=stop_limit)
             self._user_inputs.update(user_input)
             _LOGGER.debug(f"UserInputs Options Init: {self._user_inputs}")
             return self.async_create_entry(title="", data=self._user_inputs)
 
-        if self.config_entry.data.get(CONF_DEVICE_TRACKER_ID, None):
-            opt1_schema = {
-                    vol.Optional(CONF_LOCAL_STOP_REFRESH_INTERVAL, default=self.config_entry.options.get(CONF_LOCAL_STOP_REFRESH_INTERVAL, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL)): int,
-                    vol.Optional(CONF_RADIUS, default=self.config_entry.options.get(CONF_RADIUS, DEFAULT_LOCAL_STOP_RADIUS)): vol.All(vol.Coerce(int), vol.Range(min=50, max=5000)),
-                    vol.Optional(CONF_TIMERANGE, default=self.config_entry.options.get(CONF_TIMERANGE, DEFAULT_LOCAL_STOP_TIMERANGE)): vol.All(vol.Coerce(int), vol.Range(min=15, max=120)),
-                    vol.Optional(CONF_OFFSET, default=self.config_entry.options.get(CONF_OFFSET, DEFAULT_OFFSET)): int,
-                    vol.Required(CONF_MAX_LOCAL_STOPS, default=self.config_entry.options.get(CONF_MAX_LOCAL_STOPS, DEFAULT_MAX_LOCAL_STOPS)): int,
-                }
-            return self.async_show_form(
-                step_id="init",
-                data_schema=vol.Schema(opt1_schema),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-                errors = errors
-            )
+        opt1_schema = {
+                vol.Optional(CONF_LOCAL_STOP_REFRESH_INTERVAL, default=self.config_entry.options.get(CONF_LOCAL_STOP_REFRESH_INTERVAL, DEFAULT_LOCAL_STOP_REFRESH_INTERVAL)): int,
+                vol.Optional(CONF_RADIUS, default=self.config_entry.options.get(CONF_RADIUS, DEFAULT_LOCAL_STOP_RADIUS)): vol.All(vol.Coerce(int), vol.Range(min=50, max=5000)),
+                vol.Optional(CONF_TIMERANGE, default=self.config_entry.options.get(CONF_TIMERANGE, DEFAULT_LOCAL_STOP_TIMERANGE)): vol.All(vol.Coerce(int), vol.Range(min=15, max=120)),
+                vol.Optional(CONF_OFFSET, default=self.config_entry.options.get(CONF_OFFSET, DEFAULT_OFFSET)): int,
+                vol.Required(CONF_MAX_LOCAL_STOPS, default=self.config_entry.options.get(CONF_MAX_LOCAL_STOPS, DEFAULT_MAX_LOCAL_STOPS)): int,
+            }
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(opt1_schema),
+            description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+            errors = errors
+        )
 
-        else:
-            opt1_schema = {
-                        vol.Optional(CONF_REFRESH_INTERVAL, default=self.config_entry.options.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)): int,
-                        vol.Optional(CONF_OFFSET, default=self.config_entry.options.get(CONF_OFFSET, DEFAULT_OFFSET)): int,
-                    }
-            return self.async_show_form(
-                step_id="init",
-                data_schema=vol.Schema(opt1_schema),
-                description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
-            )
+    async def _journey_options(self, user_input: dict[str, Any] | None) -> FlowResult:
+        """A journey's options: how often it reads its timetable and the
+        walking time. A train journey's stations to get on or off at as
+        well too, which its entry keeps: the departure screen made them
+        once, and a week of works asks for another one (SNCF: K8+ trains
+        from Les Aubrais, not Orleans) on a sensor made long before."""
+        errors: dict[str, str] = {}
+        data = self.config_entry.data
+        between: list[str] = []
+        if data.get(CONF_ROUTE_TYPE) == "2":
+            await _reopen_schedule(self, dict(data))
+            if not isinstance(self._pygtfs, str):
+                between = await self.hass.async_add_executor_job(train_stations_between, self._pygtfs, data)
+        if user_input is not None:
+            options = dict(user_input)
+            board_also = options.pop("board_also", None) or []
+            alight_also = options.pop("alight_also", None) or []
+            if between:
+                error, stations = await self.hass.async_add_executor_job(
+                    kept_train_stations, self._pygtfs, data, board_also, alight_also)
+                if error:
+                    errors["base"] = error
+                elif any(data.get(key) != value for key, value in stations.items()):
+                    # the entry's own data: the coordinator reads it at every refresh
+                    self.hass.config_entries.async_update_entry(self.config_entry, data={**data, **stations})
+            if not errors:
+                self._user_inputs.update(options)
+                _LOGGER.debug(f"UserInputs Options Init: {self._user_inputs}")
+                return self.async_create_entry(title="", data=self._user_inputs)
+        opt1_schema = {
+            vol.Optional(CONF_REFRESH_INTERVAL, default=self.config_entry.options.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)): int,
+            vol.Optional(CONF_OFFSET, default=self.config_entry.options.get(CONF_OFFSET, DEFAULT_OFFSET)): int,
+            **train_station_fields(data, between, user_input),
+        }
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(opt1_schema),
+            description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+            errors=errors,
+        )
 
 
 def _let_schedule_go(self: ConfigFlow | GTFSOptionsFlowHandler) -> None:

@@ -576,12 +576,13 @@ def get_train_lines_between(schedule: Schedule | RailIndex, origin_name: str, de
 
 
 def train_line_ends(schedule: Schedule, origin_names: list[str], destination_names: list[str],
-                    line: str | None) -> tuple[list[str], list[str]]:
+                    line: str | list[str] | None) -> tuple[list[str], list[str]]:
     """(the departure stations, the arrival stations) one line serves of
     those asked, in the order asked: where a train of it takes riders on
     for one of the arrivals, and where one sets them down coming from one
     of the departures. ([], []) when no train of it rides between them;
-    line None for every rail line, a line the feed gives no code.
+    line None for every rail line, a line the feed gives no code, and the
+    codes of an entry riding several (one made before a sensor a line).
 
     One sensor a line ticked, each with the stations its own trains call
     at: a line that never leaves from one of the stations ticked does not

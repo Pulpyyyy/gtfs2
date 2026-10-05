@@ -392,7 +392,9 @@
           "timerange": "Verificação de partidas no futuro a partir de 'agora' (em minutos: entre 15 e 120)",
           "check_source_dates": "experimental: evitar usar uma nova zip/fonte contendo informações desatualizadas",
           "radius": "Raio para procurar paragens (em metros entre 50 e 500)",
-          "source_timezone_correction": "Corrigir o fuso horário da fonte (em horas)"
+          "source_timezone_correction": "Corrigir o fuso horário da fonte (em horas)",
+          "board_also": "Embarcar também em",
+          "alight_also": "Desembarcar também em"
         },
         "data_description": {
           "refresh_interval": "Com que frequência os horários são relidos, em minutos.",
@@ -402,7 +404,9 @@
           "radius": "Distância de procura de paragens em redor da pessoa ou zona, em metros.",
           "max_local_stops": "Acima deste número de paragens o sensor fica lento. Aumente por sua conta e risco.",
           "check_source_dates": "Experimental: recusar um ficheiro novo cujas datas estejam todas no futuro.",
-          "source_timezone_correction": "Só se a fonte publicar as horas noutro fuso, em horas."
+          "source_timezone_correction": "Só se a fonte publicar as horas noutro fuso, em horas.",
+          "board_also": "Estações no caminho onde também pode embarcar. Cada comboio aparece uma só vez, à hora da primeira destas estações onde aceita passageiros.",
+          "alight_also": "Estações no caminho onde também pode desembarcar. Um comboio que termina aí, antes da sua estação de chegada, é mantido."
         }
       },
       "real_time": {
@@ -480,7 +484,9 @@
       "stop_limit_reached": "Foi detectado um grande número de paragens neste raio, \nrisco de impacto no desempenho do sistema. \n Pode alterar o limite por sua conta e risco antes de alterar o raio"
     },
     "error": {
-      "invalid_source_url": "Este endereço não é válido (http://, https:// ou file://)"
+      "invalid_source_url": "Este endereço não é válido (http://, https:// ou file://)",
+      "station_both_ends": "Uma mesma estação não pode estar ao mesmo tempo em «Embarcar também em» e em «Desembarcar também em».",
+      "no_train_between": "Nenhum comboio desta viagem liga estas estações: marque outras estações."
     }
   },
   "selector": {

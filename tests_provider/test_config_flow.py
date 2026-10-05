@@ -1798,6 +1798,42 @@ def test_a_journey_s_options_hold_its_own_knobs_only(world):
     walk(world, scenario)
 
 
+def test_a_train_journey_s_options_get_on_or_off_at_more_stations(world):
+    # a week of works on a sensor made long before: K8+ trains from Les
+    # Aubrais, not Orleans. Its options screen takes the station as well
+    async def scenario(hass):
+        options = hass.config_entries.options
+        await install_source(hass, "sncf-journeys", "sncf")
+        base = {"file": "sncf", "route_type": "2", "route": "train", "direction": "0",
+                "origin": "Orléans", "destination": "Paris Austerlitz"}
+        entry = await imported(hass, {**base, "name": "sncf K8+ Orléans → Paris Austerlitz",
+                                      "line": "K8+", "lines": ["K8+"],
+                                      "origin_stations": ["Orléans"],
+                                      "destination_stations": ["Paris Austerlitz"]})
+        form = shown(await options_of(hass, entry), FORM, "init")
+        assert "Les Aubrais" in offered(form, "board_also")
+        assert (default(form, "board_also"), default(form, "alight_also")) == ([], [])
+        again = shown(await submit(hass, form, options, board_also=["Les Aubrais"],
+                                   alight_also=["Les Aubrais"]), FORM, "init")
+        assert again["errors"] == {"base": "station_both_ends"}
+        shown(await submit(hass, again, options, refresh_interval=5, board_also=["Les Aubrais"],
+                           alight_also=[]), CREATE)
+        # the entry keeps the stations, the options its own knobs only
+        assert entry.data["origin_stations"] == ["Orléans", "Les Aubrais"]
+        assert entry.data["destination_stations"] == ["Paris Austerlitz"]
+        assert "board_also" not in entry.options and entry.options["refresh_interval"] == 5
+        # shown again ticked
+        assert default(shown(await options_of(hass, entry), FORM, "init"), "board_also") == ["Les Aubrais"]
+        # a train journey taken over from the stock integration rides every
+        # line from one station a end: it takes a second one the same way
+        stock = await imported(hass, {**base, "name": "sncf Orléans → Paris Austerlitz"})
+        form = shown(await options_of(hass, stock), FORM, "init")
+        shown(await submit(hass, form, options, board_also=["Les Aubrais"], alight_also=[]), CREATE)
+        assert stock.data["origin_stations"] == ["Orléans", "Les Aubrais"]
+        assert "line" not in stock.data
+    walk(world, scenario)
+
+
 def test_local_stops_options_refuse_a_radius_holding_more_stops_than_allowed(world):
     async def scenario(hass):
         options = hass.config_entries.options
