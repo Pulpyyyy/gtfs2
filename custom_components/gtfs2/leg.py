@@ -372,6 +372,10 @@ def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: 
     lists for that trip, in the agency's zone, so a stop past midnight
     lands on the next calendar day rather than on a clock past 24:00.
 
+    Beside them, "stops" names and places every stop those trips call at,
+    once: with the calls of each trip, in their order, a card draws every
+    run as it is ridden, and finds where each one goes.
+
     Keyed by trip_id. A frequency-based trip the feed reports several times
     keeps its scheduled entry under the bare id and gets one realtime entry
     per run, keyed trip_id@start_time. A stop update carrying no time and a
@@ -387,6 +391,10 @@ def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: 
     zone = _leg_timezone(schedule, route_id, departure, hass)
 
     trips: dict[str, dict[str, Any]] = {}
+    # where each stop of the listed trips is, once for all of them: every
+    # run is drawn as it is ridden, a K6+ from Orleans as one from Les
+    # Aubrais, where the route file draws one trip for the whole line
+    places: dict[str, dict[str, Any]] = {}
     features: list[dict[str, Any]] = []
     # the stops a trip calls at twice, the only ones where the feed's own
     # stop_sequence has to be believed over the stop id
@@ -405,6 +413,9 @@ def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: 
                 called_twice.setdefault(t, set()).add(stop_id)
             seen.add(stop_id)
             stops.setdefault(stop_id, _leg_call(midnight, r))
+            # a stop the feed left unnamed falls back on its id, as the
+            # map points do
+            places.setdefault(stop_id, {"name": r[2] or r[1], "lat": r[3], "lon": r[4]})
         trips[t] = {"stops": stops}
         if t == trip_id:
             features = _leg_features(rows, midnight, trip_id, route_id, direction)
@@ -423,7 +434,7 @@ def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: 
         "realtime": realtime,
     }
     body: dict[str, Any] = {"type": "FeatureCollection", "properties": properties,
-                            "features": features, "trips": trips}
+                            "features": features, "trips": trips, "stops": places}
     write_json_if_changed(
         file,
         {**body, "properties": {**properties,

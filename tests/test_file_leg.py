@@ -205,6 +205,18 @@ def test_the_service_day_is_found_from_the_listed_departure(tmp_path):
     assert [f["properties"]["stop_id"] for f in leg["features"]] == ["P1b", "S2"]
 
 
+def test_every_stop_of_the_listed_trips_is_named_and_placed_once(tmp_path):
+    # the runs listed call at stops of their own: each is drawn as ridden
+    leg = _leg(tmp_path, _departure(
+        "N1", "P1a", datetime.datetime(2026, 9, 25, 23, 50, tzinfo=PARIS), listed=[
+            ("X1", datetime.datetime(2026, 9, 26, 6, 0, tzinfo=PARIS))]))
+    called = {stop for trip in leg["trips"].values() for stop in trip["stops"]}
+    assert set(leg["stops"]) == called == {"P1b", "S2", "X"}
+    assert leg["stops"]["P1b"] == {"name": "Pont", "lat": 43.0, "lon": 7.0}
+    # a stop the feed left unnamed reads by its id, as on the map points
+    assert leg["stops"]["X"]["name"] == "X"
+
+
 def _carried(tmp_path, *updates):
     """{stop: delay} the leg file gives D1, ridden from S1, for its updates."""
     leg = _leg(tmp_path, _departure("D1", "S1", datetime.datetime(2026, 9, 25, 10, 0, tzinfo=PARIS)),
