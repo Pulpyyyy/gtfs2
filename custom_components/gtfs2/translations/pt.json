@@ -83,7 +83,7 @@
         "description": "De onde vem o ficheiro de horários desta fonte e o que fazer com as novas versões. Cada atualização, seja daqui, da entidade de atualização ou do serviço update_gtfs, usa o endereço e a chave abaixo. **Notificar** pergunta ao fornecedor com um pedido mínimo, ao ritmo escolhido, e avisa quando existe uma nova versão, para que você ou uma automação decidam quando instalar. **Instalar automaticamente** instala-a de imediato. Os sensores continuam a responder durante a instalação; a mudança para os novos dados acontece de uma só vez.",
         "data": {
           "url": "Endereço do feed",
-          "needs_api_key": "Isto requer uma chave API",
+          "needs_api_key": "É necessária uma chave API",
           "static_refresh_mode": "Perante uma nova versão",
           "static_check_interval": "Frequência de verificação"
         },
@@ -100,10 +100,10 @@
         "data": {
           "api_key": "Chave API",
           "api_key_name": "Nome esperado pelo fornecedor",
-          "api_key_location": "Onde vai a chave"
+          "api_key_location": "Onde colocar a chave"
         },
         "data_description": {
-          "api_key": "A própria chave, copiada do fornecedor.",
+          "api_key": "A chave em si, tal como o fornecedor a deu.",
           "api_key_name": "O nome com que o fornecedor espera a sua chave, a copiar exatamente, maiúsculas incluídas. Muda de um fornecedor para outro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- chave no endereço: `…?`**`apikey`**`=A_SUA_CHAVE`\n- chave num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`\n- exemplo: **`appID`**, no endereço (`…/TripUpdate/?`**`appID`**`=A_SUA_CHAVE`)",
           "api_key_location": "No endereço web, no cabeçalho do pedido, ou como login HTTP Basic (o seu nome não é então usado)."
         }
@@ -466,7 +466,7 @@
         "description": "De onde vem o ficheiro de horários desta fonte e o que fazer com as novas versões. Cada atualização, seja daqui, da entidade de atualização ou do serviço update_gtfs, usa o endereço e a chave abaixo. **Notificar** pergunta ao fornecedor com um pedido mínimo, ao ritmo escolhido, e avisa quando existe uma nova versão, para que você ou uma automação decidam quando instalar. **Instalar automaticamente** instala-a de imediato. Os sensores continuam a responder durante a instalação; a mudança para os novos dados acontece de uma só vez.",
         "data": {
           "url": "Endereço do feed",
-          "needs_api_key": "Isto requer uma chave API",
+          "needs_api_key": "É necessária uma chave API",
           "static_refresh_mode": "Perante uma nova versão",
           "static_check_interval": "Frequência de verificação"
         },
@@ -483,10 +483,10 @@
         "data": {
           "api_key": "Chave API",
           "api_key_name": "Nome esperado pelo fornecedor",
-          "api_key_location": "Onde vai a chave"
+          "api_key_location": "Onde colocar a chave"
         },
         "data_description": {
-          "api_key": "A própria chave, copiada do fornecedor.",
+          "api_key": "A chave em si, tal como o fornecedor a deu.",
           "api_key_name": "O nome com que o fornecedor espera a sua chave, a copiar exatamente, maiúsculas incluídas. Muda de um fornecedor para outro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- chave no endereço: `…?`**`apikey`**`=A_SUA_CHAVE`\n- chave num cabeçalho: **`x-api-key`**`: A_SUA_CHAVE`\n- exemplo: **`appID`**, no endereço (`…/TripUpdate/?`**`appID`**`=A_SUA_CHAVE`)",
           "api_key_location": "No endereço web, no cabeçalho do pedido, ou como login HTTP Basic (o seu nome não é então usado)."
         }

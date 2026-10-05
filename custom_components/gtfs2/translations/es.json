@@ -83,7 +83,7 @@
         "description": "De dónde procede el archivo de horarios de esta fuente y qué hacer con las nuevas versiones. Cada actualización, ya sea desde aquí, desde la entidad de actualización o desde el servicio update_gtfs, usa la dirección y la clave de abajo. **Notificar** pregunta al proveedor con una petición mínima, al ritmo elegido, y avisa cuando existe una nueva versión, para que usted o una automatización decidan cuándo instalarla. **Instalar automáticamente** la instala de inmediato. Los sensores siguen respondiendo durante la instalación; el cambio a los nuevos datos ocurre de una sola vez.",
         "data": {
           "url": "Dirección del feed",
-          "needs_api_key": "Esto requiere una clave API",
+          "needs_api_key": "Se necesita una clave API",
           "static_refresh_mode": "Ante una nueva versión",
           "static_check_interval": "Frecuencia de comprobación"
         },
@@ -103,7 +103,7 @@
           "api_key_location": "Dónde va la clave"
         },
         "data_description": {
-          "api_key": "La clave en sí, copiada del proveedor.",
+          "api_key": "La clave en sí, tal como se la dio el proveedor.",
           "api_key_name": "El nombre con el que el proveedor espera su clave, a copiar tal cual, mayúsculas incluidas. Cambia de un proveedor a otro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clave en la dirección: `…?`**`apikey`**`=SU_CLAVE`\n- clave en una cabecera: **`x-api-key`**`: SU_CLAVE`\n- ejemplo: **`appID`**, en la dirección (`…/TripUpdate/?`**`appID`**`=SU_CLAVE`)",
           "api_key_location": "En la dirección web, en la cabecera de la petición, o como inicio de sesión HTTP Basic (su nombre no se usa entonces)."
         }
@@ -466,7 +466,7 @@
         "description": "De dónde procede el archivo de horarios de esta fuente y qué hacer con las nuevas versiones. Cada actualización, ya sea desde aquí, desde la entidad de actualización o desde el servicio update_gtfs, usa la dirección y la clave de abajo. **Notificar** pregunta al proveedor con una petición mínima, al ritmo elegido, y avisa cuando existe una nueva versión, para que usted o una automatización decidan cuándo instalarla. **Instalar automáticamente** la instala de inmediato. Los sensores siguen respondiendo durante la instalación; el cambio a los nuevos datos ocurre de una sola vez.",
         "data": {
           "url": "Dirección del feed",
-          "needs_api_key": "Esto requiere una clave API",
+          "needs_api_key": "Se necesita una clave API",
           "static_refresh_mode": "Ante una nueva versión",
           "static_check_interval": "Frecuencia de comprobación"
         },
@@ -486,7 +486,7 @@
           "api_key_location": "Dónde va la clave"
         },
         "data_description": {
-          "api_key": "La clave en sí, copiada del proveedor.",
+          "api_key": "La clave en sí, tal como se la dio el proveedor.",
           "api_key_name": "El nombre con el que el proveedor espera su clave, a copiar tal cual, mayúsculas incluidas. Cambia de un proveedor a otro: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- clave en la dirección: `…?`**`apikey`**`=SU_CLAVE`\n- clave en una cabecera: **`x-api-key`**`: SU_CLAVE`\n- ejemplo: **`appID`**, en la dirección (`…/TripUpdate/?`**`appID`**`=SU_CLAVE`)",
           "api_key_location": "En la dirección web, en la cabecera de la petición, o como inicio de sesión HTTP Basic (su nombre no se usa entonces)."
         }

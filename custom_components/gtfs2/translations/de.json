@@ -83,7 +83,7 @@
         "description": "Woher die Fahrplandatei dieser Quelle stammt und was mit neuen Versionen geschehen soll. Jede Aktualisierung, ob von hier, über die Update-Entität oder über den Dienst update_gtfs, verwendet die Adresse und den Schlüssel unten. **Benachrichtigen** fragt den Anbieter im gewählten Rhythmus mit einer winzigen Anfrage und meldet, wenn eine neue Version vorliegt, damit Sie oder eine Automatisierung über den Zeitpunkt entscheiden. **Automatisch installieren** installiert sie sofort. Die Sensoren antworten während einer Installation weiter; die Umschaltung auf die neuen Daten erfolgt in einem Zug.",
         "data": {
           "url": "Feed-Adresse",
-          "needs_api_key": "Dafür ist ein API-Schlüssel nötig",
+          "needs_api_key": "Ein API-Schlüssel ist erforderlich",
           "static_refresh_mode": "Bei einer neuen Version",
           "static_check_interval": "Prüfintervall"
         },
@@ -103,9 +103,9 @@
           "api_key_location": "Wohin der Schlüssel gehört"
         },
         "data_description": {
-          "api_key": "Der Schlüssel selbst, vom Anbieter kopiert.",
+          "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
           "api_key_name": "Der Name, unter dem der Anbieter Ihren Schlüssel erwartet, genau abzuschreiben, Groß- und Kleinschreibung inbegriffen. Er ist je nach Anbieter verschieden: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- Schlüssel in der Adresse: `…?`**`apikey`**`=IHR_SCHLUESSEL`\n- Schlüssel in einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`\n- Beispiel: **`appID`**, in der Adresse (`…/TripUpdate/?`**`appID`**`=IHR_SCHLUESSEL`)",
-          "api_key_location": "In der Webadresse, im Anfrage-Header oder als HTTP-Basic-Anmeldung (sein Name wird dann nicht verwendet)."
+          "api_key_location": "In der Web-Adresse, im Anfrage-Header oder als HTTP-Basic-Anmeldung (sein Name wird dann nicht verwendet)."
         }
       },
       "source": {
@@ -204,7 +204,7 @@
       "sensor": {
         "data": {
           "name": "Name des Sensors",
-          "add_return": "Auch die Gegenrichtung anlegen"
+          "add_return": "Auch die Rückfahrt anlegen"
         },
         "data_description": {
           "name": "Aus der Datenquelle, der Linie und den beiden Haltestellen vorgeschlagen. Auf Ihrem Dashboard angezeigt, und er legt die Entitäts-ID fest: ein später unter anderem Namen angelegter Sensor ist eine neue Entität, und Karten, die auf diesen zeigen, müssen angepasst werden.",
@@ -268,7 +268,7 @@
       },
       "sensor_train": {
         "data": {
-          "name": "Sensorname",
+          "name": "Name des Sensors",
           "add_return": "Auch die Rückfahrt anlegen"
         },
         "description": "Der Sensor zeigt die nächsten Abfahrten für **{trip}**.",
@@ -466,7 +466,7 @@
         "description": "Woher die Fahrplandatei dieser Quelle stammt und was mit neuen Versionen geschehen soll. Jede Aktualisierung, ob von hier, über die Update-Entität oder über den Dienst update_gtfs, verwendet die Adresse und den Schlüssel unten. **Benachrichtigen** fragt den Anbieter im gewählten Rhythmus mit einer winzigen Anfrage und meldet, wenn eine neue Version vorliegt, damit Sie oder eine Automatisierung über den Zeitpunkt entscheiden. **Automatisch installieren** installiert sie sofort. Die Sensoren antworten während einer Installation weiter; die Umschaltung auf die neuen Daten erfolgt in einem Zug.",
         "data": {
           "url": "Feed-Adresse",
-          "needs_api_key": "Dafür ist ein API-Schlüssel nötig",
+          "needs_api_key": "Ein API-Schlüssel ist erforderlich",
           "static_refresh_mode": "Bei einer neuen Version",
           "static_check_interval": "Prüfintervall"
         },
@@ -486,9 +486,9 @@
           "api_key_location": "Wohin der Schlüssel gehört"
         },
         "data_description": {
-          "api_key": "Der Schlüssel selbst, vom Anbieter kopiert.",
+          "api_key": "Der Schlüssel selbst, wie vom Anbieter erhalten.",
           "api_key_name": "Der Name, unter dem der Anbieter Ihren Schlüssel erwartet, genau abzuschreiben, Groß- und Kleinschreibung inbegriffen. Er ist je nach Anbieter verschieden: `apikey`, `api_key`, `app_key`, `Authorization`…\n\n- Schlüssel in der Adresse: `…?`**`apikey`**`=IHR_SCHLUESSEL`\n- Schlüssel in einem Header: **`x-api-key`**`: IHR_SCHLUESSEL`\n- Beispiel: **`appID`**, in der Adresse (`…/TripUpdate/?`**`appID`**`=IHR_SCHLUESSEL`)",
-          "api_key_location": "In der Webadresse, im Anfrage-Header oder als HTTP-Basic-Anmeldung (sein Name wird dann nicht verwendet)."
+          "api_key_location": "In der Web-Adresse, im Anfrage-Header oder als HTTP-Basic-Anmeldung (sein Name wird dann nicht verwendet)."
         }
       }
     },

@@ -569,7 +569,7 @@
           "description": "The name of the static source these realtime feeds belong to"
         },
         "url": {
-          "name": "Feed address",
+          "name": "Realtime feed address",
           "description": "Full address of the realtime feed"
         },
         "api_key": {
