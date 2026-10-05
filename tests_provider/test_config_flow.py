@@ -89,6 +89,8 @@ networks before anything could say so, and its words went with them.
 from __future__ import annotations
 
 import asyncio
+import csv
+import io
 import json
 import os
 import shutil
@@ -912,46 +914,170 @@ def test_a_train_journey_and_its_return_hold_the_stations_and_the_line(world):
     walk(world, scenario)
 
 
-def test_a_train_journey_on_every_line_gets_on_at_a_station_on_the_way_too(world):
+def test_a_train_journey_from_the_stations_first_makes_a_sensor_a_line(world):
     # a week of works: some trains to Paris leave from Les Aubrais, under
-    # whichever code. One journey on every line, getting on at Les Aubrais
-    # as well, and its return getting off there as well
+    # whichever code. From the stations first, each line ticked is a sensor
+    # of its own, getting on at Les Aubrais as well, and its return getting
+    # off there as well
     async def scenario(hass):
         await install_source(hass, "sncf-journeys", "sncf")
         lines = shown(await to_lines(hass, "sncf"), FORM, "route")
-        every = offered(lines, "route")[0]
-        assert every.split("##")[:2] == ["2", "train"]
-        stations = shown(await submit(hass, lines, route=every), FORM, "stops_train")
+        first = offered(lines, "route")[0]
+        assert first.split("##")[:2] == ["2", "train"]
+        stations = shown(await submit(hass, lines, route=first), FORM, "stops_train")
         assert {"Orléans", "Les Aubrais", "Paris Austerlitz"} <= set(offered(stations, "origin"))
         arrivals = shown(await submit(hass, stations, origin="Orléans"), FORM, "destination_train")
         options = shown(await submit(hass, arrivals, destination="Paris Austerlitz"),
                         FORM, "options_train")
         assert "Les Aubrais" in offered(options, "board_also")
-        # every line: none ticked; each offered under its name too
-        assert default(options, "lines") == []
-        assert {"K8+", "P8"} <= set(offered(options, "lines"))
+        # every line riding between them ticked; each offered under its name too
+        assert set(default(options, "lines")) == {"K8+", "P8"} == set(offered(options, "lines"))
         assert labels(options, "lines")["K8+"] == "K8+ (Paris - Orléans)"
         # one station cannot be both
         again = shown(await submit(hass, options, board_also=["Les Aubrais"],
-                                   alight_also=["Les Aubrais"], lines=[]), FORM, "options_train")
+                                   alight_also=["Les Aubrais"], lines=["K8+", "P8"]),
+                      FORM, "options_train")
         assert again["errors"] == {"base": "station_both_ends"}
-        naming = shown(await submit(hass, again, board_also=["Les Aubrais"], alight_also=[], lines=[]),
-                       FORM, "sensor_train")
-        # no line in the name on every line
-        assert default(naming, "name") == "sncf Orléans → Paris Austerlitz"
-        back = naming["description_placeholders"]["return_trip"]
-        assert back == "sncf Paris Austerlitz → Orléans"
-        shown(await submit(hass, naming, name=default(naming, "name"), add_return=True),
-              MENU, "finished")
-        outward, ride_back = hass.journeys()
-        assert (outward.data["route"], outward.data["lines"], outward.data["line"]) == ("train", [], None)
-        assert outward.data["origin_stations"] == ["Orléans", "Les Aubrais"]
-        assert outward.data["destination_stations"] == ["Paris Austerlitz"]
+        # a sensor a line: no line ticked is no sensor
+        again = shown(await submit(hass, again, board_also=["Les Aubrais"], alight_also=[], lines=[]),
+                      FORM, "options_train")
+        assert again["errors"] == {"base": "no_line_ticked"}
+        sensors = shown(await submit(hass, again, board_also=["Les Aubrais"], alight_also=[],
+                                     lines=["K8+", "P8"]), FORM, "sensors_train")
+        # each named from its line and its stations, no name to type
+        assert "name" not in fields(sensors)
+        placeholders = sensors["description_placeholders"]
+        assert placeholders["sensors"] == ("- sncf K8+ Orléans → Paris Austerlitz\n"
+                                           "- sncf P8 Orléans → Paris Austerlitz")
+        assert placeholders["returns"] == ("- sncf K8+ Paris Austerlitz → Orléans\n"
+                                           "- sncf P8 Paris Austerlitz → Orléans")
+        # a train return is offered unticked, as on the sensor screen
+        assert default(sensors, "add_return") is False
+        closing = shown(await submit(hass, sensors, add_return=True), MENU, "finished")
+        made = {entry.data["name"]: entry.data for entry in hass.journeys()}
+        assert closing["description_placeholders"]["name"] == ", ".join(made)
+        assert sorted(made) == ["sncf K8+ Orléans → Paris Austerlitz", "sncf K8+ Paris Austerlitz → Orléans",
+                                "sncf P8 Orléans → Paris Austerlitz", "sncf P8 Paris Austerlitz → Orléans"]
+        k8 = made["sncf K8+ Orléans → Paris Austerlitz"]
+        assert (k8["route"], k8["line"], k8["lines"]) == ("train", "K8+", ["K8+"])
+        assert (k8["origin"], k8["destination"]) == ("Orléans", "Paris Austerlitz")
+        assert k8["origin_stations"] == ["Orléans", "Les Aubrais"]
+        assert k8["destination_stations"] == ["Paris Austerlitz"]
         # the mirror: got on at Les Aubrais out, got off there back
-        assert (ride_back.data["origin"], ride_back.data["destination"]) == ("Paris Austerlitz", "Orléans")
-        assert ride_back.data["origin_stations"] == ["Paris Austerlitz"]
-        assert ride_back.data["destination_stations"] == ["Orléans", "Les Aubrais"]
-        assert ride_back.data["lines"] == []
+        back = made["sncf K8+ Paris Austerlitz → Orléans"]
+        assert (back["origin"], back["destination"]) == ("Paris Austerlitz", "Orléans")
+        assert back["origin_stations"] == ["Paris Austerlitz"]
+        assert back["destination_stations"] == ["Orléans", "Les Aubrais"]
+        assert (back["line"], back["lines"]) == ("K8+", ["K8+"])
+        assert made["sncf P8 Orléans → Paris Austerlitz"]["lines"] == ["P8"]
+    walk(world, scenario)
+
+
+def _p8_never_at_orleans():
+    """stop_times.txt with the P8 of Paris - Orleans no longer calling at
+    Orleans: a line serving one of the two stations ticked at an end, as
+    most K6+ from Tours call at Les Aubrais and not at Orleans."""
+    with zipfile.ZipFile(FIXTURES / "sncf-journeys" / "static.zip") as feed:
+        def read(name):
+            return list(csv.DictReader(io.TextIOWrapper(feed.open(name), "utf-8-sig")))
+        routes = {r["route_id"] for r in read("routes.txt")
+                  if r["route_long_name"] == "Paris - Etampes - Orléans"}
+        trips = {t["trip_id"] for t in read("trips.txt") if t["route_id"] in routes}
+        orleans = {s["stop_id"] for s in read("stops.txt") if s["stop_name"] == "Orléans"}
+
+    def change(name, text):
+        if name.rsplit("/", 1)[-1] != "stop_times.txt":
+            return None
+        header, *lines = text.splitlines()
+        columns = header.split(",")
+        trip, stop = columns.index("trip_id"), columns.index("stop_id")
+        kept = [line for line in lines
+                if not (line.split(",")[trip] in trips and line.split(",")[stop] in orleans)]
+        return "\n".join([header, *kept]) + "\n"
+    return change
+
+
+def test_a_line_ticked_keeps_only_the_stations_it_serves(world, tmp_path):
+    # the P8 here calls at Les Aubrais, not at Orleans: its sensor leaves
+    # from Les Aubrais, and the K8+ made before is left as it is
+    feed = tmp_path / "aubrais"
+    feed.mkdir()
+    rewritten_zip("sncf-journeys", feed / "static.zip", _p8_never_at_orleans())
+
+    async def scenario(hass):
+        shutil.copyfile(feed / "static.zip", gtfs_dir(hass) / "rail.zip")
+        built = sqlite3.connect(fixture_db.build(str(feed)).engine.url.database)
+        copy = sqlite3.connect(gtfs_dir(hass) / "rail.sqlite")
+        try:
+            built.backup(copy)
+        finally:
+            copy.close()
+            built.close()
+        await rt_source.async_ensure_datasource_entry(hass, "rail", api={})
+
+        async def options():
+            lines = shown(await to_lines(hass, "rail"), FORM, "route")
+            stations = shown(await submit(hass, lines, route=offered(lines, "route")[0]),
+                             FORM, "stops_train")
+            arrivals = shown(await submit(hass, stations, origin="Orléans"), FORM, "destination_train")
+            return shown(await submit(hass, arrivals, destination="Paris Austerlitz"),
+                         FORM, "options_train")
+
+        # the K8+ alone: one line ticked, named on the sensor screen
+        naming = shown(await submit(hass, await options(), board_also=["Les Aubrais"],
+                                    alight_also=[], lines=["K8+"]), FORM, "sensor_train")
+        assert default(naming, "name") == "rail K8+ Orléans → Paris Austerlitz"
+        shown(await submit(hass, naming, name=default(naming, "name"), add_return=False),
+              MENU, "finished")
+        sensors = shown(await submit(hass, await options(), board_also=["Les Aubrais"],
+                                     alight_also=[], lines=["K8+", "P8"]), FORM, "sensors_train")
+        assert sensors["description_placeholders"]["sensors"] == (
+            "- rail K8+ Orléans → Paris Austerlitz\n- rail P8 Les Aubrais → Paris Austerlitz")
+        # the K8+ is there already: only the P8 is made
+        closing = shown(await submit(hass, sensors, add_return=False), MENU, "finished")
+        assert closing["description_placeholders"]["name"] == "rail P8 Les Aubrais → Paris Austerlitz"
+        k8, p8 = (entry.data for entry in hass.journeys())
+        assert k8["origin_stations"] == ["Orléans", "Les Aubrais"]
+        assert (p8["origin"], p8["origin_stations"]) == ("Les Aubrais", ["Les Aubrais"])
+        assert (p8["line"], p8["destination_stations"]) == ("P8", ["Paris Austerlitz"])
+    walk(world, scenario)
+
+
+def test_a_train_journey_from_the_stations_first_imports_the_lines_it_rides(world):
+    # a source holds the lines asked for, not the network: on a fresh one
+    # the stations come from the zip, and the lines riding between the
+    # two picked, either way, are imported before the options screen
+    async def scenario(hass):
+        drop_zip(hass, "sncf-journeys", "sncf")
+        where = await choose(hass, await start(hass), "source")
+        folder = await choose(hass, where, "source_zip")
+        # past the realtime screen, left empty
+        lines = shown(await submit(hass, await submit(hass, folder, file="sncf")), FORM, "route")
+        first = offered(lines, "route")[0]
+        assert first.split("##")[:2] == ["2", "train"]
+        stations = shown(await submit(hass, lines, route=first), FORM, "stops_train")
+        # the feed's stations, Jura and Camargue lines included
+        assert {"Orléans", "Paris Austerlitz", "Saint-Claude"} <= set(offered(stations, "origin"))
+        arrivals = shown(await submit(hass, stations, origin="Orléans"), FORM, "destination_train")
+        options = shown(await submit(hass, arrivals, destination="Paris Austerlitz"),
+                        FORM, "options_train")
+        assert "import_partial" not in (options.get("errors") or {}).values()
+        loaded = {r for (r,) in rows(hass, "sncf", "select distinct route_id from trips")}
+        # K8+ and the P8 of Paris - Orleans, not the P8 of the Jura or of Nimes
+        assert loaded == {"FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:",
+                          "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"}
+        assert {"K8+", "P8"} <= set(offered(options, "lines"))
+        sensors = shown(await submit(hass, options, board_also=["Les Aubrais"], alight_also=[],
+                                     lines=["K8+", "P8"]), FORM, "sensors_train")
+        shown(await submit(hass, sensors, add_return=True), MENU, "finished")
+        made = {entry.data["name"]: entry.data for entry in hass.journeys()}
+        assert len(made) == 4
+        outward = made["sncf K8+ Orléans → Paris Austerlitz"]
+        assert outward["origin_stations"] == ["Orléans", "Les Aubrais"]
+        assert (outward["lines"], outward["line"]) == (["K8+"], "K8+")
+        ride_back = made["sncf P8 Paris Austerlitz → Orléans"]
+        assert ride_back["destination_stations"] == ["Orléans", "Les Aubrais"]
+        assert (ride_back["lines"], ride_back["line"]) == (["P8"], "P8")
     walk(world, scenario)
 
 

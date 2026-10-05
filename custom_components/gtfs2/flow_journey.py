@@ -308,11 +308,13 @@ class JourneyScreens:
             trip = labels.get(str(loop_direction), "") or trip
         return trip
 
-    def _suggested_name(self, trip: str) -> str:
-        """The name offered for a sensor of this trip: source, line, trip."""
+    def _suggested_name(self, trip: str, label: str | None = None) -> str:
+        """The name offered for a sensor of this trip: source, line, trip;
+        the line the flow picked, or the label given (a train line ticked)."""
         # the source leads, so the entity id tells line 1 of one network
         # from line 1 of another: sensor.gtfs_idfm_14_...
-        return " ".join(filter(None, (self._user_inputs.get(CONF_FILE), self._route_label, trip)))
+        line = self._route_label if label is None else label
+        return " ".join(filter(None, (self._user_inputs.get(CONF_FILE), line, trip)))
 
     async def _name_and_create(self, step_id: str, user_input: dict | None, suggested: str,
                                trip: str, add_return: bool) -> FlowResult:

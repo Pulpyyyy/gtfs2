@@ -68,6 +68,8 @@ if TYPE_CHECKING:
     # for the annotations only
     from pygtfs import Schedule
 
+    from .stations import RailIndex
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -81,7 +83,7 @@ def _is_rail(value: str) -> bool:
 
 def _label_of(picked: list[str]) -> str:
     """The line number a route screen value names a sensor with, "" for
-    every train line."""
+    the trains from the stations first (each line ticked names its own)."""
     if len(picked) < 3 or picked[1] == ALL_TRAINS:
         return ""
     return line_number(picked[2])
@@ -135,6 +137,17 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         # the lines the import was asked for and did not bring in, as named
         # to the rider
         self._import_missing: str = ""
+        # the trains of the source's zip, (file, index), read once for the
+        # station screens of a train journey from the stations first
+        # (TrainScreens._train_source)
+        self._rail: tuple[str, RailIndex | None] | None = None
+        # the import running is the one a train journey from the stations
+        # first asked for: its options screen comes next, not the departure
+        # screen
+        self._train_import = False
+        # the entries of the train lines ticked, each with its return
+        # (TrainScreens._line_plans)
+        self._train_plans: list[dict] = []
         # what the last created entry was called, shown on the closing screen
         self._created_name: str = ""
         # the mirror journey, worked out once the stops are known
@@ -481,9 +494,9 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
                 selector.SelectOptionDict(value=r, label=label)
                 for r, label in zip(usable, with_modes(usable, words))
                 ]
-            every = await self._every_train_line(usable, fresh)
-            route_list = every + route_list
-            self._routes_offered = set(usable) | {option["value"] for option in every}
+            first = await self._trains_stations_first(usable)
+            route_list = first + route_list
+            self._routes_offered = set(usable) | {option["value"] for option in first}
             placeholders = dict(TRANSLATION_DESCRIPTION_PLACEHOLDERS)
             placeholders["routes"] = str(len(usable))
             placeholders["routes_total"] = str(total)
@@ -524,16 +537,18 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         return await self.async_step_direction()
 
 
-    async def _every_train_line(self, usable: list[str], fresh: bool) -> list[selector.SelectOptionDict]:
-        """The route screen's first option on a source with trains: a
-        journey on whichever train runs between two stations. On a week of
-        works the trains of one line leave from the next station, under
-        another line's code. Not before the import: the stations are read
-        from the database. [] when there is none to offer."""
-        if fresh or not any(_is_rail(value) for value in usable):
+    async def _trains_stations_first(self, usable: list[str]) -> list[selector.SelectOptionDict]:
+        """The route screen's first option on a source with trains: the two
+        stations first, then the lines riding between them, a sensor each.
+        On a week of works the trains of one line leave from the next
+        station, under another line's code. Offered on a fresh source too:
+        the stations are read from the feed's zip, and the lines riding
+        between the two picked imported then (TrainScreens._train_source).
+        [] when there is none to offer."""
+        if not any(_is_rail(value) for value in usable):
             return []
-        every = await _async_text(self.hass, "trains_all_lines", "Every train line")
-        return [selector.SelectOptionDict(value=f"2##{ALL_TRAINS}##{every}", label=every)]
+        first = await _async_text(self.hass, "trains_stations_first", "Trains: pick the stations, then the lines")
+        return [selector.SelectOptionDict(value=f"2##{ALL_TRAINS}##{first}", label=first)]
 
     async def _check_data(self, data: dict) -> str | None:
         await _reopen_schedule(self, data)

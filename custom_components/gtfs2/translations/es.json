@@ -232,7 +232,7 @@
       },
       "options_train": {
         "title": "Opciones del trayecto",
-        "description": "Trayecto **{origin} → {destination}**.\n\nTodo es opcional: déjelo como está para seguir todos los trenes entre estas dos estaciones.\n\nÚtil por ejemplo durante obras, cuando algunos trenes salen de una estación cercana en el camino: márquela en «Subir también en», y esos trenes aparecerán en el mismo sensor.",
+        "description": "Trayecto **{origin} → {destination}**.\n\nCada línea marcada tiene su propio sensor, solo con las estaciones que sirven sus trenes: una línea que nunca para en su estación de salida empieza en la estación donde para.\n\nÚtil por ejemplo durante obras, cuando algunos trenes salen de una estación cercana en el camino: márquela en «Subir también en», y esos trenes aparecerán en el sensor de su línea.",
         "data": {
           "board_also": "Subir también en",
           "alight_also": "Bajar también en",
@@ -241,7 +241,17 @@
         "data_description": {
           "board_also": "Estaciones en el camino donde también puede subir. Cada tren aparece una sola vez, a la hora de la primera de estas estaciones donde admite viajeros.",
           "alight_also": "Estaciones en el camino donde también puede bajar. Un tren que termina allí, antes de su estación de llegada, se conserva.",
-          "lines": "Deje vacío para tomar todos los trenes. Marque una o varias líneas para seguir solo esas."
+          "lines": "Un sensor por línea marcada. Desmarque las líneas que no toma."
+        }
+      },
+      "sensors_train": {
+        "title": "Sensores a crear",
+        "description": "Un sensor por línea marcada:\n\n{sensors}\n\nSus regresos, las mismas líneas en sentido contrario:\n\n{returns}\n\nCada sensor se nombra según su fuente, su línea y sus estaciones. Un sensor que ya lleva ese nombre se deja como está.",
+        "data": {
+          "add_return": "Crear también los regresos"
+        },
+        "data_description": {
+          "add_return": "Un segundo sensor por línea, en sentido contrario."
         }
       },
       "sensor_train": {
@@ -346,6 +356,7 @@
       "reload_failed": "No se ha podido restaurar esa línea. La fuente no se ha modificado; elija otra línea o vuelva a intentarlo.",
       "import_partial": "Algunas líneas no se han podido restaurar: {missing}. El registro indica el motivo. Esta sí se ha restaurado, puede continuar; vuelva a elegir las demás más tarde para intentarlo de nuevo.",
       "station_both_ends": "Una misma estación no puede estar a la vez en «Subir también en» y en «Bajar también en».",
+      "no_line_ticked": "Marque al menos una línea: cada línea marcada tiene su propio sensor.",
       "no_train_between": "Ningún tren une estas estaciones con las líneas marcadas: desmarque líneas o marque otras estaciones."
     },
     "abort": {
@@ -671,7 +682,7 @@
     "line_mode_trolleybus": "trolebús",
     "line_mode_monorail": "monorraíl",
     "agency_all": "Todos los operadores",
-    "trains_all_lines": "Todas las líneas de tren"
+    "trains_stations_first": "Trenes: elegir las estaciones y luego las líneas"
   },
   "issues": {
     "source_unused": {

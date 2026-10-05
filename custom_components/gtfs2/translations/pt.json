@@ -232,7 +232,7 @@
       },
       "options_train": {
         "title": "Opções da viagem",
-        "description": "Viagem **{origin} → {destination}**.\n\nTudo é opcional: deixe como está para seguir todos os comboios entre estas duas estações.\n\nÚtil por exemplo durante obras, quando alguns comboios partem de uma estação próxima no caminho: marque-a em «Embarcar também em», e esses comboios aparecem no mesmo sensor.",
+        "description": "Viagem **{origin} → {destination}**.\n\nCada linha marcada tem o seu próprio sensor, só com as estações que os seus comboios servem: uma linha que nunca para na sua estação de partida começa na estação onde para.\n\nÚtil por exemplo durante obras, quando alguns comboios partem de uma estação próxima no caminho: marque-a em «Embarcar também em», e esses comboios aparecem no sensor da sua linha.",
         "data": {
           "board_also": "Embarcar também em",
           "alight_also": "Desembarcar também em",
@@ -241,7 +241,17 @@
         "data_description": {
           "board_also": "Estações no caminho onde também pode embarcar. Cada comboio aparece uma só vez, à hora da primeira destas estações onde aceita passageiros.",
           "alight_also": "Estações no caminho onde também pode desembarcar. Um comboio que termina aí, antes da sua estação de chegada, é mantido.",
-          "lines": "Deixe vazio para apanhar todos os comboios. Marque uma ou mais linhas para seguir só essas."
+          "lines": "Um sensor por linha marcada. Desmarque as linhas que não apanha."
+        }
+      },
+      "sensors_train": {
+        "title": "Sensores a criar",
+        "description": "Um sensor por linha marcada:\n\n{sensors}\n\nOs seus regressos, as mesmas linhas no sentido contrário:\n\n{returns}\n\nCada sensor é nomeado a partir da sua fonte, da sua linha e das suas estações. Um sensor que já tem esse nome fica como está.",
+        "data": {
+          "add_return": "Criar também os regressos"
+        },
+        "data_description": {
+          "add_return": "Um segundo sensor por linha, no sentido contrário."
         }
       },
       "sensor_train": {
@@ -346,6 +356,7 @@
       "reload_failed": "Não foi possível repor essa linha. A fonte não foi alterada; escolha outra linha ou tente novamente.",
       "import_partial": "Não foi possível repor algumas linhas: {missing}. O registo indica o motivo. Esta foi reposta, pode continuar; volte a escolher as outras mais tarde para tentar novamente.",
       "station_both_ends": "Uma mesma estação não pode estar ao mesmo tempo em «Embarcar também em» e em «Desembarcar também em».",
+      "no_line_ticked": "Marque pelo menos uma linha: cada linha marcada tem o seu próprio sensor.",
       "no_train_between": "Nenhum comboio liga estas estações nas linhas marcadas: desmarque linhas ou marque outras estações."
     },
     "abort": {
@@ -671,7 +682,7 @@
     "line_mode_trolleybus": "troleicarro",
     "line_mode_monorail": "monocarril",
     "agency_all": "Todos os operadores",
-    "trains_all_lines": "Todas as linhas de comboio"
+    "trains_stations_first": "Comboios: escolher as estações e depois as linhas"
   },
   "issues": {
     "source_unused": {

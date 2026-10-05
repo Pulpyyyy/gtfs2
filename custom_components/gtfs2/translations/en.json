@@ -232,7 +232,7 @@
       },
       "options_train": {
         "title": "Journey options",
-        "description": "Journey **{origin} → {destination}**.\n\nEverything here is optional: leave it as it is to follow every train between these two stations.\n\nUseful during engineering works, for instance, when some trains leave from a nearby station on the way: tick it under “Also board at”, and those trains show in the same sensor.",
+        "description": "Journey **{origin} → {destination}**.\n\nEach line ticked gets a sensor of its own, with only the stations its trains serve: a line that never calls at your departure station starts from the station it does call at.\n\nUseful during engineering works, for instance, when some trains leave from a nearby station on the way: tick it under “Also board at”, and those trains show in the sensor of their line.",
         "data": {
           "board_also": "Also board at",
           "alight_also": "Also get off at",
@@ -241,7 +241,17 @@
         "data_description": {
           "board_also": "Stations on the way where you can board as well. Each train shows once, at the time of the first of these stations where it takes passengers.",
           "alight_also": "Stations on the way where you can get off as well. A train that ends there, short of your arrival station, is kept.",
-          "lines": "Leave empty to take every train. Tick one or more lines to follow only those."
+          "lines": "One sensor per line ticked. Untick the lines you do not take."
+        }
+      },
+      "sensors_train": {
+        "title": "Sensors to create",
+        "description": "One sensor per line ticked:\n\n{sensors}\n\nTheir returns, the same lines the other way:\n\n{returns}\n\nEach sensor is named from its source, its line and its stations. A sensor already there under that name is left as it is.",
+        "data": {
+          "add_return": "Also create the returns"
+        },
+        "data_description": {
+          "add_return": "A second sensor per line, the other way round."
         }
       },
       "sensor_train": {
@@ -346,6 +356,7 @@
       "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again.",
       "import_partial": "Some lines could not be brought back: {missing}. The log says why. This one was, so you can carry on; pick the others again later to try once more.",
       "station_both_ends": "A station cannot be both under “Also board at” and under “Also get off at”.",
+      "no_line_ticked": "Tick at least one line: each line ticked gets a sensor of its own.",
       "no_train_between": "No train links these stations on the lines ticked: untick some lines, or tick other stations."
     },
     "abort": {
@@ -671,7 +682,7 @@
     "line_mode_trolleybus": "trolleybus",
     "line_mode_monorail": "monorail",
     "agency_all": "All operators",
-    "trains_all_lines": "Every train line"
+    "trains_stations_first": "Trains: pick the stations, then the lines"
   },
   "issues": {
     "source_unused": {

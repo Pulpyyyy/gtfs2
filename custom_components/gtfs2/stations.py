@@ -6,22 +6,29 @@ So the flow asks which stations a line calls at (get_station_list), which
 of them a train reaches from a given one (get_train_destination_list),
 whether any train runs between two names (has_train_trip_between), and
 whether a line mixes coaches and trains (get_station_modes), and which
-lines an entry rides, for its map files (train_entry_routes). The boarding
+lines an entry rides, for its map files (train_entry_routes), and which
+stations each line serves of those asked (train_line_ends). The boarding
 rules and the station-name matching they lean on are stop_rules', where
 the departure query reads them too.
 """
 from __future__ import annotations
 
 from collections.abc import Mapping
+import csv
 import logging
 import os
 import sqlite3
 from typing import TYPE_CHECKING, Any
+import zipfile
 
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql import text
 
 from .gtfs_db import real_path
-from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
+from .gtfs_filter import table_rows
+from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
                          entry_lines, entry_stations, line_codes_where, station_names_in)
 
 if TYPE_CHECKING:
@@ -31,7 +38,131 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-def has_train_trip_between(schedule: Schedule, origin_name: str | list[str],
+class RailIndex:
+    """The trains of a feed, read from its zip: what the station screens
+    ask from the stations first, before the lines are imported.
+
+    A source holds the lines its sensors asked for, not the network: the
+    stations and the lines of every train come from the zip kept beside
+    it. Only what those screens read is kept (the rail routes, their trips,
+    their calls with who gets on and off, the stops' names), in an
+    in-memory database the functions below query as they query a source.
+    """
+
+    def __init__(self, engine: Engine) -> None:
+        self.engine = engine
+
+
+def rail_index(zip_path: str) -> RailIndex | None:
+    """The RailIndex of a feed's zip, None when it cannot be read. Blocking,
+    one pass over stop_times.txt: for the executor."""
+    engine = create_engine("sqlite://", poolclass=StaticPool,
+                           connect_args={"check_same_thread": False})
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            routes = [(r["route_id"], r.get("route_short_name"), r.get("route_long_name"), r.get("route_type"))
+                      for r in table_rows(zin, "routes.txt") if _is_rail_type(r.get("route_type"))]
+            rail = {r[0] for r in routes}
+            trips = [(t["trip_id"], t["route_id"]) for t in table_rows(zin, "trips.txt")
+                     if t.get("route_id") in rail]
+            riding = {t[0] for t in trips}
+            calls = [(c["trip_id"], c["stop_id"], int(c.get("stop_sequence") or 0),
+                      c.get("pickup_type") or None, c.get("drop_off_type") or None)
+                     for c in table_rows(zin, "stop_times.txt") if c.get("trip_id") in riding]
+            called = {c[1] for c in calls}
+            stops = [(s["stop_id"], s.get("stop_name")) for s in table_rows(zin, "stops.txt")
+                     if s.get("stop_id") in called]
+    except (OSError, KeyError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
+        _LOGGER.warning("Could not read the trains of %s: %s", zip_path, ex)
+        return None
+    raw = engine.raw_connection()
+    try:
+        cur = raw.cursor()
+        cur.executescript("""
+            create table routes (route_id text, route_short_name text, route_long_name text,
+                                 route_type integer);
+            create table trips (trip_id text, route_id text);
+            create table stop_times (trip_id text, stop_id text, stop_sequence integer,
+                                     pickup_type integer, drop_off_type integer);
+            create table stops (stop_id text, stop_name text);
+        """)
+        cur.executemany("insert into routes values (?, ?, ?, ?)", routes)
+        cur.executemany("insert into trips values (?, ?)", trips)
+        cur.executemany("insert into stop_times values (?, ?, ?, ?, ?)", calls)
+        cur.executemany("insert into stops values (?, ?)", stops)
+        cur.executescript("""
+            create index rail_trips_route on trips (route_id);
+            create index rail_trips_trip on trips (trip_id);
+            create index rail_calls_trip on stop_times (trip_id);
+            create index rail_calls_stop on stop_times (stop_id);
+            create index rail_stops_name on stops (stop_name);
+        """)
+        raw.commit()
+    finally:
+        raw.close()
+    _LOGGER.debug("Rail index of %s: %s lines, %s trips, %s calls", zip_path, len(routes), len(trips), len(calls))
+    return RailIndex(engine)
+
+
+def _is_rail_type(value: str | None) -> bool:
+    try:
+        return int(str(value).strip()) in RAIL_ROUTE_TYPES
+    except ValueError:
+        return False
+
+
+def get_train_routes_between(schedule: Schedule | RailIndex, origin_name: str, destination_name: str,
+                             board_also: list[str], alight_also: list[str]) -> list[str]:
+    """The route ids of the rail trips riding from the departure or a
+    station on the way to the arrival or a station on the way, the real
+    departure or arrival at one end at least: the lines a journey on every
+    line imports, those it may hold to on its options screen."""
+    origin_in, params = station_names_in("origin", [origin_name, *board_also])
+    dest_in, dest_params = station_names_in("dest", [destination_name, *alight_also])
+    params.update(dest_params)
+    sql = f"""
+    SELECT distinct t.route_id
+    from trips t
+    inner join routes r on r.route_id = t.route_id
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stops so on so.stop_id = o.stop_id
+    inner join stop_times d on d.trip_id = t.trip_id
+        and d.stop_sequence > o.stop_sequence
+    inner join stops sd on sd.stop_id = d.stop_id
+    where r.route_type in ({RAIL_ROUTE_TYPES_SQL})
+      and so.stop_name in {origin_in}
+      and sd.stop_name in {dest_in}
+      and (so.stop_name = :origin or sd.stop_name = :destination)
+      and {_boards("o")} and {_alights("d")}
+    order by t.route_id
+    """  # noqa: S608
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql), {**params, "origin": origin_name,
+                                        "destination": destination_name}).fetchall()
+    return [str(r[0]) for r in rows]
+
+
+def train_routes_both_ways(schedule: Schedule | RailIndex, origin_name: str,
+                           destination_name: str) -> list[str]:
+    """The route ids the trains between two stations picked first ride,
+    either way round, any station between boarded or got off at: what its
+    source has to hold before the options screen and the return read it.
+
+    Both ways, since the return is the journey's mirror and a line may run
+    one way only under its code (SNCF: K8+ out, P8 back). The ones riding
+    the way asked come first: an import stops at the first line that
+    fails, and those are the ones the journey cannot do without.
+    """
+    wanted: list[str] = []
+    for start, end in ((origin_name, destination_name), (destination_name, origin_name)):
+        between = get_train_stations_between(schedule, start, end)
+        for route_id in get_train_routes_between(schedule, start, end, between, between):
+            if route_id not in wanted:
+                wanted.append(route_id)
+    return wanted
+
+
+def has_train_trip_between(schedule: Schedule | RailIndex, origin_name: str | list[str],
                            destination_name: str | list[str],
                            line: str | list[str] | None = None) -> bool:
     """Whether any rail trip serves both ends, in this order.
@@ -73,7 +204,7 @@ def has_train_trip_between(schedule: Schedule, origin_name: str | list[str],
     return bool(row)
 
 
-def get_station_list(schedule: Schedule, route_id: str | None = None) -> list[str]:
+def get_station_list(schedule: Schedule | RailIndex, route_id: str | None = None) -> list[str]:
     """List the distinct stop names, for feeds where stop ids are unusable.
 
     A station shows up in GTFS as several stops, one per platform or mode, so
@@ -83,7 +214,7 @@ def get_station_list(schedule: Schedule, route_id: str | None = None) -> list[st
     Held to a route, the list is where its trains take riders on: a station
     every train of the line passes, or only sets down at (a night train's
     morning stops), is nowhere to get on (see _boards). Without one, where
-    a train of any rail line does: the journey that rides every line.
+    a train of any rail line does: the stations picked first.
     """
     _LOGGER.debug("Getting station list for route: %s", route_id)
     if route_id:
@@ -126,7 +257,7 @@ def _stop_mode(stop_id: str) -> str:
     return "coach" if str(stop_id).startswith(COACH_STOP_PREFIX) else "train"
 
 
-def get_station_modes(schedule: Schedule, route_id: str | None) -> dict[str, set[str]]:
+def get_station_modes(schedule: Schedule | RailIndex, route_id: str | None) -> dict[str, set[str]]:
     """{station name: {"train", "coach"}} for the stations a rail route calls
     at, when its trips mix trains and coaches; {} on a line of one mode.
 
@@ -171,7 +302,7 @@ def get_line_code(schedule: Schedule, route_id: str | None) -> str | None:
     return code if code is not None and str(code).strip() else None
 
 
-def get_train_destination_list(schedule: Schedule, route_id: str | None, origin_name: str,
+def get_train_destination_list(schedule: Schedule | RailIndex, route_id: str | None, origin_name: str,
                                line: str | list[str] | None = None) -> dict[str, set[str]]:
     """{station name: {"train", "coach"}} for the stations a trip of the line
     really reaches from the departure station, and by which of the two.
@@ -218,7 +349,7 @@ def get_train_destination_list(schedule: Schedule, route_id: str | None, origin_
     return dict(sorted(reached.items()))
 
 
-def get_train_stations_between(schedule: Schedule, origin_name: str, destination_name: str,
+def get_train_stations_between(schedule: Schedule | RailIndex, origin_name: str, destination_name: str,
                                line: str | list[str] | None = None) -> list[str]:
     """The stations strictly between the departure and the arrival, on the
     rail trips that ride from one to the other: where the options screen
@@ -254,7 +385,7 @@ def get_train_stations_between(schedule: Schedule, origin_name: str, destination
     return between
 
 
-def get_train_lines_between(schedule: Schedule, origin_name: str, destination_name: str,
+def get_train_lines_between(schedule: Schedule | RailIndex, origin_name: str, destination_name: str,
                             board_also: list[str], alight_also: list[str]) -> dict[str, str]:
     """{line code: its long names} of the rail trips riding from the
     departure or a station boarded as well to the arrival or a station got
@@ -294,6 +425,48 @@ def get_train_lines_between(schedule: Schedule, origin_name: str, destination_na
     lines = {code: " / ".join(found) for code, found in names.items()}
     _LOGGER.debug("Lines from %s to %s: %s", origin_name, destination_name, lines)
     return lines
+
+
+def train_line_ends(schedule: Schedule, origin_names: list[str], destination_names: list[str],
+                    line: str | None) -> tuple[list[str], list[str]]:
+    """(the departure stations, the arrival stations) one line serves of
+    those asked, in the order asked: where a train of it takes riders on
+    for one of the arrivals, and where one sets them down coming from one
+    of the departures. ([], []) when no train of it rides between them;
+    line None for every rail line, a line the feed gives no code.
+
+    One sensor a line ticked, each with the stations its own trains call
+    at: a line that never leaves from one of the stations ticked does not
+    name it. Some days count: the K6+ mostly comes from Tours by Les
+    Aubrais, and twelve of its trips in the feed of October 2026 leave
+    from Orleans.
+    """
+    origin_in, params = station_names_in("origin", origin_names)
+    dest_in, dest_params = station_names_in("dest", destination_names)
+    params.update(dest_params)
+    line_where, line_params = line_codes_where("r.route_short_name", line)
+    params.update(line_params)
+    sql = f"""
+    SELECT distinct so.stop_name, sd.stop_name
+    from trips t
+    inner join routes r on r.route_id = t.route_id
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stops so on so.stop_id = o.stop_id
+    inner join stop_times d on d.trip_id = t.trip_id
+        and d.stop_sequence > o.stop_sequence
+    inner join stops sd on sd.stop_id = d.stop_id
+    where r.route_type in ({RAIL_ROUTE_TYPES_SQL})
+      and so.stop_name in {origin_in}
+      and sd.stop_name in {dest_in}
+      and {_boards("o")} and {_alights("d")}
+      {line_where}
+    """  # noqa: S608
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql), params).fetchall()
+    boarded = {row[0] for row in rows}
+    reached = {row[1] for row in rows}
+    return ([name for name in origin_names if name in boarded],
+            [name for name in destination_names if name in reached])
 
 
 def train_entry_routes(gtfs_dir: str, data: Mapping[str, Any]) -> list[str]:

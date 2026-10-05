@@ -7,7 +7,8 @@ cover what two should. An entry now lists its lines ("lines", [] for
 every rail line; "line" alone on the entries made before) and may get on,
 or off, at more than one station. A train calling at Orleans then at Les
 Aubrais rides both pairs: it is listed once, where the rider first gets
-on and last gets off.
+on and last gets off. The flow makes one entry a line ticked, with the
+stations its own trains serve (train_line_ends).
 
 The network: Orleans (O), Les Aubrais (A), Paris (P).
     K1  K8+  O 10:00, A 10:07, P 11:05
@@ -157,3 +158,50 @@ def test_the_sensor_names_every_station_of_each_end():
     before: dict = {}
     departure_attributes.station_attributes(before, departure, None, None, None, "2", {"origin": O})
     assert "origin_stations" not in before and "destination_stations" not in before
+
+
+def test_each_line_ticked_keeps_the_stations_its_trains_serve(schedule):
+    # one sensor a line, with the stations of each end its own trains call
+    # at, in the order ticked: K8+ (K1, K2) and P8 (P1) board at both
+    assert stations.train_line_ends(schedule, [O, A], [P], "K8+") == ([O, A], [P])
+    assert stations.train_line_ends(schedule, [O, A], [P], "P8") == ([O, A], [P])
+    # the 560B takes nobody on at Les Aubrais: no sensor of it
+    assert stations.train_line_ends(schedule, [O, A], [P], "560B") == ([], [])
+    # the way back, read on its own: K3 ends at Les Aubrais, K4 goes on;
+    # the P8 runs one way only
+    assert stations.train_line_ends(schedule, [P], [O, A], "K8+") == ([P], [O, A])
+    assert stations.train_line_ends(schedule, [P], [O, A], "P8") == ([], [])
+    # a line the feed gives no code: every rail line
+    assert stations.train_line_ends(schedule, [A, O], [P], None) == ([A, O], [P])
+
+
+def test_the_trains_of_the_zip_answer_as_the_source_does(schedule):
+    # a source holds the lines asked for; the stations picked first are
+    # read from the trains of the zip kept beside it, with the same questions
+    index = stations.rail_index(str(schedule.engine.url.database).replace("feed.sqlite", "feed.zip"))
+    try:
+        assert stations.get_station_list(index) == stations.get_station_list(schedule)
+        assert stations.get_train_destination_list(index, None, A) == {O: {"train"}, P: {"train"}}
+        assert stations.get_train_stations_between(index, O, P) == [A]
+    finally:
+        index.engine.dispose()
+
+
+def test_the_stations_picked_first_import_the_lines_of_both_ways(schedule):
+    # the return is the mirror: the lines riding back count too, the ones
+    # riding out first (an import stops at the first line that fails)
+    index = stations.rail_index(str(schedule.engine.url.database).replace("feed.sqlite", "feed.zip"))
+    try:
+        assert stations.train_routes_both_ways(index, O, P) == ["RK", "RP"]
+        # from Les Aubrais: K2 and P1 out, K3 and K4 back; the 560B takes
+        # nobody on there
+        assert stations.train_routes_both_ways(index, A, P) == ["RK", "RP"]
+        assert stations.train_routes_both_ways(index, P, A) == ["RK", "RP"]
+    finally:
+        index.engine.dispose()
+
+
+def test_a_zip_that_cannot_be_read_gives_no_index(tmp_path):
+    broken = tmp_path / "broken.zip"
+    broken.write_bytes(b"not a zip")
+    assert stations.rail_index(str(broken)) is None

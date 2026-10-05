@@ -103,6 +103,8 @@ class ReloadScreens:
     async_abort: Callable[..., FlowResult]
     async_step_route: _Step
     async_step_direction: _Step
+    async_step_options_train: _Step
+    _train_import: bool
 
     async def async_step_route_reload_only(self, user_input: dict | None = None) -> FlowResult:
         """The reload screen when no other line is missing.
@@ -279,6 +281,10 @@ class ReloadScreens:
         failure that says nothing about the rest.
         """
         self._pending_error = "reload_failed"
+        # a train journey from the stations first starts again from the
+        # route screen too: the next
+        # import is the one picked there, which knows nothing of trains
+        self._train_import = False
         return await self.async_step_route()
 
     async def async_step_reload_done(self, user_input: dict | None = None) -> FlowResult:
@@ -316,6 +322,12 @@ class ReloadScreens:
         await self.hass.async_add_executor_job(
             check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH,
             self._user_inputs[CONF_FILE])
+        if self._train_import:
+            # the lines riding between the two stations picked first,
+            # imported once they were picked: on to its options, which read them, and
+            # say which did not come in
+            self._train_import = False
+            return await self.async_step_options_train()
         if self._import_missing:
             # not every line asked for came in: the departure screen, the
             # next the rider reads, says which did not
