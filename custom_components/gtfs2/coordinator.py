@@ -422,7 +422,7 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 route_id, direction, _origin, _destination = shown_ends(
                     data, self._data.get("next_departure") or {})
                 await self.hass.async_add_executor_job(
-                    clear_vehicle_file, self.hass, route_id, direction)
+                    clear_vehicle_file, self.hass, route_id, direction, self._data.get("file"))
         return rt_paused
 
     def _realtime_targets(self, data: Mapping[str, Any], rt_cfg: Mapping[str, Any]) -> None:
@@ -489,8 +489,10 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.exception("Error getting gtfs realtime data, for origin: %s with error: %s", data["origin"], ex)
             return False
         if self._vehicle_position_url:
-            # let map cards locate the geojson written by get_rt_vehicle_positions
-            self._data["vehicle_positions_file"] = vehicle_positions_name(self._route_id, self._direction)
+            # let map cards locate the geojson written by get_rt_vehicle_positions,
+            # under the source's own name (see route_geojson_name)
+            self._data["vehicle_positions_file"] = vehicle_positions_name(
+                self._route_id, self._direction, self._data.get("file"))
         if self._vehicle_position_url and not self._stale_markers_cleaned:
             self._cleanup_stale_vehicle_markers()
             self._stale_markers_cleaned = True

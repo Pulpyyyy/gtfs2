@@ -668,9 +668,9 @@ def test_outside_the_window_the_feeds_are_left_alone(tmp_path, vehicles):
     # the delays and alerts of the last reading are not served as current
     assert result["next_departure_realtime_attr"] == {}
     assert result["alert"] == {}
-    # the map is told the vehicles are no longer followed
+    # the map is told the vehicles are no longer followed, the source's file
     assert refresh.calls["clear_vehicle_file"] == (
-        [(refresh.hass, "R1", "0")] if vehicles else [])
+        [(refresh.hass, "R1", "0", "town")] if vehicles else [])
     # nothing moved: the leg file stays as it was
     assert refresh.count("export_leg") == 2
 
@@ -680,7 +680,7 @@ def test_outside_the_window_with_no_departure_the_map_is_told_from_the_entry(tmp
     refresh.answers["get_next_departure"] = {}
     refresh.answers["rt_window_gate"] = "no_service_today"
     refresh.run()
-    assert refresh.calls["clear_vehicle_file"] == [(refresh.hass, "R1", "0")]
+    assert refresh.calls["clear_vehicle_file"] == [(refresh.hass, "R1", "0", "town")]
 
 
 def test_realtime_switched_off_clears_the_last_reading(tmp_path):
@@ -710,7 +710,8 @@ def test_vehicle_positions_name_their_file_and_clear_stale_markers_once(tmp_path
     refresh.hass.states.get = lambda entity_id: (
         object() if entity_id in (shown.entity_id, shown_now.entity_id) else None)
     result = refresh.run()
-    assert result["vehicle_positions_file"] == coordinator_mod.vehicle_positions_name("R1", "0")
+    # named after the source too: two networks number their lines alike
+    assert result["vehicle_positions_file"] == "town_r1_0.json"
     assert refresh.registry.removed == [stale.entity_id, stale_now.entity_id]
     refresh.run(later(1))
     assert refresh.count("entity_registry") == 1

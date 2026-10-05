@@ -129,7 +129,8 @@ async def export_route_shape(coordinator: GTFSUpdateCoordinator, data: Mapping[s
     # same, and named like the leg and the vehicles files, or a card never
     # finds it
     if route_id:
-        coordinator._data["route_geojson_file"] = route_geojson_name(route_id, direction)
+        coordinator._data["route_geojson_file"] = route_geojson_name(
+            route_id, direction, coordinator._data.get("file"))
     if not route_id:
         return
     if coordinator._route_task is not None and not coordinator._route_task.done():
@@ -168,9 +169,11 @@ async def _draw_route(coordinator: GTFSUpdateCoordinator, route_id: str, directi
     # rewritten when the trip changes, when the zip or the database does,
     # and when the file is gone: a folder cleaned by hand must not leave
     # the map without its line until the next restart
-    file = map_file(coordinator.hass, route_geojson_name(route_id, direction))
     gtfs_dir = coordinator.hass.config.path(coordinator._data["gtfs_dir"])
     source = str(coordinator._data["file"])
+    # the source's own file is the one looked at: the one shared with a
+    # network numbering a line alike is rewritten with it (map_file_names)
+    file = map_file(coordinator.hass, route_geojson_name(route_id, direction, source))
     zip_path, db_path = feed_zip(gtfs_dir, source), real_path(gtfs_dir, source)
     edition, present = await coordinator.hass.async_add_executor_job(_route_export_state, zip_path, file)
     # the database edition too: a rebuild that keeps the trip id and the
@@ -289,12 +292,14 @@ async def remove_entry_geojson(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     Home Assistant clears the entity registry of a removed entry by itself,
     right after this callback, but nothing knows about the files: the map
-    export writes www/gtfs2/<route>_<direction>.json and its _route.json
-    companion, and they would stay there for good.
+    export writes www/gtfs2/<source>_<route>_<direction>.json and its
+    _route.json companion, both again without the source (map_file_names),
+    and they would stay there for good.
 
-    Both are named after the route and the direction rather than the entry,
+    They are named after the route and the direction rather than the entry,
     so two entries on the same line share them: only remove them when no
-    other entry still needs them.
+    other entry still needs them, of the source for its own names, of any
+    source for the names without one.
     """
     # www/gtfs2, where the export writes them, not the datasource folder
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
@@ -325,15 +330,22 @@ async def _train_line_files(hass: HomeAssistant, entry: ConfigEntry) -> list[str
     routes = await hass.async_add_executor_job(
         train_entry_routes, hass.config.path(DEFAULT_PATH), entry.data)
     others = _other_entries(hass, entry)
+    source = entry.data.get("file")
     # another train entry on this source may ride any of them
-    train_beside = any(e.data.get("route") == "train" and e.data.get("file") == entry.data.get("file")
+    train_beside = any(e.data.get("route") == "train" and e.data.get("file") == source
                        for e in others)
     names = []
     for route_id in routes:
-        if train_beside or any(id_of(e.data.get("route")) == route_id for e in others):
-            continue
+        # the source's own files go with its last entry riding the line;
+        # the name they had before is shared by every source (map_file_names)
+        own = train_beside or any(id_of(e.data.get("route")) == route_id and e.data.get("file") == source
+                                  for e in others)
+        shared = own or any(id_of(e.data.get("route")) == route_id for e in others)
         for d in ("0", "1", "None"):
-            names += [vehicle_positions_name(route_id, d), route_geojson_name(route_id, d)]
+            if not own:
+                names += [vehicle_positions_name(route_id, d, source), route_geojson_name(route_id, d, source)]
+            if not shared:
+                names += [vehicle_positions_name(route_id, d), route_geojson_name(route_id, d)]
     return names
 
 
@@ -346,14 +358,18 @@ def _line_files(hass: HomeAssistant, entry: ConfigEntry, route: str) -> list[str
     direction = entry.data.get("direction")
     directions = [str(direction)] if direction is not None else ["0", "1", "None"]
     others = _other_entries(hass, entry)
+    source = entry.data.get("file")
     names = []
     for d in directions:
-        still_used = any(
-            id_of(e.data.get("route")) == route
-            and (e.data.get("direction") is None or str(e.data.get("direction")) == d)
-            for e in others
-        )
-        if still_used:
+        riding = [e for e in others
+                  if id_of(e.data.get("route")) == route
+                  and (e.data.get("direction") is None or str(e.data.get("direction")) == d)]
+        # the source's own files go with its last entry riding the line
+        # that way; the name they had before is shared by every source
+        # (map_file_names)
+        if not any(e.data.get("file") == source for e in riding):
+            names += [vehicle_positions_name(route, d, source), route_geojson_name(route, d, source)]
+        if riding:
             _LOGGER.debug("Keeping geojson for route %s direction %s, another entry uses it",
                           route, d)
             continue

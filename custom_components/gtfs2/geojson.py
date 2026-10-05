@@ -1,7 +1,8 @@
 """The files this integration writes under www/gtfs2 for a map card.
 
 Their names, so that the writer, the sensor attribute and the removal on
-entry deletion agree (route_geojson_name, vehicle_positions_name); the
+entry deletion agree (route_geojson_name, vehicle_positions_name, each
+under its source's name and the one before, map_file_names); the
 route file, the line drawn from its fullest trip with the shape read out
 of the zip (trip_shape_id, read_shape) and the boarding rules per stop
 (write_route_file); and what
@@ -26,7 +27,7 @@ import time
 import unicodedata
 import zipfile
 from collections import Counter
-from collections.abc import Collection, Container, Mapping, Sequence
+from collections.abc import Callable, Collection, Container, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -71,42 +72,77 @@ def line_file_part(route_id: str, direction: str | int | None) -> str:
     return f"{safe_file_part(route_id)}_{safe_file_part(direction)}"
 
 
-def route_geojson_name(route_id: str, direction: str | int | None) -> str:
+def route_geojson_name(route_id: str, direction: str | int | None, source: str | None = None) -> str:
     """File name of the route export, in one place because three callers need
     the same answer: the writer, the sensor attribute and the removal on entry
-    deletion. A file nobody can name again is a file nobody can delete."""
-    return f"{line_file_part(route_id, direction)}_route.json"
+    deletion. A file nobody can name again is a file nobody can delete.
+
+    source is the datasource the line belongs to, and leads the name the
+    sensor gives a card: two networks number their lines alike, and Palm
+    Bus 2 and Filibus 2 both wrote 2_0_route.json, each over the other, a
+    card of one drawing the other's line. Without it, the name the files
+    had before, still written for what reads them by their url (see
+    map_file_names)."""
+    return f"{_source_line_part(route_id, direction, source)}_route.json"
 
 
-def vehicle_positions_name(route_id: str, direction: str | int | None) -> str:
+def vehicle_positions_name(route_id: str, direction: str | int | None, source: str | None = None) -> str:
     """Same, for the realtime positions file written by get_rt_vehicle_positions."""
-    return f"{line_file_part(route_id, direction)}.json"
+    return f"{_source_line_part(route_id, direction, source)}.json"
 
 
-def clear_vehicle_file(hass: HomeAssistant, route_id: str, direction: str | int | None) -> bool:
+def _source_line_part(route_id: str, direction: str | int | None, source: str | None) -> str:
+    """The source, then the line and direction; the source is not said
+    twice where the line's id already starts with it (IDFM:C01374 of the
+    source idfm is idfm_c01374_1, not idfm_idfm_c01374_1)."""
+    line = line_file_part(route_id, direction)
+    if not source:
+        return line
+    lead = entry_file_part(source)
+    return line if line.startswith(f"{lead}_") else f"{lead}_{line}"
+
+
+def map_file_names(name_of: Callable[[str, str | int | None, str | None], str], route_id: str,
+                   direction: str | int | None, source: str | None) -> list[str]:
+    """The names one map file is written under: the source's own, which
+    the sensor names to a card, and the one it had before (see
+    route_geojson_name). A geo_json_events feed set up on that url keeps
+    its vehicles; two networks with a line of one number share that one,
+    as they always did."""
+    names = [name_of(route_id, direction, source), name_of(route_id, direction, None)]
+    return list(dict.fromkeys(names))
+
+
+def clear_vehicle_file(hass: HomeAssistant, route_id: str, direction: str | int | None,
+                       source: str | None = None) -> bool:
     """Take the vehicles off the map, the feeds not being read any more.
 
     The positions file is the last thing the map was told, and nothing
     says how old it is: left as it was when the service window closed,
     the evening's last buses sat on the map all night. Written empty it
-    says what is true, that nothing is running.
+    says what is true, that nothing is running. Under both its names
+    (map_file_names): a network still running a line of that number
+    writes the shared one again at its next reading.
 
     Returns whether it wrote. A file already empty, or one that was never
     written, is left alone, so a paused source costs no write per minute.
     """
-    file = map_file(hass, vehicle_positions_name(route_id, direction))
-    if not os.path.exists(file):
-        return False
-    try:
-        with open(file, encoding="utf-8") as handle:
-            if not (json.load(handle).get("features") or []):
-                return False
-    except (OSError, ValueError):
-        # unreadable: write it afresh rather than leave whatever it holds
-        pass
-    write_json_file(file, {"features": [], "type": "FeatureCollection"})
-    _LOGGER.debug("Vehicles taken off the map: %s", file)
-    return True
+    wrote = False
+    for name in map_file_names(vehicle_positions_name, route_id, direction, source):
+        file = map_file(hass, name)
+        if not os.path.exists(file):
+            continue
+        try:
+            with open(file, encoding="utf-8") as handle:
+                if not (json.load(handle).get("features") or []):
+                    continue
+        except (OSError, ValueError):
+            # unreadable: write it afresh rather than leave whatever it holds
+            pass
+        write_json_file(file, {"features": [], "type": "FeatureCollection"})
+        _LOGGER.debug("Vehicles taken off the map: %s", file)
+        wrote = True
+    return wrote
 
 
 def _calls_in_order(stops: Sequence[str], origin_id: str | None, destination_id: str | None) -> bool:
@@ -319,7 +355,8 @@ def read_shape(zip_path: str | None, shape_id: str | None) -> list[list[float]] 
 
 def write_route_file(hass: HomeAssistant, data: Mapping[str, Any], route_id: str,
                      direction: str | int | None, trip_id: str | None = None) -> None:
-    """Write the line's ordered stops to www/gtfs2/<route>_<direction>_route.json.
+    """Write the line's ordered stops to www/gtfs2/<source>_<route>_<direction>_route.json,
+    and to <route>_<direction>_route.json, its name before (map_file_names).
 
     Companion file to the vehicle-positions geojson. The stops as Points,
     each with an id and a title the way the geojson integration expects,
@@ -423,9 +460,7 @@ def write_route_file(hass: HomeAssistant, data: Mapping[str, Any], route_id: str
         })
     # the ids come out of the datasource, so they are not file names until
     # they are made ones: see safe_file_part
-    file = map_file(hass, route_geojson_name(route_id, direction))
-    _LOGGER.debug("Creating route geojson file: %s", file)
-    write_json_file(file, {
+    doc = {
         "type": "FeatureCollection",
         "properties": {
             "trip_id": trip_id,
@@ -437,7 +472,12 @@ def write_route_file(hass: HomeAssistant, data: Mapping[str, Any], route_id: str
             "shape_id": shape_id,
         },
         "features": features,
-    })
+    }
+    # under the source's name and the one before (map_file_names)
+    for name in map_file_names(route_geojson_name, route_id, direction, data.get("file")):
+        file = map_file(hass, name)
+        _LOGGER.debug("Creating route geojson file: %s", file)
+        write_json_file(file, doc)
 
 
 # what each written file last held, apart from the moment it was written:

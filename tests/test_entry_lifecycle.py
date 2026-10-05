@@ -63,6 +63,47 @@ def test_a_bus_entry_takes_its_files_unless_another_reads_them(tmp_path):
     assert sorted(p.name for p in folder.iterdir()) == left
 
 
+def _source_files(route, direction, source):
+    return [exports_mod.vehicle_positions_name(route, direction, source),
+            exports_mod.route_geojson_name(route, direction, source)]
+
+
+def test_two_networks_numbering_a_line_alike_write_files_of_their_own(tmp_path):
+    # Palm Bus 2 and Filibus 2 both wrote 2_0.json, each over the other
+    assert _source_files("2", "0", "palmbus") == ["palmbus_2_0.json", "palmbus_2_0_route.json"]
+    assert _source_files("2", "0", "filibus") == ["filibus_2_0.json", "filibus_2_0_route.json"]
+    # the source is not said twice where the line's id starts with it
+    assert exports_mod.route_geojson_name("IDFM:C01374", "1", "idfm") == "idfm_c01374_1_route.json"
+    palmbus = _entry("p", name="palmbus 2", route="2: Ligne 2", direction="0", file="palmbus")
+    filibus = _entry("f", name="filibus 2", route="2: Ligne 2", direction="0", file="filibus")
+    folder = _files(tmp_path, _source_files("2", "0", "palmbus") + _source_files("2", "0", "filibus")
+                    + _line_files("2", "0"))
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [palmbus, filibus]), palmbus))
+    # the names without a source stay for the other network, still written
+    assert sorted(p.name for p in folder.iterdir()) == sorted(
+        _source_files("2", "0", "filibus") + _line_files("2", "0"))
+    asyncio.run(exports_mod.remove_entry_geojson(_Hass(tmp_path, [filibus]), filibus))
+    assert list(folder.iterdir()) == []
+
+
+def test_the_vehicles_are_written_and_cleared_under_both_names(tmp_path):
+    # the source's name for the card, the one before for a geo_json_events
+    # feed set up on its url
+    vehicles = ha_stub.load("vehicles")
+    geojson = ha_stub.load("geojson")
+    hass = _Hass(tmp_path)
+    folder = _files(tmp_path, [])
+    me = types.SimpleNamespace(hass=hass, _route_id="2", _direction="0", _data={"file": "palmbus"},
+                               geojson={"type": "FeatureCollection", "features": [{"id": "bus"}]})
+    vehicles.update_geojson(me)
+    assert sorted(p.name for p in folder.iterdir()) == ["2_0.json", "palmbus_2_0.json"]
+    assert geojson.clear_vehicle_file(hass, "2", "0", "palmbus") is True
+    for name in ("2_0.json", "palmbus_2_0.json"):
+        assert (folder / name).read_text().count('"features": []') == 1
+    # both empty already: nothing written
+    assert geojson.clear_vehicle_file(hass, "2", "0", "palmbus") is False
+
+
 def test_a_train_entry_takes_the_files_of_the_lines_it_rode(tmp_path, monkeypatch):
     train = _entry("t1", name="Paris to Lyon", route="train", file="sncf",
                    origin="Paris", destination="Lyon")

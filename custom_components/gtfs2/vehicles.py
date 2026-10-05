@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text as sql_text
 
-from .geojson import map_file, vehicle_positions_name, write_json_file
+from .geojson import map_file, map_file_names, vehicle_positions_name, write_json_file
 from .line_ends import _names_a_place
 from .rt_feed import FeedEntities, _read_feed, _same_route
 
@@ -239,6 +239,9 @@ def get_rt_vehicle_positions(self: GTFSUpdateCoordinator) -> list[dict[str, Any]
 
 
 def update_geojson(self: GTFSUpdateCoordinator) -> None:
-    file = map_file(self.hass, vehicle_positions_name(self._route_id, self._direction))
-    _LOGGER.debug("Creating geojson file: %s", file)
-    write_json_file(file, self.geojson)
+    # under the source's name and the one before (map_file_names)
+    for name in map_file_names(vehicle_positions_name, self._route_id, self._direction,
+                               self._data.get("file")):
+        file = map_file(self.hass, name)
+        _LOGGER.debug("Creating geojson file: %s", file)
+        write_json_file(file, self.geojson)
