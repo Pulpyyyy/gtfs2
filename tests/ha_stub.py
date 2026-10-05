@@ -216,6 +216,15 @@ def _module(name: str, **attrs) -> types.ModuleType:
     return module
 
 
+# the signals sent from a thread (dispatcher_send), as (signal, args), for a
+# test to read; nothing listens in the stub
+SENT_SIGNALS: list[tuple[str, tuple]] = []
+
+
+def _dispatcher_send(hass, signal, *args) -> None:
+    SENT_SIGNALS.append((signal, args))
+
+
 class _Unreached:
     """Stands in for a symbol no test is expected to reach."""
 
@@ -962,6 +971,7 @@ def install() -> None:
     _module("homeassistant.helpers.translation",
             async_get_translations=_Unreached("async_get_translations"))
     _module("homeassistant.helpers.dispatcher",
+            dispatcher_send=_dispatcher_send,
             async_dispatcher_send=_Unreached("async_dispatcher_send"),
             async_dispatcher_connect=_Unreached("async_dispatcher_connect"))
     _module("homeassistant.helpers.device_registry",

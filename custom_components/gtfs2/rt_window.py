@@ -29,6 +29,7 @@ from typing import Any
 from datetime import date, datetime, time, timedelta, tzinfo
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.dispatcher import dispatcher_send
 import homeassistant.util.dt as dt_util
 from pygtfs import Schedule
 from sqlalchemy.exc import SQLAlchemyError
@@ -64,6 +65,9 @@ _ENVELOPES: dict[tuple[str, _Edition, str], tuple[int, int] | None] = {}
 _ENVELOPES_LOCK = threading.Lock()
 # per file: what the gate last decided, read back by the diagnostic entity
 _STATE: dict[str, dict[str, str | None]] = {}
+# per-source dispatcher signal: the gate's verdict moved, the diagnostic
+# entity writes it at once
+SIGNAL_RT_WINDOW = "gtfs2_rt_window_{}"
 
 # Both calendar shapes are read, like get_next_service_date: calendar holds
 # weekday flags over a validity window, calendar_dates explicit additions and
@@ -210,6 +214,27 @@ def rt_window_gate(hass: HomeAssistant, file: str, schedule: Schedule,
     Fail-open: a source whose timetable cannot be read keeps its realtime,
     the gate only silences what it positively knows is asleep.
     """
+    before = _verdict(file)
+    paused = _decide(hass, file, schedule, trip_update_url, now)
+    if _verdict(file) != before:
+        # the diagnostic entity hears of it now: read at its next poll only,
+        # it said "unknown" for up to half a minute after a start
+        dispatcher_send(hass, SIGNAL_RT_WINDOW.format(file))
+    return paused
+
+
+def _verdict(file: str) -> tuple[str | None, ...] | None:
+    """What the diagnostic entity shows of the gate's last decision, the
+    time of the check aside."""
+    state = _STATE.get(file)
+    if state is None:
+        return None
+    return tuple(state.get(k) for k in ("paused", "window_start", "window_end", "extended_until"))
+
+
+def _decide(hass: HomeAssistant, file: str, schedule: Schedule,
+            trip_update_url: str | None, now: datetime | None) -> str | None:
+    """rt_window_gate's answer, its state noted for the diagnostic entity."""
     if schedule is None or isinstance(schedule, str):
         # a sentinel of get_gtfs: no timetable to derive a window from
         _STATE.setdefault(file, {})["paused"] = None

@@ -306,6 +306,21 @@ def test_the_state_before_the_opening_names_the_reason_and_the_window(schedule):
     assert state.get("window_start") == f"{DAY}T04:50:00"
 
 
+def test_the_diagnostic_hears_when_the_verdict_moves(schedule):
+    # read at its poll only, the entity said "unknown" for up to half a
+    # minute after a start: the gate now tells it when what it shows
+    # changes, and only then
+    signal = rt_window.SIGNAL_RT_WINDOW.format(FILE)
+    told = lambda: [s for s, _ in ha_stub.SENT_SIGNALS if s == signal]  # noqa: E731
+    ha_stub.SENT_SIGNALS.clear()
+    _gate(schedule, _at(DAY, "04:30"))           # the first verdict of the session
+    assert len(told()) == 1
+    _gate(schedule, _at(DAY, "04:40"))           # still closed, the same window
+    assert len(told()) == 1
+    _gate(schedule, _at(DAY, "05:00"))           # opened
+    assert len(told()) == 2
+
+
 # --- fail-open ----------------------------------------------------------------
 
 def test_a_timetable_that_cannot_be_read_leaves_realtime_on(tmp_path):
