@@ -682,6 +682,14 @@ async def to_lines(hass, file):
     return await submit(hass, sources, file=file)
 
 
+async def through_stops(hass, result, **answers):
+    """Past the stops screen of a bus journey when it is shown: nothing
+    ticked, but for the answers given."""
+    if result.get("step_id") == "options_stops":
+        result = await submit(hass, result, **answers)
+    return result
+
+
 async def bus_journey(hass, file, *, route=1, origin=1, way=1, destination=1,
                       add_return=False, name=None):
     """Menu to closing menu on a bus line, each pick by its place in the list."""
@@ -691,9 +699,8 @@ async def bus_journey(hass, file, *, route=1, origin=1, way=1, destination=1,
     if result["step_id"] == "towards":
         result = await submit(hass, result, towards=offered(result, "towards")[way])
     arrivals = shown(result, FORM, "destination")
-    naming = shown(await submit(hass, arrivals,
-                                destination=offered(arrivals, "destination")[destination]),
-                   FORM, "sensor")
+    naming = shown(await through_stops(hass, await submit(
+        hass, arrivals, destination=offered(arrivals, "destination")[destination])), FORM, "sensor")
     # the return is asked only when there is one to make
     asked = {"add_return": add_return} if "add_return" in fields(naming) else {}
     return await submit(hass, naming, name=name or default(naming, "name"), **asked)
@@ -752,7 +759,8 @@ def test_a_bus_journey_holds_what_the_sensor_reads(world):
         arrivals = shown(await submit(hass, ways, towards=offered(ways, "towards")[1]),
                          FORM, "destination")
         destination = offered(arrivals, "destination")[1]
-        naming = shown(await submit(hass, arrivals, destination=destination), FORM, "sensor")
+        naming = shown(await through_stops(hass, await submit(hass, arrivals, destination=destination)),
+                       FORM, "sensor")
         name = default(naming, "name")
         assert name == (f"tao {label.split(' : ')[0]} {stop_label(stops, 'origin', origin)}"
                         f" → {stop_label(arrivals, 'destination', destination)}")
@@ -772,6 +780,37 @@ def test_a_bus_journey_holds_what_the_sensor_reads(world):
     walk(world, scenario)
 
 
+def test_a_bus_journey_gets_on_or_off_at_more_stops(world):
+    # a second stop nearer home, as a train journey boards at Les Aubrais
+    async def scenario(hass):
+        await install_source(hass, "tao-journeys", "tao")
+        lines = await to_lines(hass, "tao")
+        stops = shown(await submit(hass, lines, route=offered(lines, "route")[1]), FORM, "stops")
+        result = await submit(hass, stops, origin=offered(stops, "origin")[1])
+        if result["step_id"] == "towards":
+            result = await submit(hass, result, towards=offered(result, "towards")[1])
+        arrivals = shown(result, FORM, "destination")
+        origin = offered(stops, "origin")[1]
+        destination = offered(arrivals, "destination")[-1]
+        options = shown(await submit(hass, arrivals, destination=destination), FORM, "options_stops")
+        board = offered(options, "board_also")
+        alight = offered(options, "alight_also")
+        assert board and alight and (default(options, "board_also"), default(options, "alight_also")) == ([], [])
+        # one stop cannot be both
+        both = next(s for s in board if s in alight)
+        again = shown(await submit(hass, options, board_also=[both], alight_also=[both]), FORM, "options_stops")
+        assert again["errors"] == {"base": "station_both_ends"}
+        naming = shown(await submit(hass, again, board_also=[board[0]], alight_also=[]), FORM, "sensor")
+        shown(await submit(hass, naming, name="to work", add_return=True), MENU, "finished")
+        outward, back = hass.journeys()
+        assert outward.data["origin_stations"] == [origin, board[0]]
+        assert outward.data["destination_stations"] == [destination]
+        # the mirror: got on at as well out, got off at as well back
+        assert back.data["origin_stations"] == [destination]
+        assert back.data["destination_stations"] == [origin, board[0]]
+    walk(world, scenario)
+
+
 def test_the_return_journey_is_created_beside_the_outward_one(world):
     async def scenario(hass):
         await install_source(hass, "tao-journeys", "tao")
@@ -779,9 +818,8 @@ def test_the_return_journey_is_created_beside_the_outward_one(world):
         stops = await submit(hass, lines, route=offered(lines, "route")[1])
         ways = await submit(hass, stops, origin=offered(stops, "origin")[1])
         arrivals = await submit(hass, ways, towards=offered(ways, "towards")[1])
-        naming = shown(await submit(hass, arrivals,
-                                    destination=offered(arrivals, "destination")[1]),
-                       FORM, "sensor")
+        naming = shown(await through_stops(hass, await submit(
+            hass, arrivals, destination=offered(arrivals, "destination")[1])), FORM, "sensor")
         # offered, and ticked unless the rider says otherwise
         assert default(naming, "add_return") is True
         back = naming["description_placeholders"]["return_trip"]
@@ -805,9 +843,8 @@ def test_no_return_is_offered_that_a_journey_already_rides(world):
         stops = await submit(hass, lines, route=route)
         ways = await submit(hass, stops, origin=offered(stops, "origin")[1])
         arrivals = await submit(hass, ways, towards=offered(ways, "towards")[1])
-        naming = shown(await submit(hass, arrivals,
-                                    destination=offered(arrivals, "destination")[1]),
-                       FORM, "sensor")
+        naming = shown(await through_stops(hass, await submit(
+            hass, arrivals, destination=offered(arrivals, "destination")[1])), FORM, "sensor")
         shown(await submit(hass, naming, name="to work", add_return=False), MENU, "finished")
         [outward] = hass.journeys()
 
@@ -828,7 +865,8 @@ def test_no_return_is_offered_that_a_journey_already_rides(world):
             wanted = [o for o in offered(result, "destination")
                       if o.split(": ")[0] == outward.data["origin"].split(": ")[0]]
             if wanted:
-                naming = shown(await submit(hass, result, destination=wanted[0]), FORM, "sensor")
+                naming = shown(await through_stops(hass, await submit(hass, result, destination=wanted[0])),
+                               FORM, "sensor")
                 break
         assert naming is not None
         back = shown(await submit(hass, naming, name="back home"), MENU, "finished")

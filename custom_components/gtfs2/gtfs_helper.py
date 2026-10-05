@@ -28,8 +28,8 @@ from .const import (
 from .datasource import check_extracting
 from .rt_feed import on_service_day
 from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
-                         _no_call_between, _place_group, entry_lines, entry_stations,
-                         line_codes_where, station_names_in)
+                         _no_call_between, _place_group, _place_group_of, entry_lines, entry_stations,
+                         line_codes_where, station_names_in, stop_ids_in)
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -167,6 +167,51 @@ def _feed_now(schedule: Schedule, route: str | None = None, offset: int = 0) -> 
     return moment.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _several_stops(origin_ids: list[str], destination_ids: list[str]) -> tuple[str, str, str, dict[str, str]]:
+    """(origin where, destination where, ride where, their parameters) of a
+    bus or tram entry getting on, or off, at more than one stop: every place
+    of each end, each trip listed once, where the rider first gets on and
+    last gets off, as a train through two stations is. The shortest ride
+    still holds within one place: a loop calls at a place twice (Palm Bus
+    21 at Gare SNCF de Cannes), and the rider makes the second call."""
+    origin_in, params = stop_ids_in("origin", origin_ids)
+    dest_in, dest_params = stop_ids_in("dest", destination_ids)
+    params.update(dest_params)
+    origins, ends = _place_group_of(origin_in), _place_group_of(dest_in)
+    # one place a stop ticked, each read once: "the place of this call",
+    # asked of every row, read the whole stops table each time
+    origin_places = [_place_group_of(f":origin_stop_{n}") for n in range(len(origin_ids))]
+    end_places = [_place_group_of(f":dest_stop_{n}") for n in range(len(destination_ids))]
+
+    def same_place(call: str, other: str, places: list[str]) -> str:
+        return "(" + " OR ".join(f"({call}.stop_id IN {p} AND {other}.stop_id IN {p})" for p in places) + ")"
+
+    ride = f"""AND NOT EXISTS (
+                SELECT 1 FROM stop_times between_stop
+                WHERE between_stop.trip_id = trip.trip_id
+                  AND between_stop.stop_sequence > origin_stop_time.stop_sequence
+                  AND between_stop.stop_sequence < destination_stop_time.stop_sequence
+                  AND (({same_place("origin_stop_time", "between_stop", origin_places)} AND {_boards("between_stop")})
+                       OR ({same_place("destination_stop_time", "between_stop", end_places)}
+                           AND {_alights("between_stop")})))
+              AND NOT EXISTS (
+                SELECT 1 FROM stop_times earlier
+                WHERE earlier.trip_id = trip.trip_id
+                  AND earlier.stop_sequence < origin_stop_time.stop_sequence
+                  AND earlier.stop_id IN {origins}
+                  AND NOT {same_place("origin_stop_time", "earlier", origin_places)}
+                  AND {_boards("earlier")})
+              AND NOT EXISTS (
+                SELECT 1 FROM stop_times later
+                WHERE later.trip_id = trip.trip_id
+                  AND later.stop_sequence > destination_stop_time.stop_sequence
+                  AND later.stop_id IN {ends}
+                  AND NOT {same_place("destination_stop_time", "later", end_places)}
+                  AND {_alights("later")})"""
+    return ("AND origin_stop_time.stop_id IN " + origins,
+            "AND destination_stop_time.stop_id IN " + ends, ride, params)
+
+
 def _departure_candidates(route_type: str, origin: str, destination: str,
                           direction: str | int | None = None, route: str | None = None,
                           line: str | list[str] | None = None, origin_names: list[str] | None = None,
@@ -240,6 +285,11 @@ def _departure_candidates(route_type: str, origin: str, destination: str,
         # lost the trip altogether
         shortest_ride_where = "AND " + _no_call_between(
             "trip", "origin_stop_time", "destination_stop_time", origin_group, end_group)
+        origin_ids = list(dict.fromkeys(id_of(name) for name in origin_names or [origin]))
+        destination_ids = list(dict.fromkeys(id_of(name) for name in destination_names or [destination]))
+        if len(origin_ids) > 1 or len(destination_ids) > 1:
+            start_station_where, end_station_where, shortest_ride_where, name_params = _several_stops(
+                origin_ids, destination_ids)
         direction_where = ("AND (trip.direction_id = :direction OR trip.direction_id IS NULL)"
                            if str(direction) in ("0", "1") else "")
         # a place is shared by every line calling at it: the entry's line only

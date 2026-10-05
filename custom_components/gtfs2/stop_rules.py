@@ -96,10 +96,19 @@ PLACE_LON = 0.002
 
 def _place_group(param: str) -> str:
     """SQL "(...)" of every stop_id of the place of the stop bound to :param."""
+    return _place_group_of(f":{param}")
+
+
+def _place_group_of(chosen: str) -> str:
+    """SQL "(...)" of every stop_id of the places of the stops chosen
+    holds: a column of the outer query ("origin_stop_time.stop_id", the
+    place of the call itself) or a list ("(:origin_stop_0, ...)", see
+    stop_ids_in). _place_group's rule, for any stop."""
+    test = f"chosen.stop_id IN {chosen}" if chosen.startswith("(") else f"chosen.stop_id = {chosen}"
     return f"""(
     select sibling.stop_id
     from stops chosen, stops sibling
-    where chosen.stop_id = :{param}
+    where {test}
       and (sibling.stop_id = chosen.stop_id
            or (chosen.parent_station is not null
                and chosen.parent_station <> ''
@@ -109,6 +118,15 @@ def _place_group(param: str) -> str:
                and sibling.stop_name = chosen.stop_name
                and abs(sibling.stop_lat - chosen.stop_lat) <= {PLACE_LAT}
                and abs(sibling.stop_lon - chosen.stop_lon) <= {PLACE_LON})))"""
+
+
+def stop_ids_in(prefix: str, ids: Iterable[str]) -> tuple[str, dict[str, str]]:
+    """An SQL "(:prefix_stop_0, ...)" for the stop ids of one end of an
+    entry, and its parameters: one scalar a stop, as the candidates' cache
+    keys on them (see line_codes_where)."""
+    ids = [str(stop_id) for stop_id in ids if stop_id] or [""]
+    keys = [f"{prefix}_stop_{n}" for n in range(len(ids))]
+    return "(" + ", ".join(f":{key}" for key in keys) + ")", dict(zip(keys, ids))
 
 
 def _no_call_between(trip: str, board: str, alight: str, origin_group: str, end_group: str) -> str:

@@ -13,7 +13,6 @@ state (self).
 from __future__ import annotations
 
 import logging
-import re
 from collections.abc import Callable, Coroutine
 from typing import TYPE_CHECKING, Any
 
@@ -33,6 +32,7 @@ from .const import (
     CONF_API_KEY_LOCATION,
     CONF_API_KEY_NAME,
     CONF_DESTINATION,
+    CONF_DESTINATION_STATIONS,
     CONF_DIRECTION,
     CONF_EXTRACT_FROM,
     CONF_FILE,
@@ -40,19 +40,22 @@ from .const import (
     CONF_LOOP_DIRECTION,
     CONF_NAME,
     CONF_ORIGIN,
+    CONF_ORIGIN_STATIONS,
     CONF_ROUTE,
     CONF_ROUTE_TYPE,
     CONF_URL,
     DOMAIN,
     ENTRY_KIND_DATASOURCE,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+    base_name_of,
     id_of,
+    stop_name_of,
 )
 from .geojson import name_in_use
 from .rt_source import datasource_unique_id, journey_entry_data
 from .source_refresh import source_zip_url
 from .pair_direction import get_direction_labels, get_pair_direction, has_trip_between
-from .places import get_destination_stop_list, get_stop_list, get_towards
+from .places import get_destination_stop_list, get_stop_list, get_stops_between, get_towards
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -66,24 +69,6 @@ _LOGGER = logging.getLogger(__name__)
 type _Step = Callable[..., Coroutine[Any, Any, FlowResult]]
 
 
-def _stop_name(entry: str) -> str:
-    """The readable part of a "stop_id: Name (sequence)" entry.
-
-    Ids carry colons of their own but never ": ", which names do ("A28:
-    Kala's (East Bound)"): cut at the first one, as id_of does.
-    """
-    return entry.split(": ", 1)[-1].rsplit(" (", 1)[0].strip()
-
-
-def _base_name(entry: str) -> str:
-    """_stop_name without the flow's own " #n" disambiguation suffix.
-
-    The suffixed name is what the pickers and the by-name matching need;
-    a sensor name is for reading, so the suffix goes.
-    """
-    return re.sub(r" #\d+$", "", _stop_name(entry))
-
-
 def _stop_options(stops: list[str]) -> list[selector.SelectOptionDict]:
     """Picker options for "stop_id: Name (sequence)" entries.
 
@@ -92,7 +77,7 @@ def _stop_options(stops: list[str]) -> list[selector.SelectOptionDict]:
     already carry their station or their rank in it (gtfs_helper._labels_of),
     so the label is that part alone, without the id and the sequence.
     """
-    return [selector.SelectOptionDict(value=entry, label=_stop_name(entry))
+    return [selector.SelectOptionDict(value=entry, label=stop_name_of(entry))
             for entry in stops]
 
 
@@ -233,7 +218,7 @@ class JourneyScreens:
                     },
                 ),
                 description_placeholders=self._journey_placeholders(
-                    origin=_base_name(origin)),
+                    origin=base_name_of(origin)),
             )
         self._towards = user_input["towards"]
         return await self.async_step_destination()
@@ -257,7 +242,7 @@ class JourneyScreens:
                 self._towards,
             )
             _LOGGER.debug(f"UserInputs Destination: {self._user_inputs}")
-            return await self.async_step_sensor()
+            return await self.async_step_options_stops()
 
         destinations = await self.hass.async_add_executor_job(
             get_destination_stop_list,
@@ -280,9 +265,48 @@ class JourneyScreens:
                 },
             ),
             description_placeholders=self._journey_placeholders(
-                origin=_base_name(self._user_inputs[CONF_ORIGIN])),
+                origin=base_name_of(self._user_inputs[CONF_ORIGIN])),
             errors=errors,
         )
+
+    async def async_step_options_stops(self, user_input: dict | None = None) -> FlowResult:
+        """Stops to get on or off at as well, between the two picked: a
+        second stop nearer the other end of the street, one the bus calls
+        at while the first is closed. Each run is listed once, where the
+        rider first gets on and last gets off (gtfs_helper._several_stops).
+        Every field is optional, and the screen is skipped when there is
+        nothing between; left empty, the entry keeps the shape it always
+        had."""
+        origin = self._user_inputs[CONF_ORIGIN]
+        destination = self._user_inputs[CONF_DESTINATION]
+        board, alight = await self.hass.async_add_executor_job(
+            get_stops_between, self._pygtfs, self._user_inputs[CONF_ROUTE], id_of(origin), id_of(destination))
+        if not board and not alight:
+            return await self.async_step_sensor()
+
+        def _show(errors: dict[str, str], previous: dict | None = None) -> FlowResult:
+            fields = {vol.Optional(key, default=(previous or {}).get(key, [])): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=_stop_options(stops), multiple=True,
+                                              mode=selector.SelectSelectorMode.DROPDOWN))
+                for key, stops in (("board_also", board), ("alight_also", alight)) if stops}
+            return self.async_show_form(
+                step_id="options_stops", data_schema=vol.Schema(fields),
+                description_placeholders=self._journey_placeholders(
+                    origin=base_name_of(origin), destination=base_name_of(destination)),
+                errors=errors)
+
+        if user_input is None:
+            return _show({})
+        board_also = [s for s in user_input.get("board_also") or [] if s in board]
+        alight_also = [s for s in user_input.get("alight_also") or [] if s in alight]
+        if {id_of(s) for s in board_also} & {id_of(s) for s in alight_also}:
+            return _show({"base": "station_both_ends"}, user_input)
+        if board_also or alight_also:
+            self._user_inputs.update({CONF_ORIGIN_STATIONS: [origin, *board_also],
+                                      CONF_DESTINATION_STATIONS: [destination, *alight_also]})
+        # the return is read again, its stops the mirror of these
+        self._return_trip = None
+        return await self.async_step_sensor()
 
     async def async_step_sensor(self, user_input: dict | None = None) -> FlowResult:
         """Name the sensor, now that both stops are known."""
@@ -301,8 +325,8 @@ class JourneyScreens:
         the same at both ends, and the return's plain ends would collide
         with the outward sensor's name: its rotation is named by where it
         heads first."""
-        trip = f"{_base_name(origin)} → {_base_name(destination)}"
-        if _base_name(origin) == _base_name(destination) and loop_direction is not None:
+        trip = f"{base_name_of(origin)} → {base_name_of(destination)}"
+        if base_name_of(origin) == base_name_of(destination) and loop_direction is not None:
             labels = await self.hass.async_add_executor_job(
                 get_direction_labels, self._pygtfs, self._user_inputs[CONF_ROUTE])
             trip = labels.get(str(loop_direction), "") or trip
@@ -522,6 +546,14 @@ class JourneyScreens:
             CONF_DESTINATION: origin,
             CONF_NAME: self._return_name,
         }
+        if self._user_inputs.get(CONF_ORIGIN_STATIONS):
+            # the mirror: got off at as well out, got on at as well back;
+            # each stop is matched as a whole place, the other side of the
+            # road included
+            self._return_trip.update({
+                CONF_ORIGIN_STATIONS: list(self._user_inputs[CONF_DESTINATION_STATIONS]),
+                CONF_DESTINATION_STATIONS: list(self._user_inputs[CONF_ORIGIN_STATIONS]),
+            })
 
     async def _import_entry(self, data: dict) -> str | None:
         """Create an entry through a second flow, on its import step: None

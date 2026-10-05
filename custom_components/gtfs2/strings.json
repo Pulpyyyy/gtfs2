@@ -255,6 +255,18 @@
           "lines": "One sensor per line ticked. Untick the lines you do not take."
         }
       },
+      "options_stops": {
+        "title": "Stops of the journey",
+        "description": "Journey **{origin} → {destination}** on line **{route}**.\n\nEverything here is optional: leave it as it is to follow the line between these two stops.\n\nTick a stop on the way under “Also board at” when you can get on there too: a second stop nearer home, or one the bus calls at while yours is closed. Each bus shows once, at the first of these stops where it takes passengers.",
+        "data": {
+          "board_also": "Also board at",
+          "alight_also": "Also get off at"
+        },
+        "data_description": {
+          "board_also": "Stops on the way where you can get on as well. Each bus shows once, at the time of the first of these stops where it takes passengers.",
+          "alight_also": "Stops on the way where you can get off as well. A bus that ends there, short of your stop, is kept."
+        }
+      },
       "sensors_train": {
         "title": "Sensors to create",
         "description": "One sensor per line ticked:\n\n{sensors}\n\nTheir returns, the same lines the other way:\n\n{returns}\n\nEach sensor is named from its source, its line and its stations. A sensor already there under that name is left as it is.",

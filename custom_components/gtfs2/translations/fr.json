@@ -255,6 +255,18 @@
           "lines": "Un capteur par ligne cochée. Décochez les lignes que vous ne prenez pas."
         }
       },
+      "options_stops": {
+        "title": "Arrêts du trajet",
+        "description": "Trajet **{origin} → {destination}** sur la ligne **{route}**.\n\nTout est facultatif : laissez tel quel pour suivre la ligne entre ces deux arrêts.\n\nCochez un arrêt sur le chemin dans « Monter aussi à » quand vous pouvez aussi y monter : un second arrêt plus près de chez vous, ou celui où passe le bus quand le vôtre est fermé. Chaque bus n'apparaît qu'une fois, au premier de ces arrêts où il prend des voyageurs.",
+        "data": {
+          "board_also": "Monter aussi à",
+          "alight_also": "Descendre aussi à"
+        },
+        "data_description": {
+          "board_also": "Arrêts sur le chemin où vous pouvez aussi monter. Chaque bus n'apparaît qu'une fois, à l'heure du premier de ces arrêts où il prend des voyageurs.",
+          "alight_also": "Arrêts sur le chemin où vous pouvez aussi descendre. Un bus qui s'y arrête, avant votre arrêt, est gardé."
+        }
+      },
       "sensors_train": {
         "title": "Capteurs à créer",
         "description": "Un capteur par ligne cochée :\n\n{sensors}\n\nLeurs retours, les mêmes lignes dans l'autre sens :\n\n{returns}\n\nChaque capteur est nommé d'après sa source, sa ligne et ses gares. Un capteur qui porte déjà ce nom est laissé tel quel.",

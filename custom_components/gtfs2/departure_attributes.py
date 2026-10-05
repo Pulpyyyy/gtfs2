@@ -24,6 +24,7 @@ from homeassistant.util import slugify
 import homeassistant.util.dt as dt_util
 
 from .const import (
+    base_name_of,
     id_of,
     CONF_DESTINATION_STATIONS,
     CONF_ORIGIN_STATIONS,
@@ -324,6 +325,11 @@ def station_attributes(attributes: dict[str, Any], departure: Mapping[str, Any],
                          ATTR_LOCATION_ORIGIN, ATTR_WHEELCHAIR_ORIGIN)
     _end_attributes(attributes, destination, "Destination Station",
                          ATTR_LOCATION_DESTINATION, ATTR_WHEELCHAIR_DESTINATION)
+    # a bus or tram entry getting on, or off, at more stops: their names,
+    # as a train's stations are named, for a card to cut the leg
+    for key in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS):
+        if (entry or {}).get(key):
+            attributes[key] = [base_name_of(str(stop)) for stop in (entry or {})[key]]
 
 
 def _end_attributes(attributes: dict[str, Any], stop: Stop | None, prefix: str, location_key: str,

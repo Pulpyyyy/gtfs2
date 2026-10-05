@@ -244,6 +244,18 @@
           "lines": "Um sensor por linha marcada. Desmarque as linhas que não apanha."
         }
       },
+      "options_stops": {
+        "title": "Paragens da viagem",
+        "description": "Viagem **{origin} → {destination}** na linha **{route}**.\n\nTudo é opcional: deixe como está para seguir a linha entre estas duas paragens.\n\nMarque uma paragem no caminho em «Embarcar também em» quando também puder embarcar aí: uma segunda paragem mais perto de casa, ou uma onde o autocarro para enquanto a sua está fechada. Cada autocarro aparece uma só vez, na primeira destas paragens onde aceita passageiros.",
+        "data": {
+          "board_also": "Embarcar também em",
+          "alight_also": "Desembarcar também em"
+        },
+        "data_description": {
+          "board_also": "Paragens no caminho onde também pode embarcar. Cada autocarro aparece uma só vez, à hora da primeira destas paragens onde aceita passageiros.",
+          "alight_also": "Paragens no caminho onde também pode desembarcar. Um autocarro que termina aí, antes da sua paragem, é mantido."
+        }
+      },
       "sensors_train": {
         "title": "Sensores a criar",
         "description": "Um sensor por linha marcada:\n\n{sensors}\n\nOs seus regressos, as mesmas linhas no sentido contrário:\n\n{returns}\n\nCada sensor é nomeado a partir da sua fonte, da sua linha e das suas estações. Um sensor que já tem esse nome fica como está.",

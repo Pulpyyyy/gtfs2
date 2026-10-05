@@ -1,4 +1,6 @@
 """Constants for the GTFS integration."""
+import re
+
 from homeassistant.const import CONF_OFFSET, STATE_UNKNOWN, Platform
 
 DOMAIN = "gtfs2"
@@ -362,3 +364,21 @@ def id_of(value: str | None) -> str:
     """The id of an entry field stored as "id: name" (its route, origin or
     destination): what stands before the first ": ". An empty field is ""."""
     return (value or "").split(": ")[0]
+
+
+def stop_name_of(entry: str) -> str:
+    """The readable part of a "stop_id: Name (sequence)" entry.
+
+    Ids carry colons of their own but never ": ", which names do ("A28:
+    Kala's (East Bound)"): cut at the first one, as id_of does.
+    """
+    return entry.split(": ", 1)[-1].rsplit(" (", 1)[0].strip()
+
+
+def base_name_of(entry: str) -> str:
+    """stop_name_of without the flow's own " #n" disambiguation suffix.
+
+    The suffixed name is what the pickers and the by-name matching need;
+    a sensor name is for reading, so the suffix goes.
+    """
+    return re.sub(r" #\d+$", "", stop_name_of(entry))

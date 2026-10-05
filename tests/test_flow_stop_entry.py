@@ -23,8 +23,8 @@ KALAS = "000000008CTA: A28: Kala's (East Bound) (5)"
 
 
 def test_a_name_holding_a_colon_reads_whole():
-    assert flow_journey._stop_name(KALAS) == "A28: Kala's (East Bound)"
-    assert flow_journey._stop_name("IDFM:123: Gare (2)") == "Gare"
+    assert flow_journey.stop_name_of(KALAS) == "A28: Kala's (East Bound)"
+    assert flow_journey.stop_name_of("IDFM:123: Gare (2)") == "Gare"
 
 
 def test_the_destinations_are_asked_with_the_origin_s_id(monkeypatch):
