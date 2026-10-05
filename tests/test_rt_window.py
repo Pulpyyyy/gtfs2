@@ -215,7 +215,9 @@ def test_yesterdays_window_holds_past_midnight_and_closes_on_time(schedule):
     # until 01:50, and says so
     assert _gate(schedule, _at(DAY_AFTER, "01:40")) is None
     assert rt_window.window_state(FILE).get("window_end") == f"{DAY_AFTER}T01:50:00"
-    # and 02:00 on a day without service of its own is closed
+    # and 02:00 on a day without service of its own is closed, the last
+    # reading showing nothing ahead
+    _feed(_at(DAY_AFTER, "02:00"), -600)
     assert _gate(schedule, _at(DAY_AFTER, "02:00")) == "no_service_today"
 
 
@@ -226,6 +228,24 @@ def test_a_future_stop_of_a_followed_line_stretches_the_window(schedule):
     _feed(now, +600)
     assert _gate(schedule, now) is None
     assert rt_window.window_state(FILE).get("extended_until") == f"{DAY_AFTER}T02:10:00"
+
+
+def test_a_restart_past_the_close_reads_the_feed_once_to_know(schedule):
+    # nothing read since the start: the cache saying whether a late train
+    # still runs is gone, and closed on it the feeds stayed unread until
+    # the morning (SNCF, 2026-10-05: a TGV two hours late)
+    assert _gate(schedule, _at(DAY_AFTER, "02:00")) is None
+    # the reading says a stop is ahead: stretched as ever
+    _feed(_at(DAY_AFTER, "02:01"), +600)
+    assert _gate(schedule, _at(DAY_AFTER, "02:01")) is None
+    assert rt_window.window_state(FILE).get("extended_until") == f"{DAY_AFTER}T02:11:00"
+
+
+def test_one_reading_past_the_close_and_no_more(schedule):
+    assert _gate(schedule, _at(DAY_AFTER, "02:00")) is None
+    # the reading failed, or found nothing: closed, not read again
+    assert _gate(schedule, _at(DAY_AFTER, "02:01")) == "no_service_today"
+    assert _gate(schedule, _at(DAY_AFTER, "02:30")) == "no_service_today"
 
 
 def test_past_stops_alone_keep_only_the_tail_of_the_last_stretch(schedule):

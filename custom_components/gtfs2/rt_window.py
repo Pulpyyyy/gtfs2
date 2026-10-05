@@ -18,7 +18,8 @@ At the theoretical close the window stretches while the last fetch still
 announces a future stop time for a followed line - a late vehicle is the
 one moment realtime matters most - by 10 minutes per re-check, capped two
 hours past the close. Nothing moves at the start: a service does not leave
-early.
+early. A restart past the close finds no fetch to ask: the feed is read
+once then, and the stretch carries on from what that reading says.
 """
 from __future__ import annotations
 
@@ -289,6 +290,15 @@ def _after_close(hass: HomeAssistant, file: str, trip_update_url: str | None,
         extended = state.get("extended_until")
         if extended and now_local <= datetime.fromisoformat(extended):
             # the ten-minute tail of the last fetch that showed activity
+            state["paused"] = None
+            return None
+        if (trip_update_url and (file, trip_update_url, "trip_data") not in _FEED_CACHE
+                and state.get("read_after_close") != last_close.isoformat()):
+            # nothing read since a restart: the cache that tells whether a
+            # late train still runs is gone, and closed on it the feeds
+            # stayed unread until the morning (SNCF, 2026-10-05: a TGV two
+            # hours late, a restart at 22:43). One reading tells, once a close
+            state["read_after_close"] = last_close.isoformat()
             state["paused"] = None
             return None
     else:
