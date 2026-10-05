@@ -185,7 +185,9 @@ def remove_datasource(hass: HomeAssistant, path: str, filename: str, include_sql
     suffixes += ["_temp.zip", "_temp_out.zip", ".sqlite-journal", ".zip",
                  # the sidecar follows the zip it describes, and so does
                  # the index of its trains (stations.rail_index)
-                 ".zip.meta.json", ".zip.rail", ".zip.rail.new"]
+                 ".zip.meta.json", ".zip.rail", ".zip.rail.new",
+                 # and the shapes of its lines the leg files read (geojson.route_shapes)
+                 ".zip.shapes"]
     # what the fork keeps beside a source: the record of the installed
     # edition, and what a download, a refresh or an import stopped half way
     # leaves. Left behind, the record made a new source of the same name

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import os
 import types
 import zoneinfo
 from pathlib import Path
@@ -215,6 +216,78 @@ def test_every_stop_of_the_listed_trips_is_named_and_placed_once(tmp_path):
     assert leg["stops"]["P1b"] == {"name": "Pont", "lat": 43.0, "lon": 7.0}
     # a stop the feed left unnamed reads by its id, as on the map points
     assert leg["stops"]["X"]["name"] == "X"
+
+
+SHAPED = {
+    "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,Bus,http://a,Europe/Paris\n",
+    "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\nS1,Gare,43.0,7.0\nS2,Centre,43.1,7.1\nS3,Lac,43.2,7.2\n",
+    "routes.txt": "route_id,agency_id,route_short_name,route_type\nL1,A,1,3\n",
+    "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
+                     "start_date,end_date\nD,1,1,1,1,1,1,1,20260901,20261231\n"),
+    # the main road, a variant by the lake, and a run the feed draws not
+    "trips.txt": ("route_id,service_id,trip_id,direction_id,shape_id\nL1,D,M1,0,MAIN\n"
+                  "L1,D,V1,0,LAKE\nL1,D,N1,0,\n"),
+    "stop_times.txt": ("trip_id,arrival_time,departure_time,stop_id,stop_sequence\n"
+                       "M1,08:00:00,08:00:00,S1,1\nM1,08:10:00,08:10:00,S2,2\n"
+                       "V1,09:00:00,09:00:00,S1,1\nV1,09:15:00,09:15:00,S3,2\nV1,09:20:00,09:20:00,S2,3\n"
+                       "N1,10:00:00,10:00:00,S1,1\nN1,10:10:00,10:10:00,S2,2\n"),
+    "shapes.txt": ("shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\n"
+                   "MAIN,43.1,7.1,2\nMAIN,43.0,7.0,1\nLAKE,43.0,7.0,1\nLAKE,43.2,7.2,2\nLAKE,43.1,7.1,3\n"
+                   "OTHER,1.0,1.0,1\n"),
+}
+
+
+def test_each_run_is_drawn_on_its_own_road(tmp_path):
+    import feed_db
+
+    schedule = feed_db.build(tmp_path, SHAPED)
+    try:
+        hass = types.SimpleNamespace(config=types.SimpleNamespace(
+            path=lambda *parts: str(Path(tmp_path, *parts)), time_zone="Europe/Paris"))
+        departure = _departure("M1", "S1", datetime.datetime(2026, 9, 25, 8, 0, tzinfo=PARIS), listed=[
+            ("V1", datetime.datetime(2026, 9, 25, 9, 0, tzinfo=PARIS)),
+            ("N1", datetime.datetime(2026, 9, 25, 10, 0, tzinfo=PARIS))])
+        leg_mod.write_leg_file(hass, {"schedule": schedule, "name": "leg", "route": "L1",
+                                      "direction": "0", "next_departure": departure,
+                                      "file": "feed", "gtfs_dir": str(tmp_path)})
+        with open(tmp_path / "www" / "gtfs2" / leg_mod.leg_geojson_name("L1", "0", "leg"),
+                  encoding="utf-8") as handle:
+            leg = json.load(handle)
+    finally:
+        schedule.engine.dispose()
+    trips = leg["trips"]
+    assert (trips["M1"]["shape_id"], trips["V1"]["shape_id"]) == ("MAIN", "LAKE")
+    # no shape named: the stops draw it, as before
+    assert "shape_id" not in trips["N1"]
+    # each shape once, in its own sequence, and only those the runs ride
+    assert leg["shapes"] == {"MAIN": [[7.0, 43.0], [7.1, 43.1]],
+                             "LAKE": [[7.0, 43.0], [7.2, 43.2], [7.1, 43.1]]}
+
+
+def test_the_shapes_of_a_line_are_read_once_an_edition(tmp_path, monkeypatch):
+    import feed_db
+
+    geojson = ha_stub.load("geojson")
+    schedule = feed_db.build(tmp_path, SHAPED)
+    schedule.engine.dispose()
+    zip_path = str(tmp_path / "feed.zip")
+    passes = []
+    read = geojson._trip_shape_ids
+    monkeypatch.setattr(geojson, "_trip_shape_ids", lambda path, routes: passes.append(routes) or read(path, routes))
+    for _ in range(3):
+        shape_of, points = geojson.route_shapes(zip_path, {"L1"})
+    assert len(passes) == 1 and shape_of == {"M1": "MAIN", "V1": "LAKE"} and set(points) == {"MAIN", "LAKE"}
+    # kept beside the zip, a restart included, and not a source of its own
+    assert (tmp_path / "feed.zip.shapes").exists()
+    assert not geojson.SHAPES_SUFFIX.endswith((".sqlite", ".zip"))
+    # a line the feed does not draw is read once too
+    assert geojson.route_shapes(zip_path, {"NONE"}) == ({}, {})
+    geojson.route_shapes(zip_path, {"NONE"})
+    assert len(passes) == 2
+    # a new edition of the zip is read again
+    os.utime(zip_path, ns=(3, 3))
+    assert geojson.route_shapes(zip_path, {"L1"})[0] == {"M1": "MAIN", "V1": "LAKE"}
+    assert len(passes) == 3
 
 
 def _carried(tmp_path, *updates):

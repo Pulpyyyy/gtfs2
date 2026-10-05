@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import re
+import sqlite3
 import threading
 import time
 import unicodedata
@@ -351,6 +352,149 @@ def read_shape(zip_path: str | None, shape_id: str | None) -> list[list[float]] 
     # the feed may list the points in any order: the sequence is the order
     points.sort(key=lambda point: point[0])
     return [[lon, lat] for _, lon, lat in points]
+
+
+# the file the shapes of the lines asked are kept in, beside <file>.zip:
+# not .sqlite nor .zip, which the folder's lists of sources read (gtfs_db)
+SHAPES_SUFFIX = ".shapes"
+_SHAPES_LOCK = threading.Lock()
+
+
+def route_shapes(zip_path: str | None, route_ids: Collection[str]) -> tuple[dict[str, str],
+                                                                             dict[str, list[list[float]]]]:
+    """({trip_id: shape_id}, {shape_id: points}) of every trip of these
+    routes, as the zip's own trips.txt and shapes.txt give them (see
+    trip_shape_id for why the zip): what draws each run of a leg file as
+    it is ridden, a variant on its own road.
+
+    Read a route at a time, then kept beside the zip in <zip>.shapes for
+    its edition: a pass over trips.txt and one over shapes.txt the first
+    time a route is asked (11 s for a metro line of IDFM's 180 MB of
+    them), none after, a restart included, so a run newly listed costs
+    nothing. Only the lines asked are kept, not the network's every shape.
+    ({}, {}) without a zip, or for a feed with no shapes.txt (the SNCF
+    ships none).
+    """
+    if not zip_path or not route_ids:
+        return {}, {}
+    try:
+        stat = os.stat(zip_path)
+    except OSError:
+        return {}, {}
+    stamp = f"{stat.st_size}:{stat.st_mtime_ns}"
+    asked = sorted({str(r) for r in route_ids})
+    try:
+        with _SHAPES_LOCK:
+            conn = _shapes_store(zip_path + SHAPES_SUFFIX, stamp)
+            try:
+                return _stored_shapes(conn, zip_path, asked)
+            finally:
+                conn.close()
+    except sqlite3.Error as ex:
+        _LOGGER.warning("Could not keep the shapes of %s beside it: %s", zip_path, ex)
+        return {}, {}
+
+
+def _shapes_store(path: str, stamp: str) -> sqlite3.Connection:
+    """The kept shapes of a zip, emptied when the zip is another edition."""
+    conn = sqlite3.connect(path, timeout=60)
+    conn.executescript("""
+        create table if not exists edition (stamp text);
+        create table if not exists routes_read (route_id text primary key);
+        create table if not exists trip_shape (route_id text, trip_id text, shape_id text);
+        create index if not exists trip_shape_route on trip_shape (route_id);
+        create table if not exists points (shape_id text, seq integer, lon real, lat real);
+        create index if not exists points_shape on points (shape_id);
+    """)
+    row = conn.execute("select stamp from edition").fetchone()
+    if row is None or row[0] != stamp:
+        conn.executescript("delete from edition; delete from routes_read; "
+                           "delete from trip_shape; delete from points;")
+        conn.execute("insert into edition values (?)", (stamp,))
+        conn.commit()
+    return conn
+
+
+def _stored_shapes(conn: sqlite3.Connection, zip_path: str,
+                   asked: list[str]) -> tuple[dict[str, str], dict[str, list[list[float]]]]:
+    """Read from the zip the routes the store lacks, then answer from it."""
+    keys = json.dumps(asked)
+    read = {r[0] for r in conn.execute(
+        "select route_id from routes_read where route_id in (select value from json_each(?))", (keys,))}
+    missing = [route_id for route_id in asked if route_id not in read]
+    if missing:
+        found = _trip_shape_ids(zip_path, set(missing))
+        conn.executemany("insert into trip_shape values (?, ?, ?)",
+                         [(route_id, trip, shape) for route_id, trips in found.items()
+                          for trip, shape in trips.items()])
+        held = {r[0] for r in conn.execute("select distinct shape_id from points")}
+        wanted = {shape for trips in found.values() for shape in trips.values()} - held
+        conn.executemany("insert into points values (?, ?, ?, ?)",
+                         [(shape, seq, lon, lat) for shape, points in _read_shapes(zip_path, wanted).items()
+                          for seq, (lon, lat) in enumerate(points)])
+        conn.executemany("insert or ignore into routes_read values (?)", [(r,) for r in missing])
+        conn.commit()
+    shape_of = {trip: shape for trip, shape in conn.execute(
+        "select trip_id, shape_id from trip_shape where route_id in (select value from json_each(?))",
+        (keys,))}
+    points: dict[str, list[list[float]]] = {}
+    for shape, lon, lat in conn.execute(
+            "select shape_id, lon, lat from points where shape_id in "
+            "(select value from json_each(?)) order by shape_id, seq",
+            (json.dumps(sorted(set(shape_of.values()))),)):
+        points.setdefault(shape, []).append([lon, lat])
+    return shape_of, points
+
+
+def _trip_shape_ids(zip_path: str, route_ids: Collection[str]) -> dict[str, dict[str, str]]:
+    """{route_id: {trip_id: shape_id}} of the routes asked, in one pass
+    over the zip's trips.txt; a trip naming no shape is left out."""
+    found: dict[str, dict[str, str]] = {}
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            for row in table_rows(zin, "trips.txt"):
+                route_id = row.get("route_id")
+                shape = (row.get("shape_id") or "").strip()
+                if route_id in route_ids and shape and row.get("trip_id"):
+                    found.setdefault(str(route_id), {})[str(row["trip_id"])] = shape
+    except (OSError, zipfile.BadZipFile, UnicodeDecodeError, csv.Error) as ex:
+        _LOGGER.warning("Could not read the shapes of the trips of %s: %s", zip_path, ex)
+    return found
+
+
+def _read_shapes(zip_path: str, shape_ids: Collection[str]) -> dict[str, list[list[float]]]:
+    """{shape_id: [lon, lat] points in sequence} of the shapes asked, in
+    one pass over the zip's shapes.txt (see read_shape for one)."""
+    if not shape_ids:
+        return {}
+    points: dict[str, list[tuple[int, float, float]]] = {}
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            member = _member(zin, "shapes.txt")
+            if member is None:
+                return {}
+            with zin.open(member) as raw:
+                reader = csv.reader(io.TextIOWrapper(raw, encoding="utf-8-sig", newline=""))
+                header: list[str] = next(reader, [])
+                columns = {name.strip(): index for index, name in enumerate(header)}
+                try:
+                    c_id, c_lat = columns["shape_id"], columns["shape_pt_lat"]
+                    c_lon, c_seq = columns["shape_pt_lon"], columns["shape_pt_sequence"]
+                except KeyError:
+                    return {}
+                width = max(c_id, c_lat, c_lon, c_seq) + 1
+                for row in reader:
+                    if len(row) < width or row[c_id] not in shape_ids:
+                        continue
+                    try:
+                        points.setdefault(row[c_id], []).append(
+                            (int(row[c_seq]), float(row[c_lon]), float(row[c_lat])))
+                    except ValueError:
+                        continue
+    except (OSError, zipfile.BadZipFile, UnicodeDecodeError, csv.Error) as ex:
+        _LOGGER.warning("Could not read the shapes of %s: %s", zip_path, ex)
+        return {}
+    return {shape: [[lon, lat] for _, lon, lat in sorted(rows)] for shape, rows in points.items()}
 
 
 def write_route_file(hass: HomeAssistant, data: Mapping[str, Any], route_id: str,

@@ -19,9 +19,9 @@ from sqlalchemy.sql import text
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH_GEOJSON
-from .geojson import entry_file_part, line_file_part, write_json_if_changed
+from .geojson import entry_file_part, line_file_part, route_shapes, write_json_if_changed
 from .clocks import _leg_timezone, gtfs_seconds
-from .gtfs_db import remove_files
+from .gtfs_db import feed_zip, remove_files
 from .gtfs_helper import shown_ends
 from .stop_rules import _call_type
 from .rt_feed import (
@@ -374,7 +374,9 @@ def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: 
 
     Beside them, "stops" names and places every stop those trips call at,
     once: with the calls of each trip, in their order, a card draws every
-    run as it is ridden, and finds where each one goes.
+    run as it is ridden, and finds where each one goes. Where the feed
+    draws its trips, each run names its shape ("shape_id") and "shapes"
+    holds their points once, read from the zip (route_shapes).
 
     Keyed by trip_id. A frequency-based trip the feed reports several times
     keeps its scheduled entry under the bare id and gets one realtime entry
@@ -420,6 +422,7 @@ def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: 
         if t == trip_id:
             features = _leg_features(rows, midnight, trip_id, route_id, direction)
     realtime = _time_leg_trips(trips, called_twice, feed_entities)
+    shapes = _shape_trips(hass, data, schedule, trips)
     geojson_dir = hass.config.path(DEFAULT_PATH_GEOJSON)
     file = os.path.join(geojson_dir, leg_geojson_name(route_id, direction, name))
     _LOGGER.debug("Creating leg geojson file: %s", file)
@@ -435,6 +438,8 @@ def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: 
     }
     body: dict[str, Any] = {"type": "FeatureCollection", "properties": properties,
                             "features": features, "trips": trips, "stops": places}
+    if shapes:
+        body["shapes"] = shapes
     write_json_if_changed(
         file,
         {**body, "properties": {**properties,
@@ -443,6 +448,30 @@ def write_leg_file(hass: HomeAssistant, data: Mapping[str, Any], feed_entities: 
     if _LEG_FILES.get(name) != file:
         _drop_other_legs(geojson_dir, name, file)
         _LEG_FILES[name] = file
+
+
+def _shape_trips(hass: HomeAssistant, data: Mapping[str, Any], schedule: Schedule,
+                 trips: dict[str, dict[str, Any]]) -> dict[str, list[list[float]]]:
+    """Name the shape of each listed run on it, and answer the shapes'
+    points, read from the zip kept beside the source (route_shapes): a
+    run on a variant of its own is drawn on its own road. {} when the
+    feed has no shapes, or no zip to read them from."""
+    if not trips or not data.get("file") or not data.get("gtfs_dir"):
+        return {}
+    zip_path = feed_zip(hass.config.path(data["gtfs_dir"]), str(data["file"]))
+    if not os.path.exists(zip_path):
+        return {}
+    ridden = {key.split("@")[0] for key in trips}
+    with schedule.engine.connect() as conn:
+        routes = {str(row[0]) for row in conn.execute(
+            text("SELECT DISTINCT route_id FROM trips WHERE trip_id IN (SELECT value FROM json_each(:trips))"),
+            {"trips": json.dumps(sorted(ridden))})}
+    shape_of, points = route_shapes(zip_path, routes)
+    for key, run in trips.items():
+        shape = shape_of.get(key.split("@")[0])
+        if shape in points:
+            run["shape_id"] = shape
+    return {shape: points[shape] for shape in {run.get("shape_id") for run in trips.values()} if shape}
 
 
 # the leg file each entry last wrote, by entry name
