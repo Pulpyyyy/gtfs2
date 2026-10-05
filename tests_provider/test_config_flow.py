@@ -853,19 +853,34 @@ def test_a_loop_keeps_the_rotation_only_at_its_terminus(world):
     walk(world, scenario)
 
 
+async def through_options(hass, result, **answers):
+    """Past the train options screen when it is shown: its defaults, but
+    for the answers given."""
+    if result.get("step_id") == "options_train":
+        given = {key: default(result, key) for key in fields(result)}
+        result = await submit(hass, result, **{**given, **answers})
+    return result
+
+
 def test_a_train_journey_and_its_return_hold_the_stations_and_the_line(world):
     async def scenario(hass):
         await install_source(hass, "sncf-journeys", "sncf")
         lines = shown(await to_lines(hass, "sncf"), FORM, "route")
         routes = offered(lines, "route")
-        assert len(routes) == 4 and all(r.startswith("2##") for r in routes)
-        label = routes[1].split("##")[2]
-        stations = shown(await submit(hass, lines, route=routes[1]), FORM, "stops_train")
+        # every train line first, then the four lines
+        assert len(routes) == 5 and all(r.startswith("2##") for r in routes)
+        assert routes[0].split("##")[1] == "train"
+        label = routes[2].split("##")[2]
+        stations = shown(await submit(hass, lines, route=routes[2]), FORM, "stops_train")
         origin = offered(stations, "origin")[1]
         arrivals = shown(await submit(hass, stations, origin=origin), FORM, "destination_train")
         destination = offered(arrivals, "destination")[1]
-        naming = shown(await submit(hass, arrivals, destination=destination), FORM, "sensor_train")
+        options = await submit(hass, arrivals, destination=destination)
         line = label.split(" : ")[0]
+        if options["step_id"] == "options_train":
+            # the line picked is ticked, and only it
+            assert default(options, "lines") == [line]
+        naming = shown(await through_options(hass, options), FORM, "sensor_train")
         assert default(naming, "name") == f"sncf {line} {origin} → {destination}"
         # a train return is offered unticked
         assert default(naming, "add_return") is False
@@ -877,19 +892,66 @@ def test_a_train_journey_and_its_return_hold_the_stations_and_the_line(world):
         assert dict(outward.data) == {
             "file": "sncf", "agency": "0: ALL",
             "route_type": "2", "route": "train", "direction": "0", "line": line,
+            "lines": [line], "origin_stations": [origin], "destination_stations": [destination],
             "origin": origin, "destination": destination, "name": default(naming, "name")}
+        # the mirror: the stations swap ends, the lines stay
         assert dict(ride_back.data) == {**outward.data, "origin": destination,
-                                        "destination": origin, "name": back}
+                                        "destination": origin, "name": back,
+                                        "origin_stations": [destination],
+                                        "destination_stations": [origin]}
         # another journey on the same line starts from its departure screen
         again = shown(await choose(hass, closing, "same_line"), FORM, "stops_train")
         assert again["description_placeholders"]["route"] == label
         arrivals = await submit(hass, again, origin=offered(again, "origin")[2])
-        naming = shown(await submit(hass, arrivals, destination=offered(arrivals, "destination")[0]),
-                       FORM, "sensor_train")
+        options = await submit(hass, arrivals, destination=offered(arrivals, "destination")[0])
+        naming = shown(await through_options(hass, options), FORM, "sensor_train")
         closing = shown(await submit(hass, naming, name=default(naming, "name"), add_return=False),
                         MENU, "finished")
         assert len(hass.journeys()) == 3
         assert shown(await choose(hass, closing, "finish"), ABORT)["reason"] == "finished"
+    walk(world, scenario)
+
+
+def test_a_train_journey_on_every_line_gets_on_at_a_station_on_the_way_too(world):
+    # a week of works: some trains to Paris leave from Les Aubrais, under
+    # whichever code. One journey on every line, getting on at Les Aubrais
+    # as well, and its return getting off there as well
+    async def scenario(hass):
+        await install_source(hass, "sncf-journeys", "sncf")
+        lines = shown(await to_lines(hass, "sncf"), FORM, "route")
+        every = offered(lines, "route")[0]
+        assert every.split("##")[:2] == ["2", "train"]
+        stations = shown(await submit(hass, lines, route=every), FORM, "stops_train")
+        assert {"Orléans", "Les Aubrais", "Paris Austerlitz"} <= set(offered(stations, "origin"))
+        arrivals = shown(await submit(hass, stations, origin="Orléans"), FORM, "destination_train")
+        options = shown(await submit(hass, arrivals, destination="Paris Austerlitz"),
+                        FORM, "options_train")
+        assert "Les Aubrais" in offered(options, "board_also")
+        # every line: none ticked; each offered under its name too
+        assert default(options, "lines") == []
+        assert {"K8+", "P8"} <= set(offered(options, "lines"))
+        assert labels(options, "lines")["K8+"] == "K8+ (Paris - Orléans)"
+        # one station cannot be both
+        again = shown(await submit(hass, options, board_also=["Les Aubrais"],
+                                   alight_also=["Les Aubrais"], lines=[]), FORM, "options_train")
+        assert again["errors"] == {"base": "station_both_ends"}
+        naming = shown(await submit(hass, again, board_also=["Les Aubrais"], alight_also=[], lines=[]),
+                       FORM, "sensor_train")
+        # no line in the name on every line
+        assert default(naming, "name") == "sncf Orléans → Paris Austerlitz"
+        back = naming["description_placeholders"]["return_trip"]
+        assert back == "sncf Paris Austerlitz → Orléans"
+        shown(await submit(hass, naming, name=default(naming, "name"), add_return=True),
+              MENU, "finished")
+        outward, ride_back = hass.journeys()
+        assert (outward.data["route"], outward.data["lines"], outward.data["line"]) == ("train", [], None)
+        assert outward.data["origin_stations"] == ["Orléans", "Les Aubrais"]
+        assert outward.data["destination_stations"] == ["Paris Austerlitz"]
+        # the mirror: got on at Les Aubrais out, got off there back
+        assert (ride_back.data["origin"], ride_back.data["destination"]) == ("Paris Austerlitz", "Orléans")
+        assert ride_back.data["origin_stations"] == ["Paris Austerlitz"]
+        assert ride_back.data["destination_stations"] == ["Orléans", "Les Aubrais"]
+        assert ride_back.data["lines"] == []
     walk(world, scenario)
 
 
@@ -932,7 +994,8 @@ def test_a_train_line_with_no_short_name_leads_somewhere(world, tmp_path):
         origin = offered(stations, "origin")[0]
         arrivals = shown(await submit(hass, stations, origin=origin), FORM, "destination_train")
         destination = offered(arrivals, "destination")[0]
-        naming = shown(await submit(hass, arrivals, destination=destination), FORM, "sensor_train")
+        options = await submit(hass, arrivals, destination=destination)
+        naming = shown(await through_options(hass, options), FORM, "sensor_train")
         # the label still names the sensor; the entry holds no line code
         assert default(naming, "name") == f"rail {label.split(' : ')[0]} {origin} → {destination}"
         await submit(hass, naming, name=default(naming, "name"), add_return=False)
@@ -946,8 +1009,9 @@ def test_a_station_no_train_leaves_sends_the_rider_back_to_the_departures(world)
         await install_source(hass, "sncf-journeys", "sncf")
 
         async def departures():
+            # the first line, past the every-line option heading the list
             lines = await to_lines(hass, "sncf")
-            return shown(await submit(hass, lines, route=offered(lines, "route")[0]),
+            return shown(await submit(hass, lines, route=offered(lines, "route")[1]),
                          FORM, "stops_train")
 
         stations = offered(await departures(), "origin")

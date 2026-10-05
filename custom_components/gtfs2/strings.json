@@ -241,6 +241,20 @@
           "destination": "Only the stations a trip of this line really reaches from there are listed. When the line mixes trains and coaches, each station says which of them get there from your departure."
         }
       },
+      "options_train": {
+        "title": "Journey options",
+        "description": "Journey **{origin} → {destination}**.\n\nEverything here is optional: leave it as it is to follow every train between these two stations.\n\nUseful during engineering works, for instance, when some trains leave from a nearby station on the way: tick it under “Also board at”, and those trains show in the same sensor.",
+        "data": {
+          "board_also": "Also board at",
+          "alight_also": "Also get off at",
+          "lines": "Lines"
+        },
+        "data_description": {
+          "board_also": "Stations on the way where you can board as well. Each train shows once, at the time of the first of these stations where it takes passengers.",
+          "alight_also": "Stations on the way where you can get off as well. A train that ends there, short of your arrival station, is kept.",
+          "lines": "Leave empty to take every train. Tick one or more lines to follow only those."
+        }
+      },
       "remove": {
         "data": {
           "file": "Data source to remove"
@@ -330,7 +344,9 @@
       "name_taken": "A sensor already uses this name. Pick another one.",
       "not_created": "The sensor could not be created. Check the log, then try a different name.",
       "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again.",
-      "import_partial": "Some lines could not be brought back: {missing}. The log says why. This one was, so you can carry on; pick the others again later to try once more."
+      "import_partial": "Some lines could not be brought back: {missing}. The log says why. This one was, so you can carry on; pick the others again later to try once more.",
+      "station_both_ends": "A station cannot be both under “Also board at” and under “Also get off at”.",
+      "no_train_between": "No train links these stations on the lines ticked: untick some lines, or tick other stations."
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
@@ -654,7 +670,8 @@
     "line_mode_funicular": "funicular",
     "line_mode_trolleybus": "trolleybus",
     "line_mode_monorail": "monorail",
-    "agency_all": "All operators"
+    "agency_all": "All operators",
+    "trains_all_lines": "Every train line"
   },
   "issues": {
     "source_unused": {

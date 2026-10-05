@@ -2,7 +2,8 @@
 lets them on or off (_boards, _alights, and _call_type for a call's
 pickup_type or drop_off_type read in Python), the records of one place
 (_place_group), the station names a train entry matches at each end
-(station_names_in), and which route types are trains.
+(station_names_in) and the lines it holds to (entry_lines,
+line_codes_where), and which route types are trains.
 """
 from __future__ import annotations
 
@@ -36,6 +37,29 @@ def entry_stations(data: Mapping[str, Any], end: str) -> list[str]:
     an entry created before that screen took several holds."""
     names = data.get(f"{end}_stations") or [data.get(end)]
     return [str(name) for name in names if name]
+
+
+def entry_lines(data: Mapping[str, Any]) -> list[str]:
+    """The line codes a train entry holds its departures to, [] for every
+    rail line: the ones ticked on the options screen ("lines"), or the
+    single line an entry created before that screen took several holds."""
+    lines = data.get("lines")
+    if lines is None:
+        lines = [data.get("line")]
+    return [str(line).strip() for line in lines if line and str(line).strip()]
+
+
+def line_codes_where(column: str, lines: str | Iterable[str] | None) -> tuple[str, dict[str, str]]:
+    """An SQL "AND column IN (:line_0, ...)" holding a query to some line
+    codes, and its parameters; ("", {}) for every line. One scalar
+    parameter per code: _candidate_pairs keys its cache on the parameters
+    the query names."""
+    codes = [lines] if isinstance(lines, str) else list(lines or [])
+    codes = [str(code) for code in codes if code]
+    if not codes:
+        return "", {}
+    keys = [f"line_{n}" for n in range(len(codes))]
+    return f"AND {column} IN (" + ", ".join(f":{key}" for key in keys) + ")", dict(zip(keys, codes))
 
 
 def station_names_in(prefix: str, names: Iterable[str] | None) -> tuple[str, dict[str, str]]:

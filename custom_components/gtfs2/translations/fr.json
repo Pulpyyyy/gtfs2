@@ -241,6 +241,20 @@
           "destination": "Seules les gares qu'un trajet de cette ligne atteint réellement depuis là sont proposées. Quand la ligne mêle trains et cars, chaque gare indique lesquels y arrivent depuis votre départ."
         }
       },
+      "options_train": {
+        "title": "Options du trajet",
+        "description": "Trajet **{origin} → {destination}**.\n\nTout est facultatif : laissez tel quel pour suivre tous les trains entre ces deux gares.\n\nUtile par exemple pendant des travaux, quand certains trains partent d'une gare voisine sur le chemin : cochez-la dans « Monter aussi à », et ces trains apparaîtront dans le même capteur.",
+        "data": {
+          "board_also": "Monter aussi à",
+          "alight_also": "Descendre aussi à",
+          "lines": "Lignes"
+        },
+        "data_description": {
+          "board_also": "Gares sur le chemin où vous pouvez aussi monter. Chaque train n'apparaît qu'une fois, à l'heure de la première de ces gares où il prend des voyageurs.",
+          "alight_also": "Gares sur le chemin où vous pouvez aussi descendre. Un train qui s'y arrête, avant votre gare d'arrivée, est gardé.",
+          "lines": "Laissez vide pour prendre tous les trains. Cochez une ou plusieurs lignes pour ne suivre qu'elles."
+        }
+      },
       "remove": {
         "data": {
           "file": "Source de données à supprimer"
@@ -330,7 +344,9 @@
       "name_taken": "Un capteur porte déjà ce nom. Choisissez-en un autre.",
       "not_created": "Le capteur n'a pas pu être créé. Consultez le journal, puis essayez un autre nom.",
       "reload_failed": "Cette ligne n'a pas pu être rétablie. La source n'a pas été modifiée ; choisissez une autre ligne, ou réessayez.",
-      "import_partial": "Certaines lignes n'ont pas pu être rétablies : {missing}. Le journal dit pourquoi. Celle-ci l'a été, vous pouvez continuer ; choisissez de nouveau les autres plus tard pour réessayer."
+      "import_partial": "Certaines lignes n'ont pas pu être rétablies : {missing}. Le journal dit pourquoi. Celle-ci l'a été, vous pouvez continuer ; choisissez de nouveau les autres plus tard pour réessayer.",
+      "station_both_ends": "Une même gare ne peut pas être à la fois dans « Monter aussi à » et dans « Descendre aussi à ».",
+      "no_train_between": "Aucun train ne relie ces gares avec les lignes cochées : décochez des lignes, ou cochez d'autres gares."
     },
     "abort": {
       "already_configured": "L'appareil est déjà configuré",
@@ -654,7 +670,8 @@
     "line_mode_funicular": "funiculaire",
     "line_mode_trolleybus": "trolleybus",
     "line_mode_monorail": "monorail",
-    "agency_all": "Tous les exploitants"
+    "agency_all": "Tous les exploitants",
+    "trains_all_lines": "Toutes les lignes de train"
   },
   "issues": {
     "source_unused": {

@@ -57,7 +57,8 @@ from .rt_source import (
     journey_entry_data,
 )
 from .const import TRANSLATION_DESCRIPTION_PLACEHOLDERS
-from .flow_train import TrainScreens
+from .flow_train import ALL_TRAINS, TrainScreens
+from .stop_rules import RAIL_ROUTE_TYPES
 from .flow_reload import ReloadScreens
 from .flow_source import SourceScreens
 from .flow_options import OptionsScreens
@@ -68,6 +69,22 @@ if TYPE_CHECKING:
     from pygtfs import Schedule
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _is_rail(value: str) -> bool:
+    """Whether a route screen value (route_type##route_id##...) is a train line."""
+    try:
+        return int(value.split("##")[0]) in RAIL_ROUTE_TYPES
+    except ValueError:
+        return False
+
+
+def _label_of(picked: list[str]) -> str:
+    """The line number a route screen value names a sensor with, "" for
+    every train line."""
+    if len(picked) < 3 or picked[1] == ALL_TRAINS:
+        return ""
+    return line_number(picked[2])
 
 
 @config_entries.HANDLERS.register(DOMAIN)
@@ -464,7 +481,9 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
                 selector.SelectOptionDict(value=r, label=label)
                 for r, label in zip(usable, with_modes(usable, words))
                 ]
-            self._routes_offered = set(usable)
+            every = await self._every_train_line(usable, fresh)
+            route_list = every + route_list
+            self._routes_offered = set(usable) | {option["value"] for option in every}
             placeholders = dict(TRANSLATION_DESCRIPTION_PLACEHOLDERS)
             placeholders["routes"] = str(len(usable))
             placeholders["routes_total"] = str(total)
@@ -489,8 +508,9 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             return await self.async_step_route()
         user_input[CONF_ROUTE_TYPE] = _picked[0]
         user_input[CONF_ROUTE] = _picked[1]
-        # the readable part is only used to suggest a sensor name
-        self._route_label = line_number(_picked[2]) if len(_picked) > 2 else ""
+        # the readable part is only used to suggest a sensor name; every
+        # train line names none
+        self._route_label = _label_of(_picked)
         self._route_shown = _picked[2] if len(_picked) > 2 else ""
         was_pruned = len(_picked) > 3 and _picked[3] == "pruned"
         self._user_inputs.update(user_input)
@@ -503,6 +523,17 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             return await self.async_step_route_reload()
         return await self.async_step_direction()
 
+
+    async def _every_train_line(self, usable: list[str], fresh: bool) -> list[selector.SelectOptionDict]:
+        """The route screen's first option on a source with trains: a
+        journey on whichever train runs between two stations. On a week of
+        works the trains of one line leave from the next station, under
+        another line's code. Not before the import: the stations are read
+        from the database. [] when there is none to offer."""
+        if fresh or not any(_is_rail(value) for value in usable):
+            return []
+        every = await _async_text(self.hass, "trains_all_lines", "Every train line")
+        return [selector.SelectOptionDict(value=f"2##{ALL_TRAINS}##{every}", label=every)]
 
     async def _check_data(self, data: dict) -> str | None:
         await _reopen_schedule(self, data)

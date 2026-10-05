@@ -230,6 +230,20 @@
           "destination": "Só são propostas as estações que uma viagem desta linha alcança realmente a partir daí. Quando a linha mistura comboios e autocarros, cada estação indica quais chegam a ela a partir da sua partida."
         }
       },
+      "options_train": {
+        "title": "Opções da viagem",
+        "description": "Viagem **{origin} → {destination}**.\n\nTudo é opcional: deixe como está para seguir todos os comboios entre estas duas estações.\n\nÚtil por exemplo durante obras, quando alguns comboios partem de uma estação próxima no caminho: marque-a em «Embarcar também em», e esses comboios aparecem no mesmo sensor.",
+        "data": {
+          "board_also": "Embarcar também em",
+          "alight_also": "Desembarcar também em",
+          "lines": "Linhas"
+        },
+        "data_description": {
+          "board_also": "Estações no caminho onde também pode embarcar. Cada comboio aparece uma só vez, à hora da primeira destas estações onde aceita passageiros.",
+          "alight_also": "Estações no caminho onde também pode desembarcar. Um comboio que termina aí, antes da sua estação de chegada, é mantido.",
+          "lines": "Deixe vazio para apanhar todos os comboios. Marque uma ou mais linhas para seguir só essas."
+        }
+      },
       "sensor_train": {
         "data": {
           "name": "Nome do sensor",
@@ -330,7 +344,9 @@
       "name_taken": "Já existe um sensor com este nome. Escolha outro.",
       "not_created": "Não foi possível criar o sensor. Consulte o registo e tente outro nome.",
       "reload_failed": "Não foi possível repor essa linha. A fonte não foi alterada; escolha outra linha ou tente novamente.",
-      "import_partial": "Não foi possível repor algumas linhas: {missing}. O registo indica o motivo. Esta foi reposta, pode continuar; volte a escolher as outras mais tarde para tentar novamente."
+      "import_partial": "Não foi possível repor algumas linhas: {missing}. O registo indica o motivo. Esta foi reposta, pode continuar; volte a escolher as outras mais tarde para tentar novamente.",
+      "station_both_ends": "Uma mesma estação não pode estar ao mesmo tempo em «Embarcar também em» e em «Desembarcar também em».",
+      "no_train_between": "Nenhum comboio liga estas estações nas linhas marcadas: desmarque linhas ou marque outras estações."
     },
     "abort": {
       "already_configured": "Dispositivo já configurado",
@@ -654,7 +670,8 @@
     "line_mode_funicular": "funicular",
     "line_mode_trolleybus": "troleicarro",
     "line_mode_monorail": "monocarril",
-    "agency_all": "Todos os operadores"
+    "agency_all": "Todos os operadores",
+    "trains_all_lines": "Todas as linhas de comboio"
   },
   "issues": {
     "source_unused": {

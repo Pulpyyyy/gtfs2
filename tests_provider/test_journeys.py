@@ -1939,7 +1939,9 @@ def check_train_stations(check, fx, route_id, direction):
     pattern are paired with the same end of every other pattern: where the
     coaches and the trains start apart, or end apart (P8 leaves Orleans on
     one name for both, and reaches Paris on two). The answer must be every
-    departure each pairing gives alone, no more, no less; the next service
+    departure each pairing gives alone, no more, no less, a train calling
+    at two of the stations ticked at the origin boarded once, at the first
+    (Orleans before Les Aubrais); the next service
     date the earliest of theirs; the return test true when one of them is.
     And each departure says what rides it: a replacement bus (714) exactly
     when it leaves from a coach stop, the line's own type otherwise. On a
@@ -2005,7 +2007,16 @@ def check_train_stations(check, fx, route_id, direction):
                     (at, trip) for a in alone
                     for at, trip in zip((a or {}).get("next_departures", []),
                                         (a or {}).get("next_departures_trip_id", []))))
-                expected = alone_pairs[:len(trips) or 10]
+                # a train calling at two stations of the origin is boarded
+                # once, at the first: its later call is the same run, minutes
+                # on; a day apart, the same trip is another run
+                runs: list[tuple[str, str]] = []
+                for at, trip in alone_pairs:
+                    when = datetime.datetime.fromisoformat(at)
+                    if not any(t == trip and abs((when - datetime.datetime.fromisoformat(a)).total_seconds())
+                               < 12 * 3600 for a, t in runs):
+                        runs.append((at, trip))
+                expected = runs[:len(trips) or 10]
                 got = list(zip((both or {}).get("next_departures", []), trips))
                 check.note(got == expected,
                            f"{where}: {len(got)} departures {got[:3]}, the stations alone "

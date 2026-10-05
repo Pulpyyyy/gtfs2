@@ -230,6 +230,20 @@
           "destination": "Nur die Bahnhöfe, die eine Fahrt dieser Linie von dort tatsächlich erreicht, werden angeboten. Mischt die Linie Züge und Busse, zeigt jeder Bahnhof, welche ihn von Ihrem Abfahrtsbahnhof aus erreichen."
         }
       },
+      "options_train": {
+        "title": "Fahrtoptionen",
+        "description": "Fahrt **{origin} → {destination}**.\n\nAlles hier ist optional: lassen Sie es so, um jedem Zug zwischen diesen beiden Bahnhöfen zu folgen.\n\nNützlich zum Beispiel bei Bauarbeiten, wenn manche Züge von einem nahen Bahnhof auf dem Weg abfahren: haken Sie ihn unter „Auch einsteigen in“ an, und diese Züge erscheinen im selben Sensor.",
+        "data": {
+          "board_also": "Auch einsteigen in",
+          "alight_also": "Auch aussteigen in",
+          "lines": "Linien"
+        },
+        "data_description": {
+          "board_also": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls einsteigen können. Jeder Zug erscheint nur einmal, zur Zeit des ersten dieser Bahnhöfe, in dem er Fahrgäste aufnimmt.",
+          "alight_also": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls aussteigen können. Ein Zug, der dort vor Ihrem Zielbahnhof endet, wird behalten.",
+          "lines": "Leer lassen, um jeden Zug zu nehmen. Haken Sie eine oder mehrere Linien an, um nur diesen zu folgen."
+        }
+      },
       "sensor_train": {
         "data": {
           "name": "Sensorname",
@@ -330,7 +344,9 @@
       "name_taken": "Ein Sensor trägt diesen Namen bereits. Wählen Sie einen anderen.",
       "not_created": "Der Sensor konnte nicht erstellt werden. Prüfen Sie das Protokoll und versuchen Sie einen anderen Namen.",
       "reload_failed": "Diese Linie konnte nicht wiederhergestellt werden. Die Quelle blieb unverändert; wählen Sie eine andere Linie oder versuchen Sie es erneut.",
-      "import_partial": "Einige Linien konnten nicht wiederhergestellt werden: {missing}. Das Protokoll nennt den Grund. Diese Linie wurde wiederhergestellt, Sie können fortfahren; wählen Sie die anderen später erneut, um es noch einmal zu versuchen."
+      "import_partial": "Einige Linien konnten nicht wiederhergestellt werden: {missing}. Das Protokoll nennt den Grund. Diese Linie wurde wiederhergestellt, Sie können fortfahren; wählen Sie die anderen später erneut, um es noch einmal zu versuchen.",
+      "station_both_ends": "Ein Bahnhof kann nicht zugleich unter „Auch einsteigen in“ und unter „Auch aussteigen in“ stehen.",
+      "no_train_between": "Kein Zug verbindet diese Bahnhöfe auf den angehakten Linien: entfernen Sie Linien oder haken Sie andere Bahnhöfe an."
     },
     "abort": {
       "already_configured": "Gerät ist bereits konfiguriert",
@@ -654,7 +670,8 @@
     "line_mode_funicular": "Standseilbahn",
     "line_mode_trolleybus": "Oberleitungsbus",
     "line_mode_monorail": "Einschienenbahn",
-    "agency_all": "Alle Betreiber"
+    "agency_all": "Alle Betreiber",
+    "trains_all_lines": "Alle Zuglinien"
   },
   "issues": {
     "source_unused": {

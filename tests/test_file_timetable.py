@@ -51,6 +51,18 @@ def test_times_carry_their_zone_and_their_real_date():
     assert doc["timezone"] == "Europe/Paris"
 
 
+def test_runs_leaving_from_several_stations_say_which():
+    # a train entry getting on at Orleans and at Les Aubrais: a card
+    # boarding at one of them has to know where each run leaves from
+    rows = [dict(row("k1", "2026-09-19", "2026-09-19 10:00:00", "2026-09-19 11:05:00"), origin_stop_id="SO"),
+            dict(row("k2", "2026-09-19", "2026-09-19 11:41:00", "2026-09-19 12:39:00"), origin_stop_id="SA")]
+    doc = timetable.timetable_doc("Orleans → Paris", rows, DAYS, PARIS, generated=GENERATED)
+    assert [d["origin_stop_id"] for d in doc["days"][0]["departures"]] == ["SO", "SA"]
+    # one stop for every run: said by the entry, not by each run
+    one = timetable.timetable_doc("x", [dict(rows[0])], DAYS, PARIS, generated=GENERATED)
+    assert "origin_stop_id" not in one["days"][0]["departures"][0]
+
+
 def test_last_nights_runs_get_a_day_of_their_own():
     rows = [row("n1", "2026-09-18", "2026-09-19 01:30:00", "2026-09-19 01:40:00")]
     doc = timetable.timetable_doc("N01", rows, DAYS, PARIS, generated=GENERATED)

@@ -1,17 +1,18 @@
-"""The train screens of the config flow: departure station, arrival station and sensor.
+"""The train screens of the config flow: departure station, arrival station, options and sensor.
 
-A train journey is configured by station name. The departure station
-comes first, then the arrival station, offered among the ones a train
-really reaches from there, and the sensor screen that names the entry.
-Mixed in ConfigFlow; every method reads and writes the flow's own state
-(self).
+A train journey is configured by station name, on one line or on every
+rail line. The departure station comes first, then the arrival station,
+offered among the ones a train really reaches from there, then the
+options (stations to get on or off at as well, the lines held to), and
+the sensor screen that names the entry. Mixed in ConfigFlow; every method
+reads and writes the flow's own state (self).
 """
-# mixin: The three screens of a train journey: departure station, arrival station, sensor.
+# mixin: The four screens of a train journey: departure station, arrival station, options, sensor.
 from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 
@@ -21,9 +22,11 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_DESTINATION,
+    CONF_DESTINATION_STATIONS,
     CONF_DIRECTION,
     CONF_NAME,
     CONF_ORIGIN,
+    CONF_ORIGIN_STATIONS,
     CONF_ROUTE,
     DEFAULT_PATH,
 )
@@ -36,14 +39,48 @@ from .stations import (
     get_station_list,
     get_station_modes,
     get_train_destination_list,
+    get_train_lines_between,
+    get_train_stations_between,
     has_train_trip_between,
 )
+from .stop_rules import entry_lines
 
 if TYPE_CHECKING:
     # for the annotations only
     from pygtfs import Schedule
 
 _LOGGER = logging.getLogger(__name__)
+
+# the route a train entry stores, and the one the route screen's "every
+# line" option carries: the journey rides whichever train serves its
+# stations, held to the lines it lists ("lines", [] for every one)
+ALL_TRAINS = "train"
+
+
+def _picked_route(route: str | None) -> str | None:
+    """The route the train screens read the stations of, None for every
+    rail line."""
+    return None if route in (None, "", ALL_TRAINS) else route
+
+
+def _options_schema(between: list[str], lines: dict[str, str], previous: dict) -> vol.Schema:
+    """The options screen: the stations between to get on or off at as
+    well, when there are some, and the lines, previous the answers shown."""
+    def _many(options: list[selector.SelectOptionDict]) -> selector.SelectSelector:
+        return selector.SelectSelector(selector.SelectSelectorConfig(
+            options=options, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN))
+
+    stations = [selector.SelectOptionDict(value=name, label=name) for name in between]
+    # the code is what the departures match, its long name what the rider
+    # recognises: "K8+ (Paris - Orleans)"
+    line_options = [selector.SelectOptionDict(value=code, label=f"{code} ({name})" if name else code)
+                    for code, name in lines.items()]
+    fields: dict[vol.Marker, Any] = {}
+    if between:
+        fields[vol.Optional("board_also", default=previous.get("board_also", []))] = _many(stations)
+        fields[vol.Optional("alight_also", default=previous.get("alight_also", []))] = _many(stations)
+    fields[vol.Optional("lines", default=previous.get("lines", []))] = _many(line_options)
+    return vol.Schema(fields)
 
 
 def _station_label(name: str, modes: set[str] | None, words: dict[str, str]) -> str:
@@ -56,7 +93,7 @@ def _station_label(name: str, modes: set[str] | None, words: dict[str, str]) -> 
 
 
 class TrainScreens:
-    """The three screens of a train journey: departure station, arrival station, sensor."""
+    """The four screens of a train journey: departure station, arrival station, options, sensor."""
 
     # what these screens use of the flow they are mixed in (ConfigFlow)
     hass: HomeAssistant
@@ -65,6 +102,7 @@ class TrainScreens:
     _stops_error: str | None
     _return_trip: dict | None
     _return_name: str
+    _route_label: str
     async_show_form: Callable[..., FlowResult]
     async_abort: Callable[..., FlowResult]
     _import_missing: str
@@ -97,7 +135,9 @@ class TrainScreens:
         own, which the closing screen offers to add on the same line.
         """
         errors: dict[str, str] = {}
-        route_id = self._user_inputs.get(CONF_ROUTE)
+        # None for the journey on every line: every station a train takes
+        # riders on at
+        route_id = _picked_route(self._user_inputs.get(CONF_ROUTE))
         stations = await self.hass.async_add_executor_job(
             get_station_list, self._pygtfs, route_id)
         if not stations:
@@ -164,10 +204,12 @@ class TrainScreens:
         """
         errors: dict[str, str] = {}
         origin = self._user_inputs.get(CONF_ORIGIN, "")
-        route_id = self._user_inputs.get(CONF_ROUTE)
+        route_id = _picked_route(self._user_inputs.get(CONF_ROUTE))
         try:
-            # the line's own code, not the label shown for it: see get_line_code
-            line = await self.hass.async_add_executor_job(get_line_code, self._pygtfs, route_id)
+            # the line's own code, not the label shown for it: see get_line_code.
+            # None on every line: every rail line reaches the arrivals
+            line = (await self.hass.async_add_executor_job(get_line_code, self._pygtfs, route_id)
+                    if route_id else None)
             reached = await self.hass.async_add_executor_job(
                 get_train_destination_list, self._pygtfs, route_id, origin, line)
             mixed = await self.hass.async_add_executor_job(
@@ -219,9 +261,83 @@ class TrainScreens:
             return _show(errors, destination)
         self._user_inputs.update(data)
         self._user_inputs[CONF_DIRECTION] = "0"
-        self._user_inputs[CONF_ROUTE] = "train"
+        self._user_inputs[CONF_ROUTE] = ALL_TRAINS
         _LOGGER.debug(f"UserInputs Destination Train: {self._user_inputs}")
+        return await self.async_step_options_train()
+
+    async def async_step_options_train(self, user_input: dict | None = None) -> FlowResult:
+        """Stations to get on or off at as well, and the lines held to.
+
+        A week of works ends trains of a line short of the station (SNCF,
+        October 2026: K8+ trains from Les Aubrais, not Orleans), and puts
+        others on the line under another code: an entry riding every line
+        and getting on at Les Aubrais as well keeps them in one sensor.
+        Every field is optional; the line picked on the route screen is
+        ticked, none on every line.
+        """
+        errors: dict[str, str] = {}
+        origin = self._user_inputs.get(CONF_ORIGIN, "")
+        destination = self._user_inputs.get(CONF_DESTINATION, "")
+        picked = self._user_inputs.get("line")
+        try:
+            between = await self.hass.async_add_executor_job(
+                get_train_stations_between, self._pygtfs, origin, destination)
+            lines = await self.hass.async_add_executor_job(
+                get_train_lines_between, self._pygtfs, origin, destination, between, between)
+        except Exception as ex:  # pylint: disable=broad-except
+            _LOGGER.exception("Error reading the options from %s to %s: %s", origin, destination, ex)
+            return self.async_abort(reason="no_stops_read")
+        if picked and picked not in lines:
+            lines = {picked: "", **lines}
+        ticked = [picked] if picked else []
+
+        def _show(errors: dict[str, str], previous: dict | None = None) -> FlowResult:
+            return self.async_show_form(
+                step_id="options_train",
+                data_schema=_options_schema(between, lines, {"lines": ticked, **(previous or {})}),
+                description_placeholders=self._journey_placeholders(
+                    origin=origin, destination=destination),
+                errors=errors,
+            )
+
+        if user_input is None and (between or len(lines) > 1):
+            return _show(errors)
+        # nothing to choose, one line and no station in between: as it stands
+        user_input = user_input or {"lines": ticked}
+        board_also = [s for s in user_input.get("board_also") or [] if s in between]
+        alight_also = [s for s in user_input.get("alight_also") or [] if s in between]
+        chosen = [line for line in user_input.get("lines") or [] if line in lines]
+        origins, destinations = [origin, *board_also], [destination, *alight_also]
+        if set(board_also) & set(alight_also):
+            errors["base"] = "station_both_ends"
+        elif not await self.hass.async_add_executor_job(
+                has_train_trip_between, self._pygtfs, origins, destinations, chosen):
+            errors["base"] = "no_train_between"
+        if errors:
+            return _show(errors, user_input)
+        self._keep_train_options(origins, destinations, chosen, ticked)
         return await self.async_step_sensor_train()
+
+    def _keep_train_options(self, origins: list[str], destinations: list[str], chosen: list[str],
+                            ticked: list[str]) -> None:
+        """The options screen's answers into the entry: the stations at each
+        end, the lines, and the name's line when it changed."""
+        self._user_inputs.update({
+            CONF_ORIGIN_STATIONS: origins,
+            CONF_DESTINATION_STATIONS: destinations,
+            "lines": chosen,
+            # one line: its code, as the entries made before this screen
+            # keep it; several or every one: none
+            "line": chosen[0] if len(chosen) == 1 else None,
+        })
+        if chosen != ticked:
+            # other lines than the one picked: the name says the line when
+            # there is one, none for several or every one. Left alone, it
+            # keeps the route screen's label, a line with no code included
+            self._route_label = chosen[0] if len(chosen) == 1 else ""
+        # the return is read again from these stations and lines
+        self._return_trip = None
+        _LOGGER.debug(f"UserInputs Options Train: {self._user_inputs}")
 
     async def async_step_sensor_train(self, user_input: dict | None = None) -> FlowResult:
         """Name the train sensor, suggested from the line and both stations."""
@@ -236,16 +352,24 @@ class TrainScreens:
         if self._return_trip is None:
             # trains rarely run one way only, but check before offering.
             # A train sensor covers the station pair, not one line, so the
-            # return wears the same label as the outward.
+            # return wears the same label as the outward. Its mirror: the
+            # stations got on at as well are got off at on the way back
+            # (a train ending at Les Aubrais out starts there back), the
+            # lines are the same
             self._return_name = self._suggested_name(f"{destination} → {origin}")
+            origins = self._user_inputs.get(CONF_ORIGIN_STATIONS) or [origin]
+            destinations = self._user_inputs.get(CONF_DESTINATION_STATIONS) or [destination]
             exists = await self.hass.async_add_executor_job(
-                has_train_trip_between, self._pygtfs, destination, origin,
-                self._user_inputs.get("line"),
+                has_train_trip_between, self._pygtfs, destinations, origins,
+                entry_lines(self._user_inputs),
             )
             self._return_trip = {
                 CONF_ORIGIN: destination,
                 CONF_DESTINATION: origin,
                 CONF_NAME: self._return_name,
+                # merged over the outward's at creation: both, explicitly
+                CONF_ORIGIN_STATIONS: destinations,
+                CONF_DESTINATION_STATIONS: origins,
             } if exists else {}
         return await self._name_and_create("sensor_train", user_input, suggested, trip,
                                            add_return=False)

@@ -28,7 +28,8 @@ from .const import (
 from .datasource import check_extracting
 from .rt_feed import on_service_day
 from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
-                         _no_call_between, _place_group, entry_stations, station_names_in)
+                         _no_call_between, _place_group, entry_lines, entry_stations,
+                         line_codes_where, station_names_in)
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -62,7 +63,7 @@ NEXT_SERVICE_HORIZON_DAYS = 90
 
 def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_id: str,
                           from_date: str, route_type: str = "3",
-                          horizon: int = NEXT_SERVICE_HORIZON_DAYS, line: str | None = None,
+                          horizon: int = NEXT_SERVICE_HORIZON_DAYS, line: str | list[str] | None = None,
                           origin_names: list[str] | None = None,
                           destination_names: list[str] | None = None, route: str | None = None,
                           direction: str | int | None = None) -> str | None:
@@ -83,8 +84,8 @@ def get_next_service_date(schedule: Schedule | str | None, origin_id: str, dest_
 
     For a train, origin_id and dest_id are station names; origin_names and
     destination_names, when given, are every station the entry ticked at each end,
-    and line holds the answer to the line the flow picked, as the departures
-    are held to it.
+    and line holds the answer to the line the flow picked, or to the lines
+    ticked, as the departures are held to them.
 
     route and direction hold the answer to the entry's line and, at a
     loop's terminus, its way round, as the departures are held to them:
@@ -168,7 +169,7 @@ def _feed_now(schedule: Schedule, route: str | None = None, offset: int = 0) -> 
 
 def _departure_candidates(route_type: str, origin: str, destination: str,
                           direction: str | int | None = None, route: str | None = None,
-                          line: str | None = None, origin_names: list[str] | None = None,
+                          line: str | list[str] | None = None, origin_names: list[str] | None = None,
                           destination_names: list[str] | None = None,
                           ) -> tuple[str, dict[str, Any], str]:
     """(SQL, its parameters, the origin as matched) of the trips riding from
@@ -184,17 +185,40 @@ def _departure_candidates(route_type: str, origin: str, destination: str,
         # the coach station its replacement coaches leave from included.
         start_station_id = str(origin)
         end_station_id = str(destination)
-        origin_in, name_params = station_names_in("origin", origin_names or [origin])
-        dest_in, dest_params = station_names_in("dest", destination_names or [destination])
+        origin_names = origin_names or [origin]
+        destination_names = destination_names or [destination]
+        origin_in, name_params = station_names_in("origin", origin_names)
+        dest_in, dest_params = station_names_in("dest", destination_names)
         name_params.update(dest_params)
         start_station_where = f"AND origin_stop_time.stop_id in (select stop_id from stops where stop_name IN {origin_in})"
         end_station_where = f"AND destination_stop_time.stop_id in (select stop_id from stops where stop_name IN {dest_in})"
+        # several stations at one end: a train calling at Orleans then at
+        # Les Aubrais rode the pair twice, one row a station. It is read
+        # where the rider first gets on and last gets off, at the time it
+        # leaves the first. One station at each end reads as it always did
         shortest_ride_where = ""
+        if len(set(origin_names)) > 1:
+            shortest_ride_where += f"""
+              AND NOT EXISTS (
+                SELECT 1 FROM stop_times earlier
+                WHERE earlier.trip_id = trip.trip_id
+                  AND earlier.stop_sequence < origin_stop_time.stop_sequence
+                  AND earlier.stop_id in (select stop_id from stops where stop_name IN {origin_in})
+                  AND {_boards("earlier")})"""
+        if len(set(destination_names)) > 1:
+            shortest_ride_where += f"""
+              AND NOT EXISTS (
+                SELECT 1 FROM stop_times later
+                WHERE later.trip_id = trip.trip_id
+                  AND later.stop_sequence > destination_stop_time.stop_sequence
+                  AND later.stop_id in (select stop_id from stops where stop_name IN {dest_in})
+                  AND {_alights("later")})"""
         # the train flow does not ask for a direction, and it stores the
-        # picked line's code instead of a route id: the departures hold to
-        # that line, so stations shared by several lines do not mix theirs
+        # picked lines' codes instead of a route id: the departures hold to
+        # those lines, so stations shared by several lines do not mix theirs
         direction_where = ""
-        route_where = "AND route.route_short_name = :line" if line else ""
+        route_where, line_params = line_codes_where("route.route_short_name", line)
+        name_params.update(line_params)
         _LOGGER.debug("Setting up TRAIN Route for start/end : %s / %s, line: %s", start_station_id, end_station_id, line)
     else:
         route_type_where = "1=1"
@@ -256,7 +280,6 @@ def _departure_candidates(route_type: str, origin: str, destination: str,
         "end_station_id": end_station_id,
         "direction": int(str(direction)) if str(direction) in ("0", "1") else None,
         "route": route,
-        "line": line,
         **name_params,
     }
     return candidates_sql, params, start_station_id
@@ -264,7 +287,7 @@ def _departure_candidates(route_type: str, origin: str, destination: str,
 
 def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedule: Schedule,
                           direction: str | int | None = None, route: str | None = None,
-                          line: str | None = None, origin_names: list[str] | None = None,
+                          line: str | list[str] | None = None, origin_names: list[str] | None = None,
                           destination_names: list[str] | None = None,
                           window: tuple[str, str] | None = None,
                           limit: int = 30, offset: int = 0) -> tuple[list[dict[str, Any]], str]:
@@ -274,8 +297,9 @@ def _fetch_departure_rows(route_type: str, origin: str, destination: str, schedu
     (get_pair_direction, stored as loop_direction); the pair and the order of
     the stops decide it everywhere else, and the direction older entries
     store is not read. line, origin_names and destination_names belong to
-    the train path: the line code the flow picked, and every station the
-    entry ticked at each end.
+    the train path: the line code the flow picked, or the codes ticked
+    ([] or None for every rail line), and every station the entry ticked
+    at each end.
 
     The sensor reads the next `limit` departures from now. The timetable
     export (write_timetable_file) reads whole service days instead:
@@ -653,6 +677,10 @@ def journey_data(schedule: Schedule | str | None, data: Mapping[str, Any],
         "loop_direction": data.get("loop_direction"),
         # a train entry's line code: its departures hold to that line
         "line": data.get("line"),
+        # or the codes ticked on its options screen, [] for every rail
+        # line, only on the entries made with it: the others keep the
+        # shape they always had
+        **({"lines": data["lines"]} if "lines" in data else {}),
     }
 
 
@@ -660,11 +688,11 @@ def departure_query_args(_data: Mapping[str, Any]) -> dict[str, Any]:
     """What an entry's departures are asked with beyond its two ends, the
     same for the sensor and for the timetable export: the direction kept at
     a loop's terminus, the entry's line, and on the train path the line
-    code the flow picked and every station ticked at each end."""
+    codes the entry holds to and every station ticked at each end."""
     return {
         "direction": _data.get("loop_direction"),
         "route": id_of(_data.get("route")) or None,
-        "line": str(_data.get("line", "") or "").strip() or None,
+        "line": entry_lines(_data),
         "origin_names": entry_stations(_data, "origin"),
         "destination_names": entry_stations(_data, "destination"),
     }

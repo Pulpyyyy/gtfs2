@@ -426,7 +426,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         next_service_info(self._attributes, self._state,
                           self.coordinator.data.get("next_service_date"), self._offset)
         station_attributes(self._attributes, self._departure, self._agency,
-                           self._origin, self._destination, self._route_type)
+                           self._origin, self._destination, self._route_type, self.coordinator.data)
         route_and_trip_attributes(self._attributes, self._route, self._trip)
         stop_time_attributes(self._attributes, self._departure)
         next_departure_attributes(self._attributes, self._departure, self._next_departures)

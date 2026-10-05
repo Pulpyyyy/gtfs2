@@ -71,16 +71,26 @@ def timetable_doc(name: str, rows: Iterable[Mapping[str, Any]], service_dates: I
     says "nothing published until then" rather than "never".
     """
     days: dict[str, list[dict[str, str | None]]] = {d: [] for d in service_dates}
+    origins = set()
     for row in rows:
         day = str(row.get("origin_depart_date") or "")[:10]
         dep = _local(row.get("origin_depart_dt"), zone)
         if not day or not dep:
             continue
+        origins.add(row.get("origin_stop_id"))
         days.setdefault(day, []).append({
             "trip_id": str(row.get("trip_id")),
             "dep": dep,
             "arr": _local(row.get("dest_arrival_dt"), zone),
+            "origin_stop_id": row.get("origin_stop_id"),
         })
+    if len(origins) < 2:
+        # one stop the runs leave from: said by the entry already. Several
+        # (a train entry getting on at Orleans and at Les Aubrais) and each
+        # run says its own, for a card boarding at one of them
+        for departures in days.values():
+            for departure in departures:
+                departure.pop("origin_stop_id")
     return {
         "entry": name,
         "timezone": str(zone),

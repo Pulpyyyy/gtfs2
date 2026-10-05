@@ -22,7 +22,7 @@ from sqlalchemy.sql import text
 
 from .gtfs_db import real_path
 from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
-                         entry_stations, station_names_in)
+                         entry_lines, entry_stations, line_codes_where, station_names_in)
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -32,14 +32,15 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def has_train_trip_between(schedule: Schedule, origin_name: str | list[str],
-                           destination_name: str | list[str], line: str | None = None) -> bool:
+                           destination_name: str | list[str],
+                           line: str | list[str] | None = None) -> bool:
     """Whether any rail trip serves both ends, in this order.
 
     The train path works with station names rather than stop ids, matched
     the way get_next_departure does: on the exact name, at any of the
     stations the entry ticked at each end. Each end is a name or a list of
-    them. Held to one line when the flow picked one, like the departures
-    themselves.
+    them. Held to the lines the flow picked, a code or a list of them,
+    like the departures themselves; every rail line when none.
     """
     origin_names = [origin_name] if isinstance(origin_name, str) else origin_name
     destination_names = ([destination_name] if isinstance(destination_name, str)
@@ -47,7 +48,8 @@ def has_train_trip_between(schedule: Schedule, origin_name: str | list[str],
     origin_in, params = station_names_in("origin", origin_names)
     dest_in, dest_params = station_names_in("dest", destination_names)
     params.update(dest_params)
-    line_where = "and r.route_short_name = :line" if line else ""
+    line_where, line_params = line_codes_where("r.route_short_name", line)
+    params.update(line_params)
     sql = f"""
     SELECT 1
     from trips t
@@ -65,7 +67,7 @@ def has_train_trip_between(schedule: Schedule, origin_name: str | list[str],
     limit 1
     """  # noqa: S608
     with schedule.engine.connect() as conn:
-        row = conn.execute(text(sql), {**params, "line": line}).fetchone()
+        row = conn.execute(text(sql), params).fetchone()
     _LOGGER.debug("Train trip between %s and %s (line %s): %s",
                   origin_names, destination_names, line, bool(row))
     return bool(row)
@@ -80,7 +82,8 @@ def get_station_list(schedule: Schedule, route_id: str | None = None) -> list[st
 
     Held to a route, the list is where its trains take riders on: a station
     every train of the line passes, or only sets down at (a night train's
-    morning stops), is nowhere to get on (see _boards).
+    morning stops), is nowhere to get on (see _boards). Without one, where
+    a train of any rail line does: the journey that rides every line.
     """
     _LOGGER.debug("Getting station list for route: %s", route_id)
     if route_id:
@@ -98,7 +101,16 @@ def get_station_list(schedule: Schedule, route_id: str | None = None) -> list[st
         order by s.stop_name
         """  # noqa: S608
     else:
-        sql = "SELECT distinct s.stop_name from stops s order by s.stop_name"
+        sql = f"""
+        SELECT distinct s.stop_name
+        from trips t
+        inner join routes r on r.route_id = t.route_id
+        inner join stop_times st on st.trip_id = t.trip_id
+        inner join stops s on s.stop_id = st.stop_id
+        where r.route_type in ({RAIL_ROUTE_TYPES_SQL})
+          and {_boards("st")}
+        order by s.stop_name
+        """  # noqa: S608
     with schedule.engine.connect() as conn:
         # bound, not inlined: a route_id is the feed's own text, and one
         # carrying a quote ("L'Express") would end the literal and the screen
@@ -160,7 +172,7 @@ def get_line_code(schedule: Schedule, route_id: str | None) -> str | None:
 
 
 def get_train_destination_list(schedule: Schedule, route_id: str | None, origin_name: str,
-                               line: str | None = None) -> dict[str, set[str]]:
+                               line: str | list[str] | None = None) -> dict[str, set[str]]:
     """{station name: {"train", "coach"}} for the stations a trip of the line
     really reaches from the departure station, and by which of the two.
 
@@ -170,9 +182,16 @@ def get_train_destination_list(schedule: Schedule, route_id: str | None, origin_
     to end (SNCF: no trip mixes coach and train stops), so a train station
     leads to the train arrivals and a coach station to the coach ones. The
     trips are held to the line's code like the departures, to the route
-    itself when the line has none.
+    itself when the line has none, and to every rail line without a line
+    or a route (the journey that rides them all).
     """
-    scope = "r.route_short_name = :line" if line else "t.route_id = :route_id"
+    line_where, line_params = line_codes_where("r.route_short_name", line)
+    if line_where:
+        scope = line_where[len("AND "):]
+    elif route_id:
+        scope = "t.route_id = :route_id"
+    else:
+        scope = "1=1"
     sql = f"""
     SELECT distinct sd.stop_name, sd.stop_id
     from trips t
@@ -187,7 +206,7 @@ def get_train_destination_list(schedule: Schedule, route_id: str | None, origin_
       and {scope}
       and {_boards("o")} and {_alights("d")}
     """  # noqa: S608
-    params = {"origin": origin_name, "line": line, "route_id": str(route_id or "")}
+    params = {"origin": origin_name, "route_id": str(route_id or ""), **line_params}
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql), params).fetchall()
     reached: dict[str, set[str]] = {}
@@ -197,6 +216,84 @@ def get_train_destination_list(schedule: Schedule, route_id: str | None, origin_
     _LOGGER.debug("Train destinations from %s (line %s, route %s): %s",
                   origin_name, line, route_id, len(reached))
     return dict(sorted(reached.items()))
+
+
+def get_train_stations_between(schedule: Schedule, origin_name: str, destination_name: str,
+                               line: str | list[str] | None = None) -> list[str]:
+    """The stations strictly between the departure and the arrival, on the
+    rail trips that ride from one to the other: where the options screen
+    offers to get on, or off, as well. A week of works can end some trains
+    short of the station (SNCF, October 2026: K8+ and K6+ trains from Les
+    Aubrais, not Orleans); boarding at Les Aubrais too keeps them."""
+    line_where, params = line_codes_where("r.route_short_name", line)
+    sql = f"""
+    SELECT distinct sm.stop_name
+    from trips t
+    inner join routes r on r.route_id = t.route_id
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stops so on so.stop_id = o.stop_id
+    inner join stop_times d on d.trip_id = t.trip_id
+        and d.stop_sequence > o.stop_sequence
+    inner join stops sd on sd.stop_id = d.stop_id
+    inner join stop_times m on m.trip_id = t.trip_id
+        and m.stop_sequence > o.stop_sequence and m.stop_sequence < d.stop_sequence
+    inner join stops sm on sm.stop_id = m.stop_id
+    where r.route_type in ({RAIL_ROUTE_TYPES_SQL})
+      and so.stop_name = :origin
+      and sd.stop_name = :destination
+      and {_boards("o")} and {_alights("d")}
+      {line_where}
+    order by sm.stop_name
+    """  # noqa: S608
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql), {"origin": origin_name, "destination": destination_name,
+                                        **params}).fetchall()
+    between = [r[0] for r in rows if r[0] and r[0] not in (origin_name, destination_name)]
+    _LOGGER.debug("Stations between %s and %s (lines %s): %s",
+                  origin_name, destination_name, line, len(between))
+    return between
+
+
+def get_train_lines_between(schedule: Schedule, origin_name: str, destination_name: str,
+                            board_also: list[str], alight_also: list[str]) -> dict[str, str]:
+    """{line code: its long names} of the rail trips riding from the
+    departure or a station boarded as well to the arrival or a station got
+    off at as well, the real departure or the real arrival at one end at
+    least: the lines the options screen offers to hold the journey to. A
+    code alone says nothing to most riders ("K8+"), its long name does
+    ("Paris - Orleans"); one code may name several routes (SNCF P8)."""
+    origin_in, params = station_names_in("origin", [origin_name, *board_also])
+    dest_in, dest_params = station_names_in("dest", [destination_name, *alight_also])
+    params.update(dest_params)
+    sql = f"""
+    SELECT distinct r.route_short_name, r.route_long_name
+    from trips t
+    inner join routes r on r.route_id = t.route_id
+    inner join stop_times o on o.trip_id = t.trip_id
+    inner join stops so on so.stop_id = o.stop_id
+    inner join stop_times d on d.trip_id = t.trip_id
+        and d.stop_sequence > o.stop_sequence
+    inner join stops sd on sd.stop_id = d.stop_id
+    where r.route_type in ({RAIL_ROUTE_TYPES_SQL})
+      and so.stop_name in {origin_in}
+      and sd.stop_name in {dest_in}
+      and (so.stop_name = :origin or sd.stop_name = :destination)
+      and {_boards("o")} and {_alights("d")}
+    order by r.route_short_name, r.route_long_name
+    """  # noqa: S608
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql), {**params, "origin": origin_name,
+                                        "destination": destination_name}).fetchall()
+    names: dict[str, list[str]] = {}
+    for code, long_name in rows:
+        if code is None or not str(code).strip():
+            continue
+        found = names.setdefault(str(code), [])
+        if long_name and str(long_name).strip() and str(long_name).strip() not in found:
+            found.append(str(long_name).strip())
+    lines = {code: " / ".join(found) for code, found in names.items()}
+    _LOGGER.debug("Lines from %s to %s: %s", origin_name, destination_name, lines)
+    return lines
 
 
 def train_entry_routes(gtfs_dir: str, data: Mapping[str, Any]) -> list[str]:
@@ -215,14 +312,20 @@ def train_entry_routes(gtfs_dir: str, data: Mapping[str, Any]) -> list[str]:
     origin_in, params = station_names_in("origin", entry_stations(data, "origin"))
     dest_in, dest_params = station_names_in("dest", entry_stations(data, "destination"))
     params.update(dest_params)
+    # the lines the entry holds to, as its departures do: a line the entry
+    # leaves out wrote no file of its, and may be another entry's
+    line_where, line_params = line_codes_where("r.route_short_name", entry_lines(data))
+    params.update(line_params)
     sql = f"""
     select distinct t.route_id from trips t
+    inner join routes r on r.route_id = t.route_id
     inner join stop_times o on o.trip_id = t.trip_id
     inner join stops so on so.stop_id = o.stop_id
     inner join stop_times d on d.trip_id = t.trip_id
     inner join stops sd on sd.stop_id = d.stop_id
     where so.stop_name in {origin_in} and sd.stop_name in {dest_in}
       and o.stop_sequence < d.stop_sequence
+      {line_where}
     """  # noqa: S608
     try:
         conn = sqlite3.connect(db_file, timeout=10)

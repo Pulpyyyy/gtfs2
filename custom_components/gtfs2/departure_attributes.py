@@ -25,6 +25,8 @@ import homeassistant.util.dt as dt_util
 
 from .const import (
     id_of,
+    CONF_DESTINATION_STATIONS,
+    CONF_ORIGIN_STATIONS,
     ATTR_ARRIVAL,
     ATTR_BICYCLE,
     ATTR_DAY,
@@ -299,7 +301,7 @@ def departure_times(attributes: dict[str, Any], departure: Mapping[str, Any] | N
 
 def station_attributes(attributes: dict[str, Any], departure: Mapping[str, Any], agency: Agency | bool | None,
                        origin: Stop | str | None, destination: Stop | str | None,
-                       route_type: str | None) -> None:
+                       route_type: str | None, entry: Mapping[str, Any] | None = None) -> None:
     """The agency and the two ends, as the feed describes them."""
     if agency:
         append_keys(attributes, dict_for_table(agency), "Agency")
@@ -311,6 +313,12 @@ def station_attributes(attributes: dict[str, Any], departure: Mapping[str, Any],
         attributes["origin_station_stop_sequence"] = departure.get("origin_stop_sequence", None)
         attributes["destination_station_stop_name"] = departure.get("destination_stop_name", None)
         attributes["destination_station_stop_id"] = departure.get("destination_stop_id", None)
+        # every station of each end, by name, on the entries that list
+        # them: the ends above are the next departure's alone, Orleans or
+        # Les Aubrais, and a card cuts the leg from the first to the last
+        for key in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS):
+            if (entry or {}).get(key):
+                attributes[key] = list((entry or {})[key])
         return
     _end_attributes(attributes, origin, "Origin Station",
                          ATTR_LOCATION_ORIGIN, ATTR_WHEELCHAIR_ORIGIN)
