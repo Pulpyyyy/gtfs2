@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import os
 from functools import partial
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -29,6 +30,8 @@ from .const import (
     CONF_AGENCY,
     CONF_ROUTE_TYPE,
     CONF_ROUTE,
+    CONF_ORIGIN,
+    CONF_DESTINATION,
     CONF_NAME,
     CONF_LOCAL_STOP_REFRESH_INTERVAL,
     CONF_RADIUS,
@@ -62,7 +65,8 @@ from .stop_rules import RAIL_ROUTE_TYPES
 from .flow_reload import ReloadScreens
 from .flow_source import SourceScreens
 from .flow_options import OptionsScreens
-from .flow_journey import JourneyScreens
+from .flow_journey import JourneyScreens, kept_stops, stop_fields
+from .places import get_stops_between
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -630,31 +634,25 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
         from Les Aubrais, not Orleans) on a sensor made long before."""
         errors: dict[str, str] = {}
         data = self.config_entry.data
-        between: list[str] = []
-        if data.get(CONF_ROUTE_TYPE) == "2":
-            await _reopen_schedule(self, dict(data))
-            if not isinstance(self._pygtfs, str):
-                between = await self.hass.async_add_executor_job(train_stations_between, self._pygtfs, data)
+        board, alight = await self._ends_offered(data)
         if user_input is not None:
             options = dict(user_input)
             board_also = options.pop("board_also", None) or []
             alight_also = options.pop("alight_also", None) or []
-            if between:
-                error, stations = await self.hass.async_add_executor_job(
-                    kept_train_stations, self._pygtfs, data, board_also, alight_also)
+            if board or alight:
+                error = await self._keep_ends(data, board, alight, board_also, alight_also)
                 if error:
                     errors["base"] = error
-                elif any(data.get(key) != value for key, value in stations.items()):
-                    # the entry's own data: the coordinator reads it at every refresh
-                    self.hass.config_entries.async_update_entry(self.config_entry, data={**data, **stations})
             if not errors:
                 self._user_inputs.update(options)
                 _LOGGER.debug(f"UserInputs Options Init: {self._user_inputs}")
                 return self.async_create_entry(title="", data=self._user_inputs)
+        train = data.get(CONF_ROUTE_TYPE) == "2"
         opt1_schema = {
             vol.Optional(CONF_REFRESH_INTERVAL, default=self.config_entry.options.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)): int,
             vol.Optional(CONF_OFFSET, default=self.config_entry.options.get(CONF_OFFSET, DEFAULT_OFFSET)): int,
-            **train_station_fields(data, between, user_input),
+            **(train_station_fields(data, board, user_input) if train
+               else stop_fields(data, board, alight, user_input)),
         }
         return self.async_show_form(
             step_id="init",
@@ -662,6 +660,36 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
             description_placeholders=TRANSLATION_DESCRIPTION_PLACEHOLDERS,
             errors=errors,
         )
+
+    async def _ends_offered(self, data: Mapping[str, Any]) -> tuple[list[str], list[str]]:
+        """(to get on at as well, to get off at as well) of a journey's
+        options: a train's stations between its two, a bus's or a tram's
+        stops between its two, as their creation offered them. ([], [])
+        on a source that cannot be read."""
+        await _reopen_schedule(self, dict(data))
+        if isinstance(self._pygtfs, str):
+            return [], []
+        if data.get(CONF_ROUTE_TYPE) == "2":
+            between = await self.hass.async_add_executor_job(train_stations_between, self._pygtfs, data)
+            return between, between
+        return await self.hass.async_add_executor_job(
+            get_stops_between, self._pygtfs, id_of(data.get(CONF_ROUTE)),
+            id_of(data.get(CONF_ORIGIN)), id_of(data.get(CONF_DESTINATION)))
+
+    async def _keep_ends(self, data: Mapping[str, Any], board: list[str], alight: list[str],
+                         board_also: list[str], alight_also: list[str]) -> str | None:
+        """Keep on the entry the stations or stops ticked, the error that
+        refuses them else. The entry's own data: the coordinator reads it
+        at every refresh."""
+        if data.get(CONF_ROUTE_TYPE) == "2":
+            error, stations = await self.hass.async_add_executor_job(
+                kept_train_stations, self._pygtfs, data, board_also, alight_also)
+            new = {**data, **stations}
+        else:
+            error, new = kept_stops(data, board, alight, board_also, alight_also)
+        if not error and new != dict(data):
+            self.hass.config_entries.async_update_entry(self.config_entry, data=new)
+        return error
 
 
 def _let_schedule_go(self: ConfigFlow | GTFSOptionsFlowHandler) -> None:

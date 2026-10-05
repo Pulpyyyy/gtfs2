@@ -13,7 +13,7 @@ state (self).
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Mapping
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -79,6 +79,41 @@ def _stop_options(stops: list[str]) -> list[selector.SelectOptionDict]:
     """
     return [selector.SelectOptionDict(value=entry, label=stop_name_of(entry))
             for entry in stops]
+
+
+def stop_fields(data: Mapping[str, Any], board: list[str], alight: list[str],
+                previous: Mapping[str, Any] | None = None) -> dict[vol.Marker, Any]:
+    """The stops screen's two fields on a bus or tram journey's options,
+    the stops it gets on or off at as well ticked. Matched by their id:
+    a new edition of the feed numbers its calls anew, and the entry keeps
+    the entries the screen had. {} when there is none to offer."""
+    fields: dict[vol.Marker, Any] = {}
+    for key, offered, kept in (("board_also", board, CONF_ORIGIN_STATIONS),
+                               ("alight_also", alight, CONF_DESTINATION_STATIONS)):
+        if not offered:
+            continue
+        held = {id_of(s) for s in (data.get(kept) or [])[1:]}
+        ticked = (previous or {}).get(key, [s for s in offered if id_of(s) in held])
+        fields[vol.Optional(key, default=[s for s in ticked if s in offered])] = selector.SelectSelector(
+            selector.SelectSelectorConfig(options=_stop_options(offered), multiple=True,
+                                          mode=selector.SelectSelectorMode.DROPDOWN))
+    return fields
+
+
+def kept_stops(data: Mapping[str, Any], board: list[str], alight: list[str],
+               board_also: list[str], alight_also: list[str]) -> tuple[str | None, dict[str, Any]]:
+    """(error, the entry's new data) of a bus or tram journey's options: its
+    stops of each end, as the creation keeps them (async_step_options_stops);
+    none ticked, the entry goes back to the shape it had before."""
+    board_also = [s for s in board_also if s in board]
+    alight_also = [s for s in alight_also if s in alight]
+    if {id_of(s) for s in board_also} & {id_of(s) for s in alight_also}:
+        return "station_both_ends", {}
+    new = {k: v for k, v in data.items() if k not in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS)}
+    if board_also or alight_also:
+        new.update({CONF_ORIGIN_STATIONS: [data[CONF_ORIGIN], *board_also],
+                    CONF_DESTINATION_STATIONS: [data[CONF_DESTINATION], *alight_also]})
+    return None, new
 
 
 class JourneyScreens:

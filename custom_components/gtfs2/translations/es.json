@@ -367,7 +367,7 @@
       "not_created": "No se ha podido crear el sensor. Consulte el registro y pruebe con otro nombre.",
       "reload_failed": "No se ha podido restaurar esa línea. La fuente no se ha modificado; elija otra línea o vuelva a intentarlo.",
       "import_partial": "Algunas líneas no se han podido restaurar: {missing}. El registro indica el motivo. Esta sí se ha restaurado, puede continuar; vuelva a elegir las demás más tarde para intentarlo de nuevo.",
-      "station_both_ends": "Una misma estación no puede estar a la vez en «Subir también en» y en «Bajar también en».",
+      "station_both_ends": "Una misma estación o parada no puede estar a la vez en «Subir también en» y en «Bajar también en».",
       "no_line_ticked": "Marque al menos una línea: cada línea marcada tiene su propio sensor.",
       "no_train_between": "Ningún tren une estas estaciones con las líneas marcadas: desmarque líneas o marque otras estaciones."
     },
@@ -417,8 +417,8 @@
           "max_local_stops": "Por encima de este número de paradas el sensor se vuelve lento. Auméntelo bajo su responsabilidad.",
           "source_timezone_correction": "Solo si la fuente publica sus horas en otro huso, en horas.",
           "check_source_dates": "Experimental: rechazar un archivo nuevo cuyas fechas estén todas en el futuro.",
-          "board_also": "Estaciones en el camino donde también puede subir. Cada tren aparece una sola vez, a la hora de la primera de estas estaciones donde admite viajeros.",
-          "alight_also": "Estaciones en el camino donde también puede bajar. Un tren que termina allí, antes de su estación de llegada, se conserva."
+          "board_also": "Estaciones o paradas en el camino donde también puede subir. Cada servicio aparece una sola vez, a la hora de la primera de ellas donde admite viajeros.",
+          "alight_also": "Estaciones o paradas en el camino donde también puede bajar. Un servicio que termina allí, antes de su llegada, se conserva."
         }
       },
       "real_time": {
@@ -497,7 +497,7 @@
     },
     "error": {
       "invalid_source_url": "Esta dirección no es válida (http://, https:// o file://)",
-      "station_both_ends": "Una misma estación no puede estar a la vez en «Subir también en» y en «Bajar también en».",
+      "station_both_ends": "Una misma estación o parada no puede estar a la vez en «Subir también en» y en «Bajar también en».",
       "no_train_between": "Ningún tren de este trayecto une estas estaciones: marque otras estaciones."
     }
   },

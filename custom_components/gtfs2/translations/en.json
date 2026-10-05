@@ -367,7 +367,7 @@
       "not_created": "The sensor could not be created. Check the log, then try a different name.",
       "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again.",
       "import_partial": "Some lines could not be brought back: {missing}. The log says why. This one was, so you can carry on; pick the others again later to try once more.",
-      "station_both_ends": "A station cannot be both under “Also board at” and under “Also get off at”.",
+      "station_both_ends": "A station or stop cannot be both under “Also board at” and under “Also get off at”.",
       "no_line_ticked": "Tick at least one line: each line ticked gets a sensor of its own.",
       "no_train_between": "No train links these stations on the lines ticked: untick some lines, or tick other stations."
     },
@@ -417,8 +417,8 @@
           "max_local_stops": "Above this many stops the sensor gets slow. Raise it at your own risk.",
           "source_timezone_correction": "Only if the source publishes times in another timezone, in hours.",
           "check_source_dates": "Experimental: refuse a new file whose dates are all in the future.",
-          "board_also": "Stations on the way where you can board as well. Each train shows once, at the time of the first of these stations where it takes passengers.",
-          "alight_also": "Stations on the way where you can get off as well. A train that ends there, short of your arrival station, is kept."
+          "board_also": "Stations or stops on the way where you can board as well. Each run shows once, at the time of the first of these where it takes passengers.",
+          "alight_also": "Stations or stops on the way where you can get off as well. A run that ends there, short of your arrival, is kept."
         }
       },
       "source_menu": {
@@ -497,7 +497,7 @@
     },
     "error": {
       "invalid_source_url": "This is not a valid address (http://, https:// or file://)",
-      "station_both_ends": "A station cannot be both under “Also board at” and under “Also get off at”.",
+      "station_both_ends": "A station or stop cannot be both under “Also board at” and under “Also get off at”.",
       "no_train_between": "No train of this journey links these stations: tick other stations."
     }
   },

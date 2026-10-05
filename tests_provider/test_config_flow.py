@@ -811,6 +811,42 @@ def test_a_bus_journey_gets_on_or_off_at_more_stops(world):
     walk(world, scenario)
 
 
+def test_a_bus_journey_s_options_get_on_or_off_at_more_stops(world):
+    # the stops screen of the creation, again on the options of a journey
+    # made long before
+    async def scenario(hass):
+        options = hass.config_entries.options
+        await install_source(hass, "tao-journeys", "tao")
+        lines = await to_lines(hass, "tao")
+        stops = shown(await submit(hass, lines, route=offered(lines, "route")[1]), FORM, "stops")
+        result = await submit(hass, stops, origin=offered(stops, "origin")[1])
+        if result["step_id"] == "towards":
+            result = await submit(hass, result, towards=offered(result, "towards")[1])
+        arrivals = shown(result, FORM, "destination")
+        on_screen = shown(await submit(hass, arrivals, destination=offered(arrivals, "destination")[-1]),
+                          FORM, "options_stops")
+        naming = shown(await submit(hass, on_screen), FORM, "sensor")
+        shown(await submit(hass, naming, name="to work", add_return=False), MENU, "finished")
+        (entry,) = hass.journeys()
+        assert "origin_stations" not in entry.data
+        form = shown(await options_of(hass, entry), FORM, "init")
+        board = offered(form, "board_also")
+        assert board == offered(on_screen, "board_also") and default(form, "board_also") == []
+        both = next(s for s in board if s in offered(form, "alight_also"))
+        again = shown(await submit(hass, form, options, board_also=[both], alight_also=[both]), FORM, "init")
+        assert again["errors"] == {"base": "station_both_ends"}
+        shown(await submit(hass, again, options, board_also=[board[0]], alight_also=[]), CREATE)
+        assert entry.data["origin_stations"] == [entry.data["origin"], board[0]]
+        assert entry.data["destination_stations"] == [entry.data["destination"]]
+        # ticked again on the next opening, by its id
+        form = shown(await options_of(hass, entry), FORM, "init")
+        assert default(form, "board_also") == [board[0]]
+        # none ticked: the entry has the shape it had
+        shown(await submit(hass, form, options, board_also=[], alight_also=[]), CREATE)
+        assert "origin_stations" not in entry.data and "destination_stations" not in entry.data
+    walk(world, scenario)
+
+
 def test_the_return_journey_is_created_beside_the_outward_one(world):
     async def scenario(hass):
         await install_source(hass, "tao-journeys", "tao")
