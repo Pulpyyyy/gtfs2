@@ -111,6 +111,30 @@ def test_a_datasource_entry_runs_no_coordinator(monkeypatch):
     assert armed == [("arm", "d1"), ("disarm", "d1")]
 
 
+def test_a_refreshed_source_reads_its_trains_again_in_the_background(monkeypatch):
+    # the station screens of a train journey open at once on the new
+    # edition too (stations.refresh_rail_index)
+    _quiet_setup(monkeypatch)
+    hass = _Hass()
+    entry = _Entry("d1", file="tao", kind="datasource")
+    asyncio.run(integration.async_setup_entry(hass, entry))
+    (told,) = ha_stub.CONNECTED_SIGNALS[integration.SIGNAL_SOURCE_REFRESH.format("tao")]
+    tasks = len(hass.tasks)
+
+    async def refresh_running():
+        # the signal sent at the start of a refresh: the lock is still held
+        async with integration.source_lock(hass, "tao"):
+            told()
+    asyncio.run(refresh_running())
+    assert len(hass.tasks) == tasks
+    told()
+    assert hass.tasks[tasks:] == ["gtfs2 rail index tao"]
+    # and no more once the entry goes
+    for func in entry.on_unload:
+        func()
+    assert not ha_stub.CONNECTED_SIGNALS[integration.SIGNAL_SOURCE_REFRESH.format("tao")]
+
+
 def test_a_journey_entry_gets_the_coordinator_of_its_kind(monkeypatch):
     armed, coordinator, local_stop = _quiet_setup(monkeypatch)
     hass = _Hass()

@@ -183,8 +183,9 @@ def remove_datasource(hass: HomeAssistant, path: str, filename: str, include_sql
     _LOGGER.info(f"Removing datasource: {os.path.join(gtfs_dir, filename)}.*")
     suffixes = [".sqlite"] if include_sqlite else []
     suffixes += ["_temp.zip", "_temp_out.zip", ".sqlite-journal", ".zip",
-                 # the sidecar follows the zip it describes
-                 ".zip.meta.json"]
+                 # the sidecar follows the zip it describes, and so does
+                 # the index of its trains (stations.rail_index)
+                 ".zip.meta.json", ".zip.rail", ".zip.rail.new"]
     # what the fork keeps beside a source: the record of the installed
     # edition, and what a download, a refresh or an import stopped half way
     # leaves. Left behind, the record made a new source of the same name

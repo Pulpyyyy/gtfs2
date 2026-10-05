@@ -225,6 +225,20 @@ def _dispatcher_send(hass, signal, *args) -> None:
     SENT_SIGNALS.append((signal, args))
 
 
+# what listens, {signal: [target]}, for a test to call as the signal would;
+# the stub sends nothing to them by itself
+CONNECTED_SIGNALS: dict[str, list] = {}
+
+
+def _async_dispatcher_connect(hass, signal, target):
+    CONNECTED_SIGNALS.setdefault(signal, []).append(target)
+
+    def _disconnect() -> None:
+        if target in CONNECTED_SIGNALS.get(signal, []):
+            CONNECTED_SIGNALS[signal].remove(target)
+    return _disconnect
+
+
 class _Unreached:
     """Stands in for a symbol no test is expected to reach."""
 
@@ -973,7 +987,7 @@ def install() -> None:
     _module("homeassistant.helpers.dispatcher",
             dispatcher_send=_dispatcher_send,
             async_dispatcher_send=_Unreached("async_dispatcher_send"),
-            async_dispatcher_connect=_Unreached("async_dispatcher_connect"))
+            async_dispatcher_connect=_async_dispatcher_connect)
     _module("homeassistant.helpers.device_registry",
             DeviceEntryType=types.SimpleNamespace(SERVICE="service"),
             DeviceInfo=dict,

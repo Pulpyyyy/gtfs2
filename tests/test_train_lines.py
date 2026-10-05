@@ -20,6 +20,8 @@ The network: Orleans (O), Les Aubrais (A), Paris (P).
 """
 from __future__ import annotations
 
+import os
+
 import pytest
 from freezegun import freeze_time
 
@@ -205,3 +207,47 @@ def test_a_zip_that_cannot_be_read_gives_no_index(tmp_path):
     broken = tmp_path / "broken.zip"
     broken.write_bytes(b"not a zip")
     assert stations.rail_index(str(broken)) is None
+    assert stations.rail_index(str(tmp_path / "gone.zip")) is None
+    # nothing kept beside it
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["broken.zip"]
+
+
+def test_the_index_is_read_once_an_edition(schedule, tmp_path, monkeypatch):
+    # minutes on a national feed: kept beside the zip, read again only
+    # when the zip is another edition
+    zip_path = tmp_path / "feed.zip"
+    zip_path.write_bytes(open(str(schedule.engine.url.database).replace("feed.sqlite", "feed.zip"), "rb").read())
+    built = []
+    read = stations._read_rail_tables
+    monkeypatch.setattr(stations, "_read_rail_tables", lambda path: built.append(path) or read(path))
+    for _ in range(2):
+        index = stations.rail_index(str(zip_path))
+        assert stations.get_train_stations_between(index, O, P) == [A]
+        index.engine.dispose()
+    assert len(built) == 1
+    assert (tmp_path / "feed.zip.rail").exists() and not (tmp_path / "feed.zip.rail.new").exists()
+    # a new edition of the zip: read again
+    os.utime(zip_path, ns=(1, 1))
+    index = stations.rail_index(str(zip_path))
+    index.engine.dispose()
+    assert len(built) == 2
+
+
+def test_a_refreshed_source_reads_its_trains_again_only_when_read_before(schedule, tmp_path):
+    zip_path = tmp_path / "feed.zip"
+    zip_path.write_bytes(open(str(schedule.engine.url.database).replace("feed.sqlite", "feed.zip"), "rb").read())
+    # no flow ever read its trains: nothing to keep fresh
+    assert stations.refresh_rail_index(str(zip_path)) is False
+    assert not (tmp_path / "feed.zip.rail").exists()
+    stations.rail_index(str(zip_path)).engine.dispose()
+    # the same edition: nothing to read
+    assert stations.refresh_rail_index(str(zip_path)) is False
+    # a new one: read again, and the station screens open on it at once
+    os.utime(zip_path, ns=(2, 2))
+    assert stations.refresh_rail_index(str(zip_path)) is True
+    assert stations._index_stamp(str(zip_path) + ".rail") == stations._zip_stamp(str(zip_path))
+
+
+def test_the_kept_index_is_not_a_source(tmp_path):
+    # the folder's lists of sources read .sqlite and .zip names only
+    assert not stations.RAIL_INDEX_SUFFIX.endswith((".sqlite", ".zip"))

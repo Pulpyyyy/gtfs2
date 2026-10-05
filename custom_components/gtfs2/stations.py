@@ -13,12 +13,13 @@ the departure query reads them too.
 """
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Container, Iterator, Mapping
 import csv
 import logging
 import os
 import sqlite3
-from typing import TYPE_CHECKING, Any
+import threading
+from typing import TYPE_CHECKING, Any, cast
 import zipfile
 
 from sqlalchemy import create_engine
@@ -26,8 +27,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql import text
 
-from .gtfs_db import real_path
-from .gtfs_filter import table_rows
+from .gtfs_db import real_path, remove_files
+from .gtfs_filter import _member, _rows, table_rows
 from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
                          entry_lines, entry_stations, line_codes_where, station_names_in)
 
@@ -45,37 +46,183 @@ class RailIndex:
     A source holds the lines its sensors asked for, not the network: the
     stations and the lines of every train come from the zip kept beside
     it. Only what those screens read is kept (the rail routes, their trips,
-    their calls with who gets on and off, the stops' names), in an
-    in-memory database the functions below query as they query a source.
+    their calls with who gets on and off, the stops' names), in a
+    database kept beside the zip (rail_index) the functions below query as
+    they query a source.
     """
 
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
 
 
+# the file the rail index of <file>.zip is kept in, beside it: not .sqlite
+# nor .zip, which the folder's lists of sources read (gtfs_db)
+RAIL_INDEX_SUFFIX = ".rail"
+
+
 def rail_index(zip_path: str) -> RailIndex | None:
-    """The RailIndex of a feed's zip, None when it cannot be read. Blocking,
-    one pass over stop_times.txt: for the executor."""
+    """The RailIndex of a feed's zip, None when it cannot be read. Blocking:
+    for the executor.
+
+    Read once an edition: the index is kept beside the zip, in
+    <zip>.rail, stamped with the zip's size and modification time, and a
+    flow or a restart after opens it as it is. Building it is one pass
+    over stop_times.txt, minutes on a national feed. Where it cannot be
+    written, it is built in memory, for this flow alone.
+    """
+    stamp = _zip_stamp(zip_path)
+    if stamp is None:
+        _LOGGER.warning("Could not read the trains of %s: no such zip", zip_path)
+        return None
+    kept = zip_path + RAIL_INDEX_SUFFIX
+    # one reading of a zip at a time: a flow and the refresh's reading
+    # again in the background would write the same file
+    with _index_lock(zip_path):
+        if _index_stamp(kept) == stamp:
+            return RailIndex(_index_engine(kept))
+        try:
+            tables = _read_rail_tables(zip_path)
+        except (OSError, KeyError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
+            _LOGGER.warning("Could not read the trains of %s: %s", zip_path, ex)
+            return None
+        if not _keep_rail_index(zip_path, tables, stamp):
+            engine = create_engine("sqlite://", poolclass=StaticPool,
+                                   connect_args={"check_same_thread": False})
+            _write_rail_index(engine.raw_connection(), tables, stamp)
+            return RailIndex(engine)
+        return RailIndex(_index_engine(kept))
+
+
+def refresh_rail_index(zip_path: str) -> bool:
+    """Read again the kept index of a zip that is another edition now,
+    True when it did. Only an index read before is: a source whose trains
+    no flow ever read from its zip keeps none. Blocking: for the executor,
+    in the background once a source is refreshed, so the station screens
+    open at once on the new edition too."""
+    kept = zip_path + RAIL_INDEX_SUFFIX
+    with _index_lock(zip_path):
+        stamp = _zip_stamp(zip_path)
+        if stamp is None or not os.path.exists(kept) or _index_stamp(kept) == stamp:
+            return False
+        try:
+            tables = _read_rail_tables(zip_path)
+        except (OSError, KeyError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
+            _LOGGER.warning("Could not read the trains of %s again: %s", zip_path, ex)
+            return False
+        return _keep_rail_index(zip_path, tables, stamp)
+
+
+# a lock a zip whose trains are being read, so no two readings write its
+# index at once
+_INDEX_LOCKS: dict[str, threading.Lock] = {}
+_INDEX_LOCKS_GUARD = threading.Lock()
+
+
+def _index_lock(zip_path: str) -> threading.Lock:
+    with _INDEX_LOCKS_GUARD:
+        return _INDEX_LOCKS.setdefault(os.path.abspath(zip_path), threading.Lock())
+
+
+def _keep_rail_index(zip_path: str, tables: Mapping[str, list[tuple[Any, ...]]], stamp: str) -> bool:
+    """Write the index beside the zip, whole or not at all: False when it
+    cannot be written there."""
+    kept = zip_path + RAIL_INDEX_SUFFIX
+    building = kept + ".new"
+    try:
+        remove_files(building)
+        _write_rail_index(sqlite3.connect(building), tables, stamp)
+        os.replace(building, kept)
+    except (OSError, sqlite3.Error) as ex:
+        _LOGGER.warning("Could not keep the trains of %s beside it, read in memory: %s", zip_path, ex)
+        remove_files(building)
+        return False
+    _LOGGER.debug("Rail index of %s: %s lines, %s trips, %s calls", zip_path,
+                  len(tables["routes"]), len(tables["trips"]), len(tables["stop_times"]))
+    return True
+
+
+def _zip_stamp(zip_path: str) -> str | None:
+    """What says a zip is the edition an index was read from."""
+    try:
+        stat = os.stat(zip_path)
+    except OSError:
+        return None
+    return f"{stat.st_size}:{stat.st_mtime_ns}"
+
+
+def _index_stamp(path: str) -> str | None:
+    """The stamp a kept index was written with, None when there is none to
+    read (no file, one half written, an older layout)."""
+    if not os.path.exists(path):
+        return None
+    try:
+        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        try:
+            row = conn.execute("select stamp from rail_index").fetchone()
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return None
+    return str(row[0]) if row else None
+
+
+def _index_engine(path: str) -> Engine:
+    """The kept index, copied into memory: read off the file, the station
+    screens' questions took twice as long (the German feed's stations,
+    2.4 s in memory, 4.8 s off the disk), and a copy takes well under a
+    second."""
     engine = create_engine("sqlite://", poolclass=StaticPool,
                            connect_args={"check_same_thread": False})
-    try:
-        with zipfile.ZipFile(zip_path) as zin:
-            routes = [(r["route_id"], r.get("route_short_name"), r.get("route_long_name"), r.get("route_type"))
-                      for r in table_rows(zin, "routes.txt") if _is_rail_type(r.get("route_type"))]
-            rail = {r[0] for r in routes}
-            trips = [(t["trip_id"], t["route_id"]) for t in table_rows(zin, "trips.txt")
-                     if t.get("route_id") in rail]
-            riding = {t[0] for t in trips}
-            calls = [(c["trip_id"], c["stop_id"], int(c.get("stop_sequence") or 0),
-                      c.get("pickup_type") or None, c.get("drop_off_type") or None)
-                     for c in table_rows(zin, "stop_times.txt") if c.get("trip_id") in riding]
-            called = {c[1] for c in calls}
-            stops = [(s["stop_id"], s.get("stop_name")) for s in table_rows(zin, "stops.txt")
-                     if s.get("stop_id") in called]
-    except (OSError, KeyError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
-        _LOGGER.warning("Could not read the trains of %s: %s", zip_path, ex)
-        return None
     raw = engine.raw_connection()
+    kept = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+    try:
+        kept.backup(cast(sqlite3.Connection, raw.driver_connection))
+    finally:
+        kept.close()
+        raw.close()
+    return engine
+
+
+def _read_rail_tables(zip_path: str) -> dict[str, list[tuple[Any, ...]]]:
+    """The rows of the rail routes, their trips, calls and stops. The big
+    tables are read as plain csv rows: a dict a row was most of the time
+    on a national feed's stop_times."""
+    with zipfile.ZipFile(zip_path) as zin:
+        routes = [(r["route_id"], r.get("route_short_name"), r.get("route_long_name"), r.get("route_type"))
+                  for r in table_rows(zin, "routes.txt") if _is_rail_type(r.get("route_type"))]
+        rail = {r[0] for r in routes}
+        trips = list(_columns(zin, "trips.txt", ("trip_id", "route_id"), "route_id", rail))
+        riding = {t[0] for t in trips}
+        calls = [(trip, stop, int(sequence or 0), pickup or None, drop_off or None)
+                 for trip, stop, sequence, pickup, drop_off in _columns(
+                     zin, "stop_times.txt",
+                     ("trip_id", "stop_id", "stop_sequence", "pickup_type", "drop_off_type"),
+                     "trip_id", riding)]
+        called = {c[1] for c in calls}
+        stops = list(_columns(zin, "stops.txt", ("stop_id", "stop_name"), "stop_id", called))
+    return {"routes": routes, "trips": trips, "stop_times": calls, "stops": stops}
+
+
+def _columns(zin: zipfile.ZipFile, name: str, wanted: tuple[str, ...], key: str,
+             kept: Container[str | None]) -> Iterator[tuple[str | None, ...]]:
+    """The wanted columns of the rows of a table whose key column is in
+    kept, as tuples; a column the table leaves out, or a short row, reads
+    None. KeyError when the key column is missing."""
+    member = _member(zin, name)
+    if member is None:
+        return
+    rows = _rows(zin, member)
+    header = [column.strip() for column in next(rows, [])]
+    at = header.index(key)
+    where = [header.index(column) if column in header else None for column in wanted]
+    for row in rows:
+        if len(row) > at and row[at] in kept:
+            yield tuple(row[i] if i is not None and i < len(row) else None for i in where)
+
+
+def _write_rail_index(raw: Any, tables: Mapping[str, list[tuple[Any, ...]]], stamp: str) -> None:
+    """The tables, their indexes and the stamp, written through a DBAPI
+    connection, closed after."""
     try:
         cur = raw.cursor()
         cur.executescript("""
@@ -85,11 +232,12 @@ def rail_index(zip_path: str) -> RailIndex | None:
             create table stop_times (trip_id text, stop_id text, stop_sequence integer,
                                      pickup_type integer, drop_off_type integer);
             create table stops (stop_id text, stop_name text);
+            create table rail_index (stamp text);
         """)
-        cur.executemany("insert into routes values (?, ?, ?, ?)", routes)
-        cur.executemany("insert into trips values (?, ?)", trips)
-        cur.executemany("insert into stop_times values (?, ?, ?, ?, ?)", calls)
-        cur.executemany("insert into stops values (?, ?)", stops)
+        cur.executemany("insert into routes values (?, ?, ?, ?)", tables["routes"])
+        cur.executemany("insert into trips values (?, ?)", tables["trips"])
+        cur.executemany("insert into stop_times values (?, ?, ?, ?, ?)", tables["stop_times"])
+        cur.executemany("insert into stops values (?, ?)", tables["stops"])
         cur.executescript("""
             create index rail_trips_route on trips (route_id);
             create index rail_trips_trip on trips (trip_id);
@@ -97,11 +245,11 @@ def rail_index(zip_path: str) -> RailIndex | None:
             create index rail_calls_stop on stop_times (stop_id);
             create index rail_stops_name on stops (stop_name);
         """)
+        # last: an index with its stamp is a whole one
+        cur.execute("insert into rail_index values (?)", (stamp,))
         raw.commit()
     finally:
         raw.close()
-    _LOGGER.debug("Rail index of %s: %s lines, %s trips, %s calls", zip_path, len(routes), len(trips), len(calls))
-    return RailIndex(engine)
 
 
 def _is_rail_type(value: str | None) -> bool:

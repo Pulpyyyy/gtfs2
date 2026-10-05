@@ -5,8 +5,9 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from datetime import timedelta
 
@@ -29,11 +30,15 @@ from .rt_source import (
     datasource_unique_id,
 )
 from .source_refresh import (
+    SIGNAL_SOURCE_REFRESH,
+    source_lock,
+    source_zip_path,
     source_zip_url,
     async_arm_source_check,
     async_disarm_source_check,
     async_rearm_source_check,
 )
+from .stations import refresh_rail_index
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -147,6 +152,19 @@ async def _bootstrap_sources(hass: HomeAssistant) -> None:
     await async_bootstrap_datasource_entries(hass, datasources)
 
 
+@callback
+def _rail_index_again(hass: HomeAssistant, file: str | None) -> None:
+    """Read the trains of a source's zip again, in the background, once a
+    refresh of it is over. The refresh's signal is sent at its start too,
+    the lock still held then; and the zip's stamp says whether there is
+    anything to read (refresh_rail_index)."""
+    if not file or source_lock(hass, file).locked():
+        return
+    hass.async_create_background_task(
+        hass.async_add_executor_job(refresh_rail_index, source_zip_path(hass, file)),
+        f"gtfs2 rail index {file}")
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up GTFS from a config entry."""
     hass.data.setdefault(DOMAIN, {})
@@ -172,6 +190,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_arm_source_check(hass, entry)
         entry.async_on_unload(entry.add_update_listener(async_rearm_source_check))
         entry.async_on_unload(lambda: async_disarm_source_check(hass, entry))
+        # the trains a flow read from the source's zip are read again once a
+        # new edition is in, in the background (stations.refresh_rail_index)
+        file = entry.data.get(CONF_FILE)
+        entry.async_on_unload(async_dispatcher_connect(
+            hass, SIGNAL_SOURCE_REFRESH.format(file), lambda: _rail_index_again(hass, file)))
         await hass.config_entries.async_forward_entry_setups(entry, DATASOURCE_PLATFORMS)
         return True
 
