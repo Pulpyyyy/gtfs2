@@ -132,6 +132,19 @@ class Refresh:
         if at is None:
             at = later(16 * self.runs)
         self.runs += 1
+        with self._stand_ins(at):
+            result = asyncio.run(self.coordinator._async_update_data())
+        self.coordinator.data = result
+        return result
+
+    def prepare(self, at=NOW):
+        """What the sensor platform runs before it makes the sensors."""
+        with self._stand_ins(at):
+            asyncio.run(self.coordinator.async_prepare())
+        return self.coordinator.data
+
+    @contextlib.contextmanager
+    def _stand_ins(self, at):
         stand_ins = {
             "get_gtfs": self._stand_in("get_gtfs"),
             "check_extracting": self._stand_in("check_extracting"),
@@ -143,9 +156,7 @@ class Refresh:
             stack.enter_context(freeze_time(at))
             for name, stand_in in stand_ins.items():
                 stack.enter_context(patch.object(coordinator_mod, name, stand_in))
-            result = asyncio.run(self.coordinator._async_update_data())
-        self.coordinator.data = result
-        return result
+            yield
 
 
 # --- the pace and the settings -----------------------------------------------
@@ -195,6 +206,33 @@ def test_the_schedule_is_kept_while_the_database_is_the_same(tmp_path):
     refresh.run()
     assert len(refresh.calls["get_gtfs"]) == 1
     assert refresh.coordinator.data["local_stops_next_departures"] == DEPARTURES
+
+
+# --- before the first reading -------------------------------------------------
+
+def test_the_platform_gets_what_it_makes_the_sensors_from(tmp_path):
+    # the stops around are read from it, the departures after: no listing,
+    # and no refresh stamp, so the first refresh reads them
+    refresh = Refresh(tmp_path, options={"radius": 500})
+    data = refresh.prepare()
+    assert data["schedule"] is SCHEDULE and data["radius"] == 500
+    assert data["device_tracker_id"] == "person.me" and data["extracting"] is False
+    assert data["local_stops_next_departures"] == []
+    assert "gtfs_updated_at" not in data
+    assert refresh.calls["get_local_stops_next_departures"] == []
+
+
+def test_the_first_refresh_after_it_reads_the_departures(tmp_path):
+    refresh = Refresh(tmp_path)
+    refresh.prepare()
+    assert refresh.run(NOW)["local_stops_next_departures"] == DEPARTURES
+    assert len(refresh.calls["get_local_stops_next_departures"]) == 1
+
+
+def test_a_source_being_unpacked_is_said_before_the_sensors_are_made(tmp_path):
+    refresh = Refresh(tmp_path)
+    refresh.answers["check_extracting"] = True
+    assert refresh.prepare()["extracting"] is True
 
 
 # --- no database, or one being written ----------------------------------------

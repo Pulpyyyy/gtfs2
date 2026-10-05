@@ -33,16 +33,22 @@ FEED = {
 }
 
 
-async def _first_refresh():
+async def _prepared():
+    # the data below is what async_prepare leaves
     return None
 
 
-def test_every_stop_served_gets_its_sensor_with_nothing_coming(tmp_path):
+def _setup(tmp_path):
+    """The platform set up for a local stops entry: (sensors added, the
+    refreshes handed to a background task, none of them run)."""
     schedule = feed_db.build(tmp_path, FEED)
     tracker = types.SimpleNamespace(attributes={"latitude": 47.0002, "longitude": 1.0002})
 
     async def job(fn, *args):
         return fn(*args)
+
+    async def refresh():
+        raise AssertionError("the platform waited for the departures")
 
     hass = types.SimpleNamespace(states=types.SimpleNamespace(get=lambda e: tracker),
                                  async_add_executor_job=job)
@@ -50,17 +56,37 @@ def test_every_stop_served_gets_its_sensor_with_nothing_coming(tmp_path):
     coordinator = types.SimpleNamespace(
         data={"extracting": False, "local_stops_next_departures": [], "schedule": schedule,
               "radius": 200, "device_tracker_id": "person.me", "name": "around me",
-              "file": "src", "offset": 0, "gtfs_updated_at": None},
-        async_config_entry_first_refresh=_first_refresh,
-        async_refresh=_first_refresh,
+              "file": "src", "offset": 0},
+        async_prepare=_prepared,
+        async_refresh=refresh,
         async_add_listener=lambda *a, **k: (lambda: None))
+    background = []
+
+    def in_background(hass, coro, name):
+        background.append(name)
+        coro.close()
+
     entry = types.SimpleNamespace(data={"device_tracker_id": "person.me", "file": "src"},
-                                  runtime_data=coordinator)
+                                  runtime_data=coordinator, title="around me",
+                                  async_create_background_task=in_background)
     added = []
     try:
         asyncio.run(sensor.async_setup_entry(
             hass, entry, lambda entities, update=False: added.extend(entities)))
     finally:
         schedule.engine.dispose()
+    return added, background
+
+
+def test_every_stop_served_gets_its_sensor_with_nothing_coming(tmp_path):
+    added, _background = _setup(tmp_path)
     assert sorted(s._stop["stop_id"] for s in added) == ["S1", "S2"]
     assert all(s._attributes["next_departures_lines"] == {} for s in added)
+
+
+def test_the_sensors_are_made_before_the_departures_are_read(tmp_path):
+    # waiting for the first reading held the platform past Home Assistant's
+    # ten seconds at startup: the reading now follows, in the background
+    added, background = _setup(tmp_path)
+    assert len(added) == 2
+    assert background == ["gtfs2 first refresh around me"]

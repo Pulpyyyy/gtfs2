@@ -62,13 +62,12 @@ async def async_setup_entry(
     if config_entry.data.get('device_tracker_id',None):
         sensors = []
         coordinator: GTFSLocalStopUpdateCoordinator = config_entry.runtime_data
-        if coordinator.data is None:
-            await coordinator.async_config_entry_first_refresh()
-        else:
-            # a retry after PlatformNotReady: the entry is loaded by now,
-            # and Home Assistant refuses a first refresh outside its setup
-            # (ConfigEntryError), which left the entry without sensors
-            await coordinator.async_refresh()
+        # the sensors are made from the stops around, and the departures
+        # read once they are added, as for a journey: waiting for them held
+        # the sensor platform past Home Assistant's ten seconds at startup
+        # (8 to 10 s for one entry, every entry reading at once). A retry
+        # after PlatformNotReady prepares again the same way
+        await coordinator.async_prepare()
         if coordinator.data["extracting"]:
             # the stops around the person are known only once the source is
             # unpacked, and nothing created them afterwards: the entry sat
@@ -86,6 +85,8 @@ async def async_setup_entry(
             sensors.append(
                     GTFSLocalStopSensor(stop, coordinator, coordinator.data.get("name", "No Name"))
                 )
+        config_entry.async_create_background_task(
+            hass, coordinator.async_refresh(), f"gtfs2 first refresh {config_entry.title}")
         
     else:
         journey_coordinator: GTFSUpdateCoordinator = config_entry.runtime_data

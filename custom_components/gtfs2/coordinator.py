@@ -618,17 +618,7 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         if self._read_lately(previous_data, options):
             return self._without_gone(previous_data)
 
-        self._data = {
-            "schedule": self._pygtfs,
-            "gtfs_dir": DEFAULT_PATH,
-            "name": data["name"],
-            "file": data["file"],
-            "offset": options["offset"] if "offset" in options else 0,
-            "timerange": options.get("timerange", DEFAULT_LOCAL_STOP_TIMERANGE),
-            "radius": options.get("radius", DEFAULT_LOCAL_STOP_RADIUS),
-            "device_tracker_id": data["device_tracker_id"],
-            "extracting": False,
-        }           
+        self._data = self._base_data()
         self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat()
 
         
@@ -682,6 +672,33 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Error in getting local stops data: {ex}")
         #_LOGGER.debug("Data from coordinator: %s", self._data)
         return self._data
+
+    def _base_data(self) -> dict[str, Any]:
+        """What the entry reads with: its schedule, tracker and options."""
+        data = self.config_entry.data
+        options = self.config_entry.options
+        return {
+            "schedule": self._pygtfs,
+            "gtfs_dir": DEFAULT_PATH,
+            "name": data["name"],
+            "file": data["file"],
+            "offset": options["offset"] if "offset" in options else 0,
+            "timerange": options.get("timerange", DEFAULT_LOCAL_STOP_TIMERANGE),
+            "radius": options.get("radius", DEFAULT_LOCAL_STOP_RADIUS),
+            "device_tracker_id": data["device_tracker_id"],
+            "extracting": False,
+        }
+
+    async def async_prepare(self) -> None:
+        """What the sensor platform makes the sensors from, before the
+        departures are read: the schedule open, the tracker and the
+        options, an empty list of departures, or the source still being
+        unpacked. No refresh stamp, so the first refresh reads them."""
+        self._pygtfs = await schedule_for(self, self.config_entry.data)
+        self._data = self._base_data()
+        if not await _still_unpacking(self, {}):
+            self._data["local_stops_next_departures"] = []
+        self.data = self._data
 
     def _no_schedule(self, file: str) -> bool:
         """Whether get_gtfs answered a word, no database to read, said once.
