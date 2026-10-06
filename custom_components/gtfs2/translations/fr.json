@@ -397,7 +397,7 @@
           "max_local_stops": "Limite du nombre d'arrêts pour éviter un éventuel impact sur les performances. \nAugmentation à votre propre risque",
           "local_stop_refresh_interval": "Intervalle d'actualisation en minutes",
           "timerange": "Période dans la future pour départs depuis 'maintenant' (en minutes entre 15 et 120)",
-          "radius": "Radius pour la recherche des stops (en metres entre 50 et 500)",
+          "radius": "Radius pour la recherche des stops (en metres entre 50 et 5000)",
           "source_timezone_correction": "Corriger le fuseau horaire de la source (en heures)",
           "check_source_dates": "Expérimental : refuser un nouveau fichier sans données actuelles",
           "also_at": "Monter ou descendre aussi à"

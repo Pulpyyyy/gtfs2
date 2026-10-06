@@ -398,7 +398,7 @@
           "local_stop_refresh_interval": "Intervalo de atualização de dados (em minutos)",
           "timerange": "Verificação de partidas no futuro a partir de 'agora' (em minutos: entre 15 e 120)",
           "check_source_dates": "experimental: evitar usar uma nova zip/fonte contendo informações desatualizadas",
-          "radius": "Raio para procurar paragens (em metros entre 50 e 500)",
+          "radius": "Raio para procurar paragens (em metros entre 50 e 5000)",
           "source_timezone_correction": "Corrigir o fuso horário da fonte (em horas)",
           "also_at": "Embarcar ou desembarcar também em"
         },

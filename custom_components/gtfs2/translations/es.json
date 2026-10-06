@@ -397,7 +397,7 @@
           "max_local_stops": "Limite las #paradas para evitar un posible impacto en el rendimiento. \nAumentar bajo su propia responsabilidad",
           "local_stop_refresh_interval": "Intervalo de actualización de datos (en minutos)",
           "timerange": "Comprobación de salidas en el futuro a partir de 'ahora' (en minutos: entre 15 y 120)",
-          "radius": "Radio de búsqueda de paradas (en metros entre 50 y 500)",
+          "radius": "Radio de búsqueda de paradas (en metros entre 50 y 5000)",
           "source_timezone_correction": "Corregir el huso horario de la fuente (en horas)",
           "check_source_dates": "Experimental: rechazar un archivo nuevo sin datos actuales",
           "also_at": "Subir o bajar también en"
