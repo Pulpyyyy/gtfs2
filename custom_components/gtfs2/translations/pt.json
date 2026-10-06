@@ -180,7 +180,7 @@
       },
       "route_reload": {
         "title": "A linha {route} não tem horários carregados",
-        "description": "Os horários desta linha foram removidos para poupar espaço. Repô-los exige descompactar o ficheiro de rede, o que demora alguns minutos.\n\nCusta o mesmo repor uma linha ou dez: por isso são oferecidas abaixo as **{missing}** linhas que também faltam.\n\nOs seus outros sensores continuam a funcionar, e nada que deixe por assinalar regressa.\n\n[documentação]({docu_new_route})",
+        "description": "Os horários desta linha não estão carregados: ainda não importados, ou removidos para poupar espaço. Repô-los exige descompactar o ficheiro de rede, o que demora alguns minutos.\n\nCusta o mesmo repor uma linha ou dez: por isso são oferecidas abaixo as **{missing}** linhas que também faltam.\n\nOs seus outros sensores continuam a funcionar, e nada que deixe por assinalar regressa.\n\n[documentação]({docu_new_route})",
         "data": {
           "also_reload": "Repor ao mesmo tempo"
         },
@@ -190,7 +190,7 @@
       },
       "route_reload_only": {
         "title": "A linha {route} não tem horários carregados",
-        "description": "Os horários desta linha foram removidos para poupar espaço. Repô-los exige descompactar o ficheiro de rede, o que demora alguns minutos.\n\nOs seus outros sensores continuam a funcionar entretanto, e nenhuma outra linha regressa.\n\n[documentação]({docu_new_route})"
+        "description": "Os horários desta linha não estão carregados: ainda não importados, ou removidos para poupar espaço. Repô-los exige descompactar o ficheiro de rede, o que demora alguns minutos.\n\nOs seus outros sensores continuam a funcionar entretanto, e nenhuma outra linha regressa.\n\n[documentação]({docu_new_route})"
       },
       "stops": {
         "data": {

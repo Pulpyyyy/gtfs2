@@ -180,7 +180,7 @@
       },
       "route_reload": {
         "title": "Line {route} has no timetable loaded",
-        "description": "The timetables for this line were removed to save space. Bringing them back means unpacking the network file, which takes a few minutes.\n\nIt costs the same whether one line or ten come back, so the **{missing}** other missing lines are offered below.\n\nYour other sensors keep working, and nothing you leave unticked comes back.\n\n[documentation]({docu_new_route})",
+        "description": "The timetables for this line are not loaded: not imported yet, or removed to save space. Bringing them back means unpacking the network file, which takes a few minutes.\n\nIt costs the same whether one line or ten come back, so the **{missing}** other missing lines are offered below.\n\nYour other sensors keep working, and nothing you leave unticked comes back.\n\n[documentation]({docu_new_route})",
         "data": {
           "also_reload": "Bring back at the same time"
         },
@@ -190,7 +190,7 @@
       },
       "route_reload_only": {
         "title": "Line {route} has no timetable loaded",
-        "description": "The timetables for this line were removed to save space. Bringing them back means unpacking the network file, which takes a few minutes.\n\nYour other sensors keep working throughout, and no other line comes back.\n\n[documentation]({docu_new_route})"
+        "description": "The timetables for this line are not loaded: not imported yet, or removed to save space. Bringing them back means unpacking the network file, which takes a few minutes.\n\nYour other sensors keep working throughout, and no other line comes back.\n\n[documentation]({docu_new_route})"
       },
       "stops": {
         "data": {

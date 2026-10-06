@@ -180,7 +180,7 @@
       },
       "route_reload": {
         "title": "La línea {route} no tiene horarios cargados",
-        "description": "Los horarios de esta línea se eliminaron para ahorrar espacio. Recuperarlos requiere descomprimir el archivo de red, lo que tarda unos minutos.\n\nCuesta lo mismo recuperar una línea que diez: por eso abajo se ofrecen las **{missing}** líneas que también faltan.\n\nSus demás sensores siguen funcionando, y no vuelve nada que deje sin marcar.\n\n[documentación]({docu_new_route})",
+        "description": "Los horarios de esta línea no están cargados: aún no importados, o eliminados para ahorrar espacio. Recuperarlos requiere descomprimir el archivo de red, lo que tarda unos minutos.\n\nCuesta lo mismo recuperar una línea que diez: por eso abajo se ofrecen las **{missing}** líneas que también faltan.\n\nSus demás sensores siguen funcionando, y no vuelve nada que deje sin marcar.\n\n[documentación]({docu_new_route})",
         "data": {
           "also_reload": "Restaurar al mismo tiempo"
         },
@@ -190,7 +190,7 @@
       },
       "route_reload_only": {
         "title": "La línea {route} no tiene horarios cargados",
-        "description": "Los horarios de esta línea se eliminaron para ahorrar espacio. Recuperarlos requiere descomprimir el archivo de red, lo que tarda unos minutos.\n\nSus demás sensores siguen funcionando mientras tanto, y no vuelve ninguna otra línea.\n\n[documentación]({docu_new_route})"
+        "description": "Los horarios de esta línea no están cargados: aún no importados, o eliminados para ahorrar espacio. Recuperarlos requiere descomprimir el archivo de red, lo que tarda unos minutos.\n\nSus demás sensores siguen funcionando mientras tanto, y no vuelve ninguna otra línea.\n\n[documentación]({docu_new_route})"
       },
       "stops": {
         "data": {

@@ -180,7 +180,7 @@
       },
       "route_reload": {
         "title": "Für Linie {route} sind keine Fahrpläne geladen",
-        "description": "Die Fahrpläne dieser Linie wurden entfernt, um Platz zu sparen. Sie zurückzuholen erfordert das Entpacken der Netzdatei, was einige Minuten dauert.\n\nEs kostet gleich viel, ob eine Linie oder zehn zurückkommen: die **{missing}** anderen fehlenden Linien werden daher unten angeboten.\n\nIhre anderen Sensoren laufen weiter, und nichts Ungewähltes kommt zurück.\n\n[Dokumentation]({docu_new_route})",
+        "description": "Die Fahrpläne dieser Linie sind nicht geladen: noch nicht importiert, oder entfernt, um Platz zu sparen. Sie zurückzuholen erfordert das Entpacken der Netzdatei, was einige Minuten dauert.\n\nEs kostet gleich viel, ob eine Linie oder zehn zurückkommen: die **{missing}** anderen fehlenden Linien werden daher unten angeboten.\n\nIhre anderen Sensoren laufen weiter, und nichts Ungewähltes kommt zurück.\n\n[Dokumentation]({docu_new_route})",
         "data": {
           "also_reload": "Gleichzeitig wiederherstellen"
         },
@@ -190,7 +190,7 @@
       },
       "route_reload_only": {
         "title": "Für Linie {route} sind keine Fahrpläne geladen",
-        "description": "Die Fahrpläne dieser Linie wurden entfernt, um Platz zu sparen. Sie zurückzuholen erfordert das Entpacken der Netzdatei, was einige Minuten dauert.\n\nIhre anderen Sensoren laufen währenddessen weiter, und keine andere Linie kommt zurück.\n\n[Dokumentation]({docu_new_route})"
+        "description": "Die Fahrpläne dieser Linie sind nicht geladen: noch nicht importiert, oder entfernt, um Platz zu sparen. Sie zurückzuholen erfordert das Entpacken der Netzdatei, was einige Minuten dauert.\n\nIhre anderen Sensoren laufen währenddessen weiter, und keine andere Linie kommt zurück.\n\n[Dokumentation]({docu_new_route})"
       },
       "stops": {
         "data": {
