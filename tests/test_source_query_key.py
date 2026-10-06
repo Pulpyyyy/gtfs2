@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import ha_stub
 
-rt_source = ha_stub.load("rt_source")
-freshness = ha_stub.load("freshness")
+source_entries = ha_stub.load("feed.source_entries")
+freshness = ha_stub.load("feed.freshness")
 source_zip = ha_stub.load("source_zip")
-with_query_key = rt_source.with_query_key
+with_query_key = source_entries.with_query_key
 
 IN_QUERY = {"api_key_location": "query_string", "api_key_name": "apikey"}
 

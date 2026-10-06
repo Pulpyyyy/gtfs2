@@ -11,7 +11,7 @@ import types
 
 import ha_stub
 
-rt_local = ha_stub.load("rt_local")
+rt_local = ha_stub.load("feed.rt_local")
 
 
 def _hass(tmp_path):

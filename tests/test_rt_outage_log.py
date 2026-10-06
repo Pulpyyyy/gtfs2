@@ -14,7 +14,7 @@ import requests
 
 import ha_stub
 
-rt_feed = ha_stub.load("rt_feed")
+rt_feed = ha_stub.load("feed.rt_feed")
 
 URL = "https://rt.example.org/trip-updates"
 

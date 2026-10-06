@@ -17,7 +17,7 @@ import requests
 
 import ha_stub
 
-freshness = ha_stub.load("freshness")
+freshness = ha_stub.load("feed.freshness")
 
 TABLES = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,Europe/Paris\n",

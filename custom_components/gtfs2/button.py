@@ -13,7 +13,7 @@ from .const import (
     ENTRY_KIND_DATASOURCE,
     CONF_FILE,
 )
-from .rt_source import source_device
+from .feed.source_entries import source_device
 from .source_refresh import async_rebuild_source, source_lock
 
 

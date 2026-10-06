@@ -35,7 +35,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
 from .const import DEFAULT_PATH_GEOJSON
-from .gtfs_db import feed_zip
+from .feed.files import feed_zip
 from .gtfs_filter import _member, table_rows
 from .clocks import gtfs_seconds
 from .gtfs_helper import shown_ends
@@ -355,7 +355,7 @@ def read_shape(zip_path: str | None, shape_id: str | None) -> list[list[float]] 
 
 
 # the file the shapes of the lines asked are kept in, beside <file>.zip:
-# not .sqlite nor .zip, which the folder's lists of sources read (gtfs_db)
+# not .sqlite nor .zip, which the folder's lists of sources read (feed.files)
 SHAPES_SUFFIX = ".shapes"
 _SHAPES_LOCK = threading.Lock()
 

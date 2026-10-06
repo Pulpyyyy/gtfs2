@@ -11,7 +11,7 @@ import types
 
 import ha_stub
 
-gtfs_db = ha_stub.load("gtfs_db")
+files = ha_stub.load("feed.files")
 
 
 def _hass(root):
@@ -32,7 +32,7 @@ def _folder(root, names):
 def test_datasources_by_whole_name(tmp_path):
     _folder(tmp_path, ["tao.sqlite", "tao.zip", "sncf.v2.sqlite", "tao.refresh.sqlite",
                        "tao.import.sqlite", "tao.sqlite-journal", "tao.sqlite.meta.json"])
-    got = asyncio.run(gtfs_db.get_datasources(_hass(tmp_path), "gtfs2"))
+    got = asyncio.run(files.get_datasources(_hass(tmp_path), "gtfs2"))
     assert got == ["sncf.v2", "tao"]
 
 
@@ -41,10 +41,10 @@ def test_zips_leave_out_what_an_import_is_working_on(tmp_path):
                        "zou.zip",
                        # the filtered zips of a refresh, whole-feed or route by route
                        "tao.refresh.sqlite.zip", "tao.refresh.import.sqlite.zip"])
-    got = asyncio.run(gtfs_db.get_zipfiles(_hass(tmp_path), "gtfs2"))
+    got = asyncio.run(files.get_zipfiles(_hass(tmp_path), "gtfs2"))
     assert got == ["tao", "zou"]
 
 
 def test_a_missing_folder_is_made(tmp_path):
-    assert asyncio.run(gtfs_db.get_datasources(_hass(tmp_path), "gtfs2")) == []
+    assert asyncio.run(files.get_datasources(_hass(tmp_path), "gtfs2")) == []
     assert (tmp_path / "gtfs2").is_dir()

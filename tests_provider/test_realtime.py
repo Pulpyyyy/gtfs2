@@ -58,7 +58,7 @@ except FileNotFoundError:  # a tree without the fork's leg file
     leg_mod = None
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
 try:
-    rt_feed = ha_stub.load("rt_feed")
+    rt_feed = ha_stub.load("feed.rt_feed")
 except FileNotFoundError:  # a tree that reads its feeds in gtfs_rt_helper
     rt_feed = gtfs_rt_helper
 # the service day rule, where the tree keeps it

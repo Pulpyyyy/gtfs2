@@ -30,16 +30,16 @@ import zipfile
 import homeassistant.util.dt as dt_util
 import requests
 
-from .const import CONF_INNER_ZIP, USER_AGENT
-from .gtfs_db import remove_files
-from .key_mask import fetch, hide_keys
-from .zip_peek import FEED_MAX_BYTES, _MemberResponse, inner_zips_in_file, member_out_of, open_member
-from .rt_source import key_headers, with_query_key
+from ..const import CONF_INNER_ZIP, USER_AGENT
+from .files import remove_files
+from ..key_mask import fetch, hide_keys
+from .remote_zip import FEED_MAX_BYTES, _MemberResponse, inner_zips_in_file, member_out_of, open_member
+from .source_entries import key_headers, with_query_key
 
 _LOGGER = logging.getLogger(__name__)
 
 # what a feed is read from: the host's response, or the member of an
-# envelope zip_peek shapes like one
+# envelope remote_zip shapes like one
 type FeedResponse = requests.Response | _MemberResponse
 
 PROBE_UNCHANGED = "unchanged"

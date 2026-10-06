@@ -28,7 +28,7 @@ from freezegun import freeze_time
 import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
-rt_feed = sys.modules["gtfs2_under_test.rt_feed"]
+rt_feed = sys.modules["gtfs2_under_test.feed.rt_feed"]
 const = sys.modules["gtfs2_under_test.const"]
 
 UTC = datetime.timezone.utc

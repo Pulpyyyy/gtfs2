@@ -31,7 +31,7 @@ from .const import (
 )
 from .feed_window import read_feed_window
 from .key_mask import hide_keys
-from .rt_source import source_device
+from .feed.source_entries import source_device
 from .source_refresh import (
     SIGNAL_SOURCE_REFRESH,
     async_refresh_source,

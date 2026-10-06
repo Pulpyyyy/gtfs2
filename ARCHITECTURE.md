@@ -59,11 +59,11 @@ Goals:
 Non-goals:
 
 - Replacing pygtfs. It stays the loader; the fork only decides what it is
-  fed and what is kept from it (`gtfs_db.py`: "pygtfs is a loader, not a
+  fed and what is kept from it (`feed/files.py`: "pygtfs is a loader, not a
   database layer").
 - Querying the whole network from a database. Line lists and headsigns of
   lines never imported are read from the zip (`route_names.py`,
-  `line_ends.py`, `zip_peek.py`), not imported to be read. The trains of a
+  `line_ends.py`, `feed/remote_zip.py`), not imported to be read. The trains of a
   feed, which the station screens search before any line is imported, are
   read from the zip too, into an index kept beside it (`stations.py`).
 - Supporting Windows as a runtime. Home Assistant runs on Linux; the swap
@@ -147,7 +147,7 @@ The refactor is **not** a rewrite. It has two triggers and one constraint.
 **Triggers.** Code the fork owns grew inside a file or method upstream owns,
 and that is where merges collide; or one file tells more than one story
 (`place_order.py` out of `places.py`, 595871f3; `db_prune.py` out of
-`gtfs_db.py`, b1e6e745). A move that cut one story in two is undone: the
+`feed/files.py`, b1e6e745). A move that cut one story in two is undone: the
 refresh steps went back into `coordinator.py` (e8aabebb), the shape
 reading back into `geojson.py` (91da1bf2). The upstream-owned places are:
 
@@ -431,19 +431,19 @@ pair_direction.py     the direction an entry keeps for its two places, and its l
 feed_window.py        how long the kept timetable is good for
 ```
 
-`gtfs_db.py` and `db_build.py` import neither pygtfs nor Home Assistant: the
+`feed/files.py` and `db_build.py` import neither pygtfs nor Home Assistant: the
 scratch build is passed in as a callable (`import_routes(..., build_scratch)`), so the modules
 can be tested on plain SQLite files.
 
 ### 5. Source & feed layer
 
 ```
-rt_source.py        the datasource entries, owning the realtime feeds and keys
-zip_peek.py         read a remote zip's contents, take one member out of it
-freshness.py        ask the host whether the feed changed, without downloading; else download it, check it, keep it with its sidecar
-rt_feed.py          a realtime feed read once per publication, decoded
-rt_local.py         one realtime feed, or a SIRI answer, downloaded to a local file
-gtfs_db.py          the files a source is made of, the sources on disk, letting a schedule go
+feed/source_entries.py  the datasource entries, owning the realtime feeds and keys
+feed/remote_zip.py      read a remote zip's contents, take one member out of it
+feed/freshness.py       ask the host whether the feed changed, without downloading; else download it, check it, keep it with its sidecar
+feed/rt_feed.py         a realtime feed read once per publication, decoded
+feed/rt_local.py        one realtime feed, or a SIRI answer, downloaded to a local file
+feed/files.py           the files a source is made of, the sources on disk, letting a schedule go
 ```
 
 ## Glossary
@@ -740,17 +740,17 @@ refuses a first refresh once the entry is loaded (1fe6d7e).
 ## Realtime architecture
 
 ```
-rt_source.py          urls and keys of the source's feeds
+feed/source_entries.py  urls and keys of the source's feeds
         ↓
-rt_window.py          rt_window_gate: is this a time the feeds are read?
+rt_window.py            rt_window_gate: is this a time the feeds are read?
         ↓
-rt_feed.py            get_gtfs_feed_entities: one download per publication
+feed/rt_feed.py         get_gtfs_feed_entities: one download per publication
         ↓
-gtfs_rt_helper.py     get_next_services, get_rt_alerts
+gtfs_rt_helper.py       get_next_services, get_rt_alerts
         ↓
 alerts.py
         ↓
-coordinator.py        drop_struck_trips
+coordinator.py          drop_struck_trips
         ↓
 sensor.py
 ```
@@ -875,7 +875,7 @@ as it is, no reader finds a `routes.txt`, and the flow failed three screens
 later on "no routes with trips" (99dfa42).
 
 ```
-source screen      zip_peek reads the url's table of contents with two
+source screen      remote_zip reads the url's table of contents with two
                    ranged requests (the last 64 KB, then the directory)
                    and the flow asks which network to follow
 download           only that member, by its own byte range: 823 KB of a
@@ -1210,7 +1210,7 @@ bb4f8f6).
 - A key goes in the url (`with_query_key`), in a header under its name,
   or as an HTTP Basic login the integration encodes, `Authorization:
   Basic base64("key:")`, or the key as it is when it holds a user:password
-  (`key_headers` in `rt_source.py`, `basic_credentials` in `key_mask.py`). The static zip
+  (`key_headers` in `feed/source_entries.py`, `basic_credentials` in `key_mask.py`). The static zip
   and the realtime feeds ask with the same two functions.
 - One logging filter sits on the logger of every module of the
   integration and writes `*****` wherever a known key shows, raw,
@@ -1298,7 +1298,7 @@ queries and their SQL pieces) and a domain one (the realtime of a
 sensor), once the few functions a lower layer needed went down: the file
 name and json writing to `geojson.py`, the feed's route id match, stop
 clock and service day to `rt_feed.py`, the cache check to `rt_window.py`,
-`close_schedule` to `gtfs_db.py`. The import contract, which listed the
+`close_schedule` to `feed/files.py`. The import contract, which listed the
 imports of the gaps as its exceptions, has none left.
 
 ## Known defects

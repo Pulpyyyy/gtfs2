@@ -32,7 +32,7 @@ import time
 from typing import IO, Any, Literal, Self
 import zipfile
 
-from .gtfs_db import remove_files
+from .feed.files import remove_files
 
 _LOGGER = logging.getLogger(__name__)
 

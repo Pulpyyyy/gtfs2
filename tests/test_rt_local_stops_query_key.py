@@ -20,7 +20,7 @@ import test_stop_combined as combined
 
 local_stops = combined.local_stops
 dt_util = combined.dt_util
-rt_source = combined.ha_stub.load("rt_source")
+source_entries = combined.ha_stub.load("feed.source_entries")
 
 
 def _asked(location):
@@ -35,8 +35,8 @@ def _asked(location):
     cfg = {"api_key": "K", "api_key_name": "api_key", "api_key_location": location}
     context = combined._LocalStopContext(hass, 0, "local_stop_name")
     # what the coordinator builds for a local stops entry
-    context._trip_update_url = rt_source.with_query_key("https://h/tu", cfg)
-    context._headers = rt_source.rt_headers(cfg) or {}
+    context._trip_update_url = source_entries.with_query_key("https://h/tu", cfg)
+    context._headers = source_entries.rt_headers(cfg) or {}
     asked = []
     at = captured_at.astimezone(datetime.timezone.utc).replace(tzinfo=None)
     with freeze_time(at, tz_offset=0), \

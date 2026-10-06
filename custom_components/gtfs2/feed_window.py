@@ -27,7 +27,7 @@ import datetime
 import logging
 import zipfile
 
-from .gtfs_db import file_edition
+from .feed.files import file_edition
 from .gtfs_filter import table_rows
 
 _LOGGER = logging.getLogger(__name__)

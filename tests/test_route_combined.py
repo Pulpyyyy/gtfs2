@@ -68,7 +68,7 @@ coordinator_mod = ha_stub.load("coordinator")
 # one function inside it that touches the network.
 import sys  # noqa: E402
 gtfs_rt_helper_mod = sys.modules["gtfs2_under_test.gtfs_rt_helper"]
-rt_feed_mod = sys.modules["gtfs2_under_test.rt_feed"]
+rt_feed_mod = sys.modules["gtfs2_under_test.feed.rt_feed"]
 # and the file exports the refresh calls, whose writers are patched out
 exports_mod = sys.modules["gtfs2_under_test.exports"]
 

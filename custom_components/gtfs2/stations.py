@@ -29,7 +29,7 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql import text
 
 from .const import entry_lines
-from .gtfs_db import real_path, remove_files
+from .feed.files import real_path, remove_files
 from .gtfs_filter import _member, _rows, table_rows
 from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
                          entry_stations, line_codes_where, station_names_in)
@@ -58,7 +58,7 @@ class RailIndex:
 
 
 # the file the rail index of <file>.zip is kept in, beside it: not .sqlite
-# nor .zip, which the folder's lists of sources read (gtfs_db)
+# nor .zip, which the folder's lists of sources read (feed.files)
 RAIL_INDEX_SUFFIX = ".rail"
 
 

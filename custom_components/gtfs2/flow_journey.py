@@ -54,7 +54,7 @@ from .const import (
     stop_name_of,
 )
 from .geojson import name_in_use
-from .rt_source import datasource_unique_id, journey_entry_data
+from .feed.source_entries import datasource_unique_id, journey_entry_data
 from .source_refresh import source_zip_url
 from .pair_direction import get_direction_labels, get_pair_direction, has_trip_between
 from .places import get_destination_stop_list, get_stop_list, get_stops_between, get_towards

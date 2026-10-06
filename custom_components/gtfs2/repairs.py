@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
 from .datasource_services import async_prune_line
-from .rt_source import datasource_entry
+from .feed.source_entries import datasource_entry
 from .source_refresh import async_rebuild_source
 
 

@@ -11,8 +11,8 @@ from __future__ import annotations
 import ha_stub
 
 const = ha_stub.load("const")
-freshness = ha_stub.load("freshness")
-rt_feed = ha_stub.load("rt_feed")
+freshness = ha_stub.load("feed.freshness")
+rt_feed = ha_stub.load("feed.rt_feed")
 
 
 def test_the_static_zip_and_the_realtime_feeds_send_the_same_one():

@@ -35,8 +35,8 @@ import zlib
 
 import requests
 
-from .gtfs_db import remove_files
-from .key_mask import fetch, hide_keys
+from .files import remove_files
+from ..key_mask import fetch, hide_keys
 
 _LOGGER = logging.getLogger(__name__)
 

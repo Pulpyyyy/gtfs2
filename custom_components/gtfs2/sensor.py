@@ -31,7 +31,7 @@ from .const import (
 )
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 from .local_stops import local_stops_nearby
-from .rt_source import has_rt_feed, source_device
+from .feed.source_entries import has_rt_feed, source_device
 from .rt_window import SIGNAL_RT_WINDOW, window_state
 from .feed_window import read_feed_window, timetable_state
 from .source_refresh import SIGNAL_SOURCE_REFRESH, source_zip_path

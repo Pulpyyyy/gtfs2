@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import ha_stub
 
-rt_feed = ha_stub.load("rt_feed")
+rt_feed = ha_stub.load("feed.rt_feed")
 file_url = ha_stub.load("file_url")
 
 

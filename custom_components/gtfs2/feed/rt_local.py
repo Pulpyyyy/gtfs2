@@ -16,9 +16,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 import requests
 
-from .const import id_of
+from ..const import id_of
 from .rt_feed import _feed_body, get_gtfs_feed_entities
-from .rt_source import rt_headers, with_query_key
+from .source_entries import rt_headers, with_query_key
 
 _LOGGER = logging.getLogger(__name__)
 

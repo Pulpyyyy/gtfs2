@@ -23,12 +23,12 @@ from typing import TYPE_CHECKING, Any
 import requests
 from google.transit import gtfs_realtime_pb2
 
-from .const import USER_AGENT
-from .key_mask import fetch
+from ..const import USER_AGENT
+from ..key_mask import fetch
 
 if TYPE_CHECKING:
     # for the annotations only
-    from .coordinator import GTFSLocalStopUpdateCoordinator, GTFSUpdateCoordinator
+    from ..coordinator import GTFSLocalStopUpdateCoordinator, GTFSUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

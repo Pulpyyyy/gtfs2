@@ -18,7 +18,7 @@ from .const import (
 )
 from .alerts import journey_alerts
 from .clocks import agency_zone
-from .rt_feed import (
+from .feed.rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, FeedEntities, _Coordinator, _read_feed, _same_route,
     delay_of, stop_relationship, stop_update_clock,
     trip_relationship,

@@ -14,7 +14,7 @@ import types
 
 import ha_stub
 
-freshness = ha_stub.load("freshness")
+freshness = ha_stub.load("feed.freshness")
 source_refresh = ha_stub.load("source_refresh")
 dt_util = source_refresh.dt_util
 

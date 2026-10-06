@@ -18,7 +18,7 @@ from homeassistant.helpers import entity_registry as er
 
 from .const import DEFAULT_PATH
 from .feed_window import last_service_day
-from .gtfs_db import close_schedule, feed_zip
+from .feed.files import close_schedule, feed_zip
 from .clocks import _row_instant, row_zone
 from .datasource import get_gtfs
 from .gtfs_helper import (_fetch_departure_rows, departure_query_args,

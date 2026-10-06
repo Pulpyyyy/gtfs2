@@ -17,7 +17,7 @@ import ha_stub
 
 ha_stub.install()
 
-rt_source = ha_stub.load("rt_source")
+source_entries = ha_stub.load("feed.source_entries")
 
 
 class _Entries:
@@ -61,8 +61,8 @@ REALTIME = {"trip_update_url": "https://host/trips", "real_time": True, "refresh
 def test_the_source_takes_over_and_its_journeys_let_go():
     journey = _entry("to work", UPSTREAM, REALTIME)
     hass = types.SimpleNamespace(config_entries=_Entries([journey]))
-    asyncio.run(rt_source.async_bootstrap_datasource_entries(hass, ["tao"]))
-    source = rt_source.datasource_entry(hass, "tao")
+    asyncio.run(source_entries.async_bootstrap_datasource_entries(hass, ["tao"]))
+    source = source_entries.datasource_entry(hass, "tao")
     assert source.data["url"] == "https://host/tao.zip"
     assert source.data["api_key"] == "s-key"
     assert source.options["trip_update_url"] == "https://host/trips"
@@ -74,7 +74,7 @@ def test_the_source_takes_over_and_its_journeys_let_go():
 def test_a_journey_whose_source_could_not_be_made_keeps_its_copies():
     journey = _entry("to work", UPSTREAM, REALTIME)
     hass = types.SimpleNamespace(config_entries=_Entries([journey], refuse={"tao"}))
-    asyncio.run(rt_source.async_bootstrap_datasource_entries(hass, ["tao"]))
-    assert rt_source.datasource_entry(hass, "tao") is None
+    asyncio.run(source_entries.async_bootstrap_datasource_entries(hass, ["tao"]))
+    assert source_entries.datasource_entry(hass, "tao") is None
     assert journey.data == UPSTREAM
     assert journey.options == REALTIME

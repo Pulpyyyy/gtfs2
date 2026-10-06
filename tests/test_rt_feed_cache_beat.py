@@ -18,7 +18,7 @@ from google.transit import gtfs_realtime_pb2
 
 import ha_stub
 
-rt_feed = ha_stub.load("rt_feed")
+rt_feed = ha_stub.load("feed.rt_feed")
 
 URL = "http://rt.test/trips"
 KEY = ("town", URL, "trip_data")

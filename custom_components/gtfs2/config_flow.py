@@ -46,7 +46,7 @@ from .const import (
 
 from .datasource import get_gtfs, check_datasource_index
 from .geojson import name_in_use
-from .gtfs_db import remove_datasource, close_schedule
+from .feed.files import remove_datasource, close_schedule
 from .route_names import get_agency_list, get_route_count, get_route_list
 from .local_stops import get_local_stop_list
 from .route_names import get_route_options_from_zip, get_agencies_in_zip
@@ -54,7 +54,7 @@ from .line_labels import LINE_MODES, line_number, with_modes
 from .notifications import _async_text
 from .source_refresh import source_lock, source_zip_path, source_zip_url
 
-from .rt_source import (
+from .feed.source_entries import (
     datasource_entry,
     datasource_files,
     journey_entry_data,

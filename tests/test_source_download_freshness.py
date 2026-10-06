@@ -47,8 +47,8 @@ import pytest
 import feed_db
 import ha_stub
 
-freshness = ha_stub.load("freshness")
-rt_source = ha_stub.load("rt_source")
+freshness = ha_stub.load("feed.freshness")
+source_entries = ha_stub.load("feed.source_entries")
 source_refresh = ha_stub.load("source_refresh")
 
 URL = "https://example.org/gtfs.zip"
@@ -197,7 +197,7 @@ def test_a_download_that_is_no_zip_leaves_the_kept_zip_whole(kept, monkeypatch):
      {"api_key": "k1", "api_key_name": "api_key", "api_key_location": "header"}),
 ], ids=["no_key", "blank_key", "key_normalised"])
 def test_the_key_trio_travels_together_behind_a_real_key(fields, stored):
-    assert rt_source.static_key_fields(fields) == stored
+    assert source_entries.static_key_fields(fields) == stored
 
 
 # --- resolution ---------------------------------------------------------------
@@ -244,7 +244,7 @@ def test_a_source_not_owning_its_key_reads_it_from_its_journeys():
     # the keyless journey comes first and must not strip the keyed one
     legacy = _entry("tao", SOURCE)
     hass = _hass(_entry("line 1", KEYLESS), legacy, _entry("line 2", KEYED))
-    cfg = rt_source.static_feed_config(hass, legacy)
+    cfg = source_entries.static_feed_config(hass, legacy)
     assert cfg.get("api_key") == "j-key"
     assert cfg.get("api_key_name") == "apikey"
     assert cfg.get("url") == "https://host/tao.zip"
@@ -256,7 +256,7 @@ def test_a_source_not_owning_its_key_reads_it_from_its_journeys():
 def test_a_source_owning_its_key_speaks_for_itself():
     owning = _entry("tao", OWNING)
     hass = _hass(_entry("line 1", KEYLESS), owning, _entry("line 2", KEYED))
-    cfg = rt_source.static_feed_config(hass, owning)
+    cfg = source_entries.static_feed_config(hass, owning)
     assert cfg.get("api_key") == "s-key"
     assert cfg.get("api_key_location") == "header"
 
@@ -264,7 +264,7 @@ def test_a_source_owning_its_key_speaks_for_itself():
 def test_a_source_that_dropped_its_key_resolves_none():
     # a stale copy on a journey entry stays silent
     dropped = _entry("tao", DROPPED)
-    cfg = rt_source.static_feed_config(_hass(dropped, _entry("line 2", KEYED)), dropped)
+    cfg = source_entries.static_feed_config(_hass(dropped, _entry("line 2", KEYED)), dropped)
     assert "api_key" not in cfg
 
 

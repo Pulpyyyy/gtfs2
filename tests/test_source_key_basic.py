@@ -14,8 +14,8 @@ import base64
 import ha_stub
 
 const = ha_stub.load("const")
-rt_source = ha_stub.load("rt_source")
-freshness = ha_stub.load("freshness")
+source_entries = ha_stub.load("feed.source_entries")
+freshness = ha_stub.load("feed.freshness")
 key_mask = ha_stub.load("key_mask")
 flow_source = ha_stub.load("flow_source")
 
@@ -28,16 +28,16 @@ def _basic(text):
 
 
 def test_a_raw_key_is_sent_as_the_user_of_a_basic_login():
-    assert rt_source.rt_headers(BASIC) == {"Authorization": _basic(KEY + ":")}
+    assert source_entries.rt_headers(BASIC) == {"Authorization": _basic(KEY + ":")}
 
 
 def test_a_key_holding_its_password_is_encoded_as_it_is():
-    headers = rt_source.rt_headers({**BASIC, "api_key": "user:secret"})
+    headers = source_entries.rt_headers({**BASIC, "api_key": "user:secret"})
     assert headers == {"Authorization": _basic("user:secret")}
 
 
 def test_the_protobuf_accept_header_rides_along():
-    headers = rt_source.rt_headers({**BASIC, "accept": True})
+    headers = source_entries.rt_headers({**BASIC, "accept": True})
     assert headers == {"Authorization": _basic(KEY + ":"), "Accept": "application/x-protobuf"}
 
 
@@ -62,7 +62,7 @@ def test_the_key_screen_offers_it_and_keeps_it():
 
 
 def test_the_other_places_are_unchanged():
-    assert rt_source.rt_headers({"api_key_location": "header", "api_key_name": "x-api-key",
+    assert source_entries.rt_headers({"api_key_location": "header", "api_key_name": "x-api-key",
                                  "api_key": KEY}) == {"x-api-key": KEY}
-    assert rt_source.rt_headers({"api_key_location": "query_string", "api_key": KEY}) is None
-    assert rt_source.with_query_key("https://h/f", BASIC) == "https://h/f"
+    assert source_entries.rt_headers({"api_key_location": "query_string", "api_key": KEY}) is None
+    assert source_entries.with_query_key("https://h/f", BASIC) == "https://h/f"

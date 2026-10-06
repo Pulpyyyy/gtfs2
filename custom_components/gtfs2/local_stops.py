@@ -28,7 +28,7 @@ from .clocks import _day_offset, _on_service_day, _removed_on, _row_instant, _ru
 from .datasource import check_extracting
 from .gtfs_helper import _feed_now
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
-from .rt_feed import FeedEntities, _read_feed, on_service_day
+from .feed.rt_feed import FeedEntities, _read_feed, on_service_day
 from .stop_rules import _boards
 
 if TYPE_CHECKING:

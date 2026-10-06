@@ -27,7 +27,7 @@ from .const import (
     DEFAULT_PATH,
     )
 from .datasource import check_extracting
-from .rt_feed import on_service_day
+from .feed.rt_feed import on_service_day
 from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
                          _no_call_between, _place_group, _place_group_of, entry_stations,
                          line_codes_where, station_names_in, stop_ids_in)

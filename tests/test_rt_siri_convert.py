@@ -13,7 +13,7 @@ import json
 
 import ha_stub
 
-rt_local = ha_stub.load("rt_local")
+rt_local = ha_stub.load("feed.rt_local")
 
 VISIT = {"MonitoredVehicleJourney": {
     "LineRef": "A", "DirectionRef": 1,

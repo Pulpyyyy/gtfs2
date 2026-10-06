@@ -12,7 +12,7 @@ import ha_stub
 
 ha_stub.install()
 
-rt_source = ha_stub.load("rt_source")
+source_entries = ha_stub.load("feed.source_entries")
 
 JOURNEY = {"file": "tao", "agency": "0: ALL", "route_type": "3", "route": "R1",
            "origin": "S1: One", "destination": "S2: Two", "name": "to work"}
@@ -24,11 +24,11 @@ def test_a_journey_keeps_nothing_of_its_source():
              "api_key_location": "header", "accept": True,
              "trip_update_url": "https://h/trips", "vehicle_position_url": "https://h/vehicles",
              "alerts_url": "https://h/alerts"}
-    assert rt_source.journey_entry_data(typed) == JOURNEY
+    assert source_entries.journey_entry_data(typed) == JOURNEY
 
 
 def test_local_stops_keep_their_tracker():
     typed = {"file": "tao", "device_tracker_id": "person.me", "name": "around me",
              "url": "file:///config/gtfs2/tao.zip", "extract_from": "zip"}
-    assert rt_source.journey_entry_data(typed) == {
+    assert source_entries.journey_entry_data(typed) == {
         "file": "tao", "device_tracker_id": "person.me", "name": "around me"}

@@ -23,12 +23,12 @@ from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH, DEFAULT_PATH_GEOJSON, DOMAIN, id_of
-from .gtfs_db import feed_zip, file_edition, real_path, remove_files
+from .feed.files import feed_zip, file_edition, real_path, remove_files
 from .gtfs_helper import shown_ends
 from .stations import train_entry_routes
 from .geojson import write_route_file, route_geojson_name, get_representative_trip, map_file, vehicle_positions_name
 from .leg import write_leg_file, leg_files, leg_geojson_name
-from .rt_feed import FeedEntities
+from .feed.rt_feed import FeedEntities
 from .timetable import write_timetable_file, timetable_name
 
 if TYPE_CHECKING:

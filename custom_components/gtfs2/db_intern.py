@@ -9,7 +9,7 @@ import os
 import sqlite3
 from typing import Any
 
-from .gtfs_db import real_path
+from .feed.files import real_path
 
 _LOGGER = logging.getLogger(__name__)
 

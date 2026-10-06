@@ -20,9 +20,9 @@ from .const import DOMAIN, DEFAULT_PATH, CONF_API_KEY, CONF_EXTRACT_FROM, CONF_U
 from .db_build import on_a_copy
 from .db_intern import intern_gtfs_datasource
 from .db_prune import async_train_routes, prune_gtfs_datasource
-from .gtfs_db import real_path, routes_in
+from .feed.files import real_path, routes_in
 from .key_mask import note_key
-from .rt_source import async_ensure_datasource_entry, datasource_entry, source_readers, static_key_fields
+from .feed.source_entries import async_ensure_datasource_entry, datasource_entry, source_readers, static_key_fields
 from .source_refresh import (
     async_refresh_source, async_refresh_source_data, refresh_data_for, source_lock,
     source_zip_url,

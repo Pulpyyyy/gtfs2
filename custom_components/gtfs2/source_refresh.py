@@ -54,7 +54,7 @@ from .const import (
     STATIC_REFRESH_NOTIFY,
     STATIC_REFRESH_OFF,
 )
-from .freshness import (
+from .feed.freshness import (
     PROBE_CHANGED,
     PROBE_ERROR,
     PROBE_UNCHANGED,
@@ -68,10 +68,10 @@ from .freshness import (
     write_meta,
 )
 from .file_url import file_url
-from .gtfs_db import feed_zip, real_path
+from .feed.files import feed_zip, real_path
 from .source_zip import refresh_datasource
 from .notifications import async_notify_refresh
-from .rt_source import (STATIC_KEY_KEYS, journey_entries, source_readers, source_train_lines,
+from .feed.source_entries import (STATIC_KEY_KEYS, journey_entries, source_readers, source_train_lines,
                         static_feed_config)
 
 _LOGGER = logging.getLogger(__name__)

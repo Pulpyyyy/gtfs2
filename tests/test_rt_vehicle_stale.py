@@ -21,7 +21,7 @@ from google.transit import gtfs_realtime_pb2
 import ha_stub
 
 vehicles = ha_stub.load("vehicles")
-rt_feed = ha_stub.load("rt_feed")
+rt_feed = ha_stub.load("feed.rt_feed")
 const = ha_stub.load("const")
 
 NOW = datetime.datetime(2026, 9, 25, 19, 53, tzinfo=datetime.timezone.utc)

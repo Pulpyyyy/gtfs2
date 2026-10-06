@@ -19,8 +19,8 @@ import homeassistant.util.dt as dt_util
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text as sql_text
 
-from .gtfs_db import file_edition
-from .rt_feed import FeedEntities, _same_route
+from .feed.files import file_edition
+from .feed.rt_feed import FeedEntities, _same_route
 
 if TYPE_CHECKING:
     # for the annotations only

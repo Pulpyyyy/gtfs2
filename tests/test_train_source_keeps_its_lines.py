@@ -18,7 +18,7 @@ import feed_db
 import ha_stub
 
 db_prune = ha_stub.load("db_prune")
-rt_source = ha_stub.load("rt_source")
+source_entries = ha_stub.load("feed.source_entries")
 source_zip = ha_stub.load("source_zip")
 
 HEAD = {
@@ -133,12 +133,12 @@ def test_who_reads_a_source_whole():
     no_code = _entry("t3", route="train", lines=[])
     bus = _entry("b1", route="B: 8")
     hass = _hass(None, with_code, with_two, bus)
-    assert rt_source.source_readers(hass, "src") == ({"B"}, False)
-    assert rt_source.source_train_lines(hass, "src") == {"K8+", "P8"}
-    assert rt_source.source_train_lines(hass, "src", exclude="t2") == {"K8+"}
+    assert source_entries.source_readers(hass, "src") == ({"B"}, False)
+    assert source_entries.source_train_lines(hass, "src") == {"K8+", "P8"}
+    assert source_entries.source_train_lines(hass, "src", exclude="t2") == {"K8+"}
     # a train sensor of no code rides every rail line: the source stays whole
     hass = _hass(None, with_code, no_code)
-    assert rt_source.source_readers(hass, "src") == (set(), True)
+    assert source_entries.source_readers(hass, "src") == (set(), True)
 
 
 def test_a_prune_keeps_the_lines_of_the_code(tmp_path):

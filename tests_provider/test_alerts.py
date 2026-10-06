@@ -29,7 +29,7 @@ import fixture_db  # noqa: E402
 import test_journeys as tj  # noqa: E402
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
-rt_feed = ha_stub.load("rt_feed")
+rt_feed = ha_stub.load("feed.rt_feed")
 alerts_mod = ha_stub.load("alerts")
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sncf"

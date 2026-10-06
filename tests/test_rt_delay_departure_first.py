@@ -18,7 +18,7 @@ import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
 leg_mod = ha_stub.load("leg")
-rt_feed = ha_stub.load("rt_feed")
+rt_feed = ha_stub.load("feed.rt_feed")
 
 UTC = datetime.timezone.utc
 NOW = datetime.datetime(2026, 9, 27, 11, 30, tzinfo=UTC)

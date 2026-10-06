@@ -27,8 +27,8 @@ from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
-from .key_mask import basic_credentials
-from .const import (
+from ..key_mask import basic_credentials
+from ..const import (
     entry_lines,
     id_of,
     DOMAIN,

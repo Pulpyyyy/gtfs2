@@ -34,7 +34,7 @@ import feed_db
 import ha_stub
 
 file_url = ha_stub.load("file_url")
-freshness = ha_stub.load("freshness")
+freshness = ha_stub.load("feed.freshness")
 key_mask = ha_stub.load("key_mask")
 
 # a moment well in the past, and a later one: the file's times are set to

@@ -15,7 +15,7 @@ from .const import (
     CONF_FILE,
     CONF_RT_ENABLED,
 )
-from .rt_source import source_device
+from .feed.source_entries import source_device
 
 
 async def async_setup_entry(

@@ -41,7 +41,7 @@ from .const import (
 from .datasource import check_datasource_index, get_gtfs
 from .flow_journey import _Step
 from .geojson import name_in_use
-from .gtfs_db import close_schedule, feed_zip, real_path, routes_in
+from .feed.files import close_schedule, feed_zip, real_path, routes_in
 from .line_labels import _names_nothing
 from .notifications import _async_text
 from .stations import (

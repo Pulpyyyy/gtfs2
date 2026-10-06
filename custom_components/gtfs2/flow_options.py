@@ -41,7 +41,7 @@ from .flow_source import (
     _collect_source_rt_options, _source_key_schema, _source_rt_key_schema, _source_rt_schema,
     _typed_key,
 )
-from .rt_source import STATIC_KEY_KEYS, static_feed_config, static_key_fields
+from .feed.source_entries import STATIC_KEY_KEYS, static_feed_config, static_key_fields
 
 _LOGGER = logging.getLogger(__name__)
 

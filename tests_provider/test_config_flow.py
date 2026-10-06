@@ -118,12 +118,12 @@ const = ha_stub.load("const")
 config_flow = ha_stub.load("config_flow")
 notifications = ha_stub.load("notifications")
 flow_reload = ha_stub.load("flow_reload")
-rt_source = ha_stub.load("rt_source")
-gtfs_db = ha_stub.load("gtfs_db")
+source_entries = ha_stub.load("feed.source_entries")
+files = ha_stub.load("feed.files")
 # the import into a scratch database has a module of its own here, gtfs_db
 # in a checkout run with --component that keeps it there
 db_build = (ha_stub.load("db_build") if (ha_stub.COMPONENT / "db_build.py").is_file()
-            else gtfs_db)
+            else files)
 source_refresh = ha_stub.load("source_refresh")
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -424,7 +424,7 @@ class Hass:
                 if e.data.get(const.CONF_KIND) != const.ENTRY_KIND_DATASOURCE]
 
     def datasource(self, file):
-        return rt_source.datasource_entry(self, file)
+        return source_entries.datasource_entry(self, file)
 
 
 # --- the web, as the flow reaches it ----------------------------------------------
@@ -590,7 +590,7 @@ async def install_source(hass, fixture, name):
     finally:
         copy.close()
         built.close()
-    await rt_source.async_ensure_datasource_entry(
+    await source_entries.async_ensure_datasource_entry(
         hass, name, api={})
 
 
@@ -1084,7 +1084,7 @@ def test_a_line_ticked_keeps_only_the_stations_it_serves(world, tmp_path):
         finally:
             copy.close()
             built.close()
-        await rt_source.async_ensure_datasource_entry(hass, "rail", api={})
+        await source_entries.async_ensure_datasource_entry(hass, "rail", api={})
 
         async def options():
             lines = shown(await to_lines(hass, "rail"), FORM, "route")
@@ -1182,7 +1182,7 @@ def test_a_train_line_with_no_short_name_leads_somewhere(world, tmp_path):
         finally:
             copy.close()
             built.close()
-        await rt_source.async_ensure_datasource_entry(
+        await source_entries.async_ensure_datasource_entry(
             hass, "rail", api={})
         lines = shown(await to_lines(hass, "rail"), FORM, "route")
         (route,) = [r for r in offered(lines, "route") if r.split("##")[2].startswith("Dole - St Claude")]
@@ -1230,7 +1230,7 @@ def test_a_line_of_an_extended_rail_type_takes_the_train_screens(world, tmp_path
         finally:
             copy.close()
             built.close()
-        await rt_source.async_ensure_datasource_entry(
+        await source_entries.async_ensure_datasource_entry(
             hass, "rail", api={})
         lines = shown(await to_lines(hass, "rail"), FORM, "route")
         (route,) = [r for r in offered(lines, "route") if "Dole - St Claude" in r.split("##")[2]]
@@ -1880,7 +1880,7 @@ def test_the_zip_screen_lists_the_zips_there_are(world):
 def test_a_source_with_an_empty_database_and_no_zip_sends_the_rider_back(world):
     async def scenario(hass):
         (gtfs_dir(hass) / "ghost.sqlite").write_bytes(b"")
-        await rt_source.async_ensure_datasource_entry(hass, "ghost", api={})
+        await source_entries.async_ensure_datasource_entry(hass, "ghost", api={})
         sources = shown(await choose(hass, await start(hass), "start_end"), FORM, "start_end")
         again = shown(await submit(hass, sources, file="ghost"), FORM, "start_end")
         assert again["errors"] == {"base": "no_zip_file"}

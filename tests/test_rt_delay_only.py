@@ -20,7 +20,7 @@ from google.transit import gtfs_realtime_pb2
 import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
-rt_feed = ha_stub.load("rt_feed")
+rt_feed = ha_stub.load("feed.rt_feed")
 
 UTC = datetime.timezone.utc
 NOW = datetime.datetime(2026, 10, 3, 19, 20, tzinfo=UTC)

@@ -39,7 +39,7 @@ from typing import Any
 
 from .db_intern import _is_interned, intern_gtfs_datasource
 from .db_prune import prune_gtfs_datasource
-from .gtfs_db import real_path, remove_database, remove_files, scratch_path, staging_name
+from .feed.files import real_path, remove_database, remove_files, scratch_path, staging_name
 
 _LOGGER = logging.getLogger(__name__)
 

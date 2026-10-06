@@ -18,7 +18,7 @@ from sqlalchemy.sql import text as sql_text
 
 from .geojson import map_file, map_file_names, vehicle_positions_name, write_json_file
 from .line_ends import _names_a_place
-from .rt_feed import FeedEntities, _read_feed, _same_route
+from .feed.rt_feed import FeedEntities, _read_feed, _same_route
 
 if TYPE_CHECKING:
     # for the annotations only

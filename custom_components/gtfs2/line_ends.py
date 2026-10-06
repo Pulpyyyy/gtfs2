@@ -18,7 +18,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
 from .feed_window import runs_some_day
-from .gtfs_db import feed_zip, file_edition
+from .feed.files import feed_zip, file_edition
 from .gtfs_filter import _member, table_reader, table_rows
 
 if TYPE_CHECKING:

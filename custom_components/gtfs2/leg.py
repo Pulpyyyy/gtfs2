@@ -21,10 +21,10 @@ import homeassistant.util.dt as dt_util
 from .const import DEFAULT_PATH_GEOJSON
 from .geojson import entry_file_part, line_file_part, route_shapes, write_json_if_changed
 from .clocks import _leg_timezone, gtfs_seconds
-from .gtfs_db import feed_zip, remove_files
+from .feed.files import feed_zip, remove_files
 from .gtfs_helper import shown_ends
 from .stop_rules import _call_type
-from .rt_feed import (
+from .feed.rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, delay_of, stop_relationship, stop_update_clock,
     FeedEntities, trip_relationship,
 )
