@@ -723,6 +723,8 @@ def test_a_source_whose_database_is_gone_is_still_offered(world):
         # are imported, which builds the database again
         lines = shown(await submit(hass, sources, file="tao"), FORM, "route")
         assert all(route.endswith("##pruned") for route in offered(lines, "route"))
+        # none is loaded, whatever the feed counts
+        assert lines["description_placeholders"]["routes"] == "0"
         removal = shown(await choose(hass, await start(hass), "remove"), FORM, "remove")
         assert offered(removal, "file") == ["tao"]
     walk(world, scenario)

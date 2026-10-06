@@ -502,7 +502,9 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             route_list = first + route_list
             self._routes_offered = set(usable) | {option["value"] for option in first}
             placeholders = dict(TRANSLATION_DESCRIPTION_PLACEHOLDERS)
-            placeholders["routes"] = str(len(usable))
+            # the lines with a timetable loaded: a "##pruned" one is offered
+            # but still to import, and on a fresh source every line is
+            placeholders["routes"] = str(sum(not r.endswith("##pruned") for r in usable))
             placeholders["routes_total"] = str(total)
             return self.async_show_form(
                 step_id="route",
