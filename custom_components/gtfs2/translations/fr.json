@@ -47,7 +47,7 @@
         }
       },
       "real_time": {
-        "description": "Ces flux appartiennent à la source entière : tous les capteurs qui la lisent les utilisent, en moins d'une minute, sans redémarrage. Seul **departures** active le temps réel. Videz un champ pour retirer ce flux, videz tout pour retirer le temps réel de cette source.\n\n[documentation]({docu_configuring_options})",
+        "description": "Ces flux appartiennent à la source entière : tous les capteurs qui la lisent les utilisent, en moins d'une minute, sans redémarrage. **departures** donne les retards et suppressions, les positions des véhicules et les alertes fonctionnent sans lui. Videz un champ pour retirer ce flux, videz tout pour retirer le temps réel de cette source.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Adresse du flux des départs",
           "vehicle_position_url": "Adresse du flux de position des véhicules (facultatif)",
@@ -309,7 +309,7 @@
         "description": "Ligne **{route}**.\n\nOù se termine le trajet depuis **{origin}** ? Seuls les arrêts qu'un trajet dessert réellement depuis là sont proposés, dans l'ordre de passage.\n\n[documentation]({docu_new_route})"
       },
       "source_rt": {
-        "description": "Le temps réel se configure une fois par source : tous les capteurs qui la lisent partagent ces flux. Ne renseignez que ceux que vous voulez, seul **departures** active le temps réel. Vous pouvez aussi tout laisser vide et ajouter les flux plus tard, depuis l'entrée de la source dans la page de l'intégration.\n\n[documentation]({docu_configuring_options})",
+        "description": "Le temps réel se configure une fois par source : tous les capteurs qui la lisent partagent ces flux. Ne renseignez que ceux que vous voulez, **departures** donne les retards et suppressions, les positions des véhicules et les alertes fonctionnent sans lui. Vous pouvez aussi tout laisser vide et ajouter les flux plus tard, depuis l'entrée de la source dans la page de l'intégration.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Adresse du flux des départs",
           "vehicle_position_url": "Adresse du flux de position des véhicules (facultatif)",
@@ -423,7 +423,7 @@
         }
       },
       "real_time": {
-        "description": "Ces flux appartiennent à la source entière : tous les capteurs qui la lisent les utilisent, en moins d'une minute, sans redémarrage. Seul **departures** active le temps réel. Videz un champ pour retirer ce flux, videz tout pour retirer le temps réel de cette source.\n\n[documentation]({docu_configuring_options})",
+        "description": "Ces flux appartiennent à la source entière : tous les capteurs qui la lisent les utilisent, en moins d'une minute, sans redémarrage. **departures** donne les retards et suppressions, les positions des véhicules et les alertes fonctionnent sans lui. Videz un champ pour retirer ce flux, videz tout pour retirer le temps réel de cette source.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Adresse du flux des départs",
           "vehicle_position_url": "Adresse du flux de position des véhicules (facultatif)",

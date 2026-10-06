@@ -47,7 +47,7 @@
         }
       },
       "real_time": {
-        "description": "Diese Feeds gehören zur ganzen Quelle: alle Sensoren, die sie lesen, nutzen sie, innerhalb einer Minute, ohne Neustart. Allein **departures** schaltet Echtzeit ein. Ein geleertes Feld entfernt diesen Feed, alles leeren entfernt die Echtzeit dieser Quelle.\n\n[documentation]({docu_configuring_options})",
+        "description": "Diese Feeds gehören zur ganzen Quelle: alle Sensoren, die sie lesen, nutzen sie, innerhalb einer Minute, ohne Neustart. **departures** liefert Verspätungen und Ausfälle, Fahrzeugpositionen und Meldungen funktionieren auch ohne. Ein geleertes Feld entfernt diesen Feed, alles leeren entfernt die Echtzeit dieser Quelle.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Adresse des Abfahrten-Feeds",
           "vehicle_position_url": "Adresse des Fahrzeugpositions-Feeds (optional)",
@@ -309,7 +309,7 @@
         "description": "Linie **{route}**.\n\nWo endet die Fahrt ab **{origin}**? Nur die Haltestellen, die eine Fahrt von dort tatsächlich erreicht, werden angeboten, in Fahrtrichtung.\n\n[Dokumentation]({docu_new_route})"
       },
       "source_rt": {
-        "description": "Echtzeit wird einmal pro Quelle eingerichtet: alle Sensoren dieser Quelle teilen sich diese Feeds. Nur eintragen, was gewünscht ist, allein **departures** schaltet Echtzeit ein. Alles leer lassen geht auch: die Feeds lassen sich später über den Eintrag der Quelle auf der Integrationsseite hinzufügen.\n\n[documentation]({docu_configuring_options})",
+        "description": "Echtzeit wird einmal pro Quelle eingerichtet: alle Sensoren dieser Quelle teilen sich diese Feeds. Nur eintragen, was gewünscht ist, **departures** liefert Verspätungen und Ausfälle, Fahrzeugpositionen und Meldungen funktionieren auch ohne. Alles leer lassen geht auch: die Feeds lassen sich später über den Eintrag der Quelle auf der Integrationsseite hinzufügen.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Adresse des Abfahrten-Feeds",
           "vehicle_position_url": "Adresse des Fahrzeugpositions-Feeds (optional)",
@@ -415,7 +415,7 @@
         }
       },
       "real_time": {
-        "description": "Diese Feeds gehören zur ganzen Quelle: alle Sensoren, die sie lesen, nutzen sie, innerhalb einer Minute, ohne Neustart. Allein **departures** schaltet Echtzeit ein. Ein geleertes Feld entfernt diesen Feed, alles leeren entfernt die Echtzeit dieser Quelle.\n\n[documentation]({docu_configuring_options})",
+        "description": "Diese Feeds gehören zur ganzen Quelle: alle Sensoren, die sie lesen, nutzen sie, innerhalb einer Minute, ohne Neustart. **departures** liefert Verspätungen und Ausfälle, Fahrzeugpositionen und Meldungen funktionieren auch ohne. Ein geleertes Feld entfernt diesen Feed, alles leeren entfernt die Echtzeit dieser Quelle.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Adresse des Abfahrten-Feeds",
           "vehicle_position_url": "Adresse des Fahrzeugpositions-Feeds (optional)",

@@ -47,7 +47,7 @@
         }
       },
       "real_time": {
-        "description": "These feeds belong to the whole source: every sensor reading it uses them, within a minute, no restart needed. **departures** is the only one that switches realtime on. Empty a field to drop that feed, empty them all to remove realtime from this source.\n\n[documentation]({docu_configuring_options})",
+        "description": "These feeds belong to the whole source: every sensor reading it uses them, within a minute, no restart needed. **departures** gives the delays and cancellations, vehicle positions and alerts work without it. Empty a field to drop that feed, empty them all to remove realtime from this source.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Departures feed address",
           "vehicle_position_url": "Vehicle positions feed address (optional)",
@@ -309,7 +309,7 @@
         "description": "Line **{route}**.\n\nWhere does the journey from **{origin}** end? Only the stops a trip really rides to from there are listed, in riding order.\n\n[documentation]({docu_new_route})"
       },
       "source_rt": {
-        "description": "Realtime is set up once per source: every sensor reading this source shares these feeds. Enter only the ones you want, **departures** is the only one that switches realtime on. You can also leave everything empty and add the feeds later, from this source's entry in the integration page.\n\n[documentation]({docu_configuring_options})",
+        "description": "Realtime is set up once per source: every sensor reading this source shares these feeds. Enter only the ones you want, **departures** gives the delays and cancellations, vehicle positions and alerts work without it. You can also leave everything empty and add the feeds later, from this source's entry in the integration page.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Departures feed address",
           "vehicle_position_url": "Vehicle positions feed address (optional)",
@@ -423,7 +423,7 @@
         }
       },
       "real_time": {
-        "description": "These feeds belong to the whole source: every sensor reading it uses them, within a minute, no restart needed. **departures** is the only one that switches realtime on. Empty a field to drop that feed, empty them all to remove realtime from this source.\n\n[documentation]({docu_configuring_options})",
+        "description": "These feeds belong to the whole source: every sensor reading it uses them, within a minute, no restart needed. **departures** gives the delays and cancellations, vehicle positions and alerts work without it. Empty a field to drop that feed, empty them all to remove realtime from this source.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Departures feed address",
           "vehicle_position_url": "Vehicle positions feed address (optional)",

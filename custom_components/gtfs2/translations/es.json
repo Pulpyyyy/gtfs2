@@ -47,7 +47,7 @@
         }
       },
       "real_time": {
-        "description": "Estos feeds pertenecen a toda la fuente: todos los sensores que la leen los usan, en menos de un minuto, sin reiniciar. Únicamente **departures** activa el tiempo real. Vacíe un campo para quitar ese feed, vacíelos todos para quitar el tiempo real de esta fuente.\n\n[documentation]({docu_configuring_options})",
+        "description": "Estos feeds pertenecen a toda la fuente: todos los sensores que la leen los usan, en menos de un minuto, sin reiniciar. **departures** da los retrasos y cancelaciones, las posiciones de vehículos y los avisos funcionan sin él. Vacíe un campo para quitar ese feed, vacíelos todos para quitar el tiempo real de esta fuente.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Dirección del flujo de salidas",
           "vehicle_position_url": "Dirección del flujo de posiciones de vehículos (opcional)",
@@ -309,7 +309,7 @@
         "description": "Línea **{route}**.\n\n¿Dónde termina el viaje desde **{origin}**? Solo se proponen las paradas a las que un viaje llega realmente desde allí, en orden de paso.\n\n[documentación]({docu_new_route})"
       },
       "source_rt": {
-        "description": "El tiempo real se configura una vez por fuente: todos los sensores que la leen comparten estos feeds. Introduzca solo los que quiera, únicamente **departures** activa el tiempo real. También puede dejarlo todo vacío y añadir los feeds más tarde, desde la entrada de la fuente en la página de la integración.\n\n[documentation]({docu_configuring_options})",
+        "description": "El tiempo real se configura una vez por fuente: todos los sensores que la leen comparten estos feeds. Introduzca solo los que quiera, **departures** da los retrasos y cancelaciones, las posiciones de vehículos y los avisos funcionan sin él. También puede dejarlo todo vacío y añadir los feeds más tarde, desde la entrada de la fuente en la página de la integración.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Dirección del flujo de salidas",
           "vehicle_position_url": "Dirección del flujo de posiciones de vehículos (opcional)",
@@ -415,7 +415,7 @@
         }
       },
       "real_time": {
-        "description": "Estos feeds pertenecen a toda la fuente: todos los sensores que la leen los usan, en menos de un minuto, sin reiniciar. Únicamente **departures** activa el tiempo real. Vacíe un campo para quitar ese feed, vacíelos todos para quitar el tiempo real de esta fuente.\n\n[documentation]({docu_configuring_options})",
+        "description": "Estos feeds pertenecen a toda la fuente: todos los sensores que la leen los usan, en menos de un minuto, sin reiniciar. **departures** da los retrasos y cancelaciones, las posiciones de vehículos y los avisos funcionan sin él. Vacíe un campo para quitar ese feed, vacíelos todos para quitar el tiempo real de esta fuente.\n\n[documentation]({docu_configuring_options})",
         "data": {
           "trip_update_url": "Dirección del flujo de salidas",
           "vehicle_position_url": "Dirección del flujo de posiciones de vehículos (opcional)",
