@@ -21,6 +21,7 @@ from .notifications import (async_notify_line_orphaned, async_notify_source_unus
                             clear_line_orphaned, clear_source_unused)
 from .exports import remove_entry_geojson
 from .datasource_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
+from .db_prune import async_train_routes
 from .gtfs_db import real_path, routes_in, route_name_in, get_datasources, close_schedule
 from .rt_local import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
@@ -278,11 +279,14 @@ async def _notify_orphaned_line(hass: HomeAssistant, entry: ConfigEntry) -> None
     if not filename or not route or entry.data.get("device_tracker_id"):
         return
     routes, unrestricted = source_readers(hass, filename, exclude=entry.entry_id)
-    if unrestricted or route in routes:
-        # the line is still read (a return sensor, often), or the datasource
-        # must stay whole for a local stops entry
+    gtfs_dir = hass.config.path(DEFAULT_PATH)
+    if unrestricted or route in routes or route in await async_train_routes(
+            hass, gtfs_dir, filename, exclude=entry.entry_id):
+        # the line is still read (a return sensor, often, or a train sensor
+        # holding to its code), or the datasource must stay whole for a
+        # local stops entry
         return
-    database = real_path(hass.config.path(DEFAULT_PATH), filename)
+    database = real_path(gtfs_dir, filename)
     loaded = await hass.async_add_executor_job(routes_in, database)
     if not loaded or route not in loaded:
         # the timetable is already gone, or the database would not say:

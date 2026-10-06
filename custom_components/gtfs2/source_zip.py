@@ -11,7 +11,7 @@ source_refresh.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Collection, Iterable, Mapping
 import gc
 import logging
 import os
@@ -29,6 +29,7 @@ from .zip_peek import extract_member, inner_zips, inner_zips_in_file
 from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
 from .datasource import IMPORT_IGNORED, drop_import_indexes
+from .stop_rules import rail_line_of
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -226,8 +227,8 @@ def _refresh_whole_feed(gtfs_dir: str, filename: str, zip_name: str, zip_path: s
                         data: dict[str, Any]) -> dict[str, None] | bool:
     """Rebuild a source some sensor reads whole: every line of the new edition.
 
-    A train or a local stops sensor matches across the whole feed, so its
-    source holds every line. The route by route refresh took the lines to
+    A local stops sensor, or a train sensor holding to no line code,
+    matches across the whole feed, so its source holds every line. The route by route refresh took the lines to
     keep from the database being replaced, and a line the new edition
     brought never came in, at any refresh. Here the new edition decides:
     all its lines go through the filter, which leaves out only the calendars
@@ -261,11 +262,12 @@ def _refresh_whole_feed(gtfs_dir: str, filename: str, zip_name: str, zip_path: s
         # a route sensor may share the source with the whole-feed readers:
         # its line must still run in the new edition, as the route by route
         # refresh requires, or the swap leaves that sensor empty unsaid
-        missing = set(data.get("read_routes") or ()) - loaded
+        missing = (sorted(set(data.get("read_routes") or ()) - loaded)
+                   + _train_lines_without_trips(data, loaded))
         if missing:
             _LOGGER.error("Refresh of %s aborted, the new edition has no trip "
-                          "for %s, the current data stays", filename, sorted(missing))
-            data["lines_missing"] = sorted(missing)
+                          "for %s, the current data stays", filename, missing)
+            data["lines_missing"] = missing
             return False
         optimise_datasource(gtfs_dir, staging)
         if not swap_in(new_real, real):
@@ -295,6 +297,47 @@ def _fetch_zip(data: Mapping[str, Any], zip_path: str, envelope_ok: bool = False
     if response is None or staged is None:
         return False
     return keep_download(response, staged, zip_path, data.get("url"))
+
+
+def _train_routes(zip_path: str, codes: set[str]) -> dict[str, set[str]]:
+    """{code: route_ids} of the rail lines of a feed wearing these codes,
+    as its routes.txt files them."""
+    by_code: dict[str, set[str]] = {}
+    for row in read_zip_routes(zip_path):
+        code = str(row.get("route_short_name") or "").strip()
+        if rail_line_of(row.get("route_type"), code, codes):
+            by_code.setdefault(code, set()).add(str(row["route_id"]))
+    return by_code
+
+
+def _with_train_lines(zip_path: str, filename: str, routes: list[str],
+                      data: dict[str, Any]) -> list[str] | None:
+    """routes, and the rail lines of the new edition wearing the codes its
+    train sensors hold to (data's train_lines), noted in data as
+    train_routes; None when a code has no line left, said in data as
+    lines_missing.
+
+    Read off the new edition, not the database: an edition files a line
+    under new route_ids, which the database never had.
+    """
+    if not data.get("train_lines"):
+        return routes
+    by_code = _train_routes(zip_path, set(data["train_lines"]))
+    data["train_routes"] = {code: sorted(ids) for code, ids in by_code.items()}
+    lost = sorted(set(data["train_lines"]) - set(by_code))
+    if lost:
+        _LOGGER.error("Refresh of %s aborted, the new edition has no line "
+                      "%s, the current data stays", filename, lost)
+        data["lines_missing"] = lost
+        return None
+    return sorted(set(routes).union(*by_code.values()))
+
+
+def _train_lines_without_trips(data: Mapping[str, Any], with_trips: Collection[str]) -> list[str]:
+    """The codes of data's train lines none of whose routes carries a trip
+    in the new edition: their sensors would be left empty."""
+    return sorted(code for code, ids in (data.get("train_routes") or {}).items()
+                  if not set(ids) & set(with_trips))
 
 
 def _refresh_route_by_route(gtfs_dir: str, filename: str, zip_name: str, routes: list[str],
@@ -331,13 +374,14 @@ def _refresh_route_by_route(gtfs_dir: str, filename: str, zip_name: str, routes:
         # The current data stays while a sensor still reads one, or when
         # nothing at all came through; a line nobody reads just goes.
         gone = {route for route, count in added.items() if not count}
-        read = gone & set(data.get("read_routes") or ())
+        read = (sorted(gone & set(data.get("read_routes") or ()))
+                + _train_lines_without_trips(data, set(added) - gone))
         if gone and (read or len(gone) == len(routes)):
             _LOGGER.error("Refresh of %s aborted, the new edition has no trip "
                           "for %s, the current data stays", filename, sorted(gone))
             # every line gone says the file is broken, so every line is named;
             # the caller, back on the loop, tells the user
-            data["lines_missing"] = sorted(gone if len(gone) == len(routes) else read)
+            data["lines_missing"] = sorted(gone) if len(gone) == len(routes) else read
             return False
         # intern only: everything in this file was just copied on purpose
         optimise_datasource(gtfs_dir, staging)
@@ -373,6 +417,10 @@ def refresh_datasource(hass: HomeAssistant, path: str,
 
     data may carry read_routes, the lines the source's sensors name: the
     new edition must still carry trips for those, or the swap is refused.
+    It may carry train_lines, the line codes its train sensors hold to:
+    every rail line of the new edition wearing one comes in with the lines
+    the database follows, and a code none of whose lines has a trip any
+    more refuses the swap the same way.
 
     Returns {route_id: stop_times} on success ({route_id: None} for a
     whole build), False on failure.
@@ -395,16 +443,6 @@ def refresh_datasource(hass: HomeAssistant, path: str,
         routes = sorted(data["read_routes"])
         _LOGGER.info("Datasource %s holds no line, building the %s its sensors read",
                      filename, len(routes))
-    whole = data.get("whole_feed") or not routes
-    if data.get("whole_feed"):
-        # the reason it is built whole, whatever the database held: a
-        # source with train entries was said to follow no route (Zou,
-        # field test of 98c023a)
-        _LOGGER.info("Datasource %s is read whole by a train, local stops or "
-                     "line-less sensor, building it whole", filename)
-    elif not routes:
-        _LOGGER.info("Datasource %s follows no route yet, building it whole",
-                     filename)
 
     zip_path = feed_zip(gtfs_dir, filename)
     zip_name = os.path.basename(zip_path)
@@ -418,6 +456,20 @@ def refresh_datasource(hass: HomeAssistant, path: str,
                      "keeping the current data")
         return False
 
+    with_trains = _with_train_lines(zip_path, filename, routes, data)
+    if with_trains is None:
+        return False
+    routes = with_trains
+    whole = data.get("whole_feed") or not routes
+    if data.get("whole_feed"):
+        # the reason it is built whole, whatever the database held: a
+        # source with train entries was said to follow no route (Zou,
+        # field test of 98c023a)
+        _LOGGER.info("Datasource %s is read whole by a train, local stops or "
+                     "line-less sensor, building it whole", filename)
+    elif not routes:
+        _LOGGER.info("Datasource %s follows no route yet, building it whole",
+                     filename)
     if whole:
         return _refresh_whole_feed(gtfs_dir, filename, zip_name, zip_path, data)
     return _refresh_route_by_route(gtfs_dir, filename, zip_name, routes, data)

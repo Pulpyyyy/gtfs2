@@ -29,6 +29,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 from .key_mask import basic_credentials
 from .const import (
+    entry_lines,
     id_of,
     DOMAIN,
     DEFAULT_API_KEY_LOCATION,
@@ -153,10 +154,12 @@ def source_readers(hass: HomeAssistant, file: str,
                    exclude: str | None = None) -> tuple[set[str], bool]:
     """(the route_ids the source's sensors name, whether one reads it whole).
 
-    A train sensor ("train" is its marker, not a route_id), a local stops
-    sensor and one naming no line match across the whole feed: their source
-    has to keep every line. exclude leaves one entry_id out: whether or not
-    an entry still lists while its removal hook runs, it is no reader.
+    A local stops sensor, one naming no line, and a train sensor holding to
+    no line code ("train" is its marker, not a route_id) match across the
+    whole feed: their source has to keep every line. A train sensor holding
+    to its lines' codes needs those lines only, named by source_train_lines.
+    exclude leaves one entry_id out: whether or not an entry still lists
+    while its removal hook runs, it is no reader.
     """
     routes: set[str] = set()
     whole = False
@@ -164,11 +167,32 @@ def source_readers(hass: HomeAssistant, file: str,
         if exclude is not None and entry.entry_id == exclude:
             continue
         route = id_of(entry.data.get("route"))
+        if route == "train" and entry_lines(entry.data):
+            continue
         if entry.data.get("device_tracker_id") or route in ("", "train"):
             whole = True
         else:
             routes.add(route)
     return routes, whole
+
+
+def source_train_lines(hass: HomeAssistant, file: str,
+                       exclude: str | None = None) -> set[str]:
+    """The line codes the source's train sensors hold to.
+
+    Every rail line wearing one of them is theirs to read, whatever its
+    route_id: an edition renumbers them, and the SNCF of 2026-10-04 filed
+    25 route_ids under codes its edition of 2026-09-18 already had (K1, P5,
+    C4...). A code, not the network: Renfe's MD is 138 of its 648 rail
+    lines. exclude as for source_readers.
+    """
+    return {
+        line
+        for entry in journey_entries(hass, file)
+        if (exclude is None or entry.entry_id != exclude)
+        and id_of(entry.data.get("route")) == "train"
+        for line in entry_lines(entry.data)
+    }
 
 
 def rt_feed_config(hass: HomeAssistant, entry: ConfigEntry) -> tuple[Mapping[str, Any], bool]:

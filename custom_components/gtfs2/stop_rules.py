@@ -7,7 +7,7 @@ which route types are trains.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Container, Iterable, Mapping
 import logging
 from typing import Any
 
@@ -29,6 +29,17 @@ RAIL_ROUTE_TYPES = (2, *range(100, 118))
 
 # the same, as the queries write it
 RAIL_ROUTE_TYPES_SQL = ",".join(str(t) for t in RAIL_ROUTE_TYPES)
+
+
+def rail_line_of(route_type: object, short_name: object, codes: Container[str]) -> bool:
+    """Whether a route, as routes.txt or the database writes it, is a rail
+    line wearing one of these codes: what a train entry holding to them
+    reads (entry_lines), whichever route_id the edition gives it."""
+    try:
+        rail = int(str(route_type).strip()) in RAIL_ROUTE_TYPES
+    except ValueError:
+        return False
+    return rail and str(short_name or "").strip() in codes
 
 
 def entry_stations(data: Mapping[str, Any], end: str) -> list[str]:

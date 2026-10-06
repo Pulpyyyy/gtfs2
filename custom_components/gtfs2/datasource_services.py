@@ -19,7 +19,7 @@ from homeassistant.helpers import entity_registry as er
 from .const import DOMAIN, DEFAULT_PATH, CONF_API_KEY, CONF_EXTRACT_FROM, CONF_URL
 from .db_build import on_a_copy
 from .db_intern import intern_gtfs_datasource
-from .db_prune import prune_gtfs_datasource
+from .db_prune import async_train_routes, prune_gtfs_datasource
 from .gtfs_db import real_path, routes_in
 from .key_mask import note_key
 from .rt_source import async_ensure_datasource_entry, datasource_entry, source_readers, static_key_fields
@@ -121,6 +121,8 @@ async def async_prune_datasources(hass: HomeAssistant, data: Mapping[str, Any]) 
     skipped: list[dict[str, str]] = []
     for filename in targets:
         routes, unrestricted = source_readers(hass, filename)
+        if not unrestricted:
+            routes |= await async_train_routes(hass, gtfs_dir, filename)
         if unrestricted:
             _LOGGER.warning(
                 "Skipping datasource %s: a train or local stops sensor reads "
@@ -236,9 +238,9 @@ async def async_prune_line(hass: HomeAssistant, filename: str, route: str) -> st
     routes, unrestricted = source_readers(hass, filename)
     if unrestricted:
         return "whole_feed_in_use"
-    if route in routes:
-        return "line_read_again"
     gtfs_dir = hass.config.path(DEFAULT_PATH)
+    if route in routes or route in await async_train_routes(hass, gtfs_dir, filename):
+        return "line_read_again"
     present = await hass.async_add_executor_job(routes_in, real_path(gtfs_dir, filename))
     if not present or route not in present:
         return None

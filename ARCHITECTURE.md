@@ -468,8 +468,10 @@ journey        a sensor's trip on one line, in one direction, from the stop or
 local stops    an entry that follows a person or a zone and lists the
                departures of the stops around it
 whole-feed     a source that some sensor reads across every line: a train
-source         entry (route "train"), a local stops entry, or an entry naming
-               no line (source_readers)
+source         entry holding to no line code, a local stops entry, or an
+               entry naming no line (source_readers). A train entry holding
+               to codes reads the rail lines wearing them, whatever their
+               route_id (source_train_lines)
 real           <file>.sqlite, the only timetable database sensors open
 scratch        <file>.import.sqlite, the raw pygtfs output of an import,
                deleted when the import ends
@@ -895,7 +897,7 @@ Four paths write a database. They differ because what they risk differs.
 |---|---|---|---|---|
 | User picks lines on the route screen | `import_routes` | scratch → real, per line | No | Append-only: existing rows are never touched, so there is nothing a reader could see half-changed. Keys are minted in the real database during the copy, so there is never a second set to remap. A new database whose scratch holds only those lines is that file, renamed |
 | New edition (check in auto mode, update entity, button, `update_gtfs` service) | `refresh_datasource` | staging, built route by route | Yes | Every row may change; readers must see one edition or the other |
-| Same, on a whole-feed source, or one that follows no line and whose sensors name none (never built, or left empty by a first import) | `_refresh_whole_feed` | staging, the filtered import itself | Yes | A train or local stops sensor matches across every line, and a line the new edition brings must come in too; taking the lines from the old database never brought new ones. A source with no line has nothing to take them from. A database deleted or left empty under line sensors takes their lines back route by route instead |
+| Same, on a whole-feed source, or one that follows no line and whose sensors name none (never built, or left empty by a first import) | `_refresh_whole_feed` | staging, the filtered import itself | Yes | A local stops sensor, or a train sensor holding to no code, matches across every line, and a line the new edition brings must come in too; taking the lines from the old database never brought new ones. A source with no line has nothing to take them from. A database deleted or left empty under line sensors takes their lines back route by route instead |
 | Optimise screen, `prune_datasource`, `intern_datasource` | `on_a_copy` | staging, a SQLite backup of the real one | Only if something changed | Destructive rewrites by the million plus VACUUM: on the live file they held the exclusive lock for minutes on a national feed |
 
 **Filtering before import, not pruning after.** pygtfs pays per row: once
@@ -952,6 +954,12 @@ new zip downloaded to <file>.zip.new, streamed, capped in size and time,
     ↓
 check_source_dates set and only future dates?   stop, keep the data
     ↓
+train sensors holding to codes?       the rail lines of the new edition
+                                      wearing them come in too, a route_id
+                                      the database never had included; a
+                                      code with no line left: stop, keep
+                                      the data (_with_train_lines)
+    ↓
 <file>.refresh.sqlite built beside the real one:
     import_routes of the followed lines, or the whole edition
     ↓
@@ -1000,7 +1008,7 @@ report of an import the user started is a notification.
 | Import of the scratch fails | Old database untouched | Refresh failed issue, its fix retries now | Next check |
 | Adding lines stops at line *k* | Lines before *k* are in; *k* and after are not | The partial import notification names the lines that came in and the ones that did not; a flow still open says the same on its departure screen | User re-picks |
 | Refresh: a line fails to copy | Swap refused, old database stays | Refresh failed issue, its fix retries now | Next check |
-| Refresh: a line a sensor reads has no trip in the new edition | Swap refused, old database stays, on the route by route and the whole-feed path alike | Lines missing issue, naming them | Next check; see below |
+| Refresh: a line a sensor reads has no trip in the new edition, or a train sensor's code no line with a trip | Swap refused, old database stays, on the route by route and the whole-feed path alike | Lines missing issue, naming them | Next check; see below |
 | Refresh: every line is empty | Swap refused, the file is taken as broken | Lines missing, every line named; on the whole-feed path, refresh failed issue | Next check |
 | Refresh: a line nobody reads has no trip | That line is dropped, the swap goes through | Nothing | — |
 | Swap cannot take the exclusive lock within 30 s | Old database stays, staging removed | Refresh failed issue, its fix retries now | Next check |

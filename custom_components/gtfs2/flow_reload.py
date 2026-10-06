@@ -35,6 +35,7 @@ from .const import (
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
 from .db_build import import_routes, on_a_copy, optimise_datasource
+from .db_prune import async_train_routes
 from .gtfs_db import close_schedule, real_path, routes_in, scratch_path
 from .flow_journey import _Step
 from .notifications import async_notify_import
@@ -367,6 +368,9 @@ class ReloadScreens:
         # sensors come in the next flows, and dropping them here would undo
         # an import the user asked for minutes ago
         keep.update(self._import_routes)
+        # and the rail lines a train sensor holds to by their codes
+        if not unrestricted:
+            keep |= await async_train_routes(self.hass, gtfs_dir, filename)
 
         if user_input is None:
             size = await self.hass.async_add_executor_job(

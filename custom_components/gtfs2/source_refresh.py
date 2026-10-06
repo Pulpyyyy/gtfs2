@@ -70,7 +70,8 @@ from .file_url import file_url
 from .gtfs_db import feed_zip, real_path
 from .source_zip import refresh_datasource
 from .notifications import async_notify_refresh
-from .rt_source import STATIC_KEY_KEYS, journey_entries, source_readers, static_feed_config
+from .rt_source import (STATIC_KEY_KEYS, journey_entries, source_readers, source_train_lines,
+                        static_feed_config)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -355,9 +356,11 @@ async def async_refresh_source_data(hass: HomeAssistant, file: str,
         return False
     # read here, on the loop: the entries are not for the executor to walk.
     # The lines the sensors name are the ones a refresh must keep; a sensor
-    # reading the source whole has every line of the new edition brought in
+    # reading the source whole has every line of the new edition brought in,
+    # a train sensor the rail lines wearing its codes
     read_routes, whole_feed = source_readers(hass, file)
-    data = {**data, "read_routes": sorted(read_routes), "whole_feed": whole_feed}
+    data = {**data, "read_routes": sorted(read_routes), "whole_feed": whole_feed,
+            "train_lines": sorted(source_train_lines(hass, file))}
     async with lock:
         # told at the start too, so the update entity shows the rebuild
         # running whichever of the three triggers started it

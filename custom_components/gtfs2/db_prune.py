@@ -11,9 +11,15 @@ from collections.abc import Collection
 import logging
 import os
 import sqlite3
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .gtfs_db import real_path
+from .rt_source import source_train_lines
+from .stop_rules import rail_line_of
+
+if TYPE_CHECKING:
+    # for the annotations only
+    from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,6 +53,36 @@ PRUNE_SERVICE_DEPENDENTS = (
 _ORPHAN_SERVICE = """not exists (
     select 1 from gtfs2_keep_services s
     where s.feed_id = {table}.{feed_col} and s.service_id = {table}.service_id)"""
+
+
+def routes_of_lines(db_file: str, codes: Collection[str]) -> set[str]:
+    """The route_ids of the rail lines wearing these codes in a database:
+    what a train sensor holding to them keeps through a prune, as a
+    refresh brings them in (source_train_lines). Blocking, for the
+    executor; an empty set when the file does not say."""
+    if not codes or not os.path.exists(db_file):
+        return set()
+    conn = sqlite3.connect(db_file, timeout=60)
+    try:
+        rows = conn.execute("select route_id, route_type, route_short_name from routes").fetchall()
+    except sqlite3.Error as ex:
+        _LOGGER.warning("Could not read the lines of %s: %s", db_file, ex)
+        return set()
+    finally:
+        conn.close()
+    return {str(route_id) for route_id, route_type, short_name in rows
+            if rail_line_of(route_type, short_name, codes)}
+
+
+async def async_train_routes(hass: HomeAssistant, gtfs_dir: str, filename: str,
+                             exclude: str | None = None) -> set[str]:
+    """The route_ids the source's train sensors keep: the rail lines
+    wearing their codes in its database, read in the executor, and none
+    without asking it when no train sensor holds to a code."""
+    codes = source_train_lines(hass, filename, exclude)
+    if not codes:
+        return set()
+    return await hass.async_add_executor_job(routes_of_lines, real_path(gtfs_dir, filename), codes)
 
 
 def prune_gtfs_datasource(gtfs_dir: str, filename: str, keep_routes: Collection[str],

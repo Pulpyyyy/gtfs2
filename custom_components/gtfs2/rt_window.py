@@ -41,7 +41,7 @@ from .gtfs_db import file_edition, real_path
 from .clocks import _removed_on, _runs_on, agency_zone, gtfs_seconds
 from .rt_feed import (CANCELLED_TRIP, SKIPPED_STOP, _FEED_CACHE, _same_route, stop_relationship,
                       trip_relationship)
-from .rt_source import source_readers
+from .rt_source import source_readers, source_train_lines
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -277,8 +277,11 @@ def _after_close(hass: HomeAssistant, file: str, trip_update_url: str | None,
     if now_local <= cap:
         # the lines the source's sensors name; a source read whole by
         # one of them, a train or local stops sensor, names none, and the
-        # check then listens to the whole feed rather than going deaf
+        # check then listens to the whole feed rather than going deaf. A
+        # train sensor holding to its codes names no route_id either: the
+        # feed's trips may run on route_ids it never had (or none, SNCF)
         routes, whole = source_readers(hass, file)
+        whole = whole or bool(source_train_lines(hass, file))
         if trip_update_url and cached_feed_has_future_stop(
                 file, trip_update_url, set() if whole else routes,
                 now_aware.timestamp()):

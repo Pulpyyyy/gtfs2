@@ -185,8 +185,9 @@ Full feed → Filter → Reduced feed
 
 Only the followed lines are imported. The zip itself is kept whole.
 
-A source that a local stops entry or a train journey reads keeps every
-line when it is refreshed, since those match across the whole feed.
+A source that a local stops entry reads keeps every line when it is
+refreshed, since it matches across the whole feed. A train journey keeps
+the rail lines of its line code, however the new edition numbers them.
 
 ---
 

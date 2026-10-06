@@ -129,7 +129,7 @@ def test_an_issue_without_a_fix_of_its_own_only_confirms():
 
 # --- the prune of one line -------------------------------------------------------
 
-def _prune(monkeypatch, *, readers=(set(), False), present=None, busy=None):
+def _prune(monkeypatch, *, readers=(set(), False), present=None, busy=None, train=()):
     rewrites = []
 
     async def rewrite(hass, gtfs_dir, filename, dry_run, work, *args):
@@ -137,6 +137,10 @@ def _prune(monkeypatch, *, readers=(set(), False), present=None, busy=None):
         return {"file": filename}, busy
 
     monkeypatch.setattr(services, "source_readers", lambda hass, filename: readers)
+
+    async def train_routes(hass, gtfs_dir, filename):
+        return set(train)
+    monkeypatch.setattr(services, "async_train_routes", train_routes)
     monkeypatch.setattr(services, "routes_in", lambda path: present)
     monkeypatch.setattr(services, "_rewrite_source", rewrite)
     return rewrites
@@ -156,6 +160,9 @@ def test_what_keeps_a_line_is_said(monkeypatch):
             ((set(), False), {"R1", "R2"}, "refresh_running", "refresh_running")):
         _prune(monkeypatch, readers=readers, present=present, busy=busy)
         assert asyncio.run(services.async_prune_line(_Hass(), "tao", "R1")) == reason
+    # a train sensor holding to the code of R1 reads it
+    _prune(monkeypatch, present={"R1", "R2"}, train={"R1"})
+    assert asyncio.run(services.async_prune_line(_Hass(), "tao", "R1")) == "line_read_again"
 
 
 def test_a_line_already_gone_is_done(monkeypatch):

@@ -119,6 +119,7 @@ def test_a_rebuild_is_told_when_it_starts(monkeypatch):
     monkeypatch.setattr(source_refresh, "async_dispatcher_send", send)
     monkeypatch.setattr(source_refresh, "async_notify_refresh", notify)
     monkeypatch.setattr(source_refresh, "source_readers", lambda hass, file: (set(), False))
+    monkeypatch.setattr(source_refresh, "source_train_lines", lambda hass, file: set())
     monkeypatch.setattr(source_refresh, "refresh_source", lambda hass, path, data: True)
     assert asyncio.run(source_refresh.async_refresh_source_data(hass, "src", {"file": "src"}))
     signal = source_refresh.SIGNAL_SOURCE_REFRESH.format("src")
