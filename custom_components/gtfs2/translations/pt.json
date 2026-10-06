@@ -390,7 +390,7 @@
   "options": {
     "step": {
       "init": {
-        "description": "Ajuste com que frequência este sensor atualiza e o que comunica.\n\n[documentação]({docu_configuring_options})",
+        "description": "Ajuste com que frequência este sensor atualiza e o que comunica.\n\n[documentação]({docu_journey_options})",
         "data": {
           "refresh_interval": "Intervalo de atualização de dados (em minutos)",
           "offset": "Desvio em minutos",

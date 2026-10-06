@@ -9,9 +9,9 @@
     "zone",
     "person"
   ],
-  "documentation": "https://github.com/vingerha/gtfs2/wiki",
+  "documentation": "https://github.com/Pulpyyyy/gtfs2/wiki",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/vingerha/gtfs2/issues",
+  "issue_tracker": "https://github.com/Pulpyyyy/gtfs2/issues",
   "requirements": [
     "pygtfs>=0.1.11",
     "gtfs-realtime-bindings==2.2.0",

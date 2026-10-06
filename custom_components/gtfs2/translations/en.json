@@ -390,7 +390,7 @@
   "options": {
     "step": {
       "init": {
-        "description": "Adjust how often this sensor refreshes and what it reports.\n\n[documentation]({docu_configuring_options})",
+        "description": "Adjust how often this sensor refreshes and what it reports.\n\n[documentation]({docu_journey_options})",
         "data": {
           "refresh_interval": "Data refresh interval (in minutes)",
           "offset": "Offset in minutes",

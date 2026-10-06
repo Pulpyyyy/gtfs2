@@ -390,7 +390,7 @@
   "options": {
     "step": {
       "init": {
-        "description": "Ajustez la fréquence de rafraîchissement de ce capteur et ce qu'il remonte.\n\n[documentation]({docu_configuring_options})",
+        "description": "Ajustez la fréquence de rafraîchissement de ce capteur et ce qu'il remonte.\n\n[documentation]({docu_journey_options})",
         "data": {
           "refresh_interval": "Intervalle d'actualisation en minutes",
           "offset": "Décalage en minutes",

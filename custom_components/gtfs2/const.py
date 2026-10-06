@@ -351,13 +351,14 @@ CONF_ALSO_RELOAD = "also_reload"
 
 
 TRANSLATION_DESCRIPTION_PLACEHOLDERS = {
-    "docu_extracting": "https://github.com/vingerha/gtfs2/wiki/01:-Initial-Setup-of-the-Static-GTFS-Data-Source#extraction-of-data-from-the-datasource",
-    "docu_menu_options": "https://github.com/vingerha/gtfs2/wiki/00:-Installation-and-Main-Menu",
-    "docu_select_source": "https://github.com/vingerha/gtfs2/wiki/01:-Initial-Setup-of-the-Static-GTFS-Data-Source",
-    "docu_local_stops": "https://github.com/vingerha/gtfs2/wiki/03:-Adding-a-location%E2%80%90based-dynamic-departures-sensor",
-    "docu_new_route": "https://github.com/vingerha/gtfs2/wiki/02:-Adding-a-route",
-    "docu_setup_train": "https://github.com/vingerha/gtfs2/wiki/02b:-Adding-a-route-(using-city-method)",
-    "docu_configuring_options": "https://github.com/vingerha/gtfs2/wiki/04:-Configuring-a-route's-options-(inc.-adding-real%E2%80%90time)",
+    "docu_extracting": "https://github.com/Pulpyyyy/gtfs2/wiki/Data-sources",
+    "docu_menu_options": "https://github.com/Pulpyyyy/gtfs2/wiki/Installation#the-main-menu",
+    "docu_select_source": "https://github.com/Pulpyyyy/gtfs2/wiki/Data-sources#adding-a-source",
+    "docu_local_stops": "https://github.com/Pulpyyyy/gtfs2/wiki/Local-stops",
+    "docu_new_route": "https://github.com/Pulpyyyy/gtfs2/wiki/Journeys",
+    "docu_setup_train": "https://github.com/Pulpyyyy/gtfs2/wiki/Train-journeys",
+    "docu_configuring_options": "https://github.com/Pulpyyyy/gtfs2/wiki/Data-sources#realtime-feeds",
+    "docu_journey_options": "https://github.com/Pulpyyyy/gtfs2/wiki/Journeys#journey-options",
     "model": "Example model",
 }
 
