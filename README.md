@@ -1,39 +1,45 @@
-![GitHub release (with filter)](https://img.shields.io/github/v/release/vingerha/gtfs2) [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs) ![GitHub release](https://img.shields.io/github/v/release/vingerha/gtfs2.svg?include_prereleases&label=latest(beta)&color=lightgrey)
+# GTFS2 for Home Assistant
 
+Departure times of your bus, tram, metro, ferry and train networks in Home Assistant. GTFS2 reads the GTFS files transport networks publish, the static timetable and the realtime feeds when the network has them, and turns them into sensors: the next departures of your commute, the departures around your home, the vehicles on a map. Everything is set up from the Home Assistant interface.
 
-# GTFS2 for Static and RealTime Public transport status collecting in Home Assistant
-- configuration via the GUI 
-- Static schedule on a **route** between start/end stops
-- Shows next 10 departures on the same **route-start and route-end**, including alternative transport lines if applicable for the same start/end
-- Option to add gtfs **realtime trip updates** source/url
-- Option to add gtfs **realtime vehicle location** source/url, generates geojson file which can be used for tracking vehicle on map card
-- Exports the **route shape and its stops** as geojson for every sensor, from the static schedule alone: a map card can draw the journey with or without a realtime feed
-- Option to add gtfs **realtime alerts** source/url, exposing the alert text plus its **cause and effect** in the feed's own vocabulary (`alert_cause`, `alert_effect`: STRIKE, CONSTRUCTION, NO_SERVICE, DETOUR...), so a card can tell roadworks from a strike rather than only showing a sentence
-- Add local stops and next departures, based on your location as 'person' or 'zone', can be extended with realtime data 
-- A service to update the GTFS static datasource, e.g. for calling the service via automation
-- A service to update GTFS real time data locally, reducing internet traffic when using mulitple routes
-- A service to update GTFS local stops, e.g. when tied to a moving person
-- Allows to load/update/delete datasources in gtfs2 folder from the GUI
-- translations: English, French, German, Spanish, Portuguese
+![Trams A and B and bus 40 at Gare d'Orléans, shown by the GTFS2 Live Card](https://raw.githubusercontent.com/Pulpyyyy/gtfs2-live-card/main/images/hero-light.png)
 
-**[Documentation](https://github.com/vingerha/gtfs2/wiki)**
+**[Documentation: the wiki](https://github.com/Pulpyyyy/gtfs2/wiki)**
 
-About this fork: [WHY_FORK.md](WHY_FORK.md) says why it exists, [CONCEPTS.md](CONCEPTS.md) explains its concepts in plain words, [ARCHITECTURE.md](ARCHITECTURE.md) says where each responsibility lives and why.
+## Features
 
-![image](https://github.com/vingerha/gtfs2/assets/44190435/401d3f5b-c3c3-405f-ab9a-1ecf949d5428)
+- **Journeys**: the next departures of one line between two stops, with the arrival time and the ride time; several stops at each end, a stop on the way as a connection; the return journey made at the same time.
+- **Trains**: pick the departure and arrival stations, then the lines; one sensor a line.
+- **Local stops**: the departures of every stop around a zone or a person.
+- **Only the lines you follow are imported**: a few lines of a national network stay small and fast to set up.
+- **Timetables kept up to date**: a check each night, an update entity with an Update button, a refresh button; a refresh never breaks what works. Repairs say when an update failed or a followed line disappeared.
+- **Realtime**: delays, cancelled trips and skipped stops, vehicle positions and service alerts with their cause and effect; set once per source, downloaded once for all its sensors, read only while its lines run.
+- **Map files** for cards: the line drawn with its stops, the vehicles, the full ride of each listed departure, the timetable over three days.
+- **Actions** to list the departures, the arrivals or the stops of a trip, and to refresh or shrink a source.
+- Translations: English, French, German, Spanish, Portuguese.
 
-## 🌍 Support Environmental Protection
+## The card
 
-If you would like to show your appreciation for the effort put into this project then please think about supporting environmental protection efforts (as does using public transport) consider donating to one below or any of your own choice:
+The [GTFS2 Live Card](https://github.com/Pulpyyyy/gtfs2-live-card) is made for this integration: departures board, realtime, alerts and a map of your lines and journeys.
 
-- 🌱 **Greenpeace**  
-  https://www.greenpeace.org/international/donate/
+## Installation
 
-- 🐼 **World Wide Fund for Nature (WWF)**  
-  https://donate.worldwildlife.org/
+Home Assistant 2026.3 or newer. Copy `custom_components/gtfs2` of branch `refactor/architecture` into the `custom_components` folder of your configuration and restart. Then **Settings > Devices & services > Add integration > GTFS 2**. Details, and what each screen asks: [Installation](https://github.com/Pulpyyyy/gtfs2/wiki/Installation).
 
-- 🌳 **Rainforest Alliance**  
-  https://www.rainforest-alliance.org/donate/
+## About this fork
 
+[WHY_FORK.md](WHY_FORK.md) says why this fork exists, [CONCEPTS.md](CONCEPTS.md) explains its concepts in plain words, [ARCHITECTURE.md](ARCHITECTURE.md) says where each responsibility lives and why. [Performance](https://github.com/Pulpyyyy/gtfs2/wiki/Performance) gives setup time, disk, memory and CPU measured on real networks.
 
+## Credits
 
+This integration is a fork of [gtfs2](https://github.com/vingerha/gtfs2) by Arjan ([@vingerha](https://github.com/vingerha)). Many thanks to him: his integration is what this work grew from, and its ideas and its wiki inspired this one. Thanks also to [@joostlek](https://github.com/joostlek), [@mxbssn](https://github.com/mxbssn), [@mark1foley](https://github.com/mark1foley) for his GTFS realtime integration, and [@mordyovits](https://github.com/mordyovits) for the documentation.
+
+Issues and ideas: [github.com/Pulpyyyy/gtfs2/issues](https://github.com/Pulpyyyy/gtfs2/issues).
+
+## Support environmental protection
+
+If you would like to show your appreciation for the effort put into this project, please think about supporting environmental protection efforts (as does using public transport) and consider donating to one below or any of your own choice:
+
+- **Greenpeace**: https://www.greenpeace.org/international/donate/
+- **World Wide Fund for Nature (WWF)**: https://donate.worldwildlife.org/
+- **Rainforest Alliance**: https://www.rainforest-alliance.org/donate/
