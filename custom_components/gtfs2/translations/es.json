@@ -124,7 +124,7 @@
         "description": "Home Assistant descargará el archivo y lo descomprimirá en una base local.\n\n[documentación]({docu_extracting})",
         "data_description": {
           "url": "El `.zip` publicado por la red de transporte.",
-          "file": "El nombre que usted da a esta fuente. La identifica más adelante y nombra el archivo en disco. Letras y cifras, sin espacios.",
+          "file": "El nombre que usted da a esta fuente. La identifica más adelante y nombra el archivo en disco. Letras, cifras, espacios, guiones y guiones bajos.",
           "needs_api_key": "Marque si el proveedor le dio una clave para descargar el archivo."
         }
       },

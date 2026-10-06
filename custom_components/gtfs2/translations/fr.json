@@ -124,7 +124,7 @@
         "description": "Home Assistant va télécharger le fichier et le décompresser dans une base locale.\n\n[documentation]({docu_extracting})",
         "data_description": {
           "url": "Le `.zip` publié par le réseau de transport.",
-          "file": "Le nom que vous donnez à cette source. Il l'identifie par la suite, et nomme le fichier sur le disque. Lettres et chiffres, sans espaces.",
+          "file": "Le nom que vous donnez à cette source. Il l'identifie par la suite, et nomme le fichier sur le disque. Lettres, chiffres, espaces, tirets et soulignés.",
           "needs_api_key": "Cochez si le fournisseur vous a remis une clé pour télécharger le fichier."
         }
       },

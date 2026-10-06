@@ -124,7 +124,7 @@
         "description": "Home Assistant lädt die Datei herunter und entpackt sie in eine lokale Datenbank.\n\n[Dokumentation]({docu_extracting})",
         "data_description": {
           "url": "Die vom Verkehrsnetz veröffentlichte `.zip`.",
-          "file": "Ihr eigener Name für diese Quelle. Er identifiziert sie später und benennt die Datei auf der Festplatte. Buchstaben und Ziffern, keine Leerzeichen.",
+          "file": "Ihr eigener Name für diese Quelle. Er identifiziert sie später und benennt die Datei auf der Festplatte. Buchstaben, Ziffern, Leerzeichen, Binde- und Unterstriche.",
           "needs_api_key": "Ankreuzen, wenn der Anbieter Ihnen einen Schlüssel zum Herunterladen gegeben hat."
         }
       },

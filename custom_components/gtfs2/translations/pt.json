@@ -124,7 +124,7 @@
         "description": "O Home Assistant vai descarregar o ficheiro e descompactá-lo numa base local.\n\n[documentação]({docu_extracting})",
         "data_description": {
           "url": "O `.zip` publicado pela rede de transportes.",
-          "file": "O nome que dá a esta fonte. Identifica-a mais tarde e nomeia o ficheiro no disco. Letras e algarismos, sem espaços.",
+          "file": "O nome que dá a esta fonte. Identifica-a mais tarde e nomeia o ficheiro no disco. Letras, algarismos, espaços, hífenes e sublinhados.",
           "needs_api_key": "Marque se o fornecedor lhe deu uma chave para descarregar o ficheiro."
         }
       },
