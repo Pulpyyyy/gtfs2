@@ -26,6 +26,8 @@ from homeassistant.helpers import selector
 from sqlalchemy.exc import SQLAlchemyError
 
 from .const import (
+    ALSO_AT,
+    stations_of_both_ends,
     CONF_ADD_RETURN,
     CONF_AGENCY,
     CONF_API_KEY,
@@ -81,36 +83,31 @@ def _stop_options(stops: list[str]) -> list[selector.SelectOptionDict]:
             for entry in stops]
 
 
-def stop_fields(data: Mapping[str, Any], board: list[str], alight: list[str],
+def stop_fields(data: Mapping[str, Any], offered: list[str],
                 previous: Mapping[str, Any] | None = None) -> dict[vol.Marker, Any]:
-    """The stops screen's two fields on a bus or tram journey's options,
-    the stops it gets on or off at as well ticked. Matched by their id:
-    a new edition of the feed numbers its calls anew, and the entry keeps
-    the entries the screen had. {} when there is none to offer."""
-    fields: dict[vol.Marker, Any] = {}
-    for key, offered, kept in (("board_also", board, CONF_ORIGIN_STATIONS),
-                               ("alight_also", alight, CONF_DESTINATION_STATIONS)):
-        if not offered:
-            continue
-        held = {id_of(s) for s in (data.get(kept) or [])[1:]}
-        ticked = (previous or {}).get(key, [s for s in offered if id_of(s) in held])
-        fields[vol.Optional(key, default=[s for s in ticked if s in offered])] = selector.SelectSelector(
-            selector.SelectSelectorConfig(options=_stop_options(offered), multiple=True,
-                                          mode=selector.SelectSelectorMode.DROPDOWN))
-    return fields
+    """The stops screen's field on a bus or tram journey's options, the
+    stops it gets on or off at as well ticked: those of either end, an
+    entry made when the screen asked the two apart included. Matched by
+    their id: a new edition of the feed numbers its calls anew, and the
+    entry keeps the entries the screen had. {} when there is none to offer."""
+    if not offered:
+        return {}
+    held = {id_of(s) for kept in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS)
+            for s in (data.get(kept) or [])[1:]}
+    ticked = (previous or {}).get(ALSO_AT, [s for s in offered if id_of(s) in held])
+    return {vol.Optional(ALSO_AT, default=[s for s in ticked if s in offered]): selector.SelectSelector(
+        selector.SelectSelectorConfig(options=_stop_options(offered), multiple=True,
+                                      mode=selector.SelectSelectorMode.DROPDOWN))}
 
 
-def kept_stops(data: Mapping[str, Any], board: list[str], alight: list[str],
-               board_also: list[str], alight_also: list[str]) -> dict[str, Any]:
+def kept_stops(data: Mapping[str, Any], offered: list[str], also_at: list[str]) -> dict[str, Any]:
     """The entry's new data of a bus or tram journey's options: its stops
     of each end, as the creation keeps them (async_step_options_stops);
     none ticked, the entry goes back to the shape it had before."""
-    board_also = [s for s in board_also if s in board]
-    alight_also = [s for s in alight_also if s in alight]
+    also_at = [s for s in also_at if s in offered]
     new = {k: v for k, v in data.items() if k not in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS)}
-    if board_also or alight_also:
-        new.update({CONF_ORIGIN_STATIONS: [data[CONF_ORIGIN], *board_also],
-                    CONF_DESTINATION_STATIONS: [data[CONF_DESTINATION], *alight_also]})
+    if also_at:
+        new.update(stations_of_both_ends(data[CONF_ORIGIN], data[CONF_DESTINATION], also_at))
     return new
 
 
@@ -312,29 +309,18 @@ class JourneyScreens:
         had."""
         origin = self._user_inputs[CONF_ORIGIN]
         destination = self._user_inputs[CONF_DESTINATION]
-        board, alight = await self.hass.async_add_executor_job(
+        offered = await self.hass.async_add_executor_job(
             get_stops_between, self._pygtfs, self._user_inputs[CONF_ROUTE], id_of(origin), id_of(destination))
-        if not board and not alight:
+        if not offered:
             return await self.async_step_sensor()
-
-        def _show(errors: dict[str, str], previous: dict | None = None) -> FlowResult:
-            fields = {vol.Optional(key, default=(previous or {}).get(key, [])): selector.SelectSelector(
-                selector.SelectSelectorConfig(options=_stop_options(stops), multiple=True,
-                                              mode=selector.SelectSelectorMode.DROPDOWN))
-                for key, stops in (("board_also", board), ("alight_also", alight)) if stops}
-            return self.async_show_form(
-                step_id="options_stops", data_schema=vol.Schema(fields),
-                description_placeholders=self._journey_placeholders(
-                    origin=base_name_of(origin), destination=base_name_of(destination)),
-                errors=errors)
-
         if user_input is None:
-            return _show({})
-        board_also = [s for s in user_input.get("board_also") or [] if s in board]
-        alight_also = [s for s in user_input.get("alight_also") or [] if s in alight]
-        if board_also or alight_also:
-            self._user_inputs.update({CONF_ORIGIN_STATIONS: [origin, *board_also],
-                                      CONF_DESTINATION_STATIONS: [destination, *alight_also]})
+            return self.async_show_form(
+                step_id="options_stops", data_schema=vol.Schema(stop_fields({}, offered)),
+                description_placeholders=self._journey_placeholders(
+                    origin=base_name_of(origin), destination=base_name_of(destination)))
+        also_at = [s for s in user_input.get(ALSO_AT) or [] if s in offered]
+        if also_at:
+            self._user_inputs.update(stations_of_both_ends(origin, destination, also_at))
         # the return is read again, its stops the mirror of these
         self._return_trip = None
         return await self.async_step_sensor()

@@ -11,6 +11,7 @@ The line, from A to D with C on the way (E only on the loop):
     T2  C 09:00, D 09:10                     starts at the connection
     T3  A 10:00, C 10:10                     ends at the connection
     T4  C 11:00, D 11:10, E 11:20, C 11:30   a loop back to the connection
+    T5  A 12:00, D 12:20                     does not call at the connection
 The same calls are played by a bus (stops) and a train (stations).
 """
 from __future__ import annotations
@@ -32,6 +33,7 @@ TRIPS = {
     "T2": [("C", "09:00"), ("D", "09:10")],
     "T3": [("A", "10:00"), ("C", "10:10")],
     "T4": [("C", "11:00"), ("D", "11:10"), ("E", "11:20"), ("C", "11:30")],
+    "T5": [("A", "12:00"), ("D", "12:20")],
 }
 DAY = "2026-10-05"
 
@@ -79,7 +81,8 @@ def _rides(schedule, route_type, data):
 EXPECTED = [("T1", "Stop A", "08:00", "Stop D"),    # once, not A -> C nor C -> D
             ("T2", "Stop C", "09:00", "Stop D"),    # got on at the connection
             ("T3", "Stop A", "10:00", "Stop C"),    # got off at the connection
-            ("T4", "Stop C", "11:00", "Stop D")]    # not round the loop to C
+            ("T4", "Stop C", "11:00", "Stop D"),    # not round the loop to C
+            ("T5", "Stop A", "12:00", "Stop D")]    # passes the connection by
 
 
 def test_a_bus_stop_at_both_ends_is_a_connection(bus):
@@ -117,5 +120,5 @@ def test_each_run_says_where_it_sets_the_rider_down(bus):
             "3", a, d, bus, window=(DAY, DAY), **gtfs_helper.departure_query_args(data))
     at = datetime.datetime(2026, 10, 5, tzinfo=datetime.timezone.utc)
     lists = gtfs_helper._next_departure_lists([(at, row) for row in rows], datetime.timezone.utc)
-    assert lists["next_departures_origin_stop_id"] == ["A", "C", "A", "C"]
-    assert lists["next_departures_destination_stop_id"] == ["D", "D", "C", "D"]
+    assert lists["next_departures_origin_stop_id"] == ["A", "C", "A", "C", "A"]
+    assert lists["next_departures_destination_stop_id"] == ["D", "D", "C", "D", "D"]

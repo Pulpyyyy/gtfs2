@@ -232,28 +232,24 @@
       },
       "options_train": {
         "title": "Fahrtoptionen",
-        "description": "Fahrt **{origin} → {destination}**.\n\nJede angehakte Linie erhält einen eigenen Sensor, nur mit den Bahnhöfen, die ihre Züge bedienen: eine Linie, die nie in Ihrem Abfahrtsbahnhof hält, beginnt in dem Bahnhof, in dem sie hält.\n\nNützlich zum Beispiel bei Bauarbeiten, wenn manche Züge von einem nahen Bahnhof auf dem Weg abfahren: haken Sie ihn unter „Auch einsteigen in“ an, und diese Züge erscheinen im Sensor ihrer Linie.",
+        "description": "Fahrt **{origin} → {destination}**.\n\nJede angehakte Linie erhält einen eigenen Sensor, nur mit den Bahnhöfen, die ihre Züge bedienen: eine Linie, die nie in Ihrem Abfahrtsbahnhof hält, beginnt in dem Bahnhof, in dem sie hält.\n\nNützlich zum Beispiel bei Bauarbeiten, wenn manche Züge von einem nahen Bahnhof auf dem Weg abfahren: haken Sie ihn unter „Auch ein- oder aussteigen in“ an, und diese Züge erscheinen im Sensor ihrer Linie.",
         "data": {
-          "board_also": "Auch einsteigen in",
-          "alight_also": "Auch aussteigen in",
+          "also_at": "Auch ein- oder aussteigen in",
           "lines": "Linien"
         },
         "data_description": {
-          "board_also": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls einsteigen können. Jeder Zug erscheint nur einmal, zur Zeit des ersten dieser Bahnhöfe, in dem er Fahrgäste aufnimmt.",
-          "alight_also": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls aussteigen können. Ein Zug, der dort vor Ihrem Zielbahnhof endet, wird behalten. Ein in beiden Listen angekreuzter Bahnhof ist ein Umstieg: Sie steigen dort ein oder aus, je nach Zug.",
+          "also_at": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls ein- oder aussteigen können: ein naher Bahnhof, ein Umstieg. Jeder Zug erscheint nur einmal, vom ersten dieser Bahnhöfe, in dem man einsteigen kann, bis zum letzten, in dem man aussteigen kann; ein Zug, der dort vor Ihrem Zielbahnhof endet, wird behalten und zeigt es an.",
           "lines": "Ein Sensor pro angehakter Linie. Entfernen Sie die Linien, die Sie nicht nehmen."
         }
       },
       "options_stops": {
         "title": "Haltestellen der Fahrt",
-        "description": "Fahrt **{origin} → {destination}** mit der Linie **{route}**.\n\nAlles hier ist optional: lassen Sie es so, um der Linie zwischen diesen beiden Haltestellen zu folgen.\n\nHaken Sie eine Haltestelle auf dem Weg unter „Auch einsteigen in“ an, wenn Sie auch dort einsteigen können: eine zweite Haltestelle näher bei Ihnen oder eine, die der Bus anfährt, während Ihre gesperrt ist. Jeder Bus erscheint nur einmal, an der ersten dieser Haltestellen, an der er Fahrgäste aufnimmt.",
+        "description": "Fahrt **{origin} → {destination}** mit der Linie **{route}**.\n\nAlles hier ist optional: lassen Sie es so, um der Linie zwischen diesen beiden Haltestellen zu folgen.\n\nHaken Sie eine Haltestelle auf dem Weg unter „Auch ein- oder aussteigen in“ an, wenn Sie auch dort ein- oder aussteigen können: eine zweite Haltestelle näher bei Ihnen, ein Umstieg oder eine, die der Bus anfährt, während Ihre gesperrt ist. Jeder Bus erscheint nur einmal.",
         "data": {
-          "board_also": "Auch einsteigen in",
-          "alight_also": "Auch aussteigen in"
+          "also_at": "Auch ein- oder aussteigen in"
         },
         "data_description": {
-          "board_also": "Haltestellen auf dem Weg, an denen Sie ebenfalls einsteigen können. Jeder Bus erscheint nur einmal, zur Zeit der ersten dieser Haltestellen, an der er Fahrgäste aufnimmt.",
-          "alight_also": "Haltestellen auf dem Weg, an denen Sie ebenfalls aussteigen können. Ein Bus, der dort vor Ihrer Haltestelle endet, wird behalten. Eine in beiden Listen angekreuzte Haltestelle ist ein Umstieg: Sie steigen dort ein oder aus, je nach Bus."
+          "also_at": "Haltestellen auf dem Weg, an denen Sie ebenfalls ein- oder aussteigen können: eine zweite Haltestelle näher bei Ihnen, ein Umstieg. Jeder Bus erscheint nur einmal, von der ersten dieser Haltestellen, an der man einsteigen kann, bis zur letzten, an der man aussteigen kann; ein Bus, der dort vor Ihrer Haltestelle endet, wird behalten und zeigt es an."
         }
       },
       "sensors_train": {
@@ -404,8 +400,7 @@
           "radius": "Radius für die Suche nach Haltestellen (in Metern zwischen 50 und 500)",
           "source_timezone_correction": "Zeitzone der Quelle korrigieren (in Stunden)",
           "check_source_dates": "Experimentell: eine neue Datei ohne aktuelle Daten ablehnen",
-          "board_also": "Auch einsteigen in",
-          "alight_also": "Auch aussteigen in"
+          "also_at": "Auch ein- oder aussteigen in"
         },
         "data_description": {
           "refresh_interval": "Wie oft der Fahrplan neu gelesen wird, in Minuten.",
@@ -416,8 +411,7 @@
           "max_local_stops": "Ab dieser Anzahl Haltestellen wird der Sensor langsam. Erhöhung auf eigenes Risiko.",
           "source_timezone_correction": "Nur wenn die Quelle ihre Zeiten in einer anderen Zeitzone angibt, in Stunden.",
           "check_source_dates": "Experimentell: eine neue Datei ablehnen, deren Daten alle in der Zukunft liegen.",
-          "board_also": "Bahnhöfe oder Haltestellen auf dem Weg, an denen Sie ebenfalls einsteigen können. Jede Fahrt erscheint nur einmal, zur Zeit der ersten davon, an der sie Fahrgäste aufnimmt.",
-          "alight_also": "Bahnhöfe oder Haltestellen auf dem Weg, an denen Sie ebenfalls aussteigen können. Eine Fahrt, die dort vor Ihrem Ziel endet, wird behalten. Ein Bahnhof oder eine Haltestelle, in beiden Listen angekreuzt, ist ein Umstieg: Sie steigen dort ein oder aus, je nach Fahrt."
+          "also_at": "Bahnhöfe oder Haltestellen auf dem Weg, an denen Sie ebenfalls ein- oder aussteigen können: eine nahe, ein Umstieg. Jede Fahrt erscheint nur einmal, von der ersten, an der man einsteigen kann, bis zur letzten, an der man aussteigen kann; eine Fahrt, die dort vor Ihrem Ziel endet, wird behalten und zeigt es an."
         }
       },
       "real_time": {

@@ -66,10 +66,11 @@ Stop A → Stop B          a bus or a tram
 Station A → Station B    a train
 ```
 
-Each end can hold more than one stop or station, ticked under "Also board
-at" and "Also get off at": each run is then listed once, where the rider
-first gets on. A stop ticked under both is a connection: the rider gets on
-or off there, as each run allows.
+A journey can also get on or off at stops or stations on the way, ticked
+under "Also get on or off at": each one is a connection, where the rider
+gets on or off as each run allows. Each run is listed once, from where the
+rider first gets on to where they last get off; one that ends at such a
+stop, short of the destination, is listed too and says where it ends.
 
 A train journey is set up from its two stations first, then its lines:
 each line ticked becomes a journey of its own.

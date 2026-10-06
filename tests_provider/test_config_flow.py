@@ -793,17 +793,16 @@ def test_a_bus_journey_gets_on_or_off_at_more_stops(world):
         origin = offered(stops, "origin")[1]
         destination = offered(arrivals, "destination")[-1]
         options = shown(await submit(hass, arrivals, destination=destination), FORM, "options_stops")
-        board = offered(options, "board_also")
-        alight = offered(options, "alight_also")
-        assert board and alight and (default(options, "board_also"), default(options, "alight_also")) == ([], [])
-        naming = shown(await submit(hass, options, board_also=[board[0]], alight_also=[]), FORM, "sensor")
+        also = offered(options, "also_at")
+        assert also and default(options, "also_at") == []
+        naming = shown(await submit(hass, options, also_at=[also[0]]), FORM, "sensor")
         shown(await submit(hass, naming, name="to work", add_return=True), MENU, "finished")
         outward, back = hass.journeys()
-        assert outward.data["origin_stations"] == [origin, board[0]]
-        assert outward.data["destination_stations"] == [destination]
-        # the mirror: got on at as well out, got off at as well back
-        assert back.data["origin_stations"] == [destination]
-        assert back.data["destination_stations"] == [origin, board[0]]
+        # a stop on the way is got on or off at: at both ends, out and back
+        assert outward.data["origin_stations"] == [origin, also[0]]
+        assert outward.data["destination_stations"] == [destination, also[0]]
+        assert back.data["origin_stations"] == [destination, also[0]]
+        assert back.data["destination_stations"] == [origin, also[0]]
     walk(world, scenario)
 
 
@@ -826,22 +825,24 @@ def test_a_bus_journey_s_options_get_on_or_off_at_more_stops(world):
         (entry,) = hass.journeys()
         assert "origin_stations" not in entry.data
         form = shown(await options_of(hass, entry), FORM, "init")
-        board = offered(form, "board_also")
-        assert board == offered(on_screen, "board_also") and default(form, "board_also") == []
-        # a stop ticked at both ends is a connection, kept at both
-        both = next(s for s in board if s in offered(form, "alight_also"))
-        shown(await submit(hass, form, options, board_also=[both], alight_also=[both]), CREATE)
-        assert entry.data["origin_stations"] == [entry.data["origin"], both]
-        assert entry.data["destination_stations"] == [entry.data["destination"], both]
-        form = shown(await options_of(hass, entry), FORM, "init")
-        shown(await submit(hass, form, options, board_also=[board[0]], alight_also=[]), CREATE)
-        assert entry.data["origin_stations"] == [entry.data["origin"], board[0]]
-        assert entry.data["destination_stations"] == [entry.data["destination"]]
+        also = offered(form, "also_at")
+        assert also == offered(on_screen, "also_at") and default(form, "also_at") == []
+        # a stop ticked is got on or off at: kept at both ends
+        shown(await submit(hass, form, options, also_at=[also[0]]), CREATE)
+        assert entry.data["origin_stations"] == [entry.data["origin"], also[0]]
+        assert entry.data["destination_stations"] == [entry.data["destination"], also[0]]
         # ticked again on the next opening, by its id
         form = shown(await options_of(hass, entry), FORM, "init")
-        assert default(form, "board_also") == [board[0]]
+        assert default(form, "also_at") == [also[0]]
+        # an entry made when the screen asked the two apart: the stops of
+        # either end ticked
+        hass.config_entries.async_update_entry(entry, data={
+            **entry.data, "origin_stations": [entry.data["origin"], also[0]],
+            "destination_stations": [entry.data["destination"]]})
+        form = shown(await options_of(hass, entry), FORM, "init")
+        assert default(form, "also_at") == [also[0]]
         # none ticked: the entry has the shape it had
-        shown(await submit(hass, form, options, board_also=[], alight_also=[]), CREATE)
+        shown(await submit(hass, form, options, also_at=[]), CREATE)
         assert "origin_stations" not in entry.data and "destination_stations" not in entry.data
     walk(world, scenario)
 
@@ -1002,15 +1003,15 @@ def test_a_train_journey_from_the_stations_first_makes_a_sensor_a_line(world):
         arrivals = shown(await submit(hass, stations, origin="Orléans"), FORM, "destination_train")
         options = shown(await submit(hass, arrivals, destination="Paris Austerlitz"),
                         FORM, "options_train")
-        assert "Les Aubrais" in offered(options, "board_also")
+        assert "Les Aubrais" in offered(options, "also_at")
         # every line riding between them ticked; each offered under its name too
         assert set(default(options, "lines")) == {"K8+", "P8"} == set(offered(options, "lines"))
         assert labels(options, "lines")["K8+"] == "K8+ (Paris - Orléans)"
         # a sensor a line: no line ticked is no sensor
-        again = shown(await submit(hass, options, board_also=["Les Aubrais"], alight_also=[], lines=[]),
+        again = shown(await submit(hass, options, also_at=["Les Aubrais"], lines=[]),
                       FORM, "options_train")
         assert again["errors"] == {"base": "no_line_ticked"}
-        sensors = shown(await submit(hass, again, board_also=["Les Aubrais"], alight_also=[],
+        sensors = shown(await submit(hass, again, also_at=["Les Aubrais"],
                                      lines=["K8+", "P8"]), FORM, "sensors_train")
         # each named from its line and its stations, no name to type
         assert "name" not in fields(sensors)
@@ -1029,12 +1030,12 @@ def test_a_train_journey_from_the_stations_first_makes_a_sensor_a_line(world):
         k8 = made["sncf K8+ Orléans → Paris Austerlitz"]
         assert (k8["route"], k8["line"], k8["lines"]) == ("train", "K8+", ["K8+"])
         assert (k8["origin"], k8["destination"]) == ("Orléans", "Paris Austerlitz")
+        # Les Aubrais got on or off at, out and back
         assert k8["origin_stations"] == ["Orléans", "Les Aubrais"]
-        assert k8["destination_stations"] == ["Paris Austerlitz"]
-        # the mirror: got on at Les Aubrais out, got off there back
+        assert k8["destination_stations"] == ["Paris Austerlitz", "Les Aubrais"]
         back = made["sncf K8+ Paris Austerlitz → Orléans"]
         assert (back["origin"], back["destination"]) == ("Paris Austerlitz", "Orléans")
-        assert back["origin_stations"] == ["Paris Austerlitz"]
+        assert back["origin_stations"] == ["Paris Austerlitz", "Les Aubrais"]
         assert back["destination_stations"] == ["Orléans", "Les Aubrais"]
         assert (back["line"], back["lines"]) == ("K8+", ["K8+"])
         assert made["sncf P8 Orléans → Paris Austerlitz"]["lines"] == ["P8"]
@@ -1092,13 +1093,13 @@ def test_a_line_ticked_keeps_only_the_stations_it_serves(world, tmp_path):
                          FORM, "options_train")
 
         # the K8+ alone: one line ticked, named on the sensor screen
-        naming = shown(await submit(hass, await options(), board_also=["Les Aubrais"],
-                                    alight_also=[], lines=["K8+"]), FORM, "sensor_train")
+        naming = shown(await submit(hass, await options(), also_at=["Les Aubrais"],
+                                    lines=["K8+"]), FORM, "sensor_train")
         assert default(naming, "name") == "rail K8+ Orléans → Paris Austerlitz"
         shown(await submit(hass, naming, name=default(naming, "name"), add_return=False),
               MENU, "finished")
-        sensors = shown(await submit(hass, await options(), board_also=["Les Aubrais"],
-                                     alight_also=[], lines=["K8+", "P8"]), FORM, "sensors_train")
+        sensors = shown(await submit(hass, await options(), also_at=["Les Aubrais"],
+                                     lines=["K8+", "P8"]), FORM, "sensors_train")
         assert sensors["description_placeholders"]["sensors"] == (
             "- rail K8+ Orléans → Paris Austerlitz\n- rail P8 Les Aubrais → Paris Austerlitz")
         # the K8+ is there already: only the P8 is made
@@ -1135,7 +1136,7 @@ def test_a_train_journey_from_the_stations_first_imports_the_lines_it_rides(worl
         assert loaded == {"FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:",
                           "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"}
         assert {"K8+", "P8"} <= set(offered(options, "lines"))
-        sensors = shown(await submit(hass, options, board_also=["Les Aubrais"], alight_also=[],
+        sensors = shown(await submit(hass, options, also_at=["Les Aubrais"],
                                      lines=["K8+", "P8"]), FORM, "sensors_train")
         shown(await submit(hass, sensors, add_return=True), MENU, "finished")
         made = {entry.data["name"]: entry.data for entry in hass.journeys()}
@@ -1879,27 +1880,28 @@ def test_a_train_journey_s_options_get_on_or_off_at_more_stations(world):
                                       "origin_stations": ["Orléans"],
                                       "destination_stations": ["Paris Austerlitz"]})
         form = shown(await options_of(hass, entry), FORM, "init")
-        assert "Les Aubrais" in offered(form, "board_also")
-        assert (default(form, "board_also"), default(form, "alight_also")) == ([], [])
-        # a station ticked at both ends is a connection, kept at both
-        shown(await submit(hass, form, options, board_also=["Les Aubrais"],
-                           alight_also=["Les Aubrais"]), CREATE)
-        assert entry.data["origin_stations"] == ["Orléans", "Les Aubrais"]
-        assert entry.data["destination_stations"] == ["Paris Austerlitz", "Les Aubrais"]
-        form = shown(await options_of(hass, entry), FORM, "init")
-        shown(await submit(hass, form, options, refresh_interval=5, board_also=["Les Aubrais"],
-                           alight_also=[]), CREATE)
+        assert "Les Aubrais" in offered(form, "also_at")
+        assert default(form, "also_at") == []
+        # a station ticked is got on or off at: kept at both ends
+        shown(await submit(hass, form, options, refresh_interval=5, also_at=["Les Aubrais"]), CREATE)
         # the entry keeps the stations, the options its own knobs only
         assert entry.data["origin_stations"] == ["Orléans", "Les Aubrais"]
-        assert entry.data["destination_stations"] == ["Paris Austerlitz"]
-        assert "board_also" not in entry.options and entry.options["refresh_interval"] == 5
+        assert entry.data["destination_stations"] == ["Paris Austerlitz", "Les Aubrais"]
+        assert "also_at" not in entry.options and entry.options["refresh_interval"] == 5
         # shown again ticked
-        assert default(shown(await options_of(hass, entry), FORM, "init"), "board_also") == ["Les Aubrais"]
+        assert default(shown(await options_of(hass, entry), FORM, "init"), "also_at") == ["Les Aubrais"]
+        # an entry made when the screen asked the two apart: the stations of
+        # either end ticked
+        apart = await imported(hass, {**base, "name": "sncf K8+ Orléans → Paris Austerlitz apart",
+                                      "line": "K8+", "lines": ["K8+"],
+                                      "origin_stations": ["Orléans", "Les Aubrais"],
+                                      "destination_stations": ["Paris Austerlitz"]})
+        assert default(shown(await options_of(hass, apart), FORM, "init"), "also_at") == ["Les Aubrais"]
         # a train journey taken over from the stock integration rides every
         # line from one station a end: it takes a second one the same way
         stock = await imported(hass, {**base, "name": "sncf Orléans → Paris Austerlitz"})
         form = shown(await options_of(hass, stock), FORM, "init")
-        shown(await submit(hass, form, options, board_also=["Les Aubrais"], alight_also=[]), CREATE)
+        shown(await submit(hass, form, options, also_at=["Les Aubrais"]), CREATE)
         assert stock.data["origin_stations"] == ["Orléans", "Les Aubrais"]
         assert "line" not in stock.data
     walk(world, scenario)

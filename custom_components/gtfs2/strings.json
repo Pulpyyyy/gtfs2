@@ -243,28 +243,24 @@
       },
       "options_train": {
         "title": "Journey options",
-        "description": "Journey **{origin} → {destination}**.\n\nEach line ticked gets a sensor of its own, with only the stations its trains serve: a line that never calls at your departure station starts from the station it does call at.\n\nUseful during engineering works, for instance, when some trains leave from a nearby station on the way: tick it under “Also board at”, and those trains show in the sensor of their line.",
+        "description": "Journey **{origin} → {destination}**.\n\nEach line ticked gets a sensor of its own, with only the stations its trains serve: a line that never calls at your departure station starts from the station it does call at.\n\nUseful during engineering works, for instance, when some trains leave from a nearby station on the way: tick it under “Also get on or off at”, and those trains show in the sensor of their line.",
         "data": {
-          "board_also": "Also board at",
-          "alight_also": "Also get off at",
+          "also_at": "Also get on or off at",
           "lines": "Lines"
         },
         "data_description": {
-          "board_also": "Stations on the way where you can board as well. Each train shows once, at the time of the first of these stations where it takes passengers.",
-          "alight_also": "Stations on the way where you can get off as well. A train that ends there, short of your arrival station, is kept. A station ticked in both lists is a connection: you get on or off there, as each train allows.",
+          "also_at": "Stations on the way where you can get on or off as well: a nearby station, a connection. Each train shows once, from the first of these where you can board to the last where you can get off; one that ends at such a station, short of your arrival, is kept and says so.",
           "lines": "One sensor per line ticked. Untick the lines you do not take."
         }
       },
       "options_stops": {
         "title": "Stops of the journey",
-        "description": "Journey **{origin} → {destination}** on line **{route}**.\n\nEverything here is optional: leave it as it is to follow the line between these two stops.\n\nTick a stop on the way under “Also board at” when you can get on there too: a second stop nearer home, or one the bus calls at while yours is closed. Each bus shows once, at the first of these stops where it takes passengers.",
+        "description": "Journey **{origin} → {destination}** on line **{route}**.\n\nEverything here is optional: leave it as it is to follow the line between these two stops.\n\nTick a stop on the way under “Also get on or off at” when you can get on or off there too: a second stop nearer home, a connection, or one the bus calls at while yours is closed. Each bus shows once.",
         "data": {
-          "board_also": "Also board at",
-          "alight_also": "Also get off at"
+          "also_at": "Also get on or off at"
         },
         "data_description": {
-          "board_also": "Stops on the way where you can get on as well. Each bus shows once, at the time of the first of these stops where it takes passengers.",
-          "alight_also": "Stops on the way where you can get off as well. A bus that ends there, short of your stop, is kept. A stop ticked in both lists is a connection: you get on or off there, as each bus allows."
+          "also_at": "Stops on the way where you can get on or off as well: a second stop nearer home, a connection. Each bus shows once, from the first of these where you can board to the last where you can get off; one that ends at such a stop, short of yours, is kept and says so."
         }
       },
       "sensors_train": {
@@ -404,8 +400,7 @@
           "timerange": "Checking for departures in future from 'now' (in minutes: between 15 and 120)",
           "check_source_dates": "experimental: avoid using new zip/source contain having no current information",
           "radius": "Radius to search for stops (in meters between 50 and 500)",
-          "board_also": "Also board at",
-          "alight_also": "Also get off at"
+          "also_at": "Also get on or off at"
         },
         "data_description": {
           "refresh_interval": "How often the timetable is re-read, in minutes.",
@@ -416,8 +411,7 @@
           "max_local_stops": "Above this many stops the sensor gets slow. Raise it at your own risk.",
           "source_timezone_correction": "Only if the source publishes times in another timezone, in hours.",
           "check_source_dates": "Experimental: refuse a new file whose dates are all in the future.",
-          "board_also": "Stations or stops on the way where you can board as well. Each run shows once, at the time of the first of these where it takes passengers.",
-          "alight_also": "Stations or stops on the way where you can get off as well. A run that ends there, short of your arrival, is kept. A station or stop ticked in both lists is a connection: you get on or off there, as each run allows."
+          "also_at": "Stations or stops on the way where you can get on or off as well: a nearby one, a connection. Each run shows once, from the first of these where you can board to the last where you can get off; one that ends there, short of your arrival, is kept and says so."
         }
       },
       "source_menu": {

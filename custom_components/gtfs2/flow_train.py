@@ -22,6 +22,8 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
 from .const import (
+    ALSO_AT,
+    stations_of_both_ends,
     CONF_ADD_RETURN,
     CONF_DESTINATION,
     CONF_DESTINATION_STATIONS,
@@ -87,8 +89,7 @@ def _options_schema(between: list[str], lines: dict[str, str], previous: dict) -
                     for code, name in lines.items()]
     fields: dict[vol.Marker, Any] = {}
     if between:
-        fields[vol.Optional("board_also", default=previous.get("board_also", []))] = _many(stations)
-        fields[vol.Optional("alight_also", default=previous.get("alight_also", []))] = _many(stations)
+        fields[vol.Optional(ALSO_AT, default=previous.get(ALSO_AT, []))] = _many(stations)
     fields[vol.Optional("lines", default=previous.get("lines", []))] = _many(line_options)
     return vol.Schema(fields)
 
@@ -103,27 +104,27 @@ def train_stations_between(schedule: Schedule, data: Mapping[str, Any]) -> list[
 
 def train_station_fields(data: Mapping[str, Any], between: list[str],
                          previous: Mapping[str, Any] | None = None) -> dict[vol.Marker, Any]:
-    """The two fields of a train entry's options screen, the stations it
-    gets on or off at as well ticked; {} when there is none to offer."""
+    """The field of a train entry's options screen, the stations it gets
+    on or off at as well ticked: those of either end, an entry made when
+    the screen asked the two apart included; {} when there is none to offer."""
     if not between:
         return {}
-    ends = {"board_also": data.get(CONF_ORIGIN_STATIONS) or [],
-            "alight_also": data.get(CONF_DESTINATION_STATIONS) or []}
-    ticked = {key: [s for s in (previous or {}).get(key, names) if s in between]
-              for key, names in ends.items()}
+    held = [*(data.get(CONF_ORIGIN_STATIONS) or []), *(data.get(CONF_DESTINATION_STATIONS) or [])]
+    ticked = [s for s in (previous or {}).get(ALSO_AT, held) if s in between]
     stations = [selector.SelectOptionDict(value=name, label=name) for name in between]
-    return {vol.Optional(key, default=ticked[key]): selector.SelectSelector(selector.SelectSelectorConfig(
-        options=stations, multiple=True, mode=selector.SelectSelectorMode.DROPDOWN))
-        for key in ("board_also", "alight_also")}
+    return {vol.Optional(ALSO_AT, default=list(dict.fromkeys(ticked))): selector.SelectSelector(
+        selector.SelectSelectorConfig(options=stations, multiple=True,
+                                      mode=selector.SelectSelectorMode.DROPDOWN))}
 
 
-def kept_train_stations(schedule: Schedule, data: Mapping[str, Any], board_also: list[str],
-                        alight_also: list[str]) -> tuple[str | None, dict[str, list[str]]]:
+def kept_train_stations(schedule: Schedule, data: Mapping[str, Any],
+                        also_at: list[str]) -> tuple[str | None, dict[str, list[str]]]:
     """(error, the entry's stations) of a train entry's options screen:
     the stations of each end its line serves, of those ticked, as the
     creation keeps them (train_line_ends). Blocking, for the executor."""
-    origins = [str(data.get(CONF_ORIGIN) or ""), *board_also]
-    destinations = [str(data.get(CONF_DESTINATION) or ""), *alight_also]
+    ends = stations_of_both_ends(str(data.get(CONF_ORIGIN) or ""), str(data.get(CONF_DESTINATION) or ""),
+                                 also_at)
+    origins, destinations = ends[CONF_ORIGIN_STATIONS], ends[CONF_DESTINATION_STATIONS]
     ons, offs = train_line_ends(schedule, origins, destinations, entry_lines(data) or None)
     if not ons or not offs:
         return "no_train_between", {}
@@ -417,10 +418,10 @@ class TrainScreens:
             return _show(errors)
         # nothing to choose, one line and no station in between: as it stands
         user_input = user_input or {"lines": ticked}
-        board_also = [s for s in user_input.get("board_also") or [] if s in between]
-        alight_also = [s for s in user_input.get("alight_also") or [] if s in between]
+        also_at = [s for s in user_input.get(ALSO_AT) or [] if s in between]
         chosen = [line for line in user_input.get("lines") or [] if line in lines]
-        origins, destinations = [origin, *board_also], [destination, *alight_also]
+        ends = stations_of_both_ends(origin, destination, also_at)
+        origins, destinations = ends[CONF_ORIGIN_STATIONS], ends[CONF_DESTINATION_STATIONS]
         if lines and not chosen:
             # a line the feed gives no code offers none, and holds to none
             return _show({"base": "no_line_ticked"}, user_input)

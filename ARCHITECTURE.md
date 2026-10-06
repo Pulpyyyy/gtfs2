@@ -562,11 +562,14 @@ A bus journey names its line, direction and stops; a train journey names
 stations and stores `route = "train"`, a marker rather than a route id,
 and the code of its line (`line`, `lines`): the train screens make one
 entry per line ticked. Either may get on or off at more stops or stations
-(`origin_stations`, `destination_stations`), picked at creation or in its
-options; each run is then read where it is first got on and last got off.
-A stop or station at both ends is a connection, got on or off at as each
-run allows, a run coming back to it never read as a ride to itself
-(`_several_stops`).
+on the way, picked in one list at creation or in its options and kept at
+both ends (`origin_stations`, `destination_stations`): each is a
+connection, got on or off at as each run allows. Each run is read where it
+is first got on and last got off, never as a ride back to where it began
+(`_several_stops`), and the sensor says where each one sets the rider
+down (`next_departures_destination_stop_id`): a run may end at a stop on
+the way, short of the destination. An entry made when the screens asked
+the two ends apart keeps its lists as they are.
 
 **Local stops entry.** Gets a `GTFSLocalStopUpdateCoordinator` and one sensor
 per stop around the person or zone.

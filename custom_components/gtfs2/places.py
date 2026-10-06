@@ -501,17 +501,17 @@ def get_destination_stop_list(schedule: Schedule, route_id: str, direction: str 
 
 
 def get_stops_between(schedule: Schedule, route_id: str, origin_stop_id: str,
-                      destination_stop_id: str) -> tuple[list[str], list[str]]:
-    """(the stops to get on at as well, the stops to get off at as well) of
-    a journey: the places strictly between its two, on the trips of the
-    line that ride from one to the other, in riding order, one entry a
-    place ("stop_id: Name (sequence)", as the other lists of the flow).
+                      destination_stop_id: str) -> list[str]:
+    """The stops to get on or off at as well of a journey: the places
+    strictly between its two, on the trips of the line that ride from one
+    to the other, in riding order, one entry a place ("stop_id: Name
+    (sequence)", as the other lists of the flow).
 
     A week of works, a stop closed for a market, a second stop nearer the
-    other end of the street: a bus journey takes several, as a train one
-    takes Orleans and Les Aubrais. A place where no such trip takes riders
-    on is not offered to get on at, nor one where none sets down to get
-    off at (see _boards and _alights).
+    other end of the street, a connection: a bus journey takes several,
+    as a train one takes Orleans and Les Aubrais. A place where no such
+    trip takes riders on nor sets them down is not offered; the
+    departures hold to what each call allows (see _boards and _alights).
     """
     sql = f"""
     SELECT mid.stop_id, s.stop_name, min(mid.stop_sequence) AS sequence,
@@ -531,17 +531,12 @@ def get_stops_between(schedule: Schedule, route_id: str, origin_stop_id: str,
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql), {"route_id": route_id, "origin": origin_stop_id,
                                         "destination": destination_stop_id}).fetchall()
-    board: list[str] = []
-    alight: list[str] = []
+    stops: list[str] = []
     named: set[str] = set()
     for stop_id, name, sequence, _reached, boards, alights in rows:
         # one entry a place: the other side of the road reads the same
-        if (name or stop_id) in named:
+        if (name or stop_id) in named or not (boards or alights):
             continue
         named.add(name or stop_id)
-        entry = f"{stop_id}: {name or stop_id} ({sequence})"
-        if boards:
-            board.append(entry)
-        if alights:
-            alight.append(entry)
-    return board, alight
+        stops.append(f"{stop_id}: {name or stop_id} ({sequence})")
+    return stops

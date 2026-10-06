@@ -386,6 +386,18 @@ def base_name_of(entry: str) -> str:
     return re.sub(r" #\d+$", "", stop_name_of(entry))
 
 
+# the field of the screens asking the stops on the way a journey gets on or
+# off at as well, each a connection (stations_of_both_ends)
+ALSO_AT = "also_at"
+
+
+def stations_of_both_ends(origin: str, destination: str, also_at: list[str]) -> dict[str, list[str]]:
+    """The entry's stations of each end, those on the way at both: a stop
+    ticked is got on or off at, as each run allows, its departures telling
+    where each run sets the rider down (next_departures_destination_stop_id)."""
+    return {CONF_ORIGIN_STATIONS: [origin, *also_at], CONF_DESTINATION_STATIONS: [destination, *also_at]}
+
+
 def entry_lines(data: Mapping[str, Any]) -> list[str]:
     """The line codes a train entry holds its departures to, [] for every
     rail line: the ones ticked on the options screen ("lines"), or the

@@ -232,28 +232,24 @@
       },
       "options_train": {
         "title": "Opciones del trayecto",
-        "description": "Trayecto **{origin} → {destination}**.\n\nCada línea marcada tiene su propio sensor, solo con las estaciones que sirven sus trenes: una línea que nunca para en su estación de salida empieza en la estación donde para.\n\nÚtil por ejemplo durante obras, cuando algunos trenes salen de una estación cercana en el camino: márquela en «Subir también en», y esos trenes aparecerán en el sensor de su línea.",
+        "description": "Trayecto **{origin} → {destination}**.\n\nCada línea marcada tiene su propio sensor, solo con las estaciones que sirven sus trenes: una línea que nunca para en su estación de salida empieza en la estación donde para.\n\nÚtil por ejemplo durante obras, cuando algunos trenes salen de una estación cercana en el camino: márquela en «Subir o bajar también en», y esos trenes aparecerán en el sensor de su línea.",
         "data": {
-          "board_also": "Subir también en",
-          "alight_also": "Bajar también en",
+          "also_at": "Subir o bajar también en",
           "lines": "Líneas"
         },
         "data_description": {
-          "board_also": "Estaciones en el camino donde también puede subir. Cada tren aparece una sola vez, a la hora de la primera de estas estaciones donde admite viajeros.",
-          "alight_also": "Estaciones en el camino donde también puede bajar. Un tren que termina allí, antes de su estación de llegada, se conserva. Una estación marcada en las dos listas es un transbordo: sube o baja allí, según el tren.",
+          "also_at": "Estaciones en el camino donde también puede subir o bajar: una estación cercana, un transbordo. Cada tren aparece una sola vez, desde la primera de estas estaciones donde se puede subir hasta la última donde se puede bajar; un tren que termina en una de ellas, antes de su estación de llegada, se conserva y lo indica.",
           "lines": "Un sensor por línea marcada. Desmarque las líneas que no toma."
         }
       },
       "options_stops": {
         "title": "Paradas del trayecto",
-        "description": "Trayecto **{origin} → {destination}** en la línea **{route}**.\n\nTodo es opcional: déjelo como está para seguir la línea entre estas dos paradas.\n\nMarque una parada en el camino en «Subir también en» cuando también pueda subir allí: una segunda parada más cerca de casa, o una donde para el autobús mientras la suya está cerrada. Cada autobús aparece una sola vez, en la primera de estas paradas donde admite viajeros.",
+        "description": "Trayecto **{origin} → {destination}** en la línea **{route}**.\n\nTodo es opcional: déjelo como está para seguir la línea entre estas dos paradas.\n\nMarque una parada en el camino en «Subir o bajar también en» cuando también pueda subir o bajar allí: una segunda parada más cerca de casa, un transbordo, o una donde para el autobús mientras la suya está cerrada. Cada autobús aparece una sola vez.",
         "data": {
-          "board_also": "Subir también en",
-          "alight_also": "Bajar también en"
+          "also_at": "Subir o bajar también en"
         },
         "data_description": {
-          "board_also": "Paradas en el camino donde también puede subir. Cada autobús aparece una sola vez, a la hora de la primera de estas paradas donde admite viajeros.",
-          "alight_also": "Paradas en el camino donde también puede bajar. Un autobús que termina allí, antes de su parada, se conserva. Una parada marcada en las dos listas es un transbordo: sube o baja allí, según el autobús."
+          "also_at": "Paradas en el camino donde también puede subir o bajar: una segunda parada más cerca de casa, un transbordo. Cada autobús aparece una sola vez, desde la primera de estas paradas donde se puede subir hasta la última donde se puede bajar; un autobús que termina en una de ellas, antes de su parada, se conserva y lo indica."
         }
       },
       "sensors_train": {
@@ -404,8 +400,7 @@
           "radius": "Radio de búsqueda de paradas (en metros entre 50 y 500)",
           "source_timezone_correction": "Corregir el huso horario de la fuente (en horas)",
           "check_source_dates": "Experimental: rechazar un archivo nuevo sin datos actuales",
-          "board_also": "Subir también en",
-          "alight_also": "Bajar también en"
+          "also_at": "Subir o bajar también en"
         },
         "data_description": {
           "refresh_interval": "Con qué frecuencia se releen los horarios, en minutos.",
@@ -416,8 +411,7 @@
           "max_local_stops": "Por encima de este número de paradas el sensor se vuelve lento. Auméntelo bajo su responsabilidad.",
           "source_timezone_correction": "Solo si la fuente publica sus horas en otro huso, en horas.",
           "check_source_dates": "Experimental: rechazar un archivo nuevo cuyas fechas estén todas en el futuro.",
-          "board_also": "Estaciones o paradas en el camino donde también puede subir. Cada servicio aparece una sola vez, a la hora de la primera de ellas donde admite viajeros.",
-          "alight_also": "Estaciones o paradas en el camino donde también puede bajar. Un servicio que termina allí, antes de su llegada, se conserva. Una estación o parada marcada en las dos listas es un transbordo: sube o baja allí, según el servicio."
+          "also_at": "Estaciones o paradas en el camino donde también puede subir o bajar: una cercana, un transbordo. Cada servicio aparece una sola vez, desde la primera donde se puede subir hasta la última donde se puede bajar; un servicio que termina en una de ellas, antes de su llegada, se conserva y lo indica."
         }
       },
       "real_time": {

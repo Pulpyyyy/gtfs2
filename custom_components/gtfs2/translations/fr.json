@@ -243,28 +243,24 @@
       },
       "options_train": {
         "title": "Options du trajet",
-        "description": "Trajet **{origin} → {destination}**.\n\nChaque ligne cochée a son propre capteur, avec seulement les gares que ses trains desservent : une ligne qui ne passe pas par votre gare de départ part de la gare où elle s'arrête.\n\nUtile par exemple pendant des travaux, quand certains trains partent d'une gare voisine sur le chemin : cochez-la dans « Monter aussi à », et ces trains apparaîtront dans le capteur de leur ligne.",
+        "description": "Trajet **{origin} → {destination}**.\n\nChaque ligne cochée a son propre capteur, avec seulement les gares que ses trains desservent : une ligne qui ne passe pas par votre gare de départ part de la gare où elle s'arrête.\n\nUtile par exemple pendant des travaux, quand certains trains partent d'une gare voisine sur le chemin : cochez-la dans « Monter ou descendre aussi à », et ces trains apparaîtront dans le capteur de leur ligne.",
         "data": {
-          "board_also": "Monter aussi à",
-          "alight_also": "Descendre aussi à",
+          "also_at": "Monter ou descendre aussi à",
           "lines": "Lignes"
         },
         "data_description": {
-          "board_also": "Gares sur le chemin où vous pouvez aussi monter. Chaque train n'apparaît qu'une fois, à l'heure de la première de ces gares où il prend des voyageurs.",
-          "alight_also": "Gares sur le chemin où vous pouvez aussi descendre. Un train qui s'y arrête, avant votre gare d'arrivée, est gardé. Une gare cochée dans les deux listes est une correspondance : on y monte ou on y descend, selon le train.",
+          "also_at": "Gares sur le chemin où vous pouvez aussi monter ou descendre : une gare voisine, une correspondance. Chaque train n'apparaît qu'une fois, de la première de ces gares où l'on peut monter à la dernière où l'on peut descendre ; un train qui s'arrête à l'une d'elles, avant votre gare d'arrivée, est gardé et l'indique.",
           "lines": "Un capteur par ligne cochée. Décochez les lignes que vous ne prenez pas."
         }
       },
       "options_stops": {
         "title": "Arrêts du trajet",
-        "description": "Trajet **{origin} → {destination}** sur la ligne **{route}**.\n\nTout est facultatif : laissez tel quel pour suivre la ligne entre ces deux arrêts.\n\nCochez un arrêt sur le chemin dans « Monter aussi à » quand vous pouvez aussi y monter : un second arrêt plus près de chez vous, ou celui où passe le bus quand le vôtre est fermé. Chaque bus n'apparaît qu'une fois, au premier de ces arrêts où il prend des voyageurs.",
+        "description": "Trajet **{origin} → {destination}** sur la ligne **{route}**.\n\nTout est facultatif : laissez tel quel pour suivre la ligne entre ces deux arrêts.\n\nCochez un arrêt sur le chemin dans « Monter ou descendre aussi à » quand vous pouvez aussi y monter ou y descendre : un second arrêt plus près de chez vous, une correspondance, ou celui où passe le bus quand le vôtre est fermé. Chaque bus n'apparaît qu'une fois.",
         "data": {
-          "board_also": "Monter aussi à",
-          "alight_also": "Descendre aussi à"
+          "also_at": "Monter ou descendre aussi à"
         },
         "data_description": {
-          "board_also": "Arrêts sur le chemin où vous pouvez aussi monter. Chaque bus n'apparaît qu'une fois, à l'heure du premier de ces arrêts où il prend des voyageurs.",
-          "alight_also": "Arrêts sur le chemin où vous pouvez aussi descendre. Un bus qui s'y arrête, avant votre arrêt, est gardé. Un arrêt coché dans les deux listes est une correspondance : on y monte ou on y descend, selon le bus."
+          "also_at": "Arrêts sur le chemin où vous pouvez aussi monter ou descendre : un second arrêt plus près de chez vous, une correspondance. Chaque bus n'apparaît qu'une fois, du premier de ces arrêts où l'on peut monter au dernier où l'on peut descendre ; un bus qui s'arrête à l'un d'eux, avant votre arrêt, est gardé et l'indique."
         }
       },
       "sensors_train": {
@@ -404,8 +400,7 @@
           "radius": "Radius pour la recherche des stops (en metres entre 50 et 500)",
           "source_timezone_correction": "Corriger le fuseau horaire de la source (en heures)",
           "check_source_dates": "Expérimental : refuser un nouveau fichier sans données actuelles",
-          "board_also": "Monter aussi à",
-          "alight_also": "Descendre aussi à"
+          "also_at": "Monter ou descendre aussi à"
         },
         "data_description": {
           "refresh_interval": "Fréquence de relecture des horaires, en minutes.",
@@ -416,8 +411,7 @@
           "max_local_stops": "Au-delà de ce nombre d'arrêts le capteur devient lent. À augmenter à vos risques.",
           "source_timezone_correction": "Seulement si la source publie ses heures dans un autre fuseau, en heures.",
           "check_source_dates": "Expérimental : refuse un nouveau fichier dont toutes les dates sont dans le futur.",
-          "board_also": "Gares ou arrêts sur le chemin où vous pouvez aussi monter. Chaque passage n'apparaît qu'une fois, à l'heure du premier d'entre eux où il prend des voyageurs.",
-          "alight_also": "Gares ou arrêts sur le chemin où vous pouvez aussi descendre. Un passage qui s'y arrête, avant votre arrivée, est gardé. Une gare ou un arrêt coché dans les deux listes est une correspondance : on y monte ou on y descend, selon le passage."
+          "also_at": "Gares ou arrêts sur le chemin où vous pouvez aussi monter ou descendre : un arrêt voisin, une correspondance. Chaque passage n'apparaît qu'une fois, du premier où l'on peut monter au dernier où l'on peut descendre ; un passage qui s'arrête à l'un d'eux, avant votre arrivée, est gardé et l'indique."
         }
       },
       "source_menu": {
