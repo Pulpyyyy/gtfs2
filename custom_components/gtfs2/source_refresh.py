@@ -58,6 +58,7 @@ from .freshness import (
     PROBE_ERROR,
     PROBE_UNCHANGED,
     PROBE_UNKNOWN,
+    adopt_kept_zip,
     fetch_if_new,
     note_checked,
     probe_source,
@@ -238,6 +239,22 @@ def installed_meta(hass: HomeAssistant, file: str) -> dict[str, Any]:
     version.
     """
     return read_meta(_installed_meta_path(hass, file)) or source_meta(source_zip_path(hass, file))
+
+
+async def async_adopt_kept_zip(hass: HomeAssistant, file: str) -> None:
+    """Give the zip of a source no download recorded its sidecar
+    (freshness.adopt_kept_zip), before the source's entities are made: its
+    update entity then names the version installed, the database read off
+    the zip's sidecar (installed_meta). Told after they were made, an entity
+    that read its versions before listening missed it (field test of
+    2026-10-06: 2 of 10 sources still unknown)."""
+    try:
+        adopted = await hass.async_add_executor_job(adopt_kept_zip, source_zip_path(hass, file))
+    except OSError as ex:
+        _LOGGER.warning("Could not read the zip of %s to record it: %s", file, ex)
+        return
+    if adopted:
+        _LOGGER.info("The zip of %s had no record of its download: recorded from the file", file)
 
 
 def _record_installed(hass: HomeAssistant, file: str) -> None:

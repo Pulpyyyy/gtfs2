@@ -34,6 +34,7 @@ from .source_refresh import (
     source_lock,
     source_zip_path,
     source_zip_url,
+    async_adopt_kept_zip,
     async_arm_source_check,
     async_disarm_source_check,
     async_rearm_source_check,
@@ -195,6 +196,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         file = entry.data.get(CONF_FILE)
         entry.async_on_unload(async_dispatcher_connect(
             hass, SIGNAL_SOURCE_REFRESH.format(file), lambda: _rail_index_again(hass, file)))
+        # a source the stock integration built kept no record of its download
+        if file:
+            await async_adopt_kept_zip(hass, file)
         await hass.config_entries.async_forward_entry_setups(entry, DATASOURCE_PLATFORMS)
         return True
 

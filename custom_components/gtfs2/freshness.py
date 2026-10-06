@@ -270,6 +270,26 @@ def source_meta(zip_path: str) -> dict[str, Any]:
     return read_meta(source_meta_path(zip_path))
 
 
+def adopt_kept_zip(zip_path: str) -> bool:
+    """Give a zip no download recorded the sidecar a download writes, from
+    the file itself; True when it wrote one. Blocking, for the executor.
+
+    A source the stock integration built keeps its zip and no sidecar: its
+    update entity named no installed version, unknown until a refresh
+    downloaded the feed again. The url and the host's validators are not
+    known here; the hash is, which the next check compares, and the time
+    the file was last written stands for its download.
+    """
+    meta_path = source_meta_path(zip_path)
+    if os.path.exists(meta_path) or not os.path.exists(zip_path):
+        return False
+    digest, size = file_digest(zip_path)
+    written = dt_util.utc_from_timestamp(os.path.getmtime(zip_path)).isoformat()
+    write_meta(meta_path, {"sha256": digest, "size": size, "downloaded_at": written,
+                           "adopted": True}, "adoption", zip_path)
+    return True
+
+
 # a download that takes longer than this is a host trickling bytes: the
 # request timeout counts between two reads, never the whole transfer
 FEED_DOWNLOAD_DEADLINE = 30 * 60

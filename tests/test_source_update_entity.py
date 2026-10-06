@@ -14,7 +14,9 @@ to date. Any other version is the newer one.
 
 Installed is what the database was last built from, read off its sidecar,
 or off the kept zip's when no build was ever recorded, which the entity
-says. Latest is what the last check learned; with the checks off, or
+says; a zip no download recorded gets its sidecar from the file, at the
+source's setup.
+Latest is what the last check learned; with the checks off, or
 before any check spoke, the entity claims nothing beyond the installed
 version, unless the kept zip is already ahead. What the last check learned
 lives in memory, so the entity's saved state seeds it back after a
@@ -207,6 +209,29 @@ def test_a_database_never_recorded_is_read_off_the_zip(tmp_path):
     assert attributes["version_source"] == "assumed"
     assert attributes["source_url"] is None
     assert attributes["feed_version"] is None
+
+
+def test_a_zip_no_download_recorded_is_adopted_at_start(tmp_path):
+    """A source the stock integration built keeps its zip and no sidecar:
+    its entity read unknown until a refresh downloaded the feed again. The
+    source's setup records the zip from the file before its entities are
+    made."""
+    _source(tmp_path)
+    assert _loaded(tmp_path).installed_version is None
+    for file in ("src", "gone"):
+        asyncio.run(source_refresh.async_adopt_kept_zip(_Hass(tmp_path), file))
+    assert not (tmp_path / "gtfs2" / "gone.zip.meta.json").exists()
+    kept = json.loads((tmp_path / "gtfs2" / "src.zip.meta.json").read_text())
+    assert kept["adopted"] is True and kept["size"] == (tmp_path / "gtfs2" / "src.zip").stat().st_size
+    entity = _loaded(tmp_path)
+    assert entity.installed_version == kept["sha256"][:12]
+    assert entity.extra_state_attributes["version_source"] == "assumed"
+    # the database reads as built from that zip: no rebuild pending
+    (tmp_path / "gtfs2" / "src.sqlite").write_bytes(b"")
+    assert not source_refresh.rebuild_pending(_Hass(tmp_path), "src")
+    # a zip already recorded is left as it was
+    asyncio.run(source_refresh.async_adopt_kept_zip(_Hass(tmp_path), "src"))
+    assert json.loads((tmp_path / "gtfs2" / "src.zip.meta.json").read_text()) == kept
 
 
 def test_a_source_on_a_schedule_says_when_it_looks_next(tmp_path):
