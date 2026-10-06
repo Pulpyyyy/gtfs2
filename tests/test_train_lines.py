@@ -147,6 +147,16 @@ def test_the_options_screen_reads_the_stations_between_and_the_lines(schedule):
     assert A in stations.get_station_list(schedule)
 
 
+def test_the_stations_between_follow_the_ride_not_the_alphabet():
+    # Orleans to Paris: the stopping train calls at each station, the
+    # express skips Chevilly and Artenay; the screen lists them as ridden
+    stopping = [A, "Chevilly", "Artenay", "Toury"]
+    express = [A, "Toury"]
+    assert stations.riding_order([express, stopping]) == stopping
+    # two rides read each other's way round: every station still once
+    assert sorted(stations.riding_order([["X", "Y"], ["Y", "X"]])) == ["X", "Y"]
+
+
 def test_the_sensor_names_every_station_of_each_end():
     # the departure's own ends are the next train's alone; a card cuts the
     # leg from the first station to the last

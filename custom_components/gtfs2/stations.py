@@ -517,10 +517,14 @@ def get_train_stations_between(schedule: Schedule | RailIndex, origin_name: str,
     rail trips that ride from one to the other: where the options screen
     offers to get on, or off, as well. A week of works can end some trains
     short of the station (SNCF, October 2026: K8+ and K6+ trains from Les
-    Aubrais, not Orleans); boarding at Les Aubrais too keeps them."""
+    Aubrais, not Orleans); boarding at Les Aubrais too keeps them.
+
+    In riding order, as the bus screens list their stops: the screen reads
+    as the line does, not as an index (Les Aubrais first out of Orleans,
+    not Angerville)."""
     line_where, params = line_codes_where("r.route_short_name", line)
     sql = f"""
-    SELECT distinct sm.stop_name
+    SELECT distinct t.trip_id, m.stop_sequence, sm.stop_name
     from trips t
     inner join routes r on r.route_id = t.route_id
     inner join stop_times o on o.trip_id = t.trip_id
@@ -536,15 +540,45 @@ def get_train_stations_between(schedule: Schedule | RailIndex, origin_name: str,
       and sd.stop_name = :destination
       and {_boards("o")} and {_alights("d")}
       {line_where}
-    order by sm.stop_name
     """  # noqa: S608
     with schedule.engine.connect() as conn:
         rows = conn.execute(text(sql), {"origin": origin_name, "destination": destination_name,
                                         **params}).fetchall()
-    between = [r[0] for r in rows if r[0] and r[0] not in (origin_name, destination_name)]
+    rides: dict[Any, list[tuple[int, str]]] = {}
+    for trip, sequence, name in rows:
+        if name and name not in (origin_name, destination_name):
+            rides.setdefault(trip, []).append((int(sequence), str(name)))
+    between = riding_order([[name for _, name in sorted(calls)] for calls in rides.values()])
     _LOGGER.debug("Stations between %s and %s (lines %s): %s",
                   origin_name, destination_name, line, len(between))
     return between
+
+
+def riding_order(rides: list[list[str]]) -> list[str]:
+    """One list of the stations a set of rides calls at, each ride's order
+    kept: an express that skips Artenay still has Toury after Les Aubrais,
+    and the stopping train puts Artenay between them. A station goes once
+    every station some ride calls at before it is placed; among those
+    free at once, the one met earliest in a ride. Rides that disagree (a
+    loop read both ways) leave a cycle: its stations follow by the same
+    rule, so every station is listed once whatever the feed says."""
+    before: dict[str, set[str]] = {}
+    first: dict[str, int] = {}
+    for ride in rides:
+        for index, name in enumerate(ride):
+            before.setdefault(name, set())
+            first[name] = min(first.get(name, index), index)
+        for earlier, later in zip(ride, ride[1:]):
+            if earlier != later:
+                before[later].add(earlier)
+    order: list[str] = []
+    left = set(first)
+    while left:
+        free = [name for name in left if not before[name] & left] or list(left)
+        name = min(free, key=lambda n: (first[n], n))
+        order.append(name)
+        left.discard(name)
+    return order
 
 
 def get_train_lines_between(schedule: Schedule | RailIndex, origin_name: str, destination_name: str,
