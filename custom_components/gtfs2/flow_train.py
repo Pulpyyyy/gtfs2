@@ -34,6 +34,7 @@ from .const import (
     DEFAULT_PATH,
     DOMAIN,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
+    entry_lines,
 )
 from .datasource import check_datasource_index, get_gtfs
 from .flow_journey import _Step
@@ -52,7 +53,6 @@ from .stations import (
     train_line_ends,
     train_routes_both_ways,
 )
-from .stop_rules import entry_lines
 
 if TYPE_CHECKING:
     # for the annotations only

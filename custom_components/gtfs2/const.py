@@ -1,5 +1,7 @@
 """Constants for the GTFS integration."""
+from collections.abc import Mapping
 import re
+from typing import Any
 
 from homeassistant.const import CONF_OFFSET, STATE_UNKNOWN, Platform
 
@@ -382,3 +384,13 @@ def base_name_of(entry: str) -> str:
     a sensor name is for reading, so the suffix goes.
     """
     return re.sub(r" #\d+$", "", stop_name_of(entry))
+
+
+def entry_lines(data: Mapping[str, Any]) -> list[str]:
+    """The line codes a train entry holds its departures to, [] for every
+    rail line: the ones ticked on the options screen ("lines"), or the
+    single line an entry created before that screen took several holds."""
+    lines = data.get("lines")
+    if lines is None:
+        lines = [data.get("line")]
+    return [str(line).strip() for line in lines if line and str(line).strip()]

@@ -20,6 +20,7 @@ import homeassistant.util.dt as dt_util
 from .clocks import (_day_offset, _on_service_day, _removed_on, _row_instant, _runs_on, agency_zone,
                      row_zone, zone_of)
 from .const import (
+    entry_lines,
     id_of,
     CONF_DESTINATION_STATIONS,
     CONF_ORIGIN_STATIONS,
@@ -28,7 +29,7 @@ from .const import (
 from .datasource import check_extracting
 from .rt_feed import on_service_day
 from .stop_rules import (COACH_STOP_PREFIX, RAIL_ROUTE_TYPES, RAIL_ROUTE_TYPES_SQL, _alights, _boards,
-                         _no_call_between, _place_group, _place_group_of, entry_lines, entry_stations,
+                         _no_call_between, _place_group, _place_group_of, entry_stations,
                          line_codes_where, station_names_in, stop_ids_in)
 
 if TYPE_CHECKING:

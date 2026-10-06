@@ -31,6 +31,7 @@ import ha_stub
 
 ha_stub.install()
 
+const = ha_stub.load("const")
 gtfs_helper = ha_stub.load("gtfs_helper")
 stations = ha_stub.load("stations")
 stop_rules = ha_stub.load("stop_rules")
@@ -82,13 +83,13 @@ def _entry(origin, destination, **extra):
 
 
 def test_the_lines_an_entry_holds_to():
-    assert stop_rules.entry_lines({"lines": ["K8+", "P8"], "line": None}) == ["K8+", "P8"]
+    assert const.entry_lines({"lines": ["K8+", "P8"], "line": None}) == ["K8+", "P8"]
     # every rail line, on an entry of this screen or before it
-    assert stop_rules.entry_lines({"lines": [], "line": None}) == []
-    assert stop_rules.entry_lines({}) == []
+    assert const.entry_lines({"lines": [], "line": None}) == []
+    assert const.entry_lines({}) == []
     # an entry made before: its one line
-    assert stop_rules.entry_lines({"line": "K8+"}) == ["K8+"]
-    assert stop_rules.entry_lines({"lines": None, "line": "K8+"}) == ["K8+"]
+    assert const.entry_lines({"line": "K8+"}) == ["K8+"]
+    assert const.entry_lines({"lines": None, "line": "K8+"}) == ["K8+"]
 
 
 def test_the_sql_that_holds_a_query_to_lines():
