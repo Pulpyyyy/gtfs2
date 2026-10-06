@@ -146,8 +146,8 @@ The refactor is **not** a rewrite. It has two triggers and one constraint.
 
 **Triggers.** Code the fork owns grew inside a file or method upstream owns,
 and that is where merges collide; or one file tells more than one story
-(`place_order.py` out of `places.py`, 595871f3; `db_prune.py` out of
-`feed/files.py`, b1e6e745). A move that cut one story in two is undone: the
+(`place_order.py` out of `places.py`, 595871f3; the prune, now in `shrink.py`,
+out of `feed/files.py`, b1e6e745). A move that cut one story in two is undone: the
 refresh steps went back into `coordinator.py` (e8aabebb), the shape
 reading back into `geojson.py` (91da1bf2). The upstream-owned places are:
 
@@ -410,8 +410,7 @@ attributes dict and what it reads, "nothing of the entity" (3f01c10).
 
 ```
 db_build.py           an import into a scratch database, the followed lines copied, the swap
-db_intern.py          stop_times keyed by integers instead of repeated id strings
-db_prune.py           a datasource trimmed down to the lines it follows
+shrink.py             a datasource made smaller where it lies: trimmed down to the lines it follows, or its stop_times keyed by integers instead of repeated id strings
 gtfs_helper.py        the departure queries, and the next day a journey runs
 datasource.py         a source's database as the readers open it: get_gtfs, its indexes
 stop_rules.py         the SQL pieces every reader shares: who gets on or off, one place, train stations

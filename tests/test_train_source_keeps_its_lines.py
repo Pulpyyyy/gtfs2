@@ -17,7 +17,7 @@ import zipfile
 import feed_db
 import ha_stub
 
-db_prune = ha_stub.load("db_prune")
+shrink = ha_stub.load("shrink")
 source_entries = ha_stub.load("feed.source_entries")
 source_zip = ha_stub.load("source_zip")
 
@@ -145,10 +145,10 @@ def test_a_prune_keeps_the_lines_of_the_code(tmp_path):
     gtfs_dir = _source(tmp_path)
     _refresh(gtfs_dir, NEXT, train_lines=["K8+"])
     db = str(gtfs_dir / "src.sqlite")
-    assert db_prune.routes_of_lines(db, {"K8+"}) == {"RK", "RK2"}
+    assert shrink.routes_of_lines(db, {"K8+"}) == {"RK", "RK2"}
     # a bus line of the same number is no rail line of that code
-    assert db_prune.routes_of_lines(db, {"8"}) == set()
-    assert db_prune.routes_of_lines(db, set()) == set()
+    assert shrink.routes_of_lines(db, {"8"}) == set()
+    assert shrink.routes_of_lines(db, set()) == set()
     hass = _hass(gtfs_dir, _entry("t1", route="train", lines=["K8+"]))
-    assert asyncio.run(db_prune.async_train_routes(hass, str(gtfs_dir), "src")) == {"RK", "RK2"}
-    assert asyncio.run(db_prune.async_train_routes(hass, str(gtfs_dir), "src", exclude="t1")) == set()
+    assert asyncio.run(shrink.async_train_routes(hass, str(gtfs_dir), "src")) == {"RK", "RK2"}
+    assert asyncio.run(shrink.async_train_routes(hass, str(gtfs_dir), "src", exclude="t1")) == set()

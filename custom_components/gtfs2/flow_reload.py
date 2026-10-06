@@ -35,7 +35,7 @@ from .const import (
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
 from .db_build import import_routes, on_a_copy, optimise_datasource
-from .db_prune import async_train_routes
+from .shrink import async_train_routes
 from .feed.files import close_schedule, real_path, routes_in, scratch_path
 from .flow_journey import _Step
 from .notifications import async_notify_import

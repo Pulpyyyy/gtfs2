@@ -10,8 +10,7 @@ from __future__ import annotations
 import feed_db
 import ha_stub
 
-db_prune = ha_stub.load("db_prune")
-db_intern = ha_stub.load("db_intern")
+shrink = ha_stub.load("shrink")
 
 HEAD = feed_db.STOP_TIMES
 FEED = {
@@ -36,7 +35,7 @@ COUNTED = ("trips", "stop_times", "calendar", "calendar_dates", "gtfs2_stop_time
 def _source(tmp_path, interned=False):
     feed_db.build(tmp_path, FEED).engine.dispose()
     if interned:
-        assert db_intern.intern_gtfs_datasource(str(tmp_path), "feed")
+        assert shrink.intern_gtfs_datasource(str(tmp_path), "feed")
     return str(tmp_path)
 
 
@@ -50,9 +49,9 @@ def _rows(tmp_path, table):
 
 def test_the_dry_run_counts_what_the_prune_keeps(tmp_path):
     gtfs_dir = _source(tmp_path)
-    dry = db_prune.prune_gtfs_datasource(gtfs_dir, "feed", ["R1"], dry_run=True)
+    dry = shrink.prune_gtfs_datasource(gtfs_dir, "feed", ["R1"], dry_run=True)
     assert _rows(tmp_path, "stop_times") == 7
-    done = db_prune.prune_gtfs_datasource(gtfs_dir, "feed", ["R1"])
+    done = shrink.prune_gtfs_datasource(gtfs_dir, "feed", ["R1"])
     assert _announced(dry) == _announced(done)
     assert (done["trips_after"], done["stop_times_after"]) == (2, 4)
     assert (done["calendar_after"], done["calendar_dates_after"]) == (1, 1)
@@ -62,8 +61,8 @@ def test_the_dry_run_counts_what_the_prune_keeps(tmp_path):
 
 def test_an_interned_datasource_keeps_its_rows_and_keys(tmp_path):
     gtfs_dir = _source(tmp_path, interned=True)
-    dry = db_prune.prune_gtfs_datasource(gtfs_dir, "feed", ["R1"], dry_run=True)
-    done = db_prune.prune_gtfs_datasource(gtfs_dir, "feed", ["R1"])
+    dry = shrink.prune_gtfs_datasource(gtfs_dir, "feed", ["R1"], dry_run=True)
+    done = shrink.prune_gtfs_datasource(gtfs_dir, "feed", ["R1"])
     assert _announced(dry) == _announced(done)
     assert (done["gtfs2_stop_times_before"], done["gtfs2_stop_times_after"]) == (7, 4)
     assert _rows(tmp_path, "gtfs2_stop_times") == 4

@@ -12,7 +12,7 @@ Four things live here, or start from here:
 
   the two database model    real_path / scratch_path / staging_name here,
                             the import and the swap in db_build.py
-  reshaping a datasource    db_prune.py, db_intern.py
+  reshaping a datasource    shrink.py
   the sources on disk       get_datasources / get_zipfiles / remove_datasource
   letting a schedule go     close_schedule
 

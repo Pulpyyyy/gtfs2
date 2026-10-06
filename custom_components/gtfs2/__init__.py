@@ -21,7 +21,7 @@ from .notifications import (async_notify_line_orphaned, async_notify_source_unus
                             clear_line_orphaned, clear_source_unused)
 from .exports import remove_entry_geojson
 from .datasource_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
-from .db_prune import async_train_routes
+from .shrink import async_train_routes
 from .feed.files import real_path, routes_in, route_name_in, get_datasources, close_schedule
 from .feed.rt_local import get_gtfs_rt
 from .key_mask import hide_keys_in_logs, note_entry_keys, note_key
