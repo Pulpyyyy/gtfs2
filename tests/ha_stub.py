@@ -1089,7 +1089,12 @@ def load(module_name: str, component: str | Path | None = None,
     full = f"{alias}.{module_name}"
     if full in sys.modules:
         return sys.modules[full]
-    path = component / f"{module_name}.py"
+    # a module of a subpackage ("data.departures"): its package imported
+    # first, from its own __init__.py, as the component imports it
+    parent, _, _ = full.rpartition(".")
+    if parent != alias:
+        importlib.import_module(parent)
+    path = component.joinpath(*module_name.split(".")).with_suffix(".py")
     spec = importlib.util.spec_from_file_location(full, path)
     if spec is None or spec.loader is None:
         raise ImportError(f"cannot load {path}")

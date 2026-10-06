@@ -11,8 +11,9 @@ back in a password field. And a key sent in a header goes to the host it
 was given for, not to the one a redirect points at (see fetch).
 """
 import base64
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 import logging
+import os
 import pkgutil
 from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
@@ -147,6 +148,16 @@ def hide_keys_in_logs(package: str, path: Iterable[str]) -> None:
     children pass up, and every module logs under its own name.
     """
     key_filter = _HideKeys()
-    names = [package] + [f"{package}.{module.name}" for module in pkgutil.iter_modules(path)]
-    for name in names:
+    for name in [package, *_module_names(package, path)]:
         logging.getLogger(name).addFilter(key_filter)
+
+
+def _module_names(package: str, path: Iterable[str]) -> Iterator[str]:
+    """The dotted name of every module under path, those of its subpackages
+    too, read off the folders without importing anything."""
+    for folder in path:
+        for module in pkgutil.iter_modules([folder]):
+            name = f"{package}.{module.name}"
+            yield name
+            if module.ispkg:
+                yield from _module_names(name, [os.path.join(folder, module.name)])

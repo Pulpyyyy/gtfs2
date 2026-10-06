@@ -128,8 +128,8 @@ def _code_digest():
     component = Path(ha_stub.COMPONENT)
     if component not in _CODE:
         digest = hashlib.sha256(Path(__file__).read_bytes())
-        for source in sorted(component.glob("*.py")):
-            digest.update(source.name.encode())
+        for source in sorted(component.rglob("*.py")):
+            digest.update(source.relative_to(component).as_posix().encode())
             digest.update(source.read_bytes())
         digest.update(version("pygtfs").encode())
         _CODE[component] = digest.digest()
