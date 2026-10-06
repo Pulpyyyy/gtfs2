@@ -194,7 +194,12 @@ def remove_datasource(hass: HomeAssistant, path: str, filename: str, include_sql
     # look already built from an edition it never had
     # (.extracting: the marker of a legacy extract an older version left)
     suffixes += [".zip.new", ".extracting", ".refresh.sqlite", ".refresh.sqlite-journal",
-                 ".import.sqlite", ".import.sqlite-journal", ".import.sqlite.zip"]
+                 ".import.sqlite", ".import.sqlite-journal", ".import.sqlite.zip",
+                 # the network an envelope download took out, the filtered
+                 # zip of a whole-feed refresh, and the scratch of a route by
+                 # route one, an import under the staging name
+                 ".zip.new.inner", ".refresh.sqlite.zip", ".refresh.import.sqlite",
+                 ".refresh.import.sqlite-journal", ".refresh.import.sqlite.zip"]
     if include_sqlite:
         suffixes += [".sqlite.meta.json", ".sqlite-wal", ".sqlite-shm"]
     # os.remove, not remove_files: a file that cannot go fails the removal,

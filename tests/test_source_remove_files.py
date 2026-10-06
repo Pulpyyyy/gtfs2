@@ -18,7 +18,12 @@ FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "boarding" / 
 OWN = [".zip", ".zip.meta.json", ".zip.new", ".sqlite", ".sqlite-journal",
        ".sqlite-wal", ".sqlite-shm", ".sqlite.meta.json", "_temp.zip",
        "_temp_out.zip", ".refresh.sqlite", ".refresh.sqlite-journal",
-       ".import.sqlite", ".import.sqlite-journal", ".import.sqlite.zip"]
+       ".import.sqlite", ".import.sqlite-journal", ".import.sqlite.zip",
+       ".zip.rail", ".zip.rail.new", ".zip.shapes",
+       # the network an envelope download took out, the filtered zip of a
+       # whole-feed refresh, and the scratch of a route by route one
+       ".zip.new.inner", ".refresh.sqlite.zip", ".refresh.import.sqlite",
+       ".refresh.import.sqlite-journal", ".refresh.import.sqlite.zip"]
 DATABASE = {".sqlite", ".sqlite-journal", ".sqlite-wal", ".sqlite-shm", ".sqlite.meta.json"}
 
 
