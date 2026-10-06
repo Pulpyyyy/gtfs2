@@ -63,7 +63,9 @@ Non-goals:
   database layer").
 - Querying the whole network from a database. Line lists and headsigns of
   lines never imported are read from the zip (`route_names.py`,
-  `line_ends.py`, `zip_peek.py`), not imported to be read.
+  `line_ends.py`, `zip_peek.py`), not imported to be read. The trains of a
+  feed, which the station screens search before any line is imported, are
+  read from the zip too, into an index kept beside it (`stations.py`).
 - Supporting Windows as a runtime. Home Assistant runs on Linux; the swap
   has a fallback for a developer's Windows box, unguarded for the few
   microseconds of the rename (`swap_in`).
@@ -102,16 +104,21 @@ upstream/main (vingerha)
     ├── integration/all-lots every lot merged together, conflicts settled once
     │
     ├── ext/rt-per-source    what cannot go upstream as a lot: datasource
-    │                        entries, source-level realtime, two-database flow
+    │                        entries, source-level realtime, the source
+    │                        refresh settings
     │
     └── refactor/architecture
                              ext/rt-per-source, reorganised into the layers
-                             below; takes lot fixes by port, never by merging
-                             ext (e.g. 32459bb → the fix of
-                             _remove_entry_geojson)
+                             below; took lot fixes by port, never by merging
+                             ext (e.g. 32459bb → 3c7e93b0, the removal of an
+                             entry's map files, now remove_entry_geojson)
 ```
 
-**Upstream changes.** `upstream/main` is followed, not merged into
+Since 2026-09-19 the lots, `integration/all-lots` and `ext/rt-per-source`
+are frozen: new work lands on `refactor/architecture` directly.
+
+**Upstream changes.** Since 37727f4f, which took upstream up to 07acaeb,
+`upstream/main` is followed, not merged into
 `refactor/architecture`. The fork no longer follows upstream's text: each
 upstream change is reviewed, and taken over when it fixes something here,
 written in the fork's own code. One that covers what the fork already does
@@ -128,17 +135,21 @@ Two upstream changes of September 2026, measured on the same feeds:
   The fork reads both service days whole (`_route_departures_between`).
   Not taken.
 
-A lot stays mergeable upstream on its own. When a lot is recut on a newer
-upstream main, its tests become tolerant: a promise about a reader the tree
+A lot was kept mergeable upstream on its own. When a lot was recut on a newer
+upstream main, its tests became tolerant: a promise about a reader the tree
 has is checked, one about a reader it lacks is recorded as not checked
 (b56fde6).
 
 ### When code is moved, and why: the refactor rule
 
-The refactor is **not** a rewrite. It has one trigger and one constraint.
+The refactor is **not** a rewrite. It has two triggers and one constraint.
 
-**Trigger.** Code the fork owns grew inside a file or method upstream owns,
-and that is where merges collide. The upstream-owned places are:
+**Triggers.** Code the fork owns grew inside a file or method upstream owns,
+and that is where merges collide; or one file tells more than one story
+(`place_order.py` out of `places.py`, 595871f3; `db_prune.py` out of
+`gtfs_db.py`, b1e6e745). A move that cut one story in two is undone: the
+refresh steps went back into `coordinator.py` (e8aabebb), the shape
+reading back into `geojson.py` (91da1bf2). The upstream-owned places are:
 
 ```
 gtfs_helper.py                              "a file upstream owns"; five lots
@@ -218,6 +229,7 @@ subgraph Realtime
 RTF["RT Feed"]
 RTR["RT Reader"]
 ALT["Alerts"]
+VEH["Vehicles"]
 end
 
 subgraph Output
@@ -259,6 +271,7 @@ SC -->|copy lines| LD
 %% Domain feeds the flow's choices
 ZIP --> RN
 LD --> RN
+ZIP -->|trains| STA
 LD --> STA
 LD --> PL
 RN -->|lines| CF
@@ -270,6 +283,7 @@ DS --> RTF
 HOST --> RTF
 RTF --> RTR
 RTF --> ALT
+RTF --> VEH
 
 %% Outputs
 J --> CO
@@ -280,6 +294,10 @@ CO --> SEN
 CO --> TT
 CO --> LEG
 CO --> GEO
+CO -. runs .-> VEH
+ZIP -->|shapes| LEG
+ZIP -->|shapes| GEO
+VEH -->|vehicle file| GEO
 ```
 
 Solid arrows carry data, dotted ones start something. Each piece is told
@@ -333,11 +351,11 @@ change in one should not reach two layers apart.
 ```
 __init__.py        setup, unload, remove, migrate, services
 coordinator.py     GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
-sensor.py          departure sensors
+sensor.py          departure sensors, and the two diagnostic sensors of a source
 update.py          update entity of a source
 button.py          refresh button of a source
 switch.py          realtime switch of a datasource
-datasource_services.py  the prune and intern services
+datasource_services.py  the update, prune and intern services, and the repair that drops one line
 departure_services.py   the departures, arrivals and trip stops services
 repairs.py         the fixes Settings > Repairs offers for gtfs2's issues
 ```
@@ -349,17 +367,18 @@ repairs.py         the fixes Settings > Repairs offers for gtfs2's issues
   holds only what the sources share: locks, probe states, check timers, the
   bootstrap flag (b960969).
 - The coordinator holds no SQL: it reads the timetable through `gtfs_helper`
-  and the realtime through `gtfs_rt_helper`, and hands the map files to
+  and the realtime through `gtfs_rt_helper`, has `vehicles.py` write the
+  vehicle file, and hands the route, timetable and leg files to
   `exports.py`.
 
 ### 2. Config flow layer
 
 ```
-config_flow.py     the flow itself, composed of the screen classes below
+config_flow.py     the flow itself, composed of the screen classes below, and the options of a journey or local stops entry
 flow_source.py     SourceScreens: where the timetable comes from
 flow_reload.py     ReloadScreens: load lines into a datasource, shrink it, wait for another writer
-flow_journey.py    JourneyScreens: stops, direction, sensor name, mirror journey
-flow_train.py      TrainScreens: departure and arrival stations, options (stations and lines), sensor
+flow_journey.py    JourneyScreens: stops, more stops to get on or off at, direction, sensor name, mirror journey
+flow_train.py      TrainScreens: departure and arrival stations, options (stations and lines), a sensor per line ticked
 flow_options.py    OptionsScreens: realtime feeds and static refresh of a source
 ```
 
@@ -377,7 +396,7 @@ departure_attributes.py  the departure sensor's attributes, group by group
 route_names.py           the lines a feed declares, labelled for the flow
 line_labels.py           what the user reads for a line: number, where it goes, mode, look-alikes told apart
 line_ends.py             where a line goes: its trips' destinations, its two ends
-stations.py              train entries: stations instead of stops
+stations.py              train entries: stations instead of stops, read before any line is imported from the trains of the zip (the rail index, <file>.zip.rail)
 exports.py               which map files a refresh writes, and when
 local_stops.py           the departures around a person or zone, timetable and realtime
 gtfs_rt_helper.py        the realtime of one sensor: the feed trips it follows, next services, delays, alerts
@@ -398,12 +417,12 @@ datasource.py         a source's database as the readers open it: get_gtfs, its 
 stop_rules.py         the SQL pieces every reader shares: who gets on or off, one place, train stations
 clocks.py             a stop time in seconds and on its service day, the time zone a feed writes its times in
 source_zip.py         the zip beside a datasource: fetched, kept, refreshed, imported
-source_refresh.py     automatic refresh of the static feeds, per source and mode
+source_refresh.py     every refresh of a source's static feed, scheduled per mode or asked for, and the record of the edition installed
 rt_window.py          when the realtime feeds are worth reading, off the timetable
 gtfs_filter.py        cut a zip down to chosen routes before any import
 direction_repair.py   repair trip direction_id after import
-geojson.py            the files written under www/gtfs2 for a map card: names, route file and its shape out of the zip, writing
-leg.py                the leg file: the ride of the next departure, stop by stop
+geojson.py            the files written under www/gtfs2 for a map card: names, route file and its shape out of the zip, the shapes of each run a leg file draws (kept in <file>.zip.shapes), writing
+leg.py                the leg file: the ride of the next departure, and the trips listed timed stop by stop, each on its own shape
 timetable.py          the timetable file: every departure over three service days
 places.py             the places of a line the flow offers: origin, way, destination
 place_order.py        the order a line's places are ridden in, both ways round
@@ -421,7 +440,7 @@ can be tested on plain SQLite files.
 ```
 rt_source.py        the datasource entries, owning the realtime feeds and keys
 zip_peek.py         read a remote zip's contents, take one member out of it
-freshness.py        ask the host whether the feed changed, without downloading
+freshness.py        ask the host whether the feed changed, without downloading; else download it, check it, keep it with its sidecar
 rt_feed.py          a realtime feed read once per publication, decoded
 rt_local.py         one realtime feed, or a SIRI answer, downloaded to a local file
 gtfs_db.py          the files a source is made of, the sources on disk, letting a schedule go
@@ -441,14 +460,17 @@ edition        one version of a source's feed, named by its version label
                (Last-Modified, else ETag, else sha256 prefix, else download
                date: version_label); a refresh replaces one edition with the next
 line, route    a GTFS route; the code says route, the screens say line
-journey        a sensor's trip on one line, from an origin to a destination, in
-               one direction
+journey        a sensor's trip on one line, in one direction, from the stop or
+               station it gets on at (or several) to the one it gets off at
+               (or several); a train journey holds to its line by the line's
+               code, and one with no code recorded rides every rail line
+               (entry_lines)
 local stops    an entry that follows a person or a zone and lists the
                departures of the stops around it
 whole-feed     a source that some sensor reads across every line: a train
 source         entry (route "train"), a local stops entry, or an entry naming
-               no line (_reads_whole_feed)
-real           <file>.sqlite, the only database sensors open
+               no line (source_readers)
+real           <file>.sqlite, the only timetable database sensors open
 scratch        <file>.import.sqlite, the raw pygtfs output of an import,
                deleted when the import ends
 staging        <file>.refresh.sqlite, a complete database built or copied beside
@@ -464,8 +486,9 @@ intern         replace the text keys of stop_times (trip_id, stop_id) by
                stop_times as a view, so every query keeps working unchanged
 optimise       prune (when a keep set is given) then intern, in that order:
                interning first would mint keys for rows about to be deleted
-struck trip    a trip the realtime feed cancels or skips; it leaves the list and
-               the next one takes its place
+struck trip    a trip the realtime feed cancels, or that skips the stop the
+               entry gets on it at; it leaves the list and the next one takes
+               its place
 place          what the flow offers as an origin or a destination: a stop, or
                the stops of one station taken together, in the order a trip
                calls at them (places.py)
@@ -478,8 +501,13 @@ window         the hours a source's realtime feeds are read, derived from its
 feed window    how long the kept timetable is good for, read from the zip:
                valid, ending (last service day within 7 days), expired or
                unknown (feed_window.py)
-leg file       the ride of an entry's next departure, timed stop by stop,
-               realtime included (leg.py)
+leg file       the ride of an entry's next departure and the trips listed
+               after it, timed stop by stop, realtime included, each run on
+               its own shape (leg.py)
+rail index     <file>.zip.rail, the trains of a zip the station screens read,
+               built once an edition (stations.py)
+shapes store   <file>.zip.shapes, the shapes of the lines a leg file draws,
+               kept for the zip's edition (geojson.py)
 timetable file every departure of an entry over the service day under way
                and the two after it (timetable.py)
 lot            a feat/ or fix/ branch cut on upstream main, one change each
@@ -507,6 +535,9 @@ interval. Its platforms are `DATASOURCE_PLATFORMS`: the update entity and
 the refresh button, the switch that silences realtime, and two diagnostic
 sensors (whether realtime runs, how long the timetable is good for). It
 arms the scheduled look at the source's host (`async_arm_source_check`).
+At setup it also records a kept zip no download recorded
+(`async_adopt_kept_zip`), and after each refresh of the source it has the
+rail index of the zip read again, in the background (`refresh_rail_index`).
 
 Datasource entries are created at every start, in the background and
 idempotently, from the disk and the journey entries already there
@@ -526,7 +557,11 @@ own options, which is what a start before the bootstrap reads.
 
 **Journey entry.** Gets a `GTFSUpdateCoordinator` and one departure sensor.
 A bus journey names its line, direction and stops; a train journey names
-stations and stores `route = "train"`, a marker rather than a route id.
+stations and stores `route = "train"`, a marker rather than a route id,
+and the code of its line (`line`, `lines`): the train screens make one
+entry per line ticked. Either may get on or off at more stops or stations
+(`origin_stations`, `destination_stations`), picked at creation or in its
+options; each run is then read where it is first got on and last got off.
 
 **Local stops entry.** Gets a `GTFSLocalStopUpdateCoordinator` and one sensor
 per stop around the person or zone.
@@ -588,15 +623,21 @@ where it goes  the long name; when the feed leaves it empty, the
 order          the way a line number is read: 2 before 10 (_natural)
 ```
 
-Lines that would still read the same are set apart, in this order:
+Lines that would still read the same are set apart, in this order
+(`set_lines_apart`):
 
-- by the mode, where lines of one number run different modes (8d190fe);
+- by their operator, where lines of several operators wear one label:
+  IDFM's metro 1 and the bus 1 of Terres d'Envol get their agency's name
+  (882e41c4);
 - by their two ends, where one operator publishes several lines under one
   name: IDFM lists three "TER Centre - Val de Loire" (5449185);
 - by their period of validity, where a publisher cuts its feed by period
   with one route_id per window: Brisbane lists its airport line eighteen
   times, the Dutch feed carried 46 lines twice. A line whose days are over
   is left out of a live list (f87237a).
+
+On top, the route screen adds the mode where lines of one number run
+different modes (`with_modes`, 8d190fe).
 
 The ends are stable across rebuilds: a tie is broken by direction and
 ends, never by trip id (185183a). A short name written in capitals is kept
@@ -617,8 +658,10 @@ trips ride, not the longest one (18c326f).
 ## A refresh cycle
 
 `GTFSUpdateCoordinator._async_update_data`, every minute (`update_interval`,
-fixed). Local stops entries run on `local_stop_refresh_interval`, 15 min by
-default.
+fixed). Local stops entries run every minute too, but read the stops
+around the tracker only every `local_stop_refresh_interval` (15 min by
+default); in between they only take out the departures gone
+(`_without_gone`).
 
 ```
 1. source still being unpacked?        keep the previous data, flag it, stop
@@ -636,7 +679,8 @@ default.
      get_rt_vehicle_positions          the vehicle file, on its own, when the
                                        source has a vehicle feed
      get_next_services                 delays of the listed trips
-     drop_struck_trips                 a struck trip goes, the next takes its place
+     drop_struck_trips                 a struck trip goes, the next takes its
+                                       place; a few rounds on the same feed
    realtime off or paused:             delays and alerts emptied, never
                                        carried over from another moment
 4. export_leg                          when the static ran or realtime was read
@@ -651,7 +695,7 @@ coordinator used to do it every minute.
 
 Step 1 relies on `check_extracting`: a `.sqlite-journal` beside the
 database, something writing to it (a `_temp.zip` left by an older version
-counts too). The flag is cleared once the reuse branch is reached,
+no longer counts: nothing writes one now). The flag is cleared once the reuse branch is reached,
 so a transient journal no longer blanks the sensors for a whole refresh
 interval (01587fd).
 
@@ -659,8 +703,10 @@ interval (01587fd).
 
 A local stops entry follows a person or a zone (`device_tracker_id`) and
 gets one sensor per stop near it, from `GTFSLocalStopUpdateCoordinator`, every
-`local_stop_refresh_interval` minutes (15 by default). Its departures are
-read in `local_stops.py`.
+minute: the stops are read again every `local_stop_refresh_interval`
+minutes (15 by default), or at once when the database changed, and in
+between the departures gone are taken out. Its departures are read in
+`local_stops.py`.
 
 ```
 position       the tracker's coordinates; no tracker, or none yet: no
@@ -706,7 +752,9 @@ passage of the day minus 10 minutes to the last plus 20. GTFS hours pass
 service reads nothing. At the close, the window stretches by 10 minutes per
 re-check while the last fetch still announces a future stop for a followed
 line, capped two hours past the close: a late vehicle is when realtime
-matters most. Why derive it: the integration owns the timetable, so nobody
+matters most. That last fetch lives in memory: after a restart past the
+close, within the cap, the feed is read once, and the stretch carries on
+from what it says (7fd9c287). Why derive it: the integration owns the timetable, so nobody
 has to write an automation, and episodic lines stop being polled (TAO's 22
 runs 122 days a year).
 
@@ -721,9 +769,12 @@ alert means for the entry.
 ### What realtime changes on a sensor
 
 **Struck trips.** A trip the feed marks CANCELED or DELETED, and a call
-marked SKIPPED at the entry's origin, is no departure. The board moves on:
+marked SKIPPED at the stop the entry gets on that trip at, is no
+departure: a board can list trips boarded at different stops of one place,
+or at the more stops an entry gets on at (bb25a206). The board moves on:
 the departures are read again from the rows of the last static refresh
-without that trip, so the next departure shown is the next one that runs,
+without that trip, a few rounds at most on the feed already read, so the
+next departure shown is the next one that runs,
 with its own arrival, headsign and duration. A call marked NO_DATA gives
 no realtime time either. A trip is struck on the service day the feed
 names, since a trip cancelled today runs tomorrow under the same id.
@@ -766,8 +817,11 @@ db_build.py    build, swap
 <file>.sqlite
 ```
 
-The map files take a third way: `geojson.py` reads shapes straight from
-the kept zip (`read_shape`).
+The map files and the train screens take a third way, through the kept
+zip: the route file reads its shape straight from it (`read_shape`), the
+leg files read theirs through `<file>.zip.shapes` (`route_shapes`), and
+the train screens read the trains through `<file>.zip.rail`
+(`rail_index`).
 
 ### Refresh modes: when a source is looked at
 
@@ -839,7 +893,7 @@ Four paths write a database. They differ because what they risk differs.
 
 | Trigger | Path | Builds on | Swap | Why this path |
 |---|---|---|---|---|
-| User picks lines on the route screen | `import_routes` | scratch → real, per line | No | Append-only: existing rows are never touched, so there is nothing a reader could see half-changed. Keys are minted in the real database during the copy, so there is never a second set to remap |
+| User picks lines on the route screen | `import_routes` | scratch → real, per line | No | Append-only: existing rows are never touched, so there is nothing a reader could see half-changed. Keys are minted in the real database during the copy, so there is never a second set to remap. A new database whose scratch holds only those lines is that file, renamed |
 | New edition (check in auto mode, update entity, button, `update_gtfs` service) | `refresh_datasource` | staging, built route by route | Yes | Every row may change; readers must see one edition or the other |
 | Same, on a whole-feed source, or one that follows no line and whose sensors name none (never built, or left empty by a first import) | `_refresh_whole_feed` | staging, the filtered import itself | Yes | A train or local stops sensor matches across every line, and a line the new edition brings must come in too; taking the lines from the old database never brought new ones. A source with no line has nothing to take them from. A database deleted or left empty under line sensors takes their lines back route by route instead |
 | Optimise screen, `prune_datasource`, `intern_datasource` | `on_a_copy` | staging, a SQLite backup of the real one | Only if something changed | Destructive rewrites by the million plus VACUUM: on the live file they held the exclusive lock for minutes on a national feed |
@@ -867,13 +921,20 @@ zip filtered to the lines (gtfs_filter)
     ↓
 scratch database (build_scratch_database), then indexed by route
     ↓
-real database created from the scratch schema, if there is none
+no real database yet, and the scratch holds only the lines asked?
+    the scratch is renamed into place, nothing copied (take_scratch_whole)
     ↓
-copy_route(), one transaction per line, straight into the real database;
+else: real database created from the scratch schema, if there is none,
+    then copy_route(), one transaction per line, straight into it;
     network-wide tables copied with the first line only
     ↓
 scratch deleted, whatever happened
 ```
+
+A database the flow's import created is recorded as built from the kept
+zip (`record_installed`, 7062841b), as a refresh records it: the update
+entity then says which edition is installed rather than assuming it from
+the zip.
 
 Indexing the scratch file by route took the copy of 41 Orleans routes from
 206 s to 16 s, for 9 s of indexing.
@@ -940,7 +1001,7 @@ report of an import the user started is a notification.
 | Adding lines stops at line *k* | Lines before *k* are in; *k* and after are not | The partial import notification names the lines that came in and the ones that did not; a flow still open says the same on its departure screen | User re-picks |
 | Refresh: a line fails to copy | Swap refused, old database stays | Refresh failed issue, its fix retries now | Next check |
 | Refresh: a line a sensor reads has no trip in the new edition | Swap refused, old database stays, on the route by route and the whole-feed path alike | Lines missing issue, naming them | Next check; see below |
-| Refresh: every line is empty | Swap refused, the file is taken as broken | Lines missing, every line named | Next check |
+| Refresh: every line is empty | Swap refused, the file is taken as broken | Lines missing, every line named; on the whole-feed path, refresh failed issue | Next check |
 | Refresh: a line nobody reads has no trip | That line is dropped, the swap goes through | Nothing | — |
 | Swap cannot take the exclusive lock within 30 s | Old database stays, staging removed | Refresh failed issue, its fix retries now | Next check |
 | Rebuild fails after the zip was adopted | Zip ahead of database (`rebuild_pending`) | Refresh failed issue, its fix retries now | Next auto check rebuilds from the kept zip first; refused again, it goes on to ask the host for a newer edition |
@@ -975,6 +1036,7 @@ interrupted run of itself left before it begins:
 
 ```
 <file>.import.sqlite      discarded at the start and end of every import_routes
+                          (<file>.refresh.import.sqlite in a refresh route by route)
 <file>.refresh.sqlite     removed at the start and end of every refresh and on_a_copy
 <file>.zip.new            overwritten by the next download
 hot journal on the real   rolled back by SQLite when the next swap takes the
@@ -982,9 +1044,16 @@ database                  exclusive lock, before the rename
 zip ahead of database     rebuild_pending, read at the next check
 ```
 
-Locks and probe states are in memory on purpose: they are re-derivable at
-the next tick, and a restart only means "latest unknown" until the first
-check.
+One step does run at each source's setup: a kept zip with no sidecar, as
+an install coming from upstream leaves it, gets one written from the file
+(`adopt_kept_zip`, d71b4b8b).
+
+Locks and the host's last answer are in memory on purpose: they are
+re-derivable at the next tick. Only the time of the last look is kept, in
+the zip's sidecar (`checked_at`), so the catch-up after a start knows
+whether the night's check ran. Until the first check, the update entity
+claims the installed version, or the zip's when the zip is ahead of the
+database, never "unknown".
 
 ## Files on disk
 
@@ -994,22 +1063,33 @@ configuration, named after the source's file:
 ```
 gtfs2/
   <file>.zip                  the feed as downloaded, the only full record of it
-  <file>.zip.meta.json        what the host said of that zip: final url, ETag,
-                              Last-Modified, sha256, size, dates
-  <file>.sqlite               the real database, the only file sensors open
+  <file>.zip.meta.json        what the host said of that zip (final url, ETag,
+                              Last-Modified), its sha256, size and dates; for
+                              a zip found with no record, only its hash, size
+                              and file time
+  <file>.zip.rail             the rail index: the trains of that zip, for the
+                              train screens, stamped with its edition
+  <file>.zip.shapes           the shapes of the lines the leg files asked for,
+                              for that edition
+  <file>.sqlite               the real database, the only timetable database
+                              sensors open
   <file>.sqlite.meta.json     which edition the database was built from
 
   while something runs, removed when it ends or by the next run:
   <file>.zip.new              a download, adopted once proven a zip
   <file>.zip.new.inner        the network taken out of an envelope download
+  <file>.zip.rail.new         the rail index being written
   <file>.import.sqlite        the scratch database of an import
+  <file>.import.sqlite.zip    the zip cut down to the chosen lines
   <file>.refresh.sqlite       a rebuild or a copy about to be swapped in
   *-journal                   SQLite rollback journal
   *-wal, *-shm                never created by the integration (see
                               "Concurrency"), removed defensively
 ```
 
-Both sidecars are disposable caches: deleting one costs one refresh at most.
+Both sidecars, the rail index and the shapes store are disposable caches:
+a sidecar costs one refresh at most, the other two are read again from
+the zip.
 The staging and scratch files live beside the real one so a rename never
 crosses a device boundary.
 
@@ -1017,11 +1097,17 @@ Map files go to `www/gtfs2/`, served to the cards as `/local/gtfs2/`:
 
 ```
 www/gtfs2/
-  <route>_<direction>_route.json       the line, drawn from its fullest trip
-  <route>_<direction>.json             the vehicles, from the realtime positions
-  <route>_<direction>_leg_<name>.json  the ride of an entry's next departure
-  timetable_<name>.json                an entry's departures over the next days
+  <source>_<route>_<direction>_route.json  the line, drawn from its fullest trip
+  <source>_<route>_<direction>.json        the vehicles, from the realtime positions
+  <route>_<direction>_leg_<name>.json      the next departure's ride, and the
+                                           trips listed with their stops and shapes
+  timetable_<name>.json                    an entry's departures over the next days
 ```
+
+The route and vehicle files are also written under the names they had
+before, without the source, for what reads them by url (`map_file_names`,
+d30b2cf2); the source is not repeated where the line id already starts
+with it.
 
 The vehicle file holds the vehicles on a trip whose position is recent:
 some feeds keep publishing the vehicles gone back to the depot under
@@ -1035,7 +1121,9 @@ not want to maintain. Each file is written beside its target and renamed,
 so a card never reads half a file. Removing a datasource removes its
 `gtfs2/` files, under its lock and off the loop. Removing an entry removes
 its own leg and timetable files, and the route and vehicle files of its
-line once no other entry needs them; for a train entry, the lines are read
+line once no other entry needs them: the source's own names with the
+source's last entry on the line, the names without a source with the
+last entry of any source; for a train entry, the lines are read
 back from the database: the trips between its two stations (0be7d37).
 When the removed entry was the last to read its line, the line's timetable
 stays in the source (a prune never runs by itself) and a repairs issue
@@ -1056,14 +1144,16 @@ written (6ce772e).
 
 Writers: the automatic refresh, the button, the update entity and service,
 a line added from the route screen, the optimise screen, the prune and
-intern services, the removal of a datasource. Readers: one coordinator per
+intern services, the repair that drops one line, the removal of a
+datasource. Readers: one coordinator per
 entry, every minute. Three rules keep them apart.
 
 **One writer per source.** Every writer takes `source_lock(hass, file)`, one
 `asyncio.Lock` per source. A refresh never runs beside an import of the same
 source, which would otherwise take the lines just added with it. The update
-entity, the button and the scheduled check read the lock to show a rebuild
-in progress or skip a tick, without waiting on it. The scheduled check's
+entity, the button, the scheduled check, the prune and intern services and
+the re-reading of a source's rail index read the lock, to show a rebuild
+in progress or step aside, without waiting on it. The scheduled check's
 own download, which can last half an hour and writes the same
 `<file>.zip.new` a refresh stages into, runs under the lock too. A second
 refresh arriving while one runs is dropped, not queued.
@@ -1089,7 +1179,7 @@ which on Linux keeps reading the unlinked old file: complete, just old.
 Connections wait for a busy database rather than fail: 60 s for readers
 and copies (ea9ff2f: at start, entries opening one large database at once
 gave up at the 5 s default and their sensors were never created), 300 s
-for prune and intern.
+for prune and intern; the swap waits 30 s for its exclusive lock.
 
 **Nothing blocking on the event loop.** SQLite, pygtfs, zip reading and file
 writes go through `hass.async_add_executor_job`. The lock is taken on the
@@ -1104,7 +1194,8 @@ bb4f8f6).
 
 - A key goes in the url (`with_query_key`), in a header under its name,
   or as an HTTP Basic login the integration encodes, `Authorization:
-  Basic base64("key:")` (`key_headers`, `rt_source.py`). The static zip
+  Basic base64("key:")`, or the key as it is when it holds a user:password
+  (`key_headers` in `rt_source.py`, `basic_credentials` in `key_mask.py`). The static zip
   and the realtime feeds ask with the same two functions.
 - One logging filter sits on the logger of every module of the
   integration and writes `*****` wherever a known key shows, raw,
@@ -1157,7 +1248,8 @@ both suites       branch coverage, may not fall under a floor (84%)
 complexity        each function at 10 or under, or at its recorded
                   ceiling (.github/complexity.json), which only comes
                   down; no pyflakes finding       CI: Complexity
-layers            the import-linter contract (.importlinter)
+layers            the import-linter contracts (.importlinter): no
+                  import from a higher layer, no import cycle
                                                   CI: Imports
 types             what a function takes and returns, in its signature,
                   checked by mypy in every module (mypy.ini)
@@ -1182,7 +1274,7 @@ coordinator already filled and refreshes it plainly (b960969).
 What the code does not follow yet from the design above: none. A gap is
 closed when the rule it breaks can be checked by a test.
 
-The last three closed on 2026-09-30. `gtfs_helper.py` and
+The last three closed on 2026-09-29 (e03e4f8f). `gtfs_helper.py` and
 `gtfs_rt_helper.py`, upstream's two files that every layer imported, sat
 outside the layers while the fork's code left them (the stops around a
 person, the places of a line, the timetable services, the flow's lists,

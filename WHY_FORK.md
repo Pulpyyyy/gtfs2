@@ -67,7 +67,9 @@ rewritten screen by screen:
   way a line number is read, and the mode is added where two lines share
   a number
 - a stop is offered by its name, once, all platforms of a station
-  together; a train journey is picked station by station, by name
+  together; a train journey is picked station by station, by name, then
+  the lines riding between them, a sensor for each; a journey can get on
+  or off at more than one stop at each end
 - fields carry a short explanation under them, and errors say what to do,
   in the five languages of the integration
 - the screens say what will happen before it happens (a download, how
@@ -115,7 +117,8 @@ Benefits:
 - one download per feed, read by every sensor it serves
 - one state, shown on the source's own entities (update, button, switch)
 - realtime read only while the timetable has a vehicle running: from 10
-  minutes before the day's first passage to 20 minutes after its last
+  minutes before the day's first passage to 20 minutes after its last, and
+  longer while a late vehicle is still announced, up to two hours
 
 ---
 
@@ -156,13 +159,14 @@ Behind that choice:
   in September 2026 answer it. When a host cannot say, the download is
   compared by its sha256 hash before anything is rebuilt.
 - **Timing.** Each source is checked in a night slot of its own, between
-  03:00 and 06:00, so two sources never rebuild on the same minute. A check missed
+  03:00 and 05:59, so two sources never rebuild on the same minute. A check missed
   while Home Assistant was off is caught up after start.
 - **Follow-up.** The update entity shows the installed edition and the
   new one, and installs it like any other update in Home Assistant. A
   diagnostic sensor says how long the kept timetable is still good for
   (valid, ending, expired). A failed refresh is raised in Settings >
-  Repairs with its fix, and clears when a refresh succeeds.
+  Repairs, a failed download or import with a fix that tries again, and
+  clears when a refresh succeeds.
 
 The `update_gtfs` service stays, for the automations that already use it.
 
@@ -271,8 +275,8 @@ Benefits:
 
 - sensors see the old edition or the new one, never a mix
 - a failed download, import or check leaves the current data in place
-- the failure is raised in Settings > Repairs, with its fix, and clears
-  with its cause
+- the failure is raised in Settings > Repairs and clears with its cause;
+  a failed download or import comes with a fix that tries again
 
 ---
 
@@ -338,8 +342,9 @@ Goal:
 - New entities per source: an update entity, a rebuild button, a realtime
   switch and two diagnostic sensors (realtime and timetable).
 - Existing entries are migrated at start-up: a datasource entry is created
-  for each source, taking over its url and keys. Going back to upstream on
-  the same entries is a design goal.
+  for each source, taking over its url, keys and realtime feeds, which then
+  leave the journeys. Going back to upstream on the same entries is not
+  kept.
 
 ---
 

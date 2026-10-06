@@ -66,6 +66,13 @@ Stop A → Stop B          a bus or a tram
 Station A → Station B    a train
 ```
 
+Each end can hold more than one stop or station, ticked under "Also board
+at" and "Also get off at": each run is then listed once, where the rider
+first gets on.
+
+A train journey is set up from its two stations first, then its lines:
+each line ticked becomes a journey of its own.
+
 Each journey entry produces one sensor.
 
 ---
@@ -119,7 +126,8 @@ notify   the update entity says a new edition is available
 auto     the rebuild runs at the first check that finds a change
 ```
 
-Each source is checked in a night slot of its own.
+Each source is checked at the frequency picked for it, from a night slot
+of its own.
 
 ---
 
@@ -148,6 +156,10 @@ A source's realtime feeds are only read from 10 minutes before the first
 passage of the day to 20 minutes after the last. A line that is not running
 needs no polling.
 
+While the feed still announces a late vehicle, the window stays open
+longer, up to two hours past the close. After a restart past the close,
+the feed is read once to find out.
+
 ---
 
 ## Zip
@@ -172,6 +184,9 @@ Full feed → Filter → Reduced feed
 ```
 
 Only the followed lines are imported. The zip itself is kept whole.
+
+A source that a local stops entry or a train journey reads keeps every
+line when it is refreshed, since those match across the whole feed.
 
 ---
 
@@ -222,7 +237,8 @@ it entirely or not at all.
 A place is where a rider can board or alight, as the setup screens offer
 it: a stop, or all the stops of one station taken together.
 
-Places are what a journey's origin and destination are picked from.
+Places are what a bus or tram journey's origin, destination and extra
+stops are picked from. A train journey picks stations.
 
 ---
 
@@ -243,15 +259,18 @@ The user picks the station. The integration reads its stops.
 
 ## Struck trip
 
-A trip the realtime feed cancels, or that skips the origin. It leaves the
-list of departures, and the next one takes its place.
+A trip the realtime feed cancels, or that skips the stop where the rider
+gets on it. It leaves the list of departures, and the next one takes its
+place.
 
 ---
 
 ## Leg
 
-The leg file describes the ride of a journey's next departure, stop by
-stop, with its times, realtime included.
+The leg file describes the ride of a journey's next departure, and of the
+departures listed after it, stop by stop, with their times, realtime
+included: every stop they call at, named and placed, and each run's own
+shape where the feed draws one.
 
 ```text
 Origin 08:12 → Stop 08:15 → Stop 08:19 → Destination 08:24
