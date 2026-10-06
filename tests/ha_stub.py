@@ -216,8 +216,9 @@ def _module(name: str, **attrs) -> types.ModuleType:
     return module
 
 
-# the signals sent from a thread (dispatcher_send), as (signal, args), for a
-# test to read; nothing listens in the stub
+# the signals sent, from a thread (dispatcher_send) or the loop
+# (async_dispatcher_send), as (signal, args), for a test to read; nothing
+# listens in the stub
 SENT_SIGNALS: list[tuple[str, tuple]] = []
 
 
@@ -986,7 +987,7 @@ def install() -> None:
             async_get_translations=_Unreached("async_get_translations"))
     _module("homeassistant.helpers.dispatcher",
             dispatcher_send=_dispatcher_send,
-            async_dispatcher_send=_Unreached("async_dispatcher_send"),
+            async_dispatcher_send=_dispatcher_send,
             async_dispatcher_connect=_async_dispatcher_connect)
     _module("homeassistant.helpers.device_registry",
             DeviceEntryType=types.SimpleNamespace(SERVICE="service"),

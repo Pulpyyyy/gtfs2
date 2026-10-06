@@ -32,7 +32,7 @@ def test_refresh_source_answer(monkeypatch):
     for answer, delivered in ANSWERS:
         recorded = []
         monkeypatch.setattr(source_refresh, "refresh_datasource", lambda hass, path, data: answer)
-        monkeypatch.setattr(source_refresh, "_record_installed", lambda hass, file: recorded.append(file))
+        monkeypatch.setattr(source_refresh, "record_installed", lambda hass, file: recorded.append(file))
         assert source_refresh.refresh_source(None, "gtfs2", {"file": "src"}) is delivered, answer
         # only a database built by the swap is recorded as installed
         assert recorded == (["src"] if isinstance(answer, dict) else []), answer

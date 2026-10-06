@@ -234,9 +234,9 @@ def installed_meta(hass: HomeAssistant, file: str) -> dict[str, Any]:
     """What the database was last built from.
 
     Falls back on the zip's sidecar when the build was never recorded: the
-    flow's initial import and upstream's legacy paths build straight from
-    the zip they just fetched, so zip and database start out as the same
-    version.
+    flow's initial import (recorded since 2026-10-06) and upstream's legacy
+    paths build straight from the zip they just fetched, so zip and
+    database start out as the same version.
     """
     return read_meta(_installed_meta_path(hass, file)) or source_meta(source_zip_path(hass, file))
 
@@ -257,8 +257,9 @@ async def async_adopt_kept_zip(hass: HomeAssistant, file: str) -> None:
         _LOGGER.info("The zip of %s had no record of its download: recorded from the file", file)
 
 
-def _record_installed(hass: HomeAssistant, file: str) -> None:
-    """After a successful rebuild, the database is what the zip is."""
+def record_installed(hass: HomeAssistant, file: str) -> None:
+    """After a successful rebuild, or the first import of a new source, the
+    database is what the zip is."""
     meta = dict(source_meta(source_zip_path(hass, file)))
     meta["built_at"] = dt_util.utcnow().isoformat()
     write_meta(_installed_meta_path(hass, file), meta, "rebuild", file)
@@ -323,7 +324,7 @@ def refresh_source(hass: HomeAssistant, path: str, data: dict[str, Any]) -> bool
     result = refresh_datasource(hass, path, data)
     if not isinstance(result, dict):
         return False
-    _record_installed(hass, data[CONF_FILE])
+    record_installed(hass, data[CONF_FILE])
     return True
 
 

@@ -23,6 +23,7 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import (
     id_of,
@@ -39,7 +40,7 @@ from .flow_journey import _Step
 from .notifications import async_notify_import
 from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
 from .rt_source import source_readers
-from .source_refresh import source_lock
+from .source_refresh import SIGNAL_SOURCE_REFRESH, record_installed, source_lock
 from .datasource import check_datasource_index, check_extracting, open_datasource
 from .source_zip import build_scratch_database
 
@@ -224,8 +225,19 @@ class ReloadScreens:
                 # beside this one and swaps it in, which would take the lines
                 # added here with it. The wait shows as the progress screen.
                 async with source_lock(self.hass, filename):
-                    return await self.hass.async_add_executor_job(
+                    fresh = not await self.hass.async_add_executor_job(
+                        os.path.exists, real_path(gtfs_dir, filename))
+                    added = await self.hass.async_add_executor_job(
                         import_routes, gtfs_dir, filename, routes, _build)
+                    # a new source's database is built from the zip just
+                    # fetched: recorded, its update entity says so rather
+                    # than assuming it from the zip. Told, as a refresh
+                    # tells it: it read its versions when the source was
+                    # added, before the import
+                    if added and fresh:
+                        await self.hass.async_add_executor_job(record_installed, self.hass, filename)
+                        async_dispatcher_send(self.hass, SIGNAL_SOURCE_REFRESH.format(filename))
+                    return added
 
             self._import_job = self.hass.async_create_task(_import())
             self._reload_done_job = None
