@@ -14,8 +14,9 @@ The user chooses a frequency, never a moment: the moment is derived here,
 at night in the instance's own timezone for daily and slower rhythms, and
 staggered per source so rebuilds spread out. The schedule decides when to
 look, the validators decide whether anything happens, so a week without a
-new version costs one request. Only sources fetched from a url can be
-checked: a zip source has no host to ask.
+new version costs one request. Every source is checked: a zip in the
+gtfs2 folder by its file:// url, the file's own time standing for
+Last-Modified (file_url).
 
 Two files carry the state, both disposable: the zip's sidecar records what
 was downloaded (written by the download path itself), and a matching

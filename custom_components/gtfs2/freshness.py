@@ -9,6 +9,10 @@ only need to happen when the answer is "changed". The exceptions generate
 the zip on request and send no validators at all: for those the sidecar's
 hash is the only test, and it costs the download (fetch_if_new).
 
+The download itself is here too: streamed beside the kept zip
+(download_feed), proven a feed (stage_zip), then kept with its sidecar
+(keep_download); a zip found with no sidecar gets one (adopt_kept_zip).
+
 Everything here is synchronous on purpose, made to run in an executor job,
 and touches nothing but the source's zip and its sidecar.
 """
