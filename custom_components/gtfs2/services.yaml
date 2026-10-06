@@ -158,7 +158,7 @@ update_gtfs_rt_local:
         boolean:         
         
 update_gtfs_local_stops: 
-  name: Update Local Stops
+  name: Update GTFS local stops
   description: Updates local stops based on location entity
   fields:       
     entity_id:
