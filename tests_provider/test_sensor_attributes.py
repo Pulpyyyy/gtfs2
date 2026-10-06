@@ -152,7 +152,7 @@ class Schedule:
 
 def stop_time(seq):
     return {"Arrival Time": "10:30:00", "Departure Time": "10:30:00", "Drop Off Type": 0,
-            "Pickup Type": 0, "Timepoint": 1, "Stop Sequence": seq}
+            "Pickup Type": 0, "Timepoint": 1, "Sequence": seq}
 
 
 def departure(at, listed=3):
@@ -182,8 +182,8 @@ def realtime():
         const.ATTR_NEXT_RT: ["2026-09-16T08:02:00+00:00", "2026-09-16T08:11:00+00:00"],
         const.ATTR_NEXT_RT_DELAYS: [120, 60],
         const.ATTR_NEXT_RT_TRIPS: ["T1", "T2"],
-        const.ATTR_RT_CANCELLED: {"T9": "20260916"},
-        const.ATTR_RT_SKIPPED: {},
+        const.ATTR_RT_CANCELLED: ["T9"],
+        const.ATTR_RT_SKIPPED: [],
     }
 
 
@@ -213,7 +213,7 @@ def made_up():
                       "origin_stop_alerts": [{"text": "Works", "cause": "CONSTRUCTION", "effect": "DETOUR"}],
                       "destination_stop_alerts": None, "alert_cause": "CONSTRUCTION", "alert_effect": "DETOUR"},
             "route_geojson_file": "R1_0_route.json", "leg_geojson_file": "R1_0_leg_one_to_two.json",
-            "vehicle_positions_file": "R1_0.json", "timetable_file": "R1_0_timetable_one_to_two.json",
+            "vehicle_positions_file": "R1_0.json", "timetable_file": "timetable_one_to_two.json",
         },
         "tomorrow morning": {**base, "next_departure": departure(
             datetime.datetime.combine(today + datetime.timedelta(days=1), datetime.time(8, 0), PARIS), listed=1)},
