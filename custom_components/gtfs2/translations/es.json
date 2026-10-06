@@ -121,7 +121,7 @@
           "file": "Nombre con el que guardarlo",
           "needs_api_key": "Se necesita una clave API"
         },
-        "description": "Home Assistant descargará el archivo y lo descomprimirá en una base local.\n\n[documentación]({docu_extracting})",
+        "description": "Home Assistant descarga el archivo y lo guarda entero: el horario de una línea se importa cuando un sensor la sigue por primera vez.\n\n[documentación]({docu_extracting})",
         "data_description": {
           "url": "El `.zip` publicado por la red de transporte.",
           "file": "El nombre que usted da a esta fuente. La identifica más adelante y nombra el archivo en disco. Letras, cifras, espacios, guiones y guiones bajos.",

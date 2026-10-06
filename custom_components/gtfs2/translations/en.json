@@ -121,7 +121,7 @@
           "file": "Name to save it under",
           "needs_api_key": "This requires an API key"
         },
-        "description": "Home Assistant will download the file and unpack it into a local database.\n\n[documentation]({docu_extracting})",
+        "description": "Home Assistant downloads the file and keeps it whole: a line's timetable is imported when a sensor first follows it.\n\n[documentation]({docu_extracting})",
         "data_description": {
           "url": "The `.zip` published by the transport network.",
           "file": "Your own name for this source. It identifies it later, and names the file on disk. Letters, digits, spaces, dashes and underscores.",
