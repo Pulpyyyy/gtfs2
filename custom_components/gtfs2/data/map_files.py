@@ -9,8 +9,8 @@ of the zip (trip_shape_id, read_shape) and the boarding rules per stop
 every file here shares: an id or an entry's name as a file name part
 (safe_file_part, entry_file_part), a write no reader catches half done
 (write_json_file) and a write skipped when nothing changed
-(write_json_if_changed). The leg file is in leg.py, the timetable in
-timetable.py. The coordinator calls the writers from the executor; the
+(write_json_if_changed). The leg file is in leg_file.py, the timetable in
+timetable_file.py. The coordinator calls the writers from the executor; the
 positions file itself is written by vehicles.get_rt_vehicle_positions.
 """
 from __future__ import annotations
@@ -34,11 +34,11 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
-from .const import DEFAULT_PATH_GEOJSON
-from .feed.files import feed_zip
-from .gtfs_filter import _member, table_rows
+from ..const import DEFAULT_PATH_GEOJSON
+from ..feed.files import feed_zip
+from .zip_filter import _member, table_rows
 from .clocks import gtfs_seconds
-from .gtfs_helper import shown_ends
+from .departures import shown_ends
 from .places import _line_ways
 from .stop_rules import _call_type
 
@@ -248,7 +248,7 @@ def get_representative_trip(schedule: Schedule | str | None, route_id: str | Non
     if not route_id:
         return None
     # a sentinel of get_gtfs ("not_built", "no_zip_file") holds no database
-    # to read: matched by shape, as the helpers of gtfs_helper do
+    # to read: matched by shape, as the helpers of departures do
     if schedule is None or isinstance(schedule, str):
         _LOGGER.debug("No usable schedule to draw route %s (%s)", route_id, schedule or "empty")
         return None

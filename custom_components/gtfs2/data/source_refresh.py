@@ -40,7 +40,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_call_later, async_track_time_change
 
-from .const import (
+from ..const import (
     DOMAIN,
     DEFAULT_PATH,
     CONF_EXTRACT_FROM,
@@ -54,7 +54,7 @@ from .const import (
     STATIC_REFRESH_NOTIFY,
     STATIC_REFRESH_OFF,
 )
-from .feed.freshness import (
+from ..feed.freshness import (
     PROBE_CHANGED,
     PROBE_ERROR,
     PROBE_UNCHANGED,
@@ -67,11 +67,11 @@ from .feed.freshness import (
     source_meta,
     write_meta,
 )
-from .file_url import file_url
-from .feed.files import feed_zip, real_path
+from ..file_url import file_url
+from ..feed.files import feed_zip, real_path
 from .source_zip import refresh_datasource
-from .notifications import async_notify_refresh
-from .feed.source_entries import (STATIC_KEY_KEYS, journey_entries, source_readers, source_train_lines,
+from ..notifications import async_notify_refresh
+from ..feed.source_entries import (STATIC_KEY_KEYS, journey_entries, source_readers, source_train_lines,
                         static_feed_config)
 
 _LOGGER = logging.getLogger(__name__)

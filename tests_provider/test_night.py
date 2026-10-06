@@ -56,23 +56,23 @@ import homeassistant.util.dt as dt_util  # noqa: E402
 import fixture_db  # noqa: E402
 import test_journeys as tj  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 # the clocks of a feed have a module of their own here; a checkout run
 # with --component that keeps them in gtfs_helper is read there
-feed_clocks = (ha_stub.load("clocks") if (ha_stub.COMPONENT / "clocks.py").is_file()
-               else gtfs_helper)
+feed_clocks = (ha_stub.load("data.clocks") if (ha_stub.COMPONENT / "data/clocks.py").is_file()
+               else departures)
 # what a stop is to the rider has a module of its own here; a checkout run
 # with --component that keeps it in gtfs_helper is read there
-stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
-              else gtfs_helper)
+stop_rules = (ha_stub.load("data.stop_rules") if (ha_stub.COMPONENT / "data/stop_rules.py").is_file()
+              else departures)
 try:
     local_stops = ha_stub.load("local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
-    local_stops = gtfs_helper
+    local_stops = departures
 try:
     departure_services = ha_stub.load("departure_services")
 except FileNotFoundError:  # a tree that answers the departures service in gtfs_helper
-    departure_services = gtfs_helper
+    departure_services = departures
 
 FIXTURES = Path(__file__).parent / "fixtures"
 PROMISES = ("route", "local_stop", "service")
@@ -344,7 +344,7 @@ def check_route(rider, schedule, names, zone_name, zone, call, label, now):
             "route": call.route_id, "direction": str(call.direction_id),
             "include_tomorrow": True}
     want = _first_ride(rider, call, now)
-    result = gtfs_helper.get_next_departure(_hass(zone_name), data)
+    result = departures.get_next_departure(_hass(zone_name), data)
     got = _instant(result.get("departure_time")) if result else None
     want = _instant(want)
     return {"ok": got == want,

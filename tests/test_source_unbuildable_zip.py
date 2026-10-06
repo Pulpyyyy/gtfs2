@@ -13,7 +13,7 @@ import types
 
 import ha_stub
 
-source_refresh = ha_stub.load("source_refresh")
+source_refresh = ha_stub.load("data.source_refresh")
 
 
 def _check(monkeypatch, built):

@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text as sql_text
 
-from .geojson import map_file, map_file_names, vehicle_positions_name, write_json_file
+from .data.map_files import map_file, map_file_names, vehicle_positions_name, write_json_file
 from .line_ends import _names_a_place
 from .feed.rt_feed import FeedEntities, _read_feed, _same_route
 

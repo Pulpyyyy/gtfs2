@@ -2,7 +2,7 @@
 the route file carries when the zip beside the database still holds
 shapes.txt.
 
-shapes.txt is never imported (see geojson.read_shape), so the route file reads the
+shapes.txt is never imported (see map_files.read_shape), so the route file reads the
 shape of the trip it draws straight out of the zip, and a map card draws
 the street or the track between the stops instead of a straight line. The
 cases are the feeds' own: TAO ships a shapes.txt, its trips all name a
@@ -28,8 +28,8 @@ import ha_stub
 
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the coordinator and the platforms, and with them the rest of Home Assistant.
-gtfs_helper = ha_stub.load("gtfs_helper")
-geojson = ha_stub.load("geojson")
+departures = ha_stub.load("data.departures")
+map_files = ha_stub.load("data.map_files")
 
 ROUTE = "ORLEANS:Line:A"
 SHAPE = "VER2-LAM2-BUS2-HOP1"
@@ -124,7 +124,7 @@ def writer_args(tmp_path, schedule, file="feed"):
 
 
 def route_file(tmp_path):
-    path = tmp_path / "www" / "gtfs2" / geojson.route_geojson_name(ROUTE, "1")
+    path = tmp_path / "www" / "gtfs2" / map_files.route_geojson_name(ROUTE, "1")
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
@@ -133,59 +133,59 @@ def route_file(tmp_path):
 
 def test_shape_points_come_in_sequence_order_as_lon_lat(tmp_path):
     write_zip(tmp_path / "feed.zip")
-    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert map_files.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_shape_without_dist_traveled_reads_the_same(tmp_path):
     write_zip(tmp_path / "feed.zip", columns=("shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence"))
-    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert map_files.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_shape_columns_may_come_in_any_order(tmp_path):
     rows = [(seq, lon, sid, lat) for sid, lat, lon, seq, _ in SHAPE_ROWS]
     write_zip(tmp_path / "feed.zip", shapes=rows, columns=("shape_pt_sequence", "shape_pt_lon", "shape_id", "shape_pt_lat"))
-    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert map_files.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_a_bad_row_does_not_lose_the_shape(tmp_path):
     write_zip(tmp_path / "feed.zip", shapes=SHAPE_ROWS + [(SHAPE, "not-a-number", "1.0", "9", ""), (SHAPE, "47.0")])
-    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert map_files.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_a_feed_nested_in_a_folder_has_its_shape(tmp_path):
-    # the import finds a table wherever the feed nested it (gtfs_filter's
+    # the import finds a table wherever the feed nested it (zip_filter's
     # _member), and the zip is kept as sent: the shape is read from there too
     write_zip(tmp_path / "flat.zip")
     with zipfile.ZipFile(tmp_path / "flat.zip") as zin, \
             zipfile.ZipFile(tmp_path / "feed.zip", "w") as zout:
         for name in zin.namelist():
             zout.writestr("gtfs/" + name, zin.read(name))
-    assert geojson.trip_shape_id(tmp_path / "feed.zip", "T1") == SHAPE
-    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
+    assert map_files.trip_shape_id(tmp_path / "feed.zip", "T1") == SHAPE
+    assert map_files.read_shape(tmp_path / "feed.zip", SHAPE) == SHAPE_POINTS
 
 
 def test_unknown_shape_reads_none(tmp_path):
     write_zip(tmp_path / "feed.zip")
-    assert geojson.read_shape(tmp_path / "feed.zip", "NOPE") is None
-    assert geojson.read_shape(tmp_path / "feed.zip", None) is None
-    assert geojson.read_shape(tmp_path / "feed.zip", "") is None
+    assert map_files.read_shape(tmp_path / "feed.zip", "NOPE") is None
+    assert map_files.read_shape(tmp_path / "feed.zip", None) is None
+    assert map_files.read_shape(tmp_path / "feed.zip", "") is None
 
 
 def test_zip_without_shapes_reads_none(tmp_path):
     # the SNCF ships none, and the historic import strips it out in place
     write_zip(tmp_path / "feed.zip", shapes=None)
-    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) is None
+    assert map_files.read_shape(tmp_path / "feed.zip", SHAPE) is None
 
 
 def test_missing_zip_reads_none(tmp_path):
-    assert geojson.read_shape(tmp_path / "gone.zip", SHAPE) is None
+    assert map_files.read_shape(tmp_path / "gone.zip", SHAPE) is None
     (tmp_path / "junk.zip").write_bytes(b"not a zip")
-    assert geojson.read_shape(tmp_path / "junk.zip", SHAPE) is None
+    assert map_files.read_shape(tmp_path / "junk.zip", SHAPE) is None
 
 
 def test_shapes_without_the_required_columns_read_none(tmp_path):
     write_zip(tmp_path / "feed.zip", columns=("shape_id", "shape_pt_lat"))
-    assert geojson.read_shape(tmp_path / "feed.zip", SHAPE) is None
+    assert map_files.read_shape(tmp_path / "feed.zip", SHAPE) is None
 
 
 # --- the route file -----------------------------------------------------------
@@ -193,7 +193,7 @@ def test_shapes_without_the_required_columns_read_none(tmp_path):
 def test_route_file_carries_the_polyline_ahead_of_the_stops(tmp_path, schedule):
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip")
-    geojson.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
+    map_files.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
     written = route_file(tmp_path)
     line, *stops = written["features"]
     assert line["geometry"] == {"type": "LineString", "coordinates": SHAPE_POINTS}
@@ -209,7 +209,7 @@ def test_route_file_carries_the_polyline_ahead_of_the_stops(tmp_path, schedule):
 def test_route_file_keeps_to_the_stops_when_the_zip_has_no_shapes(tmp_path, schedule):
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip", shapes=None)
-    geojson.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
+    map_files.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None
@@ -218,7 +218,7 @@ def test_route_file_keeps_to_the_stops_when_the_zip_has_no_shapes(tmp_path, sche
 def test_route_file_keeps_to_the_stops_when_the_trip_names_no_shape(tmp_path, schedule):
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip", trips={"T1": None})
-    geojson.write_route_file(*writer_args(tmp_path, schedule(shape_id=None)), trip_id="T1")
+    map_files.write_route_file(*writer_args(tmp_path, schedule(shape_id=None)), trip_id="T1")
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None
@@ -226,7 +226,7 @@ def test_route_file_keeps_to_the_stops_when_the_trip_names_no_shape(tmp_path, sc
 
 def test_route_file_keeps_to_the_stops_when_the_zip_is_gone(tmp_path, schedule):
     # a zip removed by hand: the line is still drawn, from its stops
-    geojson.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
+    map_files.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None
@@ -238,12 +238,12 @@ def test_route_file_says_how_the_trip_calls_at_each_stop(tmp_path, schedule):
     # first stop sets nobody down, the last takes nobody on, and the middle
     # one wants a phone call ahead
     calls = {"VER1": (0, 1), "LAM1": (2, 2), "BUS1": (1, 0)}
-    geojson.write_route_file(*writer_args(tmp_path, schedule(calls=calls)), trip_id="T1")
+    map_files.write_route_file(*writer_args(tmp_path, schedule(calls=calls)), trip_id="T1")
     stops = [f["properties"] for f in route_file(tmp_path)["features"]]
     assert [(s["stop_id"], s["pickup_type"], s["drop_off_type"]) for s in stops] == [
         ("VER1", 0, 1), ("LAM1", 2, 2), ("BUS1", 1, 0)]
     # blank columns read as the regular call
-    geojson.write_route_file(*writer_args(tmp_path, schedule(name="blank.sqlite")), trip_id="T1")
+    map_files.write_route_file(*writer_args(tmp_path, schedule(name="blank.sqlite")), trip_id="T1")
     stops = [f["properties"] for f in route_file(tmp_path)["features"]]
     assert [(s["pickup_type"], s["drop_off_type"]) for s in stops] == [(0, 0)] * 3
 
@@ -252,7 +252,7 @@ def test_shape_named_by_no_trip_stop_draws_the_stops_alone(tmp_path, schedule):
     # trips.shape_id points at a shape the zip does not carry
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip", trips={"T1": "GONE"})
-    geojson.write_route_file(*writer_args(tmp_path, schedule(shape_id="GONE")), trip_id="T1")
+    map_files.write_route_file(*writer_args(tmp_path, schedule(shape_id="GONE")), trip_id="T1")
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None
@@ -272,7 +272,7 @@ def test_the_zip_names_the_shape_when_the_database_is_another_edition(tmp_path, 
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip", shapes=SHAPE_ROWS + ELSEWHERE)
     with caplog.at_level("INFO"):
-        geojson.write_route_file(*writer_args(tmp_path, schedule(shape_id="ELSEWHERE")), trip_id="T1")
+        map_files.write_route_file(*writer_args(tmp_path, schedule(shape_id="ELSEWHERE")), trip_id="T1")
     written = route_file(tmp_path)
     line = written["features"][0]
     assert line["geometry"] == {"type": "LineString", "coordinates": SHAPE_POINTS}
@@ -287,7 +287,7 @@ def test_one_edition_tells_the_log_nothing(tmp_path, schedule, caplog):
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip")
     with caplog.at_level("INFO"):
-        geojson.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
+        map_files.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
     assert not [r for r in caplog.records if "two editions" in r.getMessage()]
 
 
@@ -295,7 +295,7 @@ def test_a_trip_the_zip_does_not_carry_draws_the_stops_alone(tmp_path, schedule)
     # the database's trip ids are an edition the zip moved on from
     (tmp_path / "gtfs2").mkdir()
     write_zip(tmp_path / "gtfs2" / "feed.zip", trips={"T2": SHAPE})
-    geojson.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
+    map_files.write_route_file(*writer_args(tmp_path, schedule()), trip_id="T1")
     written = route_file(tmp_path)
     assert [f["geometry"]["type"] for f in written["features"]] == ["Point"] * 3
     assert written["properties"]["shape_id"] is None
@@ -305,19 +305,19 @@ def test_a_trip_the_zip_does_not_carry_draws_the_stops_alone(tmp_path, schedule)
 
 def test_trip_shape_id_reads_the_zip(tmp_path):
     write_zip(tmp_path / "feed.zip", trips={"T0": "OTHER", "T1": SHAPE, "T3": None})
-    assert geojson.trip_shape_id(tmp_path / "feed.zip", "T1") == SHAPE
-    assert geojson.trip_shape_id(tmp_path / "feed.zip", "T3") is None
-    assert geojson.trip_shape_id(tmp_path / "feed.zip", "NOPE") is None
-    assert geojson.trip_shape_id(tmp_path / "feed.zip", None) is None
+    assert map_files.trip_shape_id(tmp_path / "feed.zip", "T1") == SHAPE
+    assert map_files.trip_shape_id(tmp_path / "feed.zip", "T3") is None
+    assert map_files.trip_shape_id(tmp_path / "feed.zip", "NOPE") is None
+    assert map_files.trip_shape_id(tmp_path / "feed.zip", None) is None
 
 
 def test_trip_shape_id_without_the_table_or_the_column(tmp_path):
     with zipfile.ZipFile(tmp_path / "bare.zip", "w") as zout:
         zout.writestr("routes.txt", "route_id\nR\n")
-    assert geojson.trip_shape_id(tmp_path / "bare.zip", "T1") is None
+    assert map_files.trip_shape_id(tmp_path / "bare.zip", "T1") is None
     with zipfile.ZipFile(tmp_path / "noshape.zip", "w") as zout:
         zout.writestr("trips.txt", "route_id,service_id,trip_id\nR,S,T1\n")
-    assert geojson.trip_shape_id(tmp_path / "noshape.zip", "T1") is None
-    assert geojson.trip_shape_id(tmp_path / "gone.zip", "T1") is None
+    assert map_files.trip_shape_id(tmp_path / "noshape.zip", "T1") is None
+    assert map_files.trip_shape_id(tmp_path / "gone.zip", "T1") is None
     (tmp_path / "junk.zip").write_bytes(b"not a zip")
-    assert geojson.trip_shape_id(tmp_path / "junk.zip", "T1") is None
+    assert map_files.trip_shape_id(tmp_path / "junk.zip", "T1") is None

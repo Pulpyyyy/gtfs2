@@ -24,7 +24,7 @@ import feed_db
 import ha_stub
 
 freshness = ha_stub.load("feed.freshness")
-source_zip = ha_stub.load("source_zip")
+source_zip = ha_stub.load("data.source_zip")
 
 FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "boarding" / "static.zip"
 

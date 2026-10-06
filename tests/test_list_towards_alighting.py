@@ -12,7 +12,7 @@ import ha_stub
 
 ha_stub.install()
 
-places = ha_stub.load("places")
+places = ha_stub.load("data.places")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type\n"
 FEED = {

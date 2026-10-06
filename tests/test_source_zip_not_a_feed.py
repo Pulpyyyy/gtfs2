@@ -14,7 +14,7 @@ import zipfile
 
 import ha_stub
 
-source_zip = ha_stub.load("source_zip")
+source_zip = ha_stub.load("data.source_zip")
 
 
 def _zip(path, *members):

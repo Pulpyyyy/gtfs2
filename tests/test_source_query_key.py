@@ -11,7 +11,7 @@ import ha_stub
 
 source_entries = ha_stub.load("feed.source_entries")
 freshness = ha_stub.load("feed.freshness")
-source_zip = ha_stub.load("source_zip")
+source_zip = ha_stub.load("data.source_zip")
 with_query_key = source_entries.with_query_key
 
 IN_QUERY = {"api_key_location": "query_string", "api_key_name": "apikey"}

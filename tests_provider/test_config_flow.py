@@ -122,9 +122,9 @@ source_entries = ha_stub.load("feed.source_entries")
 files = ha_stub.load("feed.files")
 # the import into a scratch database has a module of its own here, gtfs_db
 # in a checkout run with --component that keeps it there
-db_build = (ha_stub.load("db_build") if (ha_stub.COMPONENT / "db_build.py").is_file()
+db_build = (ha_stub.load("data.db_build") if (ha_stub.COMPONENT / "data/db_build.py").is_file()
             else files)
-source_refresh = ha_stub.load("source_refresh")
+source_refresh = ha_stub.load("data.source_refresh")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 COMPONENT = Path(config_flow.__file__).parent

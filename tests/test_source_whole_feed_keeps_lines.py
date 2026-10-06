@@ -15,7 +15,7 @@ import feed_db
 import ha_stub
 
 freshness = ha_stub.load("feed.freshness")
-source_zip = ha_stub.load("source_zip")
+source_zip = ha_stub.load("data.source_zip")
 
 FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "boarding" / "static.zip"
 
@@ -60,7 +60,7 @@ def _refresh(gtfs_dir, monkeypatch):
     """refresh_datasource on a zip source, a fork refused: the legacy
     extract forked and rebuilt the database in place."""
     import types
-    datasource = ha_stub.load("datasource")
+    datasource = ha_stub.load("data.datasource")
 
     def no_fork():
         raise AssertionError("the legacy extract ran")

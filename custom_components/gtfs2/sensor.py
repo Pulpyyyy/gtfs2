@@ -32,9 +32,9 @@ from .const import (
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 from .local_stops import local_stops_nearby
 from .feed.source_entries import has_rt_feed, source_device
-from .rt_window import SIGNAL_RT_WINDOW, window_state
-from .feed_window import read_feed_window, timetable_state
-from .source_refresh import SIGNAL_SOURCE_REFRESH, source_zip_path
+from .data.rt_window import SIGNAL_RT_WINDOW, window_state
+from .data.validity import read_feed_window, timetable_state
+from .data.source_refresh import SIGNAL_SOURCE_REFRESH, source_zip_path
 from .departure_attributes import (
     alert_details, departure_times, map_files, next_departure_attributes, next_departure_lists,
     next_service_info, realtime_attributes, route_and_trip_attributes,
@@ -161,7 +161,7 @@ class GTFSDatasourceTimetableSensor(SensorEntity):
 
     Past that day every sensor of the source shows nothing, and nothing
     says why: the install looks broken when the feed merely ran out. The
-    state is the last service day read from the kept zip (feed_window),
+    state is the last service day read from the kept zip (validity),
     the attributes what the feed says of itself and whether the timetable
     reads valid, ending or expired today. Re-read whenever the source is
     refreshed, since that is when the zip changes.

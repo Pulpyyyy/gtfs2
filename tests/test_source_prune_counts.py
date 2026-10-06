@@ -10,7 +10,7 @@ from __future__ import annotations
 import feed_db
 import ha_stub
 
-shrink = ha_stub.load("shrink")
+shrink = ha_stub.load("data.shrink")
 
 HEAD = feed_db.STOP_TIMES
 FEED = {

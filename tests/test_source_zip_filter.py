@@ -17,7 +17,7 @@ import zipfile
 
 import ha_stub
 
-gtfs_filter = ha_stub.load("gtfs_filter")
+zip_filter = ha_stub.load("data.zip_filter")
 
 FEED = {
     "agency.txt": [["agency_id", "agency_name"], ["A", "Agency"]],
@@ -63,7 +63,7 @@ def _read(path):
 
 def test_the_chosen_line_and_what_it_uses(tmp_path):
     src = _zip(tmp_path / "feed.zip", FEED)
-    stats = gtfs_filter.filter_gtfs_zip(src, tmp_path / "cut.zip", ["R1"])
+    stats = zip_filter.filter_gtfs_zip(src, tmp_path / "cut.zip", ["R1"])
     assert stats["trips"] == (1, 2)
     assert stats["stop_times"] == (2, 4)
     cut = _read(tmp_path / "cut.zip")
@@ -85,7 +85,7 @@ def test_the_chosen_line_and_what_it_uses(tmp_path):
 
 def test_feed_info_dropped_on_request(tmp_path):
     src = _zip(tmp_path / "feed.zip", FEED)
-    gtfs_filter.filter_gtfs_zip(src, tmp_path / "cut.zip", ["R2"], drop_feed_info=True)
+    zip_filter.filter_gtfs_zip(src, tmp_path / "cut.zip", ["R2"], drop_feed_info=True)
     assert "feed_info.txt" not in _read(tmp_path / "cut.zip")
 
 
@@ -98,7 +98,7 @@ def test_a_feed_it_cannot_read_leaves_nothing(tmp_path):
         else:
             _zip(src, tables)
         dst = tmp_path / "cut.zip"
-        assert gtfs_filter.filter_gtfs_zip(src, dst, ["R1"]) is None
+        assert zip_filter.filter_gtfs_zip(src, dst, ["R1"]) is None
         assert not dst.exists()
 
 
@@ -107,20 +107,20 @@ def test_only_future_dates(tmp_path):
         return _zip(tmp_path / "f.zip", {
             "calendar.txt": [["service_id", "start_date"]] + [["S", d] for d in calendar],
             "calendar_dates.txt": [["service_id", "date"]] + [["S", d] for d in dates]})
-    assert gtfs_filter.zip_only_future_dates(feed(["29990101"], ["29990102"]))
-    assert not gtfs_filter.zip_only_future_dates(feed(["29990101"], ["20000101"]))
-    assert not gtfs_filter.zip_only_future_dates(feed(["20000101"], []))
+    assert zip_filter.zip_only_future_dates(feed(["29990101"], ["29990102"]))
+    assert not zip_filter.zip_only_future_dates(feed(["29990101"], ["20000101"]))
+    assert not zip_filter.zip_only_future_dates(feed(["20000101"], []))
     # nothing to read the dates from: never refused on a guess
-    assert not gtfs_filter.zip_only_future_dates(feed([], []))
+    assert not zip_filter.zip_only_future_dates(feed([], []))
     bad = tmp_path / "bad.zip"
     bad.write_bytes(b"nope")
-    assert not gtfs_filter.zip_only_future_dates(bad)
+    assert not zip_filter.zip_only_future_dates(bad)
 
 
 def test_the_routes_before_any_database(tmp_path):
     src = _zip(tmp_path / "feed.zip", FEED, bom=True)
-    assert [r["route_id"] for r in gtfs_filter.read_zip_routes(src)] == ["R1", "R2"]
-    assert [r["agency_id"] for r in gtfs_filter.read_zip_agencies(src)] == ["A"]
+    assert [r["route_id"] for r in zip_filter.read_zip_routes(src)] == ["R1", "R2"]
+    assert [r["agency_id"] for r in zip_filter.read_zip_agencies(src)] == ["A"]
     bad = tmp_path / "bad.zip"
     bad.write_bytes(b"nope")
-    assert gtfs_filter.read_zip_routes(bad) == []
+    assert zip_filter.read_zip_routes(bad) == []

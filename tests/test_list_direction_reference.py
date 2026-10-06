@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import ha_stub
 
-direction_repair = ha_stub.load("direction_repair")
+direction_ids = ha_stub.load("data.direction_ids")
 
 TOWARD_PARIS = ("G", "A", "B", "C", "D", "E", "P", "V")
 
@@ -35,10 +35,10 @@ def _patterns():
 
 def test_the_reference_is_the_pattern_most_trips_ride():
     patterns = _patterns()["1"]
-    assert direction_repair._canonical(patterns) == ("V", "P", "E", "D", "C", "B", "A", "G", "X")
+    assert direction_ids._canonical(patterns) == ("V", "P", "E", "D", "C", "B", "A", "G", "X")
 
 
 def test_a_lone_longer_train_no_longer_hides_the_repair():
-    flips = direction_repair.plan_until_stable(_patterns())
+    flips = direction_ids.plan_until_stable(_patterns())
     assert {t for t, d in flips.items() if d == "0"} == {"d1-long", *[f"d1-w{n}" for n in range(5)]}
     assert {t for t, d in flips.items() if d == "1"} == {"d0-3", "d0-4", "d0-5"}

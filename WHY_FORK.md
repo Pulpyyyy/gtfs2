@@ -293,7 +293,7 @@ Solution: **repairs and checks at the points data enters**.
 
 Examples:
 
-- `direction_repair.py` relabels trips whose `direction_id` contradicts
+- `data/direction_ids.py` relabels trips whose `direction_id` contradicts
   their own stop order (GVB trams: 30 to 40 percent of the trips of some
   lines)
 - a download replaces the kept zip only once proven to be a zip: a moved

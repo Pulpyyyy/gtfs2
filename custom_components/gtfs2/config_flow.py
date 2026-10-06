@@ -44,15 +44,15 @@ from .const import (
     CONF_MAX_LOCAL_STOPS,
 )
 
-from .datasource import get_gtfs, check_datasource_index
-from .geojson import name_in_use
+from .data.datasource import get_gtfs, check_datasource_index
+from .data.map_files import name_in_use
 from .feed.files import remove_datasource, close_schedule
 from .route_names import get_agency_list, get_route_count, get_route_list
 from .local_stops import get_local_stop_list
 from .route_names import get_route_options_from_zip, get_agencies_in_zip
 from .line_labels import LINE_MODES, line_number, with_modes
 from .notifications import _async_text
-from .source_refresh import source_lock, source_zip_path, source_zip_url
+from .data.source_refresh import source_lock, source_zip_path, source_zip_url
 
 from .feed.source_entries import (
     datasource_entry,
@@ -61,12 +61,12 @@ from .feed.source_entries import (
 )
 from .const import ALSO_AT, TRANSLATION_DESCRIPTION_PLACEHOLDERS
 from .flow_train import ALL_TRAINS, TrainScreens, kept_train_stations, train_station_fields, train_stations_between
-from .stop_rules import RAIL_ROUTE_TYPES
+from .data.stop_rules import RAIL_ROUTE_TYPES
 from .flow_reload import ReloadScreens
 from .flow_source import SourceScreens
 from .flow_options import OptionsScreens
 from .flow_journey import JourneyScreens, kept_stops, stop_fields
-from .places import get_stops_between
+from .data.places import get_stops_between
 
 if TYPE_CHECKING:
     # for the annotations only

@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import ha_stub
 
-geojson = ha_stub.load("geojson")
+map_files = ha_stub.load("data.map_files")
 
 
 def test_names_that_fold_together_are_taken():
     taken = {"Orléans", "Bus 1 Gare > Centre", None}
-    assert geojson.name_in_use("Orleans", taken)
-    assert geojson.name_in_use("bus-1 gare - centre", taken)
-    assert geojson.name_in_use("Orléans", taken)
-    assert not geojson.name_in_use("Orleans Gare", taken)
+    assert map_files.name_in_use("Orleans", taken)
+    assert map_files.name_in_use("bus-1 gare - centre", taken)
+    assert map_files.name_in_use("Orléans", taken)
+    assert not map_files.name_in_use("Orleans Gare", taken)

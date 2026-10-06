@@ -15,7 +15,7 @@ import ha_stub
 
 ha_stub.install()
 
-places = ha_stub.load("places")
+places = ha_stub.load("data.places")
 
 HEAD = feed_db.STOP_TIMES
 STOPS = {"O": (45.0, 1.0), "X1": (45.1, 1.2), "X2": (45.2, 1.4), "Y1": (45.1, 0.8), "Y2": (45.2, 0.6)}

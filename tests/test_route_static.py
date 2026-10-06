@@ -39,8 +39,8 @@ import homeassistant.util.dt as dt_util  # noqa: E402
  
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the coordinator and the platforms, and with them the rest of Home Assistant.
-gtfs_helper = ha_stub.load("gtfs_helper")
-_interpret_departure_rows = gtfs_helper._interpret_departure_rows
+departures = ha_stub.load("data.departures")
+_interpret_departure_rows = departures._interpret_departure_rows
 
 CASE_ROOT = Path(__file__).parent / "case_route"
 
@@ -56,7 +56,7 @@ class _FakeConfig:
         self.time_zone = time_zone
 
     def path(self, value: str = "") -> str:
-        # gtfs_helper only ever uses this to build a filesystem path for
+        # departures only ever uses this to build a filesystem path for
         # extraction-lock checks; not exercised by this test.
         return value
 

@@ -10,13 +10,13 @@ import json
 
 import ha_stub
 
-geojson = ha_stub.load("geojson")
+map_files = ha_stub.load("data.map_files")
 
 
 def test_a_file_is_replaced_whole(tmp_path):
     target = tmp_path / "r_0.json"
     target.write_text('{"features": [1, 2, 3], "type": "FeatureCollection"}')
-    geojson.write_json_file(str(target), {"features": [], "type": "FeatureCollection"})
+    map_files.write_json_file(str(target), {"features": [], "type": "FeatureCollection"})
     assert json.loads(target.read_text()) == {"features": [], "type": "FeatureCollection"}
     assert [p.name for p in tmp_path.iterdir()] == ["r_0.json"]
 
@@ -25,7 +25,7 @@ def test_a_failed_write_leaves_the_file_as_it_was(tmp_path):
     target = tmp_path / "r_0.json"
     target.write_text('{"features": [1]}')
     try:
-        geojson.write_json_file(str(target), {"features": [object()]})
+        map_files.write_json_file(str(target), {"features": [object()]})
     except TypeError:
         pass
     assert json.loads(target.read_text()) == {"features": [1]}
@@ -41,7 +41,7 @@ def test_two_writers_at_once_each_write_whole(tmp_path):
     def write(n):
         for i in range(300):
             try:
-                geojson.write_json_file(str(target), {"features": [n] * 200, "i": i})
+                map_files.write_json_file(str(target), {"features": [n] * 200, "i": i})
             except Exception as ex:  # pylint: disable=broad-except
                 errors.append(repr(ex))
 
@@ -57,8 +57,8 @@ def test_two_writers_at_once_each_write_whole(tmp_path):
 
 def test_the_timetable_and_leg_writer_goes_through_it(tmp_path):
     target = tmp_path / "leg.json"
-    geojson._WRITTEN.clear()
-    assert geojson.write_json_if_changed(str(target), {"a": 1, "at": "now"}, {"a": 1})
-    assert not geojson.write_json_if_changed(str(target), {"a": 1, "at": "later"}, {"a": 1})
+    map_files._WRITTEN.clear()
+    assert map_files.write_json_if_changed(str(target), {"a": 1, "at": "now"}, {"a": 1})
+    assert not map_files.write_json_if_changed(str(target), {"a": 1, "at": "later"}, {"a": 1})
     assert json.loads(target.read_text()) == {"a": 1, "at": "now"}
     assert [p.name for p in tmp_path.iterdir()] == ["leg.json"]

@@ -20,13 +20,13 @@ import zipfile
 
 import pygtfs
 
-from .const import CONF_INNER_ZIP
-from .direction_repair import repair_trip_directions
-from .feed.freshness import _REQUIRED_TABLES, download_feed, keep_download, source_request
+from ..const import CONF_INNER_ZIP
+from .direction_ids import repair_trip_directions
+from ..feed.freshness import _REQUIRED_TABLES, download_feed, keep_download, source_request
 from .db_build import import_routes, optimise_datasource, swap_in
-from .feed.files import feed_zip, real_path, remove_database, remove_files, routes_in, staging_name
-from .feed.remote_zip import extract_member, inner_zips, inner_zips_in_file
-from .gtfs_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
+from ..feed.files import feed_zip, real_path, remove_database, remove_files, routes_in, staging_name
+from ..feed.remote_zip import extract_member, inner_zips, inner_zips_in_file
+from .zip_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
                           zip_only_future_dates)
 from .datasource import IMPORT_IGNORED, drop_import_indexes
 from .stop_rules import rail_line_of

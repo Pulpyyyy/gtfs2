@@ -29,10 +29,10 @@ from .const import (
     ENTRY_KIND_DATASOURCE,
     STATIC_REFRESH_OFF,
 )
-from .feed_window import read_feed_window
+from .data.validity import read_feed_window
 from .key_mask import hide_keys
 from .feed.source_entries import source_device
-from .source_refresh import (
+from .data.source_refresh import (
     SIGNAL_SOURCE_REFRESH,
     async_refresh_source,
     check_interval,
@@ -92,7 +92,7 @@ class GTFSSourceUpdateEntity(UpdateEntity, RestoreEntity):
         # answer from these, so a check costs the two reads it always did
         self._installed_meta: dict[str, Any] = {}
         self._zip_meta: dict[str, Any] = {}
-        # what the kept zip says of its validity (feed_window)
+        # what the kept zip says of its validity (data.validity)
         self._window: dict[str, str | None] = {}
         self._attr_unique_id = f"gtfs2_source_update_{self._file}"
         self._attr_title = f"GTFS static feed - {self._file}"

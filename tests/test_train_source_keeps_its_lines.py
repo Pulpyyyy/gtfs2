@@ -17,9 +17,9 @@ import zipfile
 import feed_db
 import ha_stub
 
-shrink = ha_stub.load("shrink")
+shrink = ha_stub.load("data.shrink")
 source_entries = ha_stub.load("feed.source_entries")
-source_zip = ha_stub.load("source_zip")
+source_zip = ha_stub.load("data.source_zip")
 
 HEAD = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nS,SNCF,http://s,UTC\n",

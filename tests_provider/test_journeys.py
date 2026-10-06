@@ -89,20 +89,20 @@ import fixture_db  # noqa: E402
 
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the platforms and with them the rest of Home Assistant.
-gtfs_helper = ha_stub.load("gtfs_helper")
+gtfs_helper = ha_stub.load("data.departures")
 # the clocks of a feed have a module of their own here; a checkout run
 # with --component that keeps them in gtfs_helper is read there
-clocks = (ha_stub.load("clocks") if (ha_stub.COMPONENT / "clocks.py").is_file()
+clocks = (ha_stub.load("data.clocks") if (ha_stub.COMPONENT / "data/clocks.py").is_file()
           else gtfs_helper)
 # what a stop is to the rider has a module of its own here; a checkout run
 # with --component that keeps it in gtfs_helper is read there
-stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
+stop_rules = (ha_stub.load("data.stop_rules") if (ha_stub.COMPONENT / "data/stop_rules.py").is_file()
               else gtfs_helper)
 # the days a service runs, the same way
 service_days_mod = (ha_stub.load("service_days") if (ha_stub.COMPONENT / "service_days.py").is_file()
                     else gtfs_helper)
 try:
-    places = ha_stub.load("places")
+    places = ha_stub.load("data.places")
 except FileNotFoundError:  # a tree that lists a line's places in gtfs_helper
     places = gtfs_helper
 # the station queries have a module of their own here; a checkout run with
@@ -112,11 +112,11 @@ stations = (ha_stub.load("stations") if (ha_stub.COMPONENT / "stations.py").is_f
             else gtfs_helper)
 # the riding order of a line's places, the same way: read in places where
 # a checkout keeps it there
-place_order = (ha_stub.load("place_order") if (ha_stub.COMPONENT / "place_order.py").is_file()
+place_order = (ha_stub.load("data.place_order") if (ha_stub.COMPONENT / "data/place_order.py").is_file()
                else places)
 # and the direction an entry keeps for its pair
-pair_direction = (ha_stub.load("pair_direction")
-                  if (ha_stub.COMPONENT / "pair_direction.py").is_file() else places)
+pair_direction = (ha_stub.load("data.pair_direction")
+                  if (ha_stub.COMPONENT / "data/pair_direction.py").is_file() else places)
 
 
 def _function(module, name):
@@ -436,9 +436,9 @@ def _repair_directions(schedule):
     without one is checked on what the feed published. Returns how many trips
     moved, or None when there is nothing to run.
     """
-    if not (ha_stub.COMPONENT / "direction_repair.py").is_file():
+    if not (ha_stub.COMPONENT / "data/direction_ids.py").is_file():
         return None
-    return ha_stub.load("direction_repair").repair_trip_directions(schedule)
+    return ha_stub.load("data.direction_ids").repair_trip_directions(schedule)
 
 
 # a pickup_type / drop_off_type as the feed meant it: the component's own

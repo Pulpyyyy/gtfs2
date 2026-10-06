@@ -15,7 +15,7 @@ import ha_stub
 ha_stub.install()
 import homeassistant.util.dt as dt_util  # noqa: E402
 
-timetable = ha_stub.load("timetable")
+timetable_file = ha_stub.load("data.timetable_file")
 PARIS = dt_util.get_time_zone("Europe/Paris")
 GENERATED = datetime.datetime(2026, 9, 19, 4, 0, tzinfo=PARIS)
 DAYS = ["2026-09-19", "2026-09-20", "2026-09-21"]
@@ -29,7 +29,7 @@ def row(trip, day, dep, arr):
 
 
 def test_every_day_is_listed_even_empty():
-    doc = timetable.timetable_doc("Metro 5", [], DAYS, PARIS, generated=GENERATED)
+    doc = timetable_file.timetable_doc("Metro 5", [], DAYS, PARIS, generated=GENERATED)
     assert [d["service_date"] for d in doc["days"]] == DAYS
     assert all(d["departures"] == [] for d in doc["days"])
     assert doc["next"] is None and doc["until"] is None
@@ -42,7 +42,7 @@ def test_times_carry_their_zone_and_their_real_date():
         row("t9", "2026-09-19", "2026-09-20 00:52:00", "2026-09-20 00:58:00"),
         row("t1", "2026-09-19", "2026-09-19 06:00:00", "2026-09-19 06:05:00"),
     ]
-    doc = timetable.timetable_doc("Metro 5", rows, DAYS, PARIS, generated=GENERATED)
+    doc = timetable_file.timetable_doc("Metro 5", rows, DAYS, PARIS, generated=GENERATED)
     first = doc["days"][0]
     assert first["service_date"] == "2026-09-19"
     assert [d["trip_id"] for d in first["departures"]] == ["t1", "t2", "t9"]
@@ -56,22 +56,22 @@ def test_runs_leaving_from_several_stations_say_which():
     # boarding at one of them has to know where each run leaves from
     rows = [dict(row("k1", "2026-09-19", "2026-09-19 10:00:00", "2026-09-19 11:05:00"), origin_stop_id="SO"),
             dict(row("k2", "2026-09-19", "2026-09-19 11:41:00", "2026-09-19 12:39:00"), origin_stop_id="SA")]
-    doc = timetable.timetable_doc("Orleans → Paris", rows, DAYS, PARIS, generated=GENERATED)
+    doc = timetable_file.timetable_doc("Orleans → Paris", rows, DAYS, PARIS, generated=GENERATED)
     assert [d["origin_stop_id"] for d in doc["days"][0]["departures"]] == ["SO", "SA"]
     # one stop for every run: said by the entry, not by each run
-    one = timetable.timetable_doc("x", [dict(rows[0])], DAYS, PARIS, generated=GENERATED)
+    one = timetable_file.timetable_doc("x", [dict(rows[0])], DAYS, PARIS, generated=GENERATED)
     assert "origin_stop_id" not in one["days"][0]["departures"][0]
 
 
 def test_last_nights_runs_get_a_day_of_their_own():
     rows = [row("n1", "2026-09-18", "2026-09-19 01:30:00", "2026-09-19 01:40:00")]
-    doc = timetable.timetable_doc("N01", rows, DAYS, PARIS, generated=GENERATED)
+    doc = timetable_file.timetable_doc("N01", rows, DAYS, PARIS, generated=GENERATED)
     assert [d["service_date"] for d in doc["days"]] == ["2026-09-18"] + DAYS
     assert doc["days"][0]["departures"][0]["dep"] == "2026-09-19T01:30:00+02:00"
 
 
 def test_past_the_window():
-    doc = timetable.timetable_doc("22", [], DAYS, PARIS, next_departure="2026-11-03T06:12:00+01:00",
+    doc = timetable_file.timetable_doc("22", [], DAYS, PARIS, next_departure="2026-11-03T06:12:00+01:00",
                                 until="2026-12-12", generated=GENERATED)
     assert doc["next"] == "2026-11-03T06:12:00+01:00"
     assert doc["until"] == "2026-12-12"
@@ -79,12 +79,12 @@ def test_past_the_window():
 
 def test_a_row_without_a_time_is_left_out():
     rows = [row("t1", "2026-09-19", None, None), row("t2", "", "2026-09-19 06:00:00", None)]
-    doc = timetable.timetable_doc("x", rows, DAYS, PARIS, generated=GENERATED)
+    doc = timetable_file.timetable_doc("x", rows, DAYS, PARIS, generated=GENERATED)
     assert all(d["departures"] == [] for d in doc["days"])
 
 
 def test_the_name_is_the_entrys_own():
-    assert timetable.timetable_name("Métro 5 → Place d'Italie") == "timetable_metro_5_place_d_italie.json"
+    assert timetable_file.timetable_name("Métro 5 → Place d'Italie") == "timetable_metro_5_place_d_italie.json"
 
 
 # --- the writing runs off the refresh ----------------------------------------
@@ -180,7 +180,7 @@ def test_a_rebuilt_database_writes_the_timetable_again(tmp_path, monkeypatch, ca
         me._pygtfs_edition = None
         me._data = {"schedule": object(), "gtfs_dir": "gtfs2", "file": "feed", "name": "Métro 4"}
         me.async_update_listeners = lambda: None
-        timetable = tmp_path / "www" / "gtfs2" / "timetable_metro_4.json"
+        timetable_file = tmp_path / "www" / "gtfs2" / "timetable_metro_4.json"
 
         async def refresh(edition):
             me._pygtfs_edition = edition
@@ -188,8 +188,8 @@ def test_a_rebuilt_database_writes_the_timetable_again(tmp_path, monkeypatch, ca
             if me._timetable_task is not None:
                 await me._timetable_task
             # the writer is stubbed: the file it would leave behind
-            timetable.parent.mkdir(parents=True, exist_ok=True)
-            timetable.write_text("{}")
+            timetable_file.parent.mkdir(parents=True, exist_ok=True)
+            timetable_file.write_text("{}")
 
         await refresh("1:1:1")
         await refresh("1:1:1")

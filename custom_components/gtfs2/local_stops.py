@@ -24,12 +24,12 @@ from .const import (
     ICONS,
     TIME_STR_FORMAT,
 )
-from .clocks import _day_offset, _on_service_day, _removed_on, _row_instant, _runs_on, zone_of
-from .datasource import check_extracting
-from .gtfs_helper import _feed_now
+from .data.clocks import _day_offset, _on_service_day, _removed_on, _row_instant, _runs_on, zone_of
+from .data.datasource import check_extracting
+from .data.departures import _feed_now
 from .gtfs_rt_helper import delay_of, get_rt_route_trip_statuses, struck_trips
 from .feed.rt_feed import FeedEntities, _read_feed, on_service_day
-from .stop_rules import _boards
+from .data.stop_rules import _boards
 
 if TYPE_CHECKING:
     # for the annotations only

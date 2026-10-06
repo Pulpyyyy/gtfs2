@@ -53,11 +53,11 @@ from .const import (
     id_of,
     stop_name_of,
 )
-from .geojson import name_in_use
+from .data.map_files import name_in_use
 from .feed.source_entries import datasource_unique_id, journey_entry_data
-from .source_refresh import source_zip_url
-from .pair_direction import get_direction_labels, get_pair_direction, has_trip_between
-from .places import get_destination_stop_list, get_stop_list, get_stops_between, get_towards
+from .data.source_refresh import source_zip_url
+from .data.pair_direction import get_direction_labels, get_pair_direction, has_trip_between
+from .data.places import get_destination_stop_list, get_stop_list, get_stops_between, get_towards
 
 if TYPE_CHECKING:
     # for the annotations only
@@ -76,7 +76,7 @@ def _stop_options(stops: list[str]) -> list[selector.SelectOptionDict]:
 
     The value must stay the entry, get_next_departure cuts the id back out of
     it; only the readable part is the rider's to see. Two places of one name
-    already carry their station or their rank in it (gtfs_helper._labels_of),
+    already carry their station or their rank in it (places._labels_of),
     so the label is that part alone, without the id and the sequence.
     """
     return [selector.SelectOptionDict(value=entry, label=stop_name_of(entry))
@@ -303,7 +303,7 @@ class JourneyScreens:
         """Stops to get on or off at as well, between the two picked: a
         second stop nearer the other end of the street, one the bus calls
         at while the first is closed. Each run is listed once, where the
-        rider first gets on and last gets off (gtfs_helper._several_stops).
+        rider first gets on and last gets off (departures._several_stops).
         Every field is optional, and the screen is skipped when there is
         nothing between; left empty, the entry keeps the shape it always
         had."""

@@ -19,7 +19,7 @@ ha_stub.install()
 
 import homeassistant.util.dt as dt_util  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
 
@@ -37,7 +37,7 @@ def _zones(monkeypatch, **zones):
     hass = types.SimpleNamespace(config=types.SimpleNamespace(time_zone="Europe/Paris"))
     item = {"agency_timezone": None, "origin_stop_timezone": None,
             "dest_stop_timezone": None, **zones}
-    return gtfs_helper._departure_zones(hass, item)
+    return departures._departure_zones(hass, item)
 
 
 def test_an_unknown_agency_zone_reads_in_home_assistant_s(monkeypatch):

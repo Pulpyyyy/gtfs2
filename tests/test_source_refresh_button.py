@@ -16,7 +16,7 @@ import pytest
 import ha_stub
 
 button = ha_stub.load("button")
-source_refresh = ha_stub.load("source_refresh")
+source_refresh = ha_stub.load("data.source_refresh")
 HomeAssistantError = button.HomeAssistantError
 
 

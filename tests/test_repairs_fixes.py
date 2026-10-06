@@ -68,7 +68,7 @@ def test_retrying_rebuilds_from_the_kept_zip_when_it_is_ahead(monkeypatch):
     # a nightly refresh adopted the new zip and failed to build it: the
     # retry builds that zip, as the button does, rather than downloading
     # the same feed again from a host that may be down
-    source_refresh = ha_stub.load("source_refresh")
+    source_refresh = ha_stub.load("data.source_refresh")
     for pending in (True, False):
         hass = _Hass()
         started, asked = [], []

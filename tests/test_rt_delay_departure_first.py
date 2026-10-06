@@ -17,7 +17,7 @@ from freezegun import freeze_time
 import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
-leg_mod = ha_stub.load("leg")
+leg_mod = ha_stub.load("data.leg_file")
 rt_feed = ha_stub.load("feed.rt_feed")
 
 UTC = datetime.timezone.utc

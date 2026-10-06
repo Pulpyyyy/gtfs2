@@ -7,11 +7,11 @@ a few specimens while the fixture stays reviewable. manifest.json records
 where the zip came from, what was kept and, with --why, what the fixture is
 there for.
 
-When the component at --component carries direction_repair, the builder
+When the component at --component carries the direction repair, the builder
 checks that the kept trips are repaired exactly as they are in the full
 feed: the repair picks each direction's canonical chain by trip count, so a
 cap can change which chain wins, and a fixture that repairs differently from
-the live feed would test nothing. A checkout without direction_repair.py
+the live feed would test nothing. A checkout without it
 (upstream) skips the check.
 
     python tests/fixtures/build_fixture.py --zip tao_orleans.zip \\
@@ -48,17 +48,17 @@ TABLES = ("agency.txt", "routes.txt", "trips.txt", "stop_times.txt",
 
 def load_repair(component):
     """plan_until_stable, the pass the import runs, or None when the
-    component has no direction_repair to check against."""
-    if not os.path.exists(os.path.join(component, "direction_repair.py")):
+    component has no direction repair to check against."""
+    if not os.path.exists(os.path.join(component, "data/direction_ids.py")):
         return None
     sys.path.insert(0, os.path.join(ROOT, "tests"))
     import ha_stub
-    return ha_stub.load("direction_repair", component=component).plan_until_stable
+    return ha_stub.load("data.direction_ids", component=component).plan_until_stable
 
 
 def repair_patterns(trips, trip_meta, sequences, station):
     """{route_id: {direction: {station chain: [trip_id]}}}, built the way
-    direction_repair builds them from the imported database: trips without
+    direction_ids builds them from the imported database: trips without
     a direction or without calls left out, platforms folded into their
     station, two calls at one station in a row counted once, only routes
     with two directions.
@@ -144,7 +144,7 @@ def main():
                         help="also keep every trip with a call past 24:00")
     parser.add_argument("--component",
                         default=os.path.join(ROOT, "custom_components", "gtfs2"),
-                        help="the gtfs2 checkout whose direction_repair the "
+                        help="the gtfs2 checkout whose direction repair the "
                              "kept trips are checked against")
     args = parser.parse_args()
 
@@ -202,7 +202,7 @@ def main():
           f" ({len(night_trips & kept_trips)} with a call past 24:00)")
     plan_until_stable = load_repair(args.component)
     if plan_until_stable is None:
-        print(f"direction repair: no direction_repair.py in {args.component},"
+        print(f"direction repair: no data/direction_ids.py in {args.component},"
               " not checked")
     else:
         check_repair(plan_until_stable, archive, trip_meta, sequences, kept_trips)

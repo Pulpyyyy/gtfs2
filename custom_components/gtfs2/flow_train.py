@@ -38,9 +38,9 @@ from .const import (
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
     entry_lines,
 )
-from .datasource import check_datasource_index, get_gtfs
+from .data.datasource import check_datasource_index, get_gtfs
 from .flow_journey import _Step
-from .geojson import name_in_use
+from .data.map_files import name_in_use
 from .feed.files import close_schedule, feed_zip, real_path, routes_in
 from .line_labels import _names_nothing
 from .notifications import _async_text

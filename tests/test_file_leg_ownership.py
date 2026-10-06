@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import ha_stub
 
-leg_mod = ha_stub.load("leg")
+leg_mod = ha_stub.load("data.leg_file")
 exports_mod = ha_stub.load("exports")
 
 

@@ -22,7 +22,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 
 HA, HB, W = "HA: Home A", "HB: Home B", "W: Work"
 FEED = {
@@ -56,9 +56,9 @@ def _rides(schedule, **entry):
     """(trip, stop got on at, time, stop got off at) of the day's departures."""
     data = {"route": "B: B", "route_type": "3", "origin": HA, "destination": W, **entry}
     with freeze_time(f"{DAY} 00:00:00"):
-        rows, _start = gtfs_helper._fetch_departure_rows(
+        rows, _start = departures._fetch_departure_rows(
             "3", data["origin"], data["destination"], schedule, window=(DAY, DAY),
-            **gtfs_helper.departure_query_args(data))
+            **departures.departure_query_args(data))
     return [(r["trip_id"], r["origin_stop_name"], str(r["origin_depart_time"])[:5], r["dest_stop_name"])
             for r in rows]
 

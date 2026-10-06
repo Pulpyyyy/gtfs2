@@ -19,7 +19,7 @@ import ha_stub
 
 ha_stub.install()
 
-feed_window = ha_stub.load("feed_window")
+validity = ha_stub.load("data.validity")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 # fixture: (feed_version, feed_end_date, first_service_day, last_service_day)
@@ -36,7 +36,7 @@ WINDOWS = {
 
 @pytest.mark.parametrize("fixture", sorted(WINDOWS), ids=sorted(WINDOWS))
 def test_feed_window(record_property, fixture):
-    window = feed_window.read_feed_window(FIXTURES / fixture / "static.zip")
+    window = validity.read_feed_window(FIXTURES / fixture / "static.zip")
     got = (window.get("feed_version"), window.get("feed_end_date"),
            window.get("first_service_day"), window.get("last_service_day"))
     record_property("case", {"fixture": fixture, "promise": "feed_window"})

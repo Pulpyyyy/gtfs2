@@ -13,7 +13,7 @@ import types
 
 import ha_stub
 
-rt_window = ha_stub.load("rt_window")
+rt_window = ha_stub.load("data.rt_window")
 
 
 def test_one_envelope_per_day_whoever_asks(monkeypatch):

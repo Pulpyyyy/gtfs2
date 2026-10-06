@@ -53,8 +53,8 @@ from .file_url import FILE_SCHEME
 from .feed.files import feed_zip, real_path, get_zipfiles
 from .key_mask import note_key
 from .feed.source_entries import async_ensure_datasource_entry, datasource_entry
-from .source_refresh import source_zip_url
-from .source_zip import ensure_source_zip
+from .data.source_refresh import source_zip_url
+from .data.source_zip import ensure_source_zip
 
 _LOGGER = logging.getLogger(__name__)
 

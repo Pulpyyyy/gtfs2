@@ -49,7 +49,7 @@ import ha_stub
 
 freshness = ha_stub.load("feed.freshness")
 source_entries = ha_stub.load("feed.source_entries")
-source_refresh = ha_stub.load("source_refresh")
+source_refresh = ha_stub.load("data.source_refresh")
 
 URL = "https://example.org/gtfs.zip"
 DATA = {"file": "tao", "url": URL}

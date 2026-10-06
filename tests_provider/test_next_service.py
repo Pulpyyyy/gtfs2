@@ -62,14 +62,14 @@ import homeassistant.util.dt as dt_util  # noqa: E402
 import fixture_db  # noqa: E402
 import test_journeys as tj  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 # what a stop is to the rider has a module of its own here; a checkout run
 # with --component that keeps it in gtfs_helper is read there
-stop_rules = (ha_stub.load("stop_rules") if (ha_stub.COMPONENT / "stop_rules.py").is_file()
-              else gtfs_helper)
+stop_rules = (ha_stub.load("data.stop_rules") if (ha_stub.COMPONENT / "data/stop_rules.py").is_file()
+              else departures)
 # the days a service runs, the same way
 service_days = (ha_stub.load("service_days") if (ha_stub.COMPONENT / "service_days.py").is_file()
-                else gtfs_helper)
+                else departures)
 # the two steps of the refresh sit in the coordinator here; a checkout run
 # with --component that keeps them in a module of their own is read there
 refresh_steps = (ha_stub.load("refresh_steps") if (ha_stub.COMPONENT / "refresh_steps.py").is_file()
@@ -366,7 +366,7 @@ def test_each_outcome_down_the_sensors_path(tao, outcome, route_id, origin, dest
 
     data = _data(schedule, feed, route_id, origin, destination)
     with freeze_time(instant.astimezone(datetime.timezone.utc)):
-        next_departure = gtfs_helper.get_next_departure(_hass(), data)
+        next_departure = departures.get_next_departure(_hass(), data)
         state = next_departure.get("departure_time") if next_departure else None
         assert state == expected_departure
         next_service = None

@@ -19,7 +19,7 @@ import types
 import ha_stub
 
 services = ha_stub.load("datasource_services")
-source_refresh = ha_stub.load("source_refresh")
+source_refresh = ha_stub.load("data.source_refresh")
 
 
 def _entry(entry_id, domain="gtfs2", **data):

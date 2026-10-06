@@ -17,13 +17,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from .const import DEFAULT_PATH
-from .feed_window import last_service_day
+from .data.validity import last_service_day
 from .feed.files import close_schedule, feed_zip
-from .clocks import _row_instant, row_zone
-from .datasource import get_gtfs
-from .gtfs_helper import (_fetch_departure_rows, departure_query_args,
+from .data.clocks import _row_instant, row_zone
+from .data.datasource import get_gtfs
+from .data.departures import (_fetch_departure_rows, departure_query_args,
                           first_departure_row, journey_data)
-from .timetable import TIMETABLE_ROWS_MAX
+from .data.timetable_file import TIMETABLE_ROWS_MAX
 
 if TYPE_CHECKING:
     # for the annotations only

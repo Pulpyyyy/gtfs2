@@ -16,7 +16,7 @@ import ha_stub
 
 ha_stub.install()
 
-places = ha_stub.load("places")
+places = ha_stub.load("data.places")
 
 HEAD = feed_db.STOP_TIMES
 STOPS = "ABCDEFGHX"

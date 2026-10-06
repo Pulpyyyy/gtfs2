@@ -18,7 +18,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 
 HEAD = feed_db.STOP_TIMES
 FEED = {
@@ -54,7 +54,7 @@ def _counted(schedule):
 
 def _departures(schedule, at, origin="S1", destination="S3"):
     with freeze_time(at):
-        rows, _start = gtfs_helper._fetch_departure_rows("3", origin, destination, schedule, None, "R")
+        rows, _start = departures._fetch_departure_rows("3", origin, destination, schedule, None, "R")
     return [row["trip_id"] for row in rows]
 
 

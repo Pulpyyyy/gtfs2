@@ -15,8 +15,8 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_filter = ha_stub.load("gtfs_filter")
-source_zip = ha_stub.load("source_zip")
+zip_filter = ha_stub.load("data.zip_filter")
+source_zip = ha_stub.load("data.source_zip")
 
 FEED = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nZ,ZTP,http://z,Europe/Warsaw\n",
@@ -42,20 +42,20 @@ def _zip(path, feed_info=None):
 
 
 def test_dates_pygtfs_cannot_read_are_told(tmp_path):
-    assert gtfs_filter.feed_info_unreadable(_zip(tmp_path / "a.zip", EMPTY_DATES))
-    assert gtfs_filter.feed_info_unreadable(_zip(
+    assert zip_filter.feed_info_unreadable(_zip(tmp_path / "a.zip", EMPTY_DATES))
+    assert zip_filter.feed_info_unreadable(_zip(
         tmp_path / "b.zip", "feed_publisher_name,feed_start_date\nP,2026-09-18\n"))
 
 
 def test_readable_or_absent_dates_are_left_alone(tmp_path):
-    assert not gtfs_filter.feed_info_unreadable(_zip(
+    assert not zip_filter.feed_info_unreadable(_zip(
         tmp_path / "a.zip", "feed_publisher_name,feed_start_date,feed_end_date\n"
                             "P,20260918,20261216\n"))
     # the columns left out: pygtfs sets nothing, nothing to fear
-    assert not gtfs_filter.feed_info_unreadable(_zip(
+    assert not zip_filter.feed_info_unreadable(_zip(
         tmp_path / "b.zip", "feed_publisher_name,feed_lang\nP,pl\n"))
-    assert not gtfs_filter.feed_info_unreadable(_zip(tmp_path / "c.zip"))
-    assert not gtfs_filter.feed_info_unreadable(tmp_path / "missing.zip")
+    assert not zip_filter.feed_info_unreadable(_zip(tmp_path / "c.zip"))
+    assert not zip_filter.feed_info_unreadable(tmp_path / "missing.zip")
 
 
 def _imported(tmp_path, only_routes):

@@ -36,7 +36,7 @@ import pytest
 import ha_stub
 
 update = ha_stub.load("update")
-source_refresh = ha_stub.load("source_refresh")
+source_refresh = ha_stub.load("data.source_refresh")
 key_mask = ha_stub.load("key_mask")
 
 

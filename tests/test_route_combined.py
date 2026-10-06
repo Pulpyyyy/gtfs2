@@ -60,7 +60,7 @@ import homeassistant.util.dt as dt_util  # noqa: E402
 
 # Loaded on their own rather than through the package, whose __init__
 # pulls in the platforms and with them the rest of Home Assistant.
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 coordinator_mod = ha_stub.load("coordinator")
 # coordinator.py's own `from .gtfs_rt_helper import ...` resolves this
 # as a real submodule of the same synthetic package -- already loaded
@@ -72,7 +72,7 @@ rt_feed_mod = sys.modules["gtfs2_under_test.feed.rt_feed"]
 # and the file exports the refresh calls, whose writers are patched out
 exports_mod = sys.modules["gtfs2_under_test.exports"]
 
-_interpret_departure_rows = gtfs_helper._interpret_departure_rows
+_interpret_departure_rows = departures._interpret_departure_rows
 
 CASE_ROOT = Path(__file__).parent / "case_route_combined"
 

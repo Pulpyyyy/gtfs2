@@ -16,7 +16,7 @@ from sqlalchemy import create_engine, event
 import feed_db
 import ha_stub
 
-datasource = ha_stub.load("datasource")
+datasource = ha_stub.load("data.datasource")
 
 FEED = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,Europe/Paris\n",
@@ -101,7 +101,7 @@ def test_an_import_fills_stop_times_before_indexing_it(tmp_path):
     # SQLite would then update at every row imported: the import takes them
     # off the empty table, and the datasource check builds its own once
     import pygtfs
-    source_zip = ha_stub.load("source_zip")
+    source_zip = ha_stub.load("data.source_zip")
     feed = tmp_path / "feed.zip"
     with zipfile.ZipFile(feed, "w") as zout:
         for name, body in FEED.items():

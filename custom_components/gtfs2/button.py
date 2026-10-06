@@ -14,7 +14,7 @@ from .const import (
     CONF_FILE,
 )
 from .feed.source_entries import source_device
-from .source_refresh import async_rebuild_source, source_lock
+from .data.source_refresh import async_rebuild_source, source_lock
 
 
 async def async_setup_entry(

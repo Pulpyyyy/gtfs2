@@ -79,7 +79,7 @@ import fixture_db  # noqa: E402
 
 sensor = ha_stub.load("sensor")
 const = ha_stub.load("const")
-gtfs_helper = ha_stub.load("gtfs_helper")
+gtfs_helper = ha_stub.load("data.departures")
 try:
     local_stops = ha_stub.load("local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
@@ -89,7 +89,7 @@ departure_attributes = ha_stub.load("departure_attributes")
 # with --component that keeps them in a module of their own is read there
 refresh_steps = (ha_stub.load("refresh_steps") if (ha_stub.COMPONENT / "refresh_steps.py").is_file()
                  else ha_stub.load("coordinator"))
-rt_window = ha_stub.load("rt_window")
+rt_window = ha_stub.load("data.rt_window")
 
 HERE = Path(__file__).resolve().parent
 FIXTURES = HERE / "fixtures"

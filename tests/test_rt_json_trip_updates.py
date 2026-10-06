@@ -17,7 +17,7 @@ import ha_stub
 
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
 rt_feed = ha_stub.load("feed.rt_feed")
-rt_window = ha_stub.load("rt_window")
+rt_window = ha_stub.load("data.rt_window")
 
 NOW = datetime.datetime(2026, 9, 22, 8, 0, tzinfo=datetime.timezone.utc)
 IN_TEN = int((NOW + datetime.timedelta(minutes=10)).timestamp())

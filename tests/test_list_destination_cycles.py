@@ -13,8 +13,8 @@ import ha_stub
 
 ha_stub.install()
 
-places = ha_stub.load("places")
-destination_order = ha_stub.load("destination_order")
+places = ha_stub.load("data.places")
+place_destinations = ha_stub.load("data.place_destinations")
 
 HEAD = feed_db.STOP_TIMES
 
@@ -49,6 +49,6 @@ def test_a_cycle_between_variants_comes_before_the_terminus(tmp_path):
 
 def test_places_that_order_each_other_are_one_group():
     before = {"O": set(), "A": {"O", "B"}, "B": {"O", "A"}, "T": {"A", "B"}}
-    group = destination_order._groups_of(before)
+    group = place_destinations._groups_of(before)
     assert group["A"] == group["B"]
     assert len({group["O"], group["A"], group["T"]}) == 3

@@ -42,7 +42,7 @@ import pytest
 import ha_stub
 
 integration = ha_stub.load("__init__")
-source_refresh = ha_stub.load("source_refresh")
+source_refresh = ha_stub.load("data.source_refresh")
 
 CONFIG = os.path.abspath("config")
 

@@ -63,21 +63,21 @@ import test_journeys as tj  # noqa: E402
 
 import fixture_db  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 try:
-    places = ha_stub.load("places")
+    places = ha_stub.load("data.places")
 except FileNotFoundError:  # a tree that lists a line's places in gtfs_helper
-    places = gtfs_helper
+    places = departures
 try:
     local_stops = ha_stub.load("local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
-    local_stops = gtfs_helper
+    local_stops = departures
 try:
-    geojson = ha_stub.load("geojson")
+    map_files = ha_stub.load("data.map_files")
 except FileNotFoundError:  # a tree without the fork's map files
-    geojson = None
+    map_files = None
 try:
-    leg_mod = ha_stub.load("leg")
+    leg_mod = ha_stub.load("data.leg_file")
 except FileNotFoundError:  # a tree without the fork's leg file
     leg_mod = None
 try:
@@ -89,7 +89,7 @@ try:
 except FileNotFoundError:  # a tree that keeps the service days in gtfs_helper
     service_days = None
 try:
-    pair_direction = ha_stub.load("pair_direction")
+    pair_direction = ha_stub.load("data.pair_direction")
 except FileNotFoundError:  # a tree that keeps the pair's direction in places
     pair_direction = None
 
@@ -154,7 +154,7 @@ def _train_data(schedule, origin, destination):
 
 def _reader(name):
     """The helper under test, or None where this tree has no such reader."""
-    return (getattr(gtfs_helper, name, None) or getattr(places, name, None) or getattr(geojson, name, None)
+    return (getattr(departures, name, None) or getattr(places, name, None) or getattr(map_files, name, None)
             or getattr(leg_mod, name, None) or getattr(stations, name, None)
             or getattr(pair_direction, name, None) or getattr(service_days, name, None))
 
@@ -216,7 +216,7 @@ def test_pairs_hold_to_the_feed(record_property, bus):
     with freeze_time(datetime.datetime(2026, 6, 15, 0, 5, tzinfo=PARIS).astimezone(UTC)):
         for origin, destination, exists in PAIRS:
             who = f"{origin} -> {destination}"
-            result = gtfs_helper.get_next_departure(_hass(), _bus_data(bus, origin, destination))
+            result = departures.get_next_departure(_hass(), _bus_data(bus, origin, destination))
             if exists:
                 got = (result.get("trip_id"), result.get("origin_stop_id"),
                        result.get("destination_stop_id")) if result else None
@@ -258,7 +258,7 @@ def _route_file_name(route_id, direction):
     named = _reader("route_geojson_name")
     if named:
         return named(route_id, direction)
-    safe = gtfs_helper.safe_file_part
+    safe = departures.safe_file_part
     return f"{safe(route_id)}_{safe(direction)}_route.json"
 
 
@@ -277,7 +277,7 @@ def _route_file(schedule, tmp_path):
                    "route_id": ROUTE, "trip_direction_id": "0",
                    "next_departures_trip_id": ["T1"],
                    "next_departures": [leaves.isoformat()]}})
-    geojson.write_route_file(me.hass, me._data, me._route_id, me._direction)
+    map_files.write_route_file(me.hass, me._data, me._route_id, me._direction)
     with open(tmp_path / "www" / "gtfs2" / _route_file_name(ROUTE, "0"),
               encoding="utf-8") as handle:
         return me, json.load(handle)
@@ -411,9 +411,9 @@ def test_train_stations_hold_to_the_feed(record_property, sncf):
         else:
             check.not_here("get_next_service_date", f"next service date {who}")
     with freeze_time(datetime.datetime(2026, 8, 27, 0, 5, tzinfo=PARIS).astimezone(UTC)):
-        result = gtfs_helper.get_next_departure(_hass(), _train_data(sncf, "Les Aubrais", "Auterive"))
+        result = departures.get_next_departure(_hass(), _train_data(sncf, "Les Aubrais", "Auterive"))
         check.same(result.get("destination_stop_time", {}).get("Sequence") if result else None, 3,
                    "Les Aubrais -> Auterive departs on the night train")
-        result = gtfs_helper.get_next_departure(_hass(), _train_data(sncf, "Auterive", "Ax-les-Thermes"))
+        result = departures.get_next_departure(_hass(), _train_data(sncf, "Auterive", "Ax-les-Thermes"))
         check.same(result, {}, "Auterive -> Ax-les-Thermes, where nobody gets on")
     _done(record_property, check, fixture="sncf", promise="stations")

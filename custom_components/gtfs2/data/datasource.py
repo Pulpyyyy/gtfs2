@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 import pygtfs
 from sqlalchemy.sql import text
 
-from .feed.files import close_schedule, feed_zip, file_edition, real_path
+from ..feed.files import close_schedule, feed_zip, file_edition, real_path
 
 if TYPE_CHECKING:
     # for the annotations only

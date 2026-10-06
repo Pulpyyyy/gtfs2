@@ -14,8 +14,8 @@ import zipfile
 
 import ha_stub
 
-feed_window = ha_stub.load("feed_window")
-gtfs_filter = ha_stub.load("gtfs_filter")
+validity = ha_stub.load("data.validity")
+zip_filter = ha_stub.load("data.zip_filter")
 line_ends = ha_stub.load("line_ends")
 
 WIDTH = 80
@@ -48,7 +48,7 @@ def _padded(tmp_path):
 
 
 def test_the_timetable_knows_its_last_day(tmp_path):
-    window = feed_window.read_feed_window(_padded(tmp_path))
+    window = validity.read_feed_window(_padded(tmp_path))
     assert (window["first_service_day"], window["last_service_day"]) == \
         ("2026-09-18", "2026-12-13")
 
@@ -60,13 +60,13 @@ def test_the_lines_know_their_days(tmp_path):
 
 
 def test_the_route_list_reads_the_last_column(tmp_path):
-    routes = gtfs_filter.read_zip_routes(_padded(tmp_path))
+    routes = zip_filter.read_zip_routes(_padded(tmp_path))
     assert [(r["route_id"], r["route_type"].strip()) for r in routes] == [("R1", "2"), ("R2", "2")]
 
 
 def test_the_filter_keeps_the_station_of_a_platform(tmp_path):
     cut = tmp_path / "cut.zip"
-    gtfs_filter.filter_gtfs_zip(_padded(tmp_path), cut, ["R1"])
+    zip_filter.filter_gtfs_zip(_padded(tmp_path), cut, ["R1"])
     with zipfile.ZipFile(cut) as zin:
         stops = zin.read("stops.txt").decode().splitlines()[1:]
     assert sorted(line.split(",")[0] for line in stops) == ["B", "P", "Q1"]

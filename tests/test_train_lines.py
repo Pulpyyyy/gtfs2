@@ -32,9 +32,9 @@ import ha_stub
 ha_stub.install()
 
 const = ha_stub.load("const")
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 stations = ha_stub.load("stations")
-stop_rules = ha_stub.load("stop_rules")
+stop_rules = ha_stub.load("data.stop_rules")
 
 O, A, P = "Orleans", "Les Aubrais", "Paris Austerlitz"
 FEED = {
@@ -71,9 +71,9 @@ def _rides(schedule, entry):
     """(trip, station got on at, time, station got off at) of the day's
     departures of a train entry."""
     with freeze_time(f"{DAY} 00:00:00"):
-        rows, _start = gtfs_helper._fetch_departure_rows(
+        rows, _start = departures._fetch_departure_rows(
             "2", entry["origin"], entry["destination"], schedule, window=(DAY, DAY),
-            **gtfs_helper.departure_query_args(entry))
+            **departures.departure_query_args(entry))
     return [(r["trip_id"], r["origin_stop_name"], str(r["origin_depart_time"])[:5], r["dest_stop_name"])
             for r in rows]
 

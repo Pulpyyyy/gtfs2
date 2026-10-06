@@ -17,8 +17,8 @@ import ha_stub
 
 ha_stub.install()
 
-datasource = ha_stub.load("datasource")
-source_zip = ha_stub.load("source_zip")
+datasource = ha_stub.load("data.datasource")
+source_zip = ha_stub.load("data.source_zip")
 
 FEED = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,Europe/Paris\n",

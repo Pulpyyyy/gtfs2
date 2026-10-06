@@ -21,7 +21,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-leg_mod = ha_stub.load("leg")
+leg_mod = ha_stub.load("data.leg_file")
 
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
 
@@ -267,26 +267,26 @@ def test_each_run_is_drawn_on_its_own_road(tmp_path):
 def test_the_shapes_of_a_line_are_read_once_an_edition(tmp_path, monkeypatch):
     import feed_db
 
-    geojson = ha_stub.load("geojson")
+    map_files = ha_stub.load("data.map_files")
     schedule = feed_db.build(tmp_path, SHAPED)
     schedule.engine.dispose()
     zip_path = str(tmp_path / "feed.zip")
     passes = []
-    read = geojson._trip_shape_ids
-    monkeypatch.setattr(geojson, "_trip_shape_ids", lambda path, routes: passes.append(routes) or read(path, routes))
+    read = map_files._trip_shape_ids
+    monkeypatch.setattr(map_files, "_trip_shape_ids", lambda path, routes: passes.append(routes) or read(path, routes))
     for _ in range(3):
-        shape_of, points = geojson.route_shapes(zip_path, {"L1"})
+        shape_of, points = map_files.route_shapes(zip_path, {"L1"})
     assert len(passes) == 1 and shape_of == {"M1": "MAIN", "V1": "LAKE"} and set(points) == {"MAIN", "LAKE"}
     # kept beside the zip, a restart included, and not a source of its own
     assert (tmp_path / "feed.zip.shapes").exists()
-    assert not geojson.SHAPES_SUFFIX.endswith((".sqlite", ".zip"))
+    assert not map_files.SHAPES_SUFFIX.endswith((".sqlite", ".zip"))
     # a line the feed does not draw is read once too
-    assert geojson.route_shapes(zip_path, {"NONE"}) == ({}, {})
-    geojson.route_shapes(zip_path, {"NONE"})
+    assert map_files.route_shapes(zip_path, {"NONE"}) == ({}, {})
+    map_files.route_shapes(zip_path, {"NONE"})
     assert len(passes) == 2
     # a new edition of the zip is read again
     os.utime(zip_path, ns=(3, 3))
-    assert geojson.route_shapes(zip_path, {"L1"})[0] == {"M1": "MAIN", "V1": "LAKE"}
+    assert map_files.route_shapes(zip_path, {"L1"})[0] == {"M1": "MAIN", "V1": "LAKE"}
     assert len(passes) == 3
 
 

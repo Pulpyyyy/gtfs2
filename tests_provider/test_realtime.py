@@ -47,13 +47,13 @@ import homeassistant.util.dt as dt_util  # noqa: E402
 import fixture_db  # noqa: E402
 import test_journeys as tj  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 try:
     local_stops = ha_stub.load("local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
-    local_stops = gtfs_helper
+    local_stops = departures
 try:
-    leg_mod = ha_stub.load("leg")
+    leg_mod = ha_stub.load("data.leg_file")
 except FileNotFoundError:  # a tree without the fork's leg file
     leg_mod = None
 gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
@@ -198,7 +198,7 @@ def test_the_board_moves_on_without_the_struck_trip(record_property, sncf, entit
             "origin": "Grasse", "destination": "Cannes", "line": "C3",
             "offset": 0, "include_tomorrow": True}
     with freeze_time(DAY.astimezone(UTC)):
-        departure = gtfs_helper.get_next_departure(_hass(), data)
+        departure = departures.get_next_departure(_hass(), data)
         check.same(departure.get("trip_id") if departure else None, cancelled,
                    "the next departure the timetable gives at 07:50")
         check.note(bool(data.get("departure_rows")), "the rows are kept beside the departure",
@@ -207,7 +207,7 @@ def test_the_board_moves_on_without_the_struck_trip(record_property, sncf, entit
         today = datetime.date(2026, 8, 26)
         # the SNCF files one trip id per train number, running every day:
         # the feed cancels today's run, and the board moves on to tomorrow's
-        moved = gtfs_helper.drop_departure_trips(_hass(), data, {cancelled: "20260826"})
+        moved = departures.drop_departure_trips(_hass(), data, {cancelled: "20260826"})
         shown = moved.get("departure_time") if moved else None
         check.note(shown is not None and shown.date() > today,
                    f"without today's run the board shows {shown}",
@@ -216,11 +216,11 @@ def test_the_board_moves_on_without_the_struck_trip(record_property, sncf, entit
                        for d in (moved or {}).get("next_departures") or []})
         check.note(today.isoformat() not in days, "today's run is out of the list too", days=days)
         # struck on another service day: today's departure stands
-        same = gtfs_helper.drop_departure_trips(_hass(), data, {cancelled: "20260827"})
+        same = departures.drop_departure_trips(_hass(), data, {cancelled: "20260827"})
         check.same(same.get("departure_time").date().isoformat() if same else None,
                    today.isoformat(), "struck on another day, today's run still shows")
         # struck with no day named: dropped on every day, nothing left here
-        every = gtfs_helper.drop_departure_trips(_hass(), data, {cancelled: None})
+        every = departures.drop_departure_trips(_hass(), data, {cancelled: None})
         check.same(every, {}, "struck with no day named, the trip is out on every day")
     check.same([on_service_day("20260826", "2026-08-26"),
                 on_service_day("20260826", "2026-08-27"),

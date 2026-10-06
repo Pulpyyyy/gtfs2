@@ -3,8 +3,8 @@
 The route file, the line drawn from its fullest trip with its shape
 (export_route_shape); the timetable, every departure over the next service
 days (export_timetable); the leg file, the ride of the next departure timed
-stop by stop (export_leg). The writers themselves are in geojson.py, leg.py
-and timetable.py; what is here decides when a file is written again, and
+stop by stop (export_leg). The writers themselves are in data/map_files.py,
+data/leg_file.py and data/timetable_file.py; what is here decides when a file is written again, and
 keeps the slow ones off the refresh. Called from GTFSUpdateCoordinator._async_update_data, the
 coordinator handed in keeps what was written last. When an entry is
 removed, remove_entry_geojson takes its files away with it.
@@ -24,12 +24,12 @@ import homeassistant.util.dt as dt_util
 
 from .const import DEFAULT_PATH, DEFAULT_PATH_GEOJSON, DOMAIN, id_of
 from .feed.files import feed_zip, file_edition, real_path, remove_files
-from .gtfs_helper import shown_ends
+from .data.departures import shown_ends
 from .stations import train_entry_routes
-from .geojson import write_route_file, route_geojson_name, get_representative_trip, map_file, vehicle_positions_name
-from .leg import write_leg_file, leg_files, leg_geojson_name
+from .data.map_files import write_route_file, route_geojson_name, get_representative_trip, map_file, vehicle_positions_name
+from .data.leg_file import write_leg_file, leg_files, leg_geojson_name
 from .feed.rt_feed import FeedEntities
-from .timetable import write_timetable_file, timetable_name
+from .data.timetable_file import write_timetable_file, timetable_name
 
 if TYPE_CHECKING:
     # for the annotations only

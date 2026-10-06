@@ -17,7 +17,7 @@ from .const import (
     ATTR_NEXT_RT_TRIPS,
 )
 from .alerts import journey_alerts
-from .clocks import agency_zone
+from .data.clocks import agency_zone
 from .feed.rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, FeedEntities, _Coordinator, _read_feed, _same_route,
     delay_of, stop_relationship, stop_update_clock,
@@ -417,7 +417,7 @@ def _boarding_stops(self: _Coordinator) -> dict[str, str]:
     """{trip_id: stop_id} of the trips the board lists getting on at another
     stop than the one read here: a place served from two quays, an entry
     getting on at more stops, each run listed where the rider first gets
-    on (gtfs_helper._next_departure_lists)."""
+    on (departures._next_departure_lists)."""
     departure = (getattr(self, "_data", None) or {}).get("next_departure") or {}
     return {str(trip): str(stop) for trip, stop in zip(departure.get("next_departures_trip_id") or [],
                                                      departure.get("next_departures_origin_stop_id") or [])

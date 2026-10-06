@@ -10,7 +10,7 @@ from __future__ import annotations
 import feed_db
 import ha_stub
 
-pair_direction = ha_stub.load("pair_direction")
+pair_direction = ha_stub.load("data.pair_direction")
 
 STOPS = {"A": "Gare", "B": "Centre", "C": "Hopital", "D": "Stade", "E": "Lac"}
 

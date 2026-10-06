@@ -15,7 +15,7 @@ import ha_stub
 
 ha_stub.install()
 
-pair_direction = ha_stub.load("pair_direction")
+pair_direction = ha_stub.load("data.pair_direction")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type\n"
 FEED = {

@@ -19,7 +19,7 @@ ha_stub.install()
 
 import homeassistant.util.dt as dt_util  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 local_stops = ha_stub.load("local_stops")
 
 FEED = {
@@ -45,7 +45,7 @@ def _schedule(tmp_path):
 def _rows(schedule, origin, destination):
     dt_util.set_default_time_zone(dt_util.get_time_zone("UTC"))
     with freeze_time(AT):
-        rows, _ = gtfs_helper._fetch_departure_rows(
+        rows, _ = departures._fetch_departure_rows(
             "3", origin, destination, schedule, route="R")
     return rows
 
@@ -80,7 +80,7 @@ def test_an_untimed_end_gives_no_next_service_day(tmp_path):
     # the departures leave such a pair out: the next service day did not,
     # and the sensor, blank, said the line still ran today
     schedule = _schedule(tmp_path)
-    assert gtfs_helper.get_next_service_date(schedule, "S1", "S2", "2026-09-24") is None
-    assert gtfs_helper.get_next_service_date(schedule, "S1", "S3", "2026-09-24") == "2026-09-24"
+    assert departures.get_next_service_date(schedule, "S1", "S2", "2026-09-24") is None
+    assert departures.get_next_service_date(schedule, "S1", "S3", "2026-09-24") == "2026-09-24"
     schedule.engine.dispose()
 

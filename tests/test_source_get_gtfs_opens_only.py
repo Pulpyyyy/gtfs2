@@ -17,7 +17,7 @@ import pygtfs
 
 import ha_stub
 
-datasource = ha_stub.load("datasource")
+datasource = ha_stub.load("data.datasource")
 
 FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "boarding" / "static.zip"
 

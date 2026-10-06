@@ -14,9 +14,9 @@ import zipfile
 
 import ha_stub
 
-feed_window = ha_stub.load("feed_window")
-read_feed_window = feed_window.read_feed_window
-timetable_state = feed_window.timetable_state
+validity = ha_stub.load("data.validity")
+read_feed_window = validity.read_feed_window
+timetable_state = validity.timetable_state
 
 
 def write_zip(path, members):
@@ -96,13 +96,13 @@ def test_two_sources_read_in_turn_keep_their_last_day(tmp_path, monkeypatch):
     write_zip(a, {"calendar.txt": CALENDAR})
     write_zip(b, {"calendar_dates.txt": DATES})
     reads = []
-    real = feed_window.read_feed_window
-    monkeypatch.setattr(feed_window, "read_feed_window", lambda p: reads.append(p) or real(p))
-    feed_window._LAST_SERVICE_DAY.clear()
+    real = validity.read_feed_window
+    monkeypatch.setattr(validity, "read_feed_window", lambda p: reads.append(p) or real(p))
+    validity._LAST_SERVICE_DAY.clear()
     for _ in range(3):
-        assert feed_window.last_service_day(str(a)) == "2026-12-19"
-        assert feed_window.last_service_day(str(b)) == "2026-12-24"
+        assert validity.last_service_day(str(a)) == "2026-12-19"
+        assert validity.last_service_day(str(b)) == "2026-12-24"
     assert len(reads) == 2
     write_zip(a, {"calendar.txt": CALENDAR, "calendar_dates.txt": DATES})
-    assert feed_window.last_service_day(str(a)) == "2026-12-24"
+    assert validity.last_service_day(str(a)) == "2026-12-24"
     assert len(reads) == 3

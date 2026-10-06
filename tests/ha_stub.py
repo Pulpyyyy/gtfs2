@@ -1,7 +1,7 @@
 """Import one gtfs2 module without a Home Assistant install.
 
-gtfs_helper imports homeassistant at module level, and importing it the plain
-way (`from custom_components.gtfs2.gtfs_helper import ...`) also runs the
+data/departures.py imports homeassistant at module level, and importing it the plain
+way (`from custom_components.gtfs2.data.departures import ...`) also runs the
 package `__init__.py`, which pulls in the coordinator, the platforms and with
 them a good half of Home Assistant. Installing homeassistant answers all of
 that, but it is a heavy pin for a suite whose subject is the integration's own
@@ -36,8 +36,8 @@ imports it by name and asks for the module it wants to exercise:
 
     import ha_stub
 
-    gtfs_helper = ha_stub.load("gtfs_helper")
-    result = gtfs_helper._interpret_departure_rows(hass, rows, ...)
+    departures = ha_stub.load("data.departures")
+    result = departures._interpret_departure_rows(hass, rows, ...)
 
 install() runs on the first load, so a test that only wants dt_util calls it
 itself before importing anything from homeassistant:
@@ -63,8 +63,8 @@ load() takes a component directory too. Pointing it at the copy in another
 checkout, under its own alias, loads both in one process, which is how the
 before and after of a change can be pushed the same fixture and diffed:
 
-    old = ha_stub.load("gtfs_helper", component=other_checkout, alias="before")
-    new = ha_stub.load("gtfs_helper", alias="after")
+    old = ha_stub.load("data.departures", component=other_checkout, alias="before")
+    new = ha_stub.load("data.departures", alias="after")
 
 The whole of both suites can be run against another checkout's component
 the same way: `pytest tests_provider/ --component path/to/custom_components/gtfs2`
@@ -1033,9 +1033,9 @@ def install() -> None:
     if _MissingStub not in sys.meta_path:
         sys.meta_path.append(_MissingStub)
 
-    # gtfs_rt_helper.py imports this at module level (`from google.transit
-    # import gtfs_realtime_pb2`), so gtfs_helper.py's own import of
-    # gtfs_rt_helper.py pulls it in even for tests that never touch RT.
+    # feed/rt_feed.py imports this at module level (`from google.transit
+    # import gtfs_realtime_pb2`), so data/departures.py's own import of
+    # feed/rt_feed.py pulls it in even for tests that never touch RT.
     # The only thing ever used from it, across the whole codebase, is
     # FeedMessage() -- and only inside the raw-protobuf fallback branch of
     # get_gtfs_feed_entities(), a function every current test replaces
@@ -1054,7 +1054,7 @@ def install() -> None:
         _module("google.protobuf.message",
                 DecodeError=type("DecodeError", (Exception,), {}))
 
-    # gtfs_helper.py imports pygtfs and sqlalchemy.sql.text at module level
+    # the data modules import pygtfs and sqlalchemy.sql.text at module level
     # (get_gtfs, _fetch_departure_rows), but every current test either
     # never calls those functions or replaces them with
     # unittest.mock.patch.object before they'd touch a real database --

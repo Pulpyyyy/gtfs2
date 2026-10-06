@@ -21,7 +21,7 @@ ha_stub.install()
 
 import homeassistant.util.dt as dt_util  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 
 HEAD = "trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type\n"
 FEED = {
@@ -51,7 +51,7 @@ def _rides(tmp_path):
     dt_util.set_default_time_zone(dt_util.get_time_zone("UTC"))
     try:
         with freeze_time(AT):
-            rows, _ = gtfs_helper._fetch_departure_rows(
+            rows, _ = departures._fetch_departure_rows(
                 "1", "K: Kennington", "C: Camden", schedule, route="R")
     finally:
         schedule.engine.dispose()

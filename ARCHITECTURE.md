@@ -149,11 +149,11 @@ and that is where merges collide; or one file tells more than one story
 (`place_order.py` out of `places.py`, 595871f3; the prune, now in `shrink.py`,
 out of `feed/files.py`, b1e6e745). A move that cut one story in two is undone: the
 refresh steps went back into `coordinator.py` (e8aabebb), the shape
-reading back into `geojson.py` (91da1bf2). The upstream-owned places are:
+reading back into `map_files.py` (91da1bf2). The upstream-owned places are:
 
 ```
-gtfs_helper.py                              "a file upstream owns"; five lots
-                                            collided there (ea56837)
+data/departures.py                          upstream's gtfs_helper, "a file upstream
+                                            owns"; five lots collided there (ea56837)
 coordinator.py  _async_update_data          upstream's method (e843433)
 sensor.py       _update_attrs               upstream's method (3f01c10)
 gtfs_rt_helper.py                           upstream's realtime reader (52bbe62)
@@ -163,7 +163,7 @@ config_flow.py                              upstream's flow, split in screens
 When a block the fork added there has a single responsibility, it moves to
 a module the fork owns, and the upstream method calls it in one line where
 the block stood. That is how `alerts.py`, `departure_attributes.py`,
-`route_names.py`, `notifications.py`, `geojson.py`,
+`route_names.py`, `notifications.py`, `map_files.py`,
 `source_zip.py`, `stations.py` and the `flow_*.py` screens were born.
 
 **Constraint.** A move changes no behaviour:
@@ -366,7 +366,7 @@ repairs.py         the fixes Settings > Repairs offers for gtfs2's issues
 - An entry's coordinator lives on `entry.runtime_data`. `hass.data[DOMAIN]`
   holds only what the sources share: locks, probe states, check timers, the
   bootstrap flag (b960969).
-- The coordinator holds no SQL: it reads the timetable through `gtfs_helper`
+- The coordinator holds no SQL: it reads the timetable through `data/departures.py`
   and the realtime through `gtfs_rt_helper`, has `vehicles.py` write the
   vehicle file, and hands the route, timetable and leg files to
   `exports.py`.
@@ -409,28 +409,28 @@ attributes dict and what it reads, "nothing of the entity" (3f01c10).
 ### 4. Data management layer
 
 ```
-db_build.py           an import into a scratch database, the followed lines copied, the swap
-shrink.py             a datasource made smaller where it lies: trimmed down to the lines it follows, or its stop_times keyed by integers instead of repeated id strings
-gtfs_helper.py        the departure queries, and the next day a journey runs
-datasource.py         a source's database as the readers open it: get_gtfs, its indexes
-stop_rules.py         the SQL pieces every reader shares: who gets on or off, one place, train stations
-clocks.py             a stop time in seconds and on its service day, the time zone a feed writes its times in
-source_zip.py         the zip beside a datasource: fetched, kept, refreshed, imported
-source_refresh.py     every refresh of a source's static feed, scheduled per mode or asked for, and the record of the edition installed
-rt_window.py          when the realtime feeds are worth reading, off the timetable
-gtfs_filter.py        cut a zip down to chosen routes before any import
-direction_repair.py   repair trip direction_id after import
-geojson.py            the files written under www/gtfs2 for a map card: names, route file and its shape out of the zip, the shapes of each run a leg file draws (kept in <file>.zip.shapes), writing
-leg.py                the leg file: the ride of the next departure, and the trips listed timed stop by stop, each on its own shape
-timetable.py          the timetable file: every departure over three service days
-places.py             the places of a line the flow offers: origin, way, destination
-place_order.py        the order a line's places are ridden in, both ways round
-destination_order.py  the order the places reached from an origin are offered in
-pair_direction.py     the direction an entry keeps for its two places, and its labels
-feed_window.py        how long the kept timetable is good for
+data/db_build.py            an import into a scratch database, the followed lines copied, the swap
+data/shrink.py              a datasource made smaller where it lies: trimmed down to the lines it follows, or its stop_times keyed by integers instead of repeated id strings
+data/departures.py          the departure queries, and the next day a journey runs
+data/datasource.py          a source's database as the readers open it: get_gtfs, its indexes
+data/stop_rules.py          the SQL pieces every reader shares: who gets on or off, one place, train stations
+data/clocks.py              a stop time in seconds and on its service day, the time zone a feed writes its times in
+data/source_zip.py          the zip beside a datasource: fetched, kept, refreshed, imported
+data/source_refresh.py      every refresh of a source's static feed, scheduled per mode or asked for, and the record of the edition installed
+data/rt_window.py           when the realtime feeds are worth reading, off the timetable
+data/zip_filter.py          cut a zip down to chosen routes before any import
+data/direction_ids.py       repair trip direction_id after import
+data/map_files.py           the files written under www/gtfs2 for a map card: names, route file and its shape out of the zip, the shapes of each run a leg file draws (kept in <file>.zip.shapes), writing
+data/leg_file.py            the leg file: the ride of the next departure, and the trips listed timed stop by stop, each on its own shape
+data/timetable_file.py      the timetable file: every departure over three service days
+data/places.py              the places of a line the flow offers: origin, way, destination
+data/place_order.py         the order a line's places are ridden in, both ways round
+data/place_destinations.py  the order the places reached from an origin are offered in
+data/pair_direction.py      the direction an entry keeps for its two places, and its labels
+data/validity.py            how long the kept timetable is good for
 ```
 
-`feed/files.py` and `db_build.py` import neither pygtfs nor Home Assistant: the
+`feed/files.py` and `data/db_build.py` import neither pygtfs nor Home Assistant: the
 scratch build is passed in as a callable (`import_routes(..., build_scratch)`), so the modules
 can be tested on plain SQLite files.
 
@@ -501,16 +501,16 @@ window         the hours a source's realtime feeds are read, derived from its
                timetable (rt_window.py)
 feed window    how long the kept timetable is good for, read from the zip:
                valid, ending (last service day within 7 days), expired or
-               unknown (feed_window.py)
+               unknown (validity.py)
 leg file       the ride of an entry's next departure and the trips listed
                after it, timed stop by stop, realtime included, each run on
-               its own shape (leg.py)
+               its own shape (leg_file.py)
 rail index     <file>.zip.rail, the trains of a zip the station screens read,
                built once an edition (stations.py)
 shapes store   <file>.zip.shapes, the shapes of the lines a leg file draws,
-               kept for the zip's edition (geojson.py)
+               kept for the zip's edition (map_files.py)
 timetable file every departure of an entry over the service day under way
-               and the two after it (timetable.py)
+               and the two after it (timetable_file.py)
 lot            a feat/ or fix/ branch cut on upstream main, one change each
 ```
 
@@ -652,7 +652,7 @@ as a destination when it names a place of the feed, NICE or PAU, while a
 mission code such as UZAR is not (f777a72). Reading `stop_times.txt` for
 the ends stops above 150 MB (eb98488).
 
-**Direction repair** (`direction_repair.py`). Every query filters on
+**Direction repair** (`data/direction_ids.py`). Every query filters on
 `direction_id`, and some feeds label it wrong: GVB trams 1, 7 and 17 carry
 30 to 40 % of their trips under the other direction. After each import
 (`source_zip.py`), each trip is tested against the
@@ -674,7 +674,7 @@ default); in between they only take out the departures gone
 1. source still being unpacked?        keep the previous data, flag it, stop
 2. static refresh due?                 refresh_interval passed (15 min by
                                        default), or the departure shown has left
-     yes:  get_next_departure            from the database, via gtfs_helper
+     yes:  get_next_departure            from the database, via departures
            export_route_shape            route file, when its trip or the zip changed
            export_timetable              timetable file
            nothing left today?           next_service_date_for
@@ -816,9 +816,9 @@ Filling                              Reading
 
 freshness.py   changed?              coordinator.py
      ↓                                    ↓
-source_zip.py  fetch, keep the zip   gtfs_helper.py   get_next_departure
+source_zip.py  fetch, keep the zip   departures.py    get_next_departure
      ↓                                    ↓
-gtfs_filter.py keep chosen routes    <file>.sqlite
+zip_filter.py  keep chosen routes    <file>.sqlite
      ↓
 db_build.py    build, swap
      ↓
@@ -908,7 +908,7 @@ Four paths write a database. They differ because what they risk differs.
 
 **Filtering before import, not pruning after.** pygtfs pays per row: once
 the whole feed is imported, the time and the disk are already spent. The
-zip is cut down to the chosen routes first (`gtfs_filter.py`), written
+zip is cut down to the chosen routes first (`data/zip_filter.py`), written
 beside the source and never into it; `routes.txt` and `agency.txt` are
 copied whole so the flow keeps offering every line. When the filter cannot
 run, the feed is imported whole: "slower, never wrong" (da8f4c6). On
@@ -925,7 +925,7 @@ measured 31 stop keys already taken (`db_build.py`).
 ```
 scratch left by an interrupted run?   discarded first: unknown state
     ↓
-zip filtered to the lines (gtfs_filter)
+zip filtered to the lines (zip_filter)
     ↓
 scratch database (build_scratch_database), then indexed by route
     ↓
@@ -1036,7 +1036,7 @@ the source moving again.
 sensor reads, the refresh is refused at every check and the source stays on
 an edition that will run out. The issue names the line; the user
 removes or re-targets its sensor, after which the line is no longer read
-and the refresh goes through. `feed_window.py` and the diagnostic sensor
+and the refresh goes through. `data/validity.py` and the diagnostic sensor
 say how long the kept timetable is still good for.
 
 **Why the swap gives up after 30 s.** Long enough for an index or an
@@ -1288,14 +1288,14 @@ coordinator already filled and refreshes it plainly (b960969).
 What the code does not follow yet from the design above: none. A gap is
 closed when the rule it breaks can be checked by a test.
 
-The last three closed on 2026-09-29 (e03e4f8f). `gtfs_helper.py` and
+The last three closed on 2026-09-29 (e03e4f8f). `data/departures.py` and
 `gtfs_rt_helper.py`, upstream's two files that every layer imported, sat
 outside the layers while the fork's code left them (the stops around a
 person, the places of a line, the timetable services, the flow's lists,
 the sources on disk); what stayed is a data layer module (the departure
 queries and their SQL pieces) and a domain one (the realtime of a
 sensor), once the few functions a lower layer needed went down: the file
-name and json writing to `geojson.py`, the feed's route id match, stop
+name and json writing to `map_files.py`, the feed's route id match, stop
 clock and service day to `rt_feed.py`, the cache check to `rt_window.py`,
 `close_schedule` to `feed/files.py`. The import contract, which listed the
 imports of the gaps as its exceptions, has none left.

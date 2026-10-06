@@ -14,7 +14,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 
 UTC = datetime.timezone.utc
 AT = datetime.datetime(2026, 10, 3, 6, 49, 20, tzinfo=UTC)
@@ -24,7 +24,7 @@ def _lists(**row):
     value = {"dest_arrival_dt": "2026-10-03 07:30:00", "trip_id": "T1", "origin_stop_id": "S1",
              "route_type": 0, "route_short_name": "20", "route_long_name": "Burnside/Stark",
              "trip_headsign": "Gresham", "origin_stop_headsign": "Gresham TC", **row}
-    return gtfs_helper._next_departure_lists([(AT, value)], UTC)
+    return departures._next_departure_lists([(AT, value)], UTC)
 
 
 def test_a_trip_with_no_headsign_takes_its_call_s():

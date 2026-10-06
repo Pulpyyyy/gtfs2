@@ -16,7 +16,7 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .datasource_services import async_prune_line
 from .feed.source_entries import datasource_entry
-from .source_refresh import async_rebuild_source
+from .data.source_refresh import async_rebuild_source
 
 
 class RetryRefreshFlow(RepairsFlow):

@@ -26,7 +26,7 @@ import ha_stub
 
 ha_stub.install()
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 
 TRIPS = {
     "T1": [("A", "08:00"), ("C", "08:10"), ("D", "08:20")],
@@ -71,9 +71,9 @@ def train(tmp_path_factory):
 def _rides(schedule, route_type, data):
     """(trip, got on at, time, got off at) of the day's departures."""
     with freeze_time(f"{DAY} 00:00:00"):
-        rows, _start = gtfs_helper._fetch_departure_rows(
+        rows, _start = departures._fetch_departure_rows(
             route_type, data["origin"], data["destination"], schedule, window=(DAY, DAY),
-            **gtfs_helper.departure_query_args(data))
+            **departures.departure_query_args(data))
     return [(r["trip_id"], r["origin_stop_name"], str(r["origin_depart_time"])[:5], r["dest_stop_name"])
             for r in rows]
 
@@ -116,9 +116,9 @@ def test_each_run_says_where_it_sets_the_rider_down(bus):
     data = {"route": "L: L", "route_type": "3", "origin": a, "destination": d,
             "origin_stations": [a, c], "destination_stations": [d, c]}
     with freeze_time(f"{DAY} 00:00:00"):
-        rows, _start = gtfs_helper._fetch_departure_rows(
-            "3", a, d, bus, window=(DAY, DAY), **gtfs_helper.departure_query_args(data))
+        rows, _start = departures._fetch_departure_rows(
+            "3", a, d, bus, window=(DAY, DAY), **departures.departure_query_args(data))
     at = datetime.datetime(2026, 10, 5, tzinfo=datetime.timezone.utc)
-    lists = gtfs_helper._next_departure_lists([(at, row) for row in rows], datetime.timezone.utc)
+    lists = departures._next_departure_lists([(at, row) for row in rows], datetime.timezone.utc)
     assert lists["next_departures_origin_stop_id"] == ["A", "C", "A", "C", "A"]
     assert lists["next_departures_destination_stop_id"] == ["D", "D", "C", "D", "D"]

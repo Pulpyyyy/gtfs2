@@ -141,7 +141,7 @@ def _import(fixtures, directory, path):
     schedule = pygtfs.Schedule(path)
     _ENGINES.append(schedule.engine)
     source = os.path.join(fixtures, "static.zip")
-    if ha_stub.load("gtfs_filter").feed_info_unreadable(source):
+    if ha_stub.load("data.zip_filter").feed_info_unreadable(source):
         # feed_info dates pygtfs cannot read (Krakow's trams leave them
         # empty) stop its whole import: an install then leaves the table
         # out, and so does this
@@ -156,7 +156,7 @@ def _import(fixtures, directory, path):
     hass = types.SimpleNamespace(config=types.SimpleNamespace(
         path=lambda *parts: os.path.join(directory, *parts)))
     # in gtfs_helper on a checkout run with --component that keeps it there
-    opener = "datasource" if (ha_stub.COMPONENT / "datasource.py").is_file() else "gtfs_helper"
+    opener = "data.datasource" if (ha_stub.COMPONENT / "data/datasource.py").is_file() else "gtfs_helper"
     ha_stub.load(opener).check_datasource_index(hass, schedule, "", "fixture")
     return schedule
 

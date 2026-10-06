@@ -45,7 +45,7 @@ import sqlalchemy
 
 import ha_stub
 
-rt_window = ha_stub.load("rt_window")
+rt_window = ha_stub.load("data.rt_window")
 rt_feed = ha_stub.load("feed.rt_feed")
 
 FILE = "winnet"

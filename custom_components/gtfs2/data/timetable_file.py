@@ -13,9 +13,9 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
 
-from .feed_window import last_service_day
-from .geojson import entry_file_part, map_file, write_json_if_changed
-from .gtfs_helper import _fetch_departure_rows, departure_query_args, first_departure_row
+from .validity import last_service_day
+from .map_files import entry_file_part, map_file, write_json_if_changed
+from .departures import _fetch_departure_rows, departure_query_args, first_departure_row
 from .clocks import _leg_timezone
 
 _LOGGER = logging.getLogger(__name__)

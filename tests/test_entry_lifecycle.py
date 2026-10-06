@@ -90,18 +90,18 @@ def test_the_vehicles_are_written_and_cleared_under_both_names(tmp_path):
     # the source's name for the card, the one before for a geo_json_events
     # feed set up on its url
     vehicles = ha_stub.load("vehicles")
-    geojson = ha_stub.load("geojson")
+    map_files = ha_stub.load("data.map_files")
     hass = _Hass(tmp_path)
     folder = _files(tmp_path, [])
     me = types.SimpleNamespace(hass=hass, _route_id="2", _direction="0", _data={"file": "palmbus"},
                                geojson={"type": "FeatureCollection", "features": [{"id": "bus"}]})
     vehicles.update_geojson(me)
     assert sorted(p.name for p in folder.iterdir()) == ["2_0.json", "palmbus_2_0.json"]
-    assert geojson.clear_vehicle_file(hass, "2", "0", "palmbus") is True
+    assert map_files.clear_vehicle_file(hass, "2", "0", "palmbus") is True
     for name in ("2_0.json", "palmbus_2_0.json"):
         assert (folder / name).read_text().count('"features": []') == 1
     # both empty already: nothing written
-    assert geojson.clear_vehicle_file(hass, "2", "0", "palmbus") is False
+    assert map_files.clear_vehicle_file(hass, "2", "0", "palmbus") is False
 
 
 def test_a_train_entry_takes_the_files_of_the_lines_it_rode(tmp_path, monkeypatch):

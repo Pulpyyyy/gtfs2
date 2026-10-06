@@ -14,7 +14,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-clocks = ha_stub.load("clocks")
+clocks = ha_stub.load("data.clocks")
 
 
 def _schedule(tmp_path, agencies, routes):

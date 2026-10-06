@@ -16,7 +16,7 @@ import ha_stub
 
 ha_stub.install()
 
-places = ha_stub.load("places")
+places = ha_stub.load("data.places")
 
 RIDES = [
     ("OUT", 0, "SPQABCDE"),      # out by the main road, S to the end E

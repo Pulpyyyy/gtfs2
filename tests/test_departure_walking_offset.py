@@ -20,7 +20,7 @@ ha_stub.install()
 
 import homeassistant.util.dt as dt_util  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 
 
 def _every_two_minutes():
@@ -43,14 +43,14 @@ def _every_two_minutes():
 
 
 def _next(schedule, offset, monkeypatch):
-    monkeypatch.setattr(gtfs_helper, "check_extracting", lambda *args: False)
+    monkeypatch.setattr(departures, "check_extracting", lambda *args: False)
     dt_util.set_default_time_zone(dt_util.get_time_zone("UTC"))
     hass = types.SimpleNamespace(config=types.SimpleNamespace(time_zone="UTC"))
     data = {"offset": offset, "schedule": schedule, "gtfs_dir": "gtfs2", "file": "f",
             "route_type": "1", "origin": "S1: One", "destination": "S2: Two",
             "route": "R: 1", "name": "n"}
     with freeze_time(datetime.datetime(2026, 9, 24, 8, 0, tzinfo=datetime.timezone.utc)):
-        return gtfs_helper.get_next_departure(hass, data)
+        return departures.get_next_departure(hass, data)
 
 
 def test_a_long_walk_to_a_frequent_line_still_finds_its_departure(tmp_path, monkeypatch):

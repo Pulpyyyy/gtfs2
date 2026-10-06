@@ -24,7 +24,7 @@ import ha_stub
 
 # Loaded on its own rather than through the package, whose __init__ pulls in
 # the coordinator and the platforms, and with them the rest of Home Assistant.
-geojson = ha_stub.load("geojson")
+map_files = ha_stub.load("data.map_files")
 
 K8 = "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
 K5 = "FR:Line::13DADBDA-4FB1-4AA3-8DAB-60E24EF4AAFF:"
@@ -94,7 +94,7 @@ def schedule(tmp_path):
 
 
 def pick(schedule, route_id, direction, origin_id=None, destination_id=None):
-    return geojson.get_representative_trip(
+    return map_files.get_representative_trip(
         schedule, route_id, direction, origin_id=origin_id, destination_id=destination_id)
 
 
@@ -191,7 +191,7 @@ def test_without_stop_ids(schedule):
         ("0_OTHER_WAY", K8, 0, [TRAIN_PARIS, TRAIN_AUBRAIS, TRAIN_ORLEANS, COACH_ORLEANS]),
     ])
     assert pick(feed, K8, "1") == "C_TWICE"
-    assert geojson.get_representative_trip(feed, K8, "1") == "C_TWICE"
+    assert map_files.get_representative_trip(feed, K8, "1") == "C_TWICE"
     # an empty id is no id
     assert pick(feed, K8, "1", "", "") == "C_TWICE"
     assert pick(feed, K8, "0") == "0_OTHER_WAY"
@@ -217,5 +217,5 @@ def test_no_database_draws_nothing_and_says_nothing(sentinel, caplog):
     database: there is nothing to draw, and no warning to write about it.
     It used to ask the word for its engine."""
     with caplog.at_level("DEBUG"):
-        assert geojson.get_representative_trip(sentinel, K8, "1", TRAIN_ORLEANS, TRAIN_PARIS) is None
+        assert map_files.get_representative_trip(sentinel, K8, "1", TRAIN_ORLEANS, TRAIN_PARIS) is None
     assert not [record for record in caplog.records if record.levelname != "DEBUG"]

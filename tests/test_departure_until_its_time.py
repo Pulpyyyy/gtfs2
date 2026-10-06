@@ -20,7 +20,7 @@ ha_stub.install()
 
 import homeassistant.util.dt as dt_util  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 
 HEAD = feed_db.STOP_TIMES
 FEED = {
@@ -43,7 +43,7 @@ def _next_trip(schedule, at, folder):
             "origin": "S1: One", "destination": "S2: Two", "route": "R: Red",
             "direction": "0", "offset": 0, "include_tomorrow": False}
     with freeze_time(at):
-        return (gtfs_helper.get_next_departure(hass, data) or {}).get("trip_id")
+        return (departures.get_next_departure(hass, data) or {}).get("trip_id")
 
 
 def test_a_departure_is_gone_from_its_time_on(tmp_path):

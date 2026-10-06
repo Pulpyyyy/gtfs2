@@ -20,7 +20,7 @@ ha_stub.install()
 
 import homeassistant.util.dt as dt_util  # noqa: E402
 
-gtfs_helper = ha_stub.load("gtfs_helper")
+departures = ha_stub.load("data.departures")
 local_stops = ha_stub.load("local_stops")
 
 FEED = {
@@ -50,7 +50,7 @@ def test_the_route_query_leaves_out_a_period_already_over(tmp_path):
     schedule = _schedule(tmp_path)
     dt_util.set_default_time_zone(dt_util.get_time_zone("UTC"))
     with freeze_time(AT):
-        rows, _ = gtfs_helper._fetch_departure_rows(
+        rows, _ = departures._fetch_departure_rows(
             "3", "S1: One", "S2: Two", schedule, route="R")
     trips = {(r["trip_id"], r["origin_depart_dt"]) for r in rows}
     assert trips == {("T_NEW", "2026-10-01 00:21:00")}

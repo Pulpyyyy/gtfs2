@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import text
 
-from .destination_order import _placed_in_order, _rides_after, _riding_order, _tails_of
-from .feed.files import file_edition
+from .place_destinations import _placed_in_order, _rides_after, _riding_order, _tails_of
+from ..feed.files import file_edition
 from .stop_rules import _alights, _boards, _place_group
 from .place_order import _Trips, _ride_of, _trips_of
 

@@ -20,7 +20,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
 from .feed.files import feed_zip
-from .gtfs_filter import read_zip_agencies, read_zip_routes
+from .data.zip_filter import read_zip_agencies, read_zip_routes
 from .line_ends import headsign_ends, route_ends
 from .line_labels import _adds_to, _route_label, set_lines_apart
 

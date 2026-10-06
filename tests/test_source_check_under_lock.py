@@ -11,7 +11,7 @@ import types
 
 import ha_stub
 
-source_refresh = ha_stub.load("source_refresh")
+source_refresh = ha_stub.load("data.source_refresh")
 
 
 def test_the_download_holds_the_lock(monkeypatch):
