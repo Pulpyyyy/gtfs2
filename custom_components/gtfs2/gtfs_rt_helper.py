@@ -36,8 +36,6 @@ type _DepartureTimes = dict[str, dict[str, dict[str, _Slot]]]
 
 def due_in_minutes(timestamp: datetime) -> int:
     """Get the remaining minutes from now until a given (aware, UTC) datetime object."""
-    if timestamp.tzinfo is None:
-        timestamp = dt_util.utc_from_timestamp(timestamp.timestamp())
     diff = timestamp - dt_util.utcnow()
     _LOGGER.debug("GTFS RT due in minutes, timestamp: %s, now_utc: %s", timestamp, dt_util.utcnow())
     return int(diff.total_seconds() / 60)
