@@ -147,6 +147,25 @@ def test_the_options_screen_reads_the_stations_between_and_the_lines(schedule):
     assert A in stations.get_station_list(schedule)
 
 
+def test_a_line_the_feed_names_nothing_is_named_by_its_ends(tmp_path):
+    # SNCF files its night trains under "INCONNU", long name " -": the
+    # options screen read "INCONNU (-)"
+    feed = {**FEED,
+            "stops.txt": FEED["stops.txt"] + "ST,Tarbes,43.2,0.07\n",
+            "routes.txt": FEED["routes.txt"] + "RX,S,INCONNU, -,2\n",
+            "trips.txt": FEED["trips.txt"] + "RX,D,X1,0\n",
+            "stop_times.txt": FEED["stop_times.txt"] + (
+                "X1,21:00:00,21:00:00,ST,1,0,1\nX1,29:30:00,29:30:00,SO,2,0,0\n"
+                "X1,30:30:00,30:30:00,SP,3,1,0\n")}
+    night = feed_db.build(tmp_path, feed)
+    try:
+        lines = stations.get_train_lines_between(night, O, P, [], [])
+    finally:
+        night.engine.dispose()
+    assert lines["INCONNU"] == "Paris Austerlitz ↔ Tarbes"
+    assert lines["K8+"] == "Paris - Orleans"
+
+
 def test_the_stations_between_follow_the_ride_not_the_alphabet():
     # Orleans to Paris: the stopping train calls at each station, the
     # express skips Chevilly and Artenay; the screen lists them as ridden

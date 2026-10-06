@@ -42,6 +42,7 @@ from .datasource import check_datasource_index, get_gtfs
 from .flow_journey import _Step
 from .geojson import name_in_use
 from .gtfs_db import close_schedule, feed_zip, real_path, routes_in
+from .line_labels import _names_nothing
 from .notifications import _async_text
 from .stations import (
     RailIndex,
@@ -84,9 +85,11 @@ def _options_schema(between: list[str], lines: dict[str, str], previous: dict) -
 
     stations = [selector.SelectOptionDict(value=name, label=name) for name in between]
     # the code is what the departures match, its long name what the rider
-    # recognises: "K8+ (Paris - Orleans)"
-    line_options = [selector.SelectOptionDict(value=code, label=f"{code} ({name})" if name else code)
-                    for code, name in lines.items()]
+    # recognises: "K8+ (Paris - Orleans)"; a code that only says the line
+    # has none ("INCONNU") gives way to the name
+    line_options = [selector.SelectOptionDict(
+        value=code, label=name if name and _names_nothing(code) else f"{code} ({name})" if name else code)
+        for code, name in lines.items()]
     fields: dict[vol.Marker, Any] = {}
     if between:
         fields[vol.Optional(ALSO_AT, default=previous.get(ALSO_AT, []))] = _many(stations)

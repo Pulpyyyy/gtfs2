@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Container, Iterator, Mapping
 import csv
+import json
 import logging
 import os
 import sqlite3
@@ -588,12 +589,16 @@ def get_train_lines_between(schedule: Schedule | RailIndex, origin_name: str, de
     off at as well, the real departure or the real arrival at one end at
     least: the lines the options screen offers to hold the journey to. A
     code alone says nothing to most riders ("K8+"), its long name does
-    ("Paris - Orleans"); one code may name several routes (SNCF P8)."""
+    ("Paris - Orleans"); one code may name several routes (SNCF P8).
+
+    A code whose long names say nothing (SNCF's night trains: "INCONNU",
+    " -") is named by where its trips run from and to instead, as the line
+    list names such lines: "Paris Austerlitz <-> Tarbes"."""
     origin_in, params = station_names_in("origin", [origin_name, *board_also])
     dest_in, dest_params = station_names_in("dest", [destination_name, *alight_also])
     params.update(dest_params)
     sql = f"""
-    SELECT distinct r.route_short_name, r.route_long_name
+    SELECT distinct r.route_short_name, r.route_long_name, t.trip_id
     from trips t
     inner join routes r on r.route_id = t.route_id
     inner join stop_times o on o.trip_id = t.trip_id
@@ -612,15 +617,40 @@ def get_train_lines_between(schedule: Schedule | RailIndex, origin_name: str, de
         rows = conn.execute(text(sql), {**params, "origin": origin_name,
                                         "destination": destination_name}).fetchall()
     names: dict[str, list[str]] = {}
-    for code, long_name in rows:
+    trips: dict[str, set[Any]] = {}
+    for code, long_name, trip in rows:
         if code is None or not str(code).strip():
             continue
         found = names.setdefault(str(code), [])
-        if long_name and str(long_name).strip() and str(long_name).strip() not in found:
+        trips.setdefault(str(code), set()).add(trip)
+        # " -" names nothing: the code then gets its trips' ends below
+        if any(c.isalnum() for c in str(long_name or "")) and str(long_name).strip() not in found:
             found.append(str(long_name).strip())
+    for code, found in names.items():
+        if not found:
+            found.extend(_trip_ends(schedule, trips[code]))
     lines = {code: " / ".join(found) for code, found in names.items()}
     _LOGGER.debug("Lines from %s to %s: %s", origin_name, destination_name, lines)
     return lines
+
+
+def _trip_ends(schedule: Schedule | RailIndex, trip_ids: set[Any]) -> list[str]:
+    """"A <-> B" for the first and the last station of each of these trips,
+    once a pair whichever way it is ridden, in name order."""
+    sql = """
+    SELECT f.stop_name, l.stop_name
+    from stop_times a
+    inner join stops f on f.stop_id = a.stop_id
+    inner join stop_times b on b.trip_id = a.trip_id
+    inner join stops l on l.stop_id = b.stop_id
+    where a.trip_id in (select value from json_each(:trips))
+      and a.stop_sequence = (select min(stop_sequence) from stop_times where trip_id = a.trip_id)
+      and b.stop_sequence = (select max(stop_sequence) from stop_times where trip_id = a.trip_id)
+    """
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql), {"trips": json.dumps(sorted(trip_ids, key=str))}).fetchall()
+    pairs = {tuple(sorted((str(first), str(last)))) for first, last in rows if first and last}
+    return [f"{a} ↔ {b}" for a, b in sorted(pairs)]
 
 
 def train_line_ends(schedule: Schedule, origin_names: list[str], destination_names: list[str],
