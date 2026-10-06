@@ -38,7 +38,9 @@ def test_datasources_by_whole_name(tmp_path):
 
 def test_zips_leave_out_what_an_import_is_working_on(tmp_path):
     _folder(tmp_path, ["tao.zip", "tao.import.sqlite.zip", "tao_temp.zip", "tao.zip.new",
-                       "zou.zip"])
+                       "zou.zip",
+                       # the filtered zips of a refresh, whole-feed or route by route
+                       "tao.refresh.sqlite.zip", "tao.refresh.import.sqlite.zip"])
     got = asyncio.run(gtfs_db.get_zipfiles(_hass(tmp_path), "gtfs2"))
     assert got == ["tao", "zou"]
 

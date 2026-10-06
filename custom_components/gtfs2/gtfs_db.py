@@ -170,8 +170,9 @@ async def get_zipfiles(hass: HomeAssistant, path: str) -> list[str]:
         f[:-4] for f in files
         if f.endswith(".zip") and not f.endswith("_temp.zip")
         and not f.endswith("_temp_out.zip")
-        # the filtered copy an import leaves while it runs
-        and not f.endswith(".import.sqlite.zip")
+        # the filtered copy an import or a refresh leaves while it runs,
+        # named after the database it builds
+        and not f.endswith(".sqlite.zip")
     )
     _LOGGER.debug(f"Zip files in folder: {zipfiles}")
     return zipfiles
