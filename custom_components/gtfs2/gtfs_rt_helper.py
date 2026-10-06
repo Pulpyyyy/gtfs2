@@ -415,6 +415,30 @@ def _read_stop_updates(self: _Coordinator, entity: Mapping[str, Any], trip_id: s
             _LOGGER.debug("Not using realtime stop data for old due-in-minutes: %s", due_in_minutes(departure_dt))
 
 
+def _boarding_stops(self: _Coordinator) -> dict[str, str]:
+    """{trip_id: stop_id} of the trips the board lists getting on at another
+    stop than the one read here: a place served from two quays, an entry
+    getting on at more stops, each run listed where the rider first gets
+    on (gtfs_helper._next_departure_lists)."""
+    departure = (getattr(self, "_data", None) or {}).get("next_departure") or {}
+    return {str(trip): str(stop) for trip, stop in zip(departure.get("next_departures_trip_id") or [],
+                                                     departure.get("next_departures_origin_stop_id") or [])
+            if trip and stop and str(stop) != self._stop_id}
+
+
+def _skips_its_boarding(self: _Coordinator, entity: Mapping[str, Any], trip_id: str,
+                        start_date: str | None, boards: Mapping[str, str]) -> None:
+    """Strike a trip the board lists getting on elsewhere when it skips that
+    stop. Read at the stop of the departure shown alone, it stayed on the
+    board until it became the departure shown (field test of 2026-10-06,
+    tram A boarding at Hopital de La Source and Universite)."""
+    stop_id = boards.get(trip_id)
+    if stop_id and any((stop.get("stop_id") or "") == stop_id and stop_relationship(stop) == SKIPPED_STOP
+                       for stop in entity["trip_update"].get("stop_time_update") or []):
+        self._rt_skipped.setdefault(trip_id, set()).add(start_date)
+        _LOGGER.debug("Trip %s skips %s, where the board gets on it, on %s", trip_id, stop_id, start_date)
+
+
 def _sort_departure_slots(departure_times: _DepartureTimes) -> None:
     ''' Sort by time, carrying each delay and trip with its own departure '''
     # the three lists are appended together (_read_stop_updates): sorting
@@ -470,6 +494,7 @@ def get_rt_route_trip_statuses(self: _Coordinator,
     # feed writes as 0; the trips it no longer lists as well
     scheduled = _scheduled_departures(self)
     followed = _followed(self, feed_entities)
+    boards = _boarding_stops(self)
     here = _timetable_here(self, followed, scheduled)
     scheduled.update(_scheduled_off_board(self, followed, scheduled, here or {}))
     # the stop_sequence each trip calls here with: the shown trip's is
@@ -505,6 +530,7 @@ def get_rt_route_trip_statuses(self: _Coordinator,
 
         _read_stop_updates(self, entity, trip_id, direction_id, start_date, departure_times, scheduled,
                            sequences.get(trip_id))
+        _skips_its_boarding(self, entity, trip_id, start_date, boards)
 
     _sort_departure_slots(departure_times)
 
@@ -515,7 +541,8 @@ def get_rt_route_trip_statuses(self: _Coordinator,
 def struck_trips(self: _Coordinator) -> dict[str, set[str | None]]:
     """{trip_id: start_date or None} of the trips the feed struck out among
     the ones this entity follows, as the last get_rt_route_trip_statuses
-    read them: cancelled, or skipping the entity's origin. The day is the
+    read them: cancelled, or skipping the entity's origin, or the stop the
+    board gets on them at (_skips_its_boarding). The day is the
     service day the feed names, None when it names none."""
     return merge_struck(getattr(self, "_rt_skipped", None),
                         getattr(self, "_rt_cancelled", None))

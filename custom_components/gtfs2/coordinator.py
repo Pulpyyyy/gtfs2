@@ -180,6 +180,15 @@ async def next_service_date_for(hass: HomeAssistant, schedule: Schedule | str | 
         return None
 
 
+def _listed_trips(coordinator: GTFSUpdateCoordinator) -> set[str]:
+    """The trips the board shows: the next departure's and the ones listed
+    behind it."""
+    departure = coordinator._data.get("next_departure") or {}
+    listed = {str(t) for t in departure.get("next_departures_trip_id") or []}
+    listed.add(str(departure.get("trip_id")))
+    return listed
+
+
 async def drop_struck_trips(coordinator: GTFSUpdateCoordinator, data: Mapping[str, Any],
                             run_static: bool) -> None:
     """Read the departures again without the trips the feed struck.
@@ -198,19 +207,31 @@ async def drop_struck_trips(coordinator: GTFSUpdateCoordinator, data: Mapping[st
     if run_static:
         coordinator._struck_cancelled, coordinator._struck_skipped = {}, {}
     coordinator._remember_struck()
-    struck = merge_struck(coordinator._struck_skipped, coordinator._struck_cancelled)
-    departure = coordinator._data.get("next_departure") or {}
-    listed = {str(t) for t in departure.get("next_departures_trip_id") or []}
-    listed.add(str(departure.get("trip_id")))
-    if struck and listed & set(struck) and coordinator._data.get("departure_rows"):
-        _LOGGER.debug("GTFS RT: the feed struck %s out of the listed trips, reading the departures again", sorted(listed & set(struck)))
+    dropped = False
+    # the board read again is matched against the feed again, at the stop
+    # of the departure now shown, and that reading can strike trips the
+    # first one did not see: struck now, not a minute later (field test of
+    # 2026-10-06, the first state of a tram A sensor). A few rounds at
+    # most, each on the feed the cycle already holds
+    for _round in range(3):
+        struck = merge_struck(coordinator._struck_skipped, coordinator._struck_cancelled)
+        hit = _listed_trips(coordinator) & set(struck)
+        if not hit or not coordinator._data.get("departure_rows"):
+            break
+        _LOGGER.debug("GTFS RT: the feed struck %s out of the listed trips, reading the departures again", sorted(hit))
+        shown = coordinator._data.get("next_departure")
         coordinator._data["next_departure"] = await coordinator.hass.async_add_executor_job(
             drop_departure_trips, coordinator.hass, coordinator._data, struck)
+        if coordinator._data["next_departure"] is shown:
+            # struck on another day than the one listed: nothing to drop
+            break
+        dropped = True
         coordinator._follow_departure(data)
         coordinator._get_next_service = await coordinator.hass.async_add_executor_job(get_next_services, coordinator)
         coordinator._remember_struck()
         coordinator._data["next_departure_realtime_attr"] = coordinator._get_next_service
         coordinator._data["next_departure_realtime_attr"][ATTR_RT_UPDATED_AT] = dt_util.utcnow()
+    if dropped:
         # the alerts were read for the departure just struck out: its trip,
         # its stop, the board behind it. Read again for the one now shown,
         # or the old departure's sentence stayed on the new one. The feed
