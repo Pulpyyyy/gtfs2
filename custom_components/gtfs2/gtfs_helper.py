@@ -187,6 +187,32 @@ def _several_stops(origin_ids: list[str], destination_ids: list[str]) -> tuple[s
     def same_place(call: str, other: str, places: list[str]) -> str:
         return "(" + " OR ".join(f"({call}.stop_id IN {p} AND {other}.stop_id IN {p})" for p in places) + ")"
 
+    # a stop ticked at both ends is a connection, got on or off at as the
+    # run allows. The first boarding and the last alighting then hold to
+    # one ride: a boarding before it counts only when nothing set the rider
+    # down since, an alighting after it only when nothing took them on
+    # again, and a ride never ends where it began (a loop back to the
+    # connection). Without one, the query is the one it always was
+    earlier_also = later_also = same_ends = ""
+    if set(origin_ids) & set(destination_ids):
+        earlier_also = f"""
+                  AND NOT {same_place("destination_stop_time", "earlier", end_places)}
+                  AND NOT EXISTS (
+                    SELECT 1 FROM stop_times set_down
+                    WHERE set_down.trip_id = trip.trip_id
+                      AND set_down.stop_sequence > earlier.stop_sequence
+                      AND set_down.stop_sequence < origin_stop_time.stop_sequence
+                      AND set_down.stop_id IN {ends} AND {_alights("set_down")})"""
+        later_also = f"""
+                  AND NOT {same_place("origin_stop_time", "later", origin_places)}
+                  AND NOT EXISTS (
+                    SELECT 1 FROM stop_times taken_on
+                    WHERE taken_on.trip_id = trip.trip_id
+                      AND taken_on.stop_sequence > destination_stop_time.stop_sequence
+                      AND taken_on.stop_sequence < later.stop_sequence
+                      AND taken_on.stop_id IN {origins} AND {_boards("taken_on")})"""
+        same_ends = f"""
+              AND NOT {same_place("origin_stop_time", "destination_stop_time", origin_places)}"""
     ride = f"""AND NOT EXISTS (
                 SELECT 1 FROM stop_times between_stop
                 WHERE between_stop.trip_id = trip.trip_id
@@ -201,14 +227,14 @@ def _several_stops(origin_ids: list[str], destination_ids: list[str]) -> tuple[s
                   AND earlier.stop_sequence < origin_stop_time.stop_sequence
                   AND earlier.stop_id IN {origins}
                   AND NOT {same_place("origin_stop_time", "earlier", origin_places)}
-                  AND {_boards("earlier")})
+                  AND {_boards("earlier")}{earlier_also})
               AND NOT EXISTS (
                 SELECT 1 FROM stop_times later
                 WHERE later.trip_id = trip.trip_id
                   AND later.stop_sequence > destination_stop_time.stop_sequence
                   AND later.stop_id IN {ends}
                   AND NOT {same_place("destination_stop_time", "later", end_places)}
-                  AND {_alights("later")})"""
+                  AND {_alights("later")}{later_also}){same_ends}"""
     return ("AND origin_stop_time.stop_id IN " + origins,
             "AND destination_stop_time.stop_id IN " + ends, ride, params)
 
@@ -242,7 +268,33 @@ def _departure_candidates(route_type: str, origin: str, destination: str,
         # Les Aubrais rode the pair twice, one row a station. It is read
         # where the rider first gets on and last gets off, at the time it
         # leaves the first. One station at each end reads as it always did
-        shortest_ride_where = ""
+        shortest_ride_where = earlier_also = later_also = ""
+        if set(origin_names) & set(destination_names):
+            # a station at both ends is a connection: held to one ride, as
+            # a bus entry's stops are (_several_stops)
+            earlier_also = f"""
+                  AND earlier.stop_id not in (select stop_id from stops where stop_name =
+                      (select stop_name from stops where stop_id = destination_stop_time.stop_id))
+                  AND NOT EXISTS (
+                    SELECT 1 FROM stop_times set_down
+                    WHERE set_down.trip_id = trip.trip_id
+                      AND set_down.stop_sequence > earlier.stop_sequence
+                      AND set_down.stop_sequence < origin_stop_time.stop_sequence
+                      AND set_down.stop_id in (select stop_id from stops where stop_name IN {dest_in})
+                      AND {_alights("set_down")})"""
+            later_also = f"""
+                  AND later.stop_id not in (select stop_id from stops where stop_name =
+                      (select stop_name from stops where stop_id = origin_stop_time.stop_id))
+                  AND NOT EXISTS (
+                    SELECT 1 FROM stop_times taken_on
+                    WHERE taken_on.trip_id = trip.trip_id
+                      AND taken_on.stop_sequence > destination_stop_time.stop_sequence
+                      AND taken_on.stop_sequence < later.stop_sequence
+                      AND taken_on.stop_id in (select stop_id from stops where stop_name IN {origin_in})
+                      AND {_boards("taken_on")})"""
+            shortest_ride_where += """
+              AND (select stop_name from stops where stop_id = origin_stop_time.stop_id)
+                  <> (select stop_name from stops where stop_id = destination_stop_time.stop_id)"""
         if len(set(origin_names)) > 1:
             shortest_ride_where += f"""
               AND NOT EXISTS (
@@ -250,7 +302,7 @@ def _departure_candidates(route_type: str, origin: str, destination: str,
                 WHERE earlier.trip_id = trip.trip_id
                   AND earlier.stop_sequence < origin_stop_time.stop_sequence
                   AND earlier.stop_id in (select stop_id from stops where stop_name IN {origin_in})
-                  AND {_boards("earlier")})"""
+                  AND {_boards("earlier")}{earlier_also})"""
         if len(set(destination_names)) > 1:
             shortest_ride_where += f"""
               AND NOT EXISTS (
@@ -258,7 +310,7 @@ def _departure_candidates(route_type: str, origin: str, destination: str,
                 WHERE later.trip_id = trip.trip_id
                   AND later.stop_sequence > destination_stop_time.stop_sequence
                   AND later.stop_id in (select stop_id from stops where stop_name IN {dest_in})
-                  AND {_alights("later")})"""
+                  AND {_alights("later")}{later_also})"""
         # the train flow does not ask for a direction, and it stores the
         # picked lines' codes instead of a route id: the departures hold to
         # those lines, so stations shared by several lines do not mix theirs

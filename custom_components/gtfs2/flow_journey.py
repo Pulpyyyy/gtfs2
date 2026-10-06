@@ -101,19 +101,17 @@ def stop_fields(data: Mapping[str, Any], board: list[str], alight: list[str],
 
 
 def kept_stops(data: Mapping[str, Any], board: list[str], alight: list[str],
-               board_also: list[str], alight_also: list[str]) -> tuple[str | None, dict[str, Any]]:
-    """(error, the entry's new data) of a bus or tram journey's options: its
-    stops of each end, as the creation keeps them (async_step_options_stops);
+               board_also: list[str], alight_also: list[str]) -> dict[str, Any]:
+    """The entry's new data of a bus or tram journey's options: its stops
+    of each end, as the creation keeps them (async_step_options_stops);
     none ticked, the entry goes back to the shape it had before."""
     board_also = [s for s in board_also if s in board]
     alight_also = [s for s in alight_also if s in alight]
-    if {id_of(s) for s in board_also} & {id_of(s) for s in alight_also}:
-        return "station_both_ends", {}
     new = {k: v for k, v in data.items() if k not in (CONF_ORIGIN_STATIONS, CONF_DESTINATION_STATIONS)}
     if board_also or alight_also:
         new.update({CONF_ORIGIN_STATIONS: [data[CONF_ORIGIN], *board_also],
                     CONF_DESTINATION_STATIONS: [data[CONF_DESTINATION], *alight_also]})
-    return None, new
+    return new
 
 
 class JourneyScreens:
@@ -334,8 +332,6 @@ class JourneyScreens:
             return _show({})
         board_also = [s for s in user_input.get("board_also") or [] if s in board]
         alight_also = [s for s in user_input.get("alight_also") or [] if s in alight]
-        if {id_of(s) for s in board_also} & {id_of(s) for s in alight_also}:
-            return _show({"base": "station_both_ends"}, user_input)
         if board_also or alight_also:
             self._user_inputs.update({CONF_ORIGIN_STATIONS: [origin, *board_also],
                                       CONF_DESTINATION_STATIONS: [destination, *alight_also]})

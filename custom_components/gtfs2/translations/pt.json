@@ -240,7 +240,7 @@
         },
         "data_description": {
           "board_also": "Estações no caminho onde também pode embarcar. Cada comboio aparece uma só vez, à hora da primeira destas estações onde aceita passageiros.",
-          "alight_also": "Estações no caminho onde também pode desembarcar. Um comboio que termina aí, antes da sua estação de chegada, é mantido.",
+          "alight_also": "Estações no caminho onde também pode desembarcar. Um comboio que termina aí, antes da sua estação de chegada, é mantido. Uma estação marcada nas duas listas é uma correspondência: embarca ou desembarca aí, conforme o comboio.",
           "lines": "Um sensor por linha marcada. Desmarque as linhas que não apanha."
         }
       },
@@ -253,7 +253,7 @@
         },
         "data_description": {
           "board_also": "Paragens no caminho onde também pode embarcar. Cada autocarro aparece uma só vez, à hora da primeira destas paragens onde aceita passageiros.",
-          "alight_also": "Paragens no caminho onde também pode desembarcar. Um autocarro que termina aí, antes da sua paragem, é mantido."
+          "alight_also": "Paragens no caminho onde também pode desembarcar. Um autocarro que termina aí, antes da sua paragem, é mantido. Uma paragem marcada nas duas listas é uma correspondência: embarca ou desembarca aí, conforme o autocarro."
         }
       },
       "sensors_train": {
@@ -367,7 +367,6 @@
       "not_created": "Não foi possível criar o sensor. Consulte o registo e tente outro nome.",
       "reload_failed": "Não foi possível repor essa linha. A fonte não foi alterada; escolha outra linha ou tente novamente.",
       "import_partial": "Não foi possível repor algumas linhas: {missing}. O registo indica o motivo. Esta foi reposta, pode continuar; volte a escolher as outras mais tarde para tentar novamente.",
-      "station_both_ends": "Uma mesma estação ou paragem não pode estar ao mesmo tempo em «Embarcar também em» e em «Desembarcar também em».",
       "no_line_ticked": "Marque pelo menos uma linha: cada linha marcada tem o seu próprio sensor.",
       "no_train_between": "Nenhum comboio liga estas estações nas linhas marcadas: desmarque linhas ou marque outras estações."
     },
@@ -418,7 +417,7 @@
           "check_source_dates": "Experimental: recusar um ficheiro novo cujas datas estejam todas no futuro.",
           "source_timezone_correction": "Só se a fonte publicar as horas noutro fuso, em horas.",
           "board_also": "Estações ou paragens no caminho onde também pode embarcar. Cada serviço aparece uma só vez, à hora da primeira delas onde aceita passageiros.",
-          "alight_also": "Estações ou paragens no caminho onde também pode desembarcar. Um serviço que termina aí, antes da sua chegada, é mantido."
+          "alight_also": "Estações ou paragens no caminho onde também pode desembarcar. Um serviço que termina aí, antes da sua chegada, é mantido. Uma estação ou paragem marcada nas duas listas é uma correspondência: embarca ou desembarca aí, conforme o serviço."
         }
       },
       "real_time": {
@@ -497,7 +496,6 @@
     },
     "error": {
       "invalid_source_url": "Este endereço não é válido (http://, https:// ou file://)",
-      "station_both_ends": "Uma mesma estação ou paragem não pode estar ao mesmo tempo em «Embarcar também em» e em «Desembarcar também em».",
       "no_train_between": "Nenhum comboio desta viagem liga estas estações: marque outras estações."
     }
   },

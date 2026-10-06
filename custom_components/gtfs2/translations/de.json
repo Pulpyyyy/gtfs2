@@ -240,7 +240,7 @@
         },
         "data_description": {
           "board_also": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls einsteigen können. Jeder Zug erscheint nur einmal, zur Zeit des ersten dieser Bahnhöfe, in dem er Fahrgäste aufnimmt.",
-          "alight_also": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls aussteigen können. Ein Zug, der dort vor Ihrem Zielbahnhof endet, wird behalten.",
+          "alight_also": "Bahnhöfe auf dem Weg, in denen Sie ebenfalls aussteigen können. Ein Zug, der dort vor Ihrem Zielbahnhof endet, wird behalten. Ein in beiden Listen angekreuzter Bahnhof ist ein Umstieg: Sie steigen dort ein oder aus, je nach Zug.",
           "lines": "Ein Sensor pro angehakter Linie. Entfernen Sie die Linien, die Sie nicht nehmen."
         }
       },
@@ -253,7 +253,7 @@
         },
         "data_description": {
           "board_also": "Haltestellen auf dem Weg, an denen Sie ebenfalls einsteigen können. Jeder Bus erscheint nur einmal, zur Zeit der ersten dieser Haltestellen, an der er Fahrgäste aufnimmt.",
-          "alight_also": "Haltestellen auf dem Weg, an denen Sie ebenfalls aussteigen können. Ein Bus, der dort vor Ihrer Haltestelle endet, wird behalten."
+          "alight_also": "Haltestellen auf dem Weg, an denen Sie ebenfalls aussteigen können. Ein Bus, der dort vor Ihrer Haltestelle endet, wird behalten. Eine in beiden Listen angekreuzte Haltestelle ist ein Umstieg: Sie steigen dort ein oder aus, je nach Bus."
         }
       },
       "sensors_train": {
@@ -367,7 +367,6 @@
       "not_created": "Der Sensor konnte nicht erstellt werden. Prüfen Sie das Protokoll und versuchen Sie einen anderen Namen.",
       "reload_failed": "Diese Linie konnte nicht wiederhergestellt werden. Die Quelle blieb unverändert; wählen Sie eine andere Linie oder versuchen Sie es erneut.",
       "import_partial": "Einige Linien konnten nicht wiederhergestellt werden: {missing}. Das Protokoll nennt den Grund. Diese Linie wurde wiederhergestellt, Sie können fortfahren; wählen Sie die anderen später erneut, um es noch einmal zu versuchen.",
-      "station_both_ends": "Ein Bahnhof oder eine Haltestelle kann nicht zugleich unter „Auch einsteigen in“ und unter „Auch aussteigen in“ stehen.",
       "no_line_ticked": "Haken Sie mindestens eine Linie an: jede angehakte Linie erhält einen eigenen Sensor.",
       "no_train_between": "Kein Zug verbindet diese Bahnhöfe auf den angehakten Linien: entfernen Sie Linien oder haken Sie andere Bahnhöfe an."
     },
@@ -418,7 +417,7 @@
           "source_timezone_correction": "Nur wenn die Quelle ihre Zeiten in einer anderen Zeitzone angibt, in Stunden.",
           "check_source_dates": "Experimentell: eine neue Datei ablehnen, deren Daten alle in der Zukunft liegen.",
           "board_also": "Bahnhöfe oder Haltestellen auf dem Weg, an denen Sie ebenfalls einsteigen können. Jede Fahrt erscheint nur einmal, zur Zeit der ersten davon, an der sie Fahrgäste aufnimmt.",
-          "alight_also": "Bahnhöfe oder Haltestellen auf dem Weg, an denen Sie ebenfalls aussteigen können. Eine Fahrt, die dort vor Ihrem Ziel endet, wird behalten."
+          "alight_also": "Bahnhöfe oder Haltestellen auf dem Weg, an denen Sie ebenfalls aussteigen können. Eine Fahrt, die dort vor Ihrem Ziel endet, wird behalten. Ein Bahnhof oder eine Haltestelle, in beiden Listen angekreuzt, ist ein Umstieg: Sie steigen dort ein oder aus, je nach Fahrt."
         }
       },
       "real_time": {
@@ -497,7 +496,6 @@
     },
     "error": {
       "invalid_source_url": "Diese Adresse ist nicht gültig (http://, https:// oder file://)",
-      "station_both_ends": "Ein Bahnhof oder eine Haltestelle kann nicht zugleich unter „Auch einsteigen in“ und unter „Auch aussteigen in“ stehen.",
       "no_train_between": "Kein Zug dieser Fahrt verbindet diese Bahnhöfe: haken Sie andere Bahnhöfe an."
     }
   },

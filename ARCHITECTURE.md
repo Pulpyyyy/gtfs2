@@ -564,6 +564,9 @@ and the code of its line (`line`, `lines`): the train screens make one
 entry per line ticked. Either may get on or off at more stops or stations
 (`origin_stations`, `destination_stations`), picked at creation or in its
 options; each run is then read where it is first got on and last got off.
+A stop or station at both ends is a connection, got on or off at as each
+run allows, a run coming back to it never read as a ride to itself
+(`_several_stops`).
 
 **Local stops entry.** Gets a `GTFSLocalStopUpdateCoordinator` and one sensor
 per stop around the person or zone.

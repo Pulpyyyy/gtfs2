@@ -68,7 +68,8 @@ Station A → Station B    a train
 
 Each end can hold more than one stop or station, ticked under "Also board
 at" and "Also get off at": each run is then listed once, where the rider
-first gets on.
+first gets on. A stop ticked under both is a connection: the rider gets on
+or off there, as each run allows.
 
 A train journey is set up from its two stations first, then its lines:
 each line ticked becomes a journey of its own.

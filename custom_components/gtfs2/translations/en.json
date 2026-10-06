@@ -240,7 +240,7 @@
         },
         "data_description": {
           "board_also": "Stations on the way where you can board as well. Each train shows once, at the time of the first of these stations where it takes passengers.",
-          "alight_also": "Stations on the way where you can get off as well. A train that ends there, short of your arrival station, is kept.",
+          "alight_also": "Stations on the way where you can get off as well. A train that ends there, short of your arrival station, is kept. A station ticked in both lists is a connection: you get on or off there, as each train allows.",
           "lines": "One sensor per line ticked. Untick the lines you do not take."
         }
       },
@@ -253,7 +253,7 @@
         },
         "data_description": {
           "board_also": "Stops on the way where you can get on as well. Each bus shows once, at the time of the first of these stops where it takes passengers.",
-          "alight_also": "Stops on the way where you can get off as well. A bus that ends there, short of your stop, is kept."
+          "alight_also": "Stops on the way where you can get off as well. A bus that ends there, short of your stop, is kept. A stop ticked in both lists is a connection: you get on or off there, as each bus allows."
         }
       },
       "sensors_train": {
@@ -367,7 +367,6 @@
       "not_created": "The sensor could not be created. Check the log, then try a different name.",
       "reload_failed": "That line could not be brought back. The datasource was left untouched; pick another line, or try again.",
       "import_partial": "Some lines could not be brought back: {missing}. The log says why. This one was, so you can carry on; pick the others again later to try once more.",
-      "station_both_ends": "A station or stop cannot be both under “Also board at” and under “Also get off at”.",
       "no_line_ticked": "Tick at least one line: each line ticked gets a sensor of its own.",
       "no_train_between": "No train links these stations on the lines ticked: untick some lines, or tick other stations."
     },
@@ -418,7 +417,7 @@
           "source_timezone_correction": "Only if the source publishes times in another timezone, in hours.",
           "check_source_dates": "Experimental: refuse a new file whose dates are all in the future.",
           "board_also": "Stations or stops on the way where you can board as well. Each run shows once, at the time of the first of these where it takes passengers.",
-          "alight_also": "Stations or stops on the way where you can get off as well. A run that ends there, short of your arrival, is kept."
+          "alight_also": "Stations or stops on the way where you can get off as well. A run that ends there, short of your arrival, is kept. A station or stop ticked in both lists is a connection: you get on or off there, as each run allows."
         }
       },
       "source_menu": {
@@ -497,7 +496,6 @@
     },
     "error": {
       "invalid_source_url": "This is not a valid address (http://, https:// or file://)",
-      "station_both_ends": "A station or stop cannot be both under “Also board at” and under “Also get off at”.",
       "no_train_between": "No train of this journey links these stations: tick other stations."
     }
   },

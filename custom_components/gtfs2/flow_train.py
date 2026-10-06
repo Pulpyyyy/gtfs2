@@ -122,8 +122,6 @@ def kept_train_stations(schedule: Schedule, data: Mapping[str, Any], board_also:
     """(error, the entry's stations) of a train entry's options screen:
     the stations of each end its line serves, of those ticked, as the
     creation keeps them (train_line_ends). Blocking, for the executor."""
-    if set(board_also) & set(alight_also):
-        return "station_both_ends", {}
     origins = [str(data.get(CONF_ORIGIN) or ""), *board_also]
     destinations = [str(data.get(CONF_DESTINATION) or ""), *alight_also]
     ons, offs = train_line_ends(schedule, origins, destinations, entry_lines(data) or None)
@@ -423,8 +421,6 @@ class TrainScreens:
         alight_also = [s for s in user_input.get("alight_also") or [] if s in between]
         chosen = [line for line in user_input.get("lines") or [] if line in lines]
         origins, destinations = [origin, *board_also], [destination, *alight_also]
-        if set(board_also) & set(alight_also):
-            return _show({"base": "station_both_ends"}, user_input)
         if lines and not chosen:
             # a line the feed gives no code offers none, and holds to none
             return _show({"base": "no_line_ticked"}, user_input)

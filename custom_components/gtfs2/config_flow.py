@@ -681,12 +681,13 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
         """Keep on the entry the stations or stops ticked, the error that
         refuses them else. The entry's own data: the coordinator reads it
         at every refresh."""
+        error: str | None = None
         if data.get(CONF_ROUTE_TYPE) == "2":
             error, stations = await self.hass.async_add_executor_job(
                 kept_train_stations, self._pygtfs, data, board_also, alight_also)
             new = {**data, **stations}
         else:
-            error, new = kept_stops(data, board, alight, board_also, alight_also)
+            new = kept_stops(data, board, alight, board_also, alight_also)
         if not error and new != dict(data):
             self.hass.config_entries.async_update_entry(self.config_entry, data=new)
         return error
