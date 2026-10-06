@@ -88,6 +88,10 @@
       'origin_stop_id',
       'origin_stop_id'
     ],
+    'next_departures_destination_stop_id': [
+      'dest_stop_id',
+      'dest_stop_id'
+    ],
     'next_departures_route_types': [
       None,
       None

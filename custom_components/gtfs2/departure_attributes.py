@@ -228,6 +228,9 @@ _FORK_DEPARTURE_LISTS = (
     # the stop each next departure leaves from: a place can be served
     # from two of its records in turn (a terminus's quays)
     "next_departures_origin_stop_id",
+    # the stop each one sets the rider down at: a run may end at a stop
+    # the journey gets off at as well, short of its destination
+    "next_departures_destination_stop_id",
     # next departures route types: a rail line may list a coach
     "next_departures_route_types",
 )

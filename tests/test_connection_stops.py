@@ -15,6 +15,8 @@ The same calls are played by a bus (stops) and a train (stations).
 """
 from __future__ import annotations
 
+import datetime
+
 from freezegun import freeze_time
 import pytest
 
@@ -102,3 +104,18 @@ def test_without_a_connection_the_ends_read_as_they_did(bus, train):
     without_t3 = [ride for ride in EXPECTED if ride[0] != "T3"]
     assert _rides(bus, "3", bus_data) == without_t3
     assert _rides(train, "2", train_data) == without_t3
+
+
+def test_each_run_says_where_it_sets_the_rider_down(bus):
+    # the sensor's list beside next_departures: a card tells T3, which
+    # ends at the connection, from the runs reaching the destination
+    a, c, d = "A: Stop A", "C: Stop C", "D: Stop D"
+    data = {"route": "L: L", "route_type": "3", "origin": a, "destination": d,
+            "origin_stations": [a, c], "destination_stations": [d, c]}
+    with freeze_time(f"{DAY} 00:00:00"):
+        rows, _start = gtfs_helper._fetch_departure_rows(
+            "3", a, d, bus, window=(DAY, DAY), **gtfs_helper.departure_query_args(data))
+    at = datetime.datetime(2026, 10, 5, tzinfo=datetime.timezone.utc)
+    lists = gtfs_helper._next_departure_lists([(at, row) for row in rows], datetime.timezone.utc)
+    assert lists["next_departures_origin_stop_id"] == ["A", "C", "A", "C"]
+    assert lists["next_departures_destination_stop_id"] == ["D", "D", "C", "D"]

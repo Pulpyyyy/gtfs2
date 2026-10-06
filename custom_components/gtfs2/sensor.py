@@ -248,6 +248,7 @@ class GTFSDepartureSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
         "next_departures", "next_departures_lines", "next_departures_headsign",
         "next_departures_trips", "next_departures_durations",
         "next_departures_destination_arrival_times", "next_departures_origin_stop_id",
+        "next_departures_destination_stop_id",
         "next_departures_route_types", "next_departures_realtime",
         "next_delays_realtime", "origin_stop_alerts", "destination_stop_alerts",
         ATTR_INFO, ATTR_INFO_RT,

@@ -618,7 +618,7 @@ def _next_departure_lists(upcoming: list[tuple[datetime.datetime, dict[str, Any]
         "next_departures", "next_departures_lines", "next_departures_headsign",
         "next_departures_trip_id", "next_departures_destination_arrival_times",
         "next_departures_durations", "next_departures_origin_stop_id",
-        "next_departures_route_types")}
+        "next_departures_destination_stop_id", "next_departures_route_types")}
     for departure, value in upcoming:
         # dest_arrival_dt is already the correct instant - no rollover guessing needed
         arrival = _row_instant(value["dest_arrival_dt"], timezone_dest)
@@ -639,6 +639,9 @@ def _next_departure_lists(upcoming: list[tuple[datetime.datetime, dict[str, Any]
         lists["next_departures_durations"].append(round((arrival - departure).total_seconds() / 60))
         # the record it leaves from: a place may be served from either
         lists["next_departures_origin_stop_id"].append(str(value.get("origin_stop_id")))
+        # and the one it sets the rider down at: a journey getting off at
+        # more stops than its destination has runs ending short of it
+        lists["next_departures_destination_stop_id"].append(str(value.get("dest_stop_id")))
         # a train line may list a coach among its departures: each one
         # says what rides it, so a card can draw a bus for that one
         lists["next_departures_route_types"].append(

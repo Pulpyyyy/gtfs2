@@ -52,6 +52,9 @@
                     'next_departures_destination_arrival_times': ['2026-09-03T13:36:00+00:00'],
                     'next_departures_durations': [22],
                     'next_departures_origin_stop_id': ['origin_stop_id'],
+                    'next_departures_destination_stop_id': [
+'dest_stop_id'
+                    ],
                     'next_departures_route_types': [None]},
  'next_departure_realtime_attr': {'Next Services RT': [datetime.datetime(2026, 9, 3, 13, 14, 15, tzinfo=datetime.timezone.utc)],
                                   'Next Services RT Delays': [15],
