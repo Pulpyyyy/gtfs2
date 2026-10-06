@@ -24,6 +24,7 @@ import os
 
 import pytest
 from freezegun import freeze_time
+from sqlalchemy import text
 
 import feed_db
 import ha_stub
@@ -246,6 +247,28 @@ def test_a_refreshed_source_reads_its_trains_again_only_when_read_before(schedul
     os.utime(zip_path, ns=(2, 2))
     assert stations.refresh_rail_index(str(zip_path)) is True
     assert stations._index_stamp(str(zip_path) + ".rail") == stations._zip_stamp(str(zip_path))
+
+
+def test_the_index_keeps_trips_by_number(schedule, tmp_path, monkeypatch):
+    # a national feed's trip ids, a hundred characters on every call and
+    # in their index, made the file 172 MB beside a 5.6 MB zip (SNCF): the
+    # calls join their trip by a number, the answers are the same
+    zip_path = tmp_path / "feed.zip"
+    zip_path.write_bytes(open(str(schedule.engine.url.database).replace("feed.sqlite", "feed.zip"), "rb").read())
+    index = stations.rail_index(str(zip_path))
+    assert stations.get_train_stations_between(index, O, P) == [A]
+    with index.engine.connect() as conn:
+        kinds = {row[0] for row in conn.execute(text(
+            "select typeof(trip_id) from stop_times union select typeof(trip_id) from trips"))}
+    index.engine.dispose()
+    assert kinds == {"integer"}
+    # an index of the layout before is read again, not opened as it is
+    built = []
+    read = stations._read_rail_tables
+    monkeypatch.setattr(stations, "_read_rail_tables", lambda path: built.append(path) or read(path))
+    monkeypatch.setattr(stations, "RAIL_INDEX_LAYOUT", stations.RAIL_INDEX_LAYOUT + 1)
+    stations.rail_index(str(zip_path)).engine.dispose()
+    assert len(built) == 1
 
 
 def test_the_kept_index_is_not_a_source(tmp_path):

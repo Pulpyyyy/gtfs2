@@ -141,13 +141,19 @@ def _keep_rail_index(zip_path: str, tables: Mapping[str, list[tuple[Any, ...]]],
     return True
 
 
+# the layout an index is written in, said in its stamp: an index of another
+# layout is read again (2: trips by number)
+RAIL_INDEX_LAYOUT = 2
+
+
 def _zip_stamp(zip_path: str) -> str | None:
-    """What says a zip is the edition an index was read from."""
+    """What says a zip is the edition an index was read from, in the
+    layout this code writes."""
     try:
         stat = os.stat(zip_path)
     except OSError:
         return None
-    return f"{stat.st_size}:{stat.st_mtime_ns}"
+    return f"{RAIL_INDEX_LAYOUT}:{stat.st_size}:{stat.st_mtime_ns}"
 
 
 def _index_stamp(path: str) -> str | None:
@@ -228,15 +234,22 @@ def _write_rail_index(raw: Any, tables: Mapping[str, list[tuple[Any, ...]]], sta
         cur.executescript("""
             create table routes (route_id text, route_short_name text, route_long_name text,
                                  route_type integer);
-            create table trips (trip_id text, route_id text);
-            create table stop_times (trip_id text, stop_id text, stop_sequence integer,
+            create table trips (trip_id integer, route_id text);
+            create table stop_times (trip_id integer, stop_id text, stop_sequence integer,
                                      pickup_type integer, drop_off_type integer);
             create table stops (stop_id text, stop_name text);
             create table rail_index (stamp text);
         """)
         cur.executemany("insert into routes values (?, ?, ?, ?)", tables["routes"])
-        cur.executemany("insert into trips values (?, ?)", tables["trips"])
-        cur.executemany("insert into stop_times values (?, ?, ?, ?, ?)", tables["stop_times"])
+        # a trip by a number of its own: no question reads its id, which
+        # only joins a call to its trip, and a national feed's run to a
+        # hundred characters (SNCF), written on every call and in their
+        # index: 172 MB beside a 5.6 MB zip, copied into memory by each flow
+        number = {trip: n for n, trip in enumerate(dict.fromkeys(t[0] for t in tables["trips"]))}
+        cur.executemany("insert into trips values (?, ?)",
+                        ((number[trip], route) for trip, route in tables["trips"]))
+        cur.executemany("insert into stop_times values (?, ?, ?, ?, ?)",
+                        ((number[call[0]], *call[1:]) for call in tables["stop_times"]))
         cur.executemany("insert into stops values (?, ?)", tables["stops"])
         cur.executescript("""
             create index rail_trips_route on trips (route_id);
