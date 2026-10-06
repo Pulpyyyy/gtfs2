@@ -641,7 +641,8 @@ def write_json_if_changed(file: str, doc: object, stable: object) -> bool:
     hand gets everything back at the next refresh.
     """
     digest = hashlib.sha1(
-        json.dumps(stable, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+        json.dumps(stable, sort_keys=True, default=str).encode("utf-8"),
+        usedforsecurity=False).hexdigest()
     if _WRITTEN.get(file) == digest and os.path.exists(file):
         _LOGGER.debug("Unchanged since the last write, left alone: %s", file)
         return False
@@ -664,7 +665,7 @@ def entry_file_part(name: object) -> str:
     plain = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode()
     part = re.sub(r"_+", "_", safe_file_part(plain).replace("-", "_")).strip("_")
     if not part:
-        part = hashlib.sha1(str(name).encode("utf-8")).hexdigest()[:8]
+        part = hashlib.sha1(str(name).encode("utf-8"), usedforsecurity=False).hexdigest()[:8]
     return part
 
 
