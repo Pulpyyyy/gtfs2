@@ -728,8 +728,9 @@ realtime       trip updates only, matched by trip, from the download the
                read, since the entry speaks for no line
 ```
 
-At setup the flow refuses more stops than the entry's own limit
-(`max_local_stops`, 15 by default; fb4af02). A realtime feed that fails
+The options screen refuses to save a radius that holds more stops than
+the entry's own limit (`max_local_stops`, 15 by default; fb4af02);
+the setup screen, which takes the default radius, does not count them. A realtime feed that fails
 leaves the timetable standing, without delays (e35fe88). An entry set up
 while its source is still unpacking has no stops to create yet: its
 platform answers "not ready" and Home Assistant retries it. The retry
