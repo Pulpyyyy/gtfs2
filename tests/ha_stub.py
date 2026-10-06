@@ -222,6 +222,14 @@ def _module(name: str, **attrs) -> types.ModuleType:
 SENT_SIGNALS: list[tuple[str, tuple]] = []
 
 
+def _callback(fn):
+    """Marks fn as Home Assistant's own decorator does (core.callback): what
+    is neither a coroutine nor marked so, the dispatcher runs in a worker
+    thread, away from the loop."""
+    fn._hass_callback = True
+    return fn
+
+
 def _dispatcher_send(hass, signal, *args) -> None:
     SENT_SIGNALS.append((signal, args))
 
@@ -1015,7 +1023,7 @@ def install() -> None:
             create=_Unreached("persistent_notification.create"))
     _module("homeassistant.core", HomeAssistant=object, ServiceCall=object,
             SupportsResponse=_Unreached("SupportsResponse"),
-            callback=lambda fn: fn)
+            callback=_callback)
     _module("homeassistant.config_entries", ConfigEntry=object,
             ConfigEntries=object, SOURCE_IMPORT="import")
     _module("homeassistant.exceptions", HomeAssistantError=Exception,

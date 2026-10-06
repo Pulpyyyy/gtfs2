@@ -18,6 +18,7 @@ again, or the source removed, takes that back.
 from __future__ import annotations
 
 import asyncio
+import functools
 import sqlite3
 import types
 
@@ -64,12 +65,17 @@ class _Hass:
             async_unload_platforms=unload)
 
     def async_create_background_task(self, coro, name):
-        # the walk itself is rt_source's to test: only its start is heard
+        # the walk itself is rt_source's to test: only its start is heard.
+        # A coroutine, as Home Assistant's task takes nothing else
+        assert asyncio.iscoroutine(coro), coro
         coro.close()
         self.tasks.append(name)
 
-    async def async_add_executor_job(self, fn, *args):
-        return fn(*args)
+    def async_add_executor_job(self, fn, *args):
+        # Home Assistant's answers a future, which no task takes
+        future = asyncio.get_running_loop().create_future()
+        future.set_result(fn(*args))
+        return future
 
 
 def _quiet_setup(monkeypatch):
@@ -119,6 +125,14 @@ def test_a_refreshed_source_reads_its_trains_again_in_the_background(monkeypatch
     entry = _Entry("d1", file="tao", kind="datasource")
     asyncio.run(integration.async_setup_entry(hass, entry))
     (told,) = ha_stub.CONNECTED_SIGNALS[integration.SIGNAL_SOURCE_REFRESH.format("tao")]
+    # run on the loop: the dispatcher runs a target that is neither a
+    # coroutine nor a callback in a worker thread, through partials
+    # (core.get_hassjob_callable_job_type), where the callback found no
+    # loop and the index was never read again (field test of 2026-10-06)
+    target = told
+    while isinstance(target, functools.partial):
+        target = target.func
+    assert getattr(target, "_hass_callback", False)
     tasks = len(hass.tasks)
 
     async def refresh_running():
