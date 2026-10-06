@@ -398,8 +398,6 @@
           "local_stop_refresh_interval": "Datenaktualisierungsintervall (in Minuten)",
           "timerange": "Prüfung auf zukünftige Abfahrten ab ‚jetzt‘ (in Minuten: zwischen 15 und 120)",
           "radius": "Radius für die Suche nach Haltestellen (in Metern zwischen 50 und 5000)",
-          "source_timezone_correction": "Zeitzone der Quelle korrigieren (in Stunden)",
-          "check_source_dates": "Experimentell: eine neue Datei ohne aktuelle Daten ablehnen",
           "also_at": "Auch ein- oder aussteigen in"
         },
         "data_description": {
@@ -409,8 +407,6 @@
           "timerange": "Wie weit voraus nach Abfahrten gesucht wird, in Minuten.",
           "radius": "Suchradius für Haltestellen um die Person oder Zone, in Metern.",
           "max_local_stops": "Ab dieser Anzahl Haltestellen wird der Sensor langsam. Erhöhung auf eigenes Risiko.",
-          "source_timezone_correction": "Nur wenn die Quelle ihre Zeiten in einer anderen Zeitzone angibt, in Stunden.",
-          "check_source_dates": "Experimentell: eine neue Datei ablehnen, deren Daten alle in der Zukunft liegen.",
           "also_at": "Bahnhöfe oder Haltestellen auf dem Weg, an denen Sie ebenfalls ein- oder aussteigen können: eine nahe, ein Umstieg. Jede Fahrt erscheint nur einmal, von der ersten, an der man einsteigen kann, bis zur letzten, an der man aussteigen kann; eine Fahrt, die dort vor Ihrem Ziel endet, wird behalten und zeigt es an."
         }
       },

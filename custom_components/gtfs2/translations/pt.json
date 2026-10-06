@@ -397,9 +397,7 @@
           "max_local_stops": "Limite #stops para evitar possíveis impactos no desempenho. \nAumente por sua conta e risco",
           "local_stop_refresh_interval": "Intervalo de atualização de dados (em minutos)",
           "timerange": "Verificação de partidas no futuro a partir de 'agora' (em minutos: entre 15 e 120)",
-          "check_source_dates": "experimental: evitar usar uma nova zip/fonte contendo informações desatualizadas",
           "radius": "Raio para procurar paragens (em metros entre 50 e 5000)",
-          "source_timezone_correction": "Corrigir o fuso horário da fonte (em horas)",
           "also_at": "Embarcar ou desembarcar também em"
         },
         "data_description": {
@@ -409,8 +407,6 @@
           "timerange": "Até onde procurar as próximas partidas, em minutos.",
           "radius": "Distância de procura de paragens em redor da pessoa ou zona, em metros.",
           "max_local_stops": "Acima deste número de paragens o sensor fica lento. Aumente por sua conta e risco.",
-          "check_source_dates": "Experimental: recusar um ficheiro novo cujas datas estejam todas no futuro.",
-          "source_timezone_correction": "Só se a fonte publicar as horas noutro fuso, em horas.",
           "also_at": "Estações ou paragens no caminho onde também pode embarcar ou desembarcar: uma próxima, uma correspondência. Cada serviço aparece uma só vez, da primeira onde se pode embarcar à última onde se pode desembarcar; um serviço que termina numa delas, antes da sua chegada, é mantido e indica-o."
         }
       },

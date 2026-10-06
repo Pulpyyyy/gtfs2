@@ -398,8 +398,6 @@
           "local_stop_refresh_interval": "Intervalo de actualización de datos (en minutos)",
           "timerange": "Comprobación de salidas en el futuro a partir de 'ahora' (en minutos: entre 15 y 120)",
           "radius": "Radio de búsqueda de paradas (en metros entre 50 y 5000)",
-          "source_timezone_correction": "Corregir el huso horario de la fuente (en horas)",
-          "check_source_dates": "Experimental: rechazar un archivo nuevo sin datos actuales",
           "also_at": "Subir o bajar también en"
         },
         "data_description": {
@@ -409,8 +407,6 @@
           "timerange": "Hasta dónde buscar las próximas salidas, en minutos.",
           "radius": "Distancia de búsqueda de paradas alrededor de la persona o zona, en metros.",
           "max_local_stops": "Por encima de este número de paradas el sensor se vuelve lento. Auméntelo bajo su responsabilidad.",
-          "source_timezone_correction": "Solo si la fuente publica sus horas en otro huso, en horas.",
-          "check_source_dates": "Experimental: rechazar un archivo nuevo cuyas fechas estén todas en el futuro.",
           "also_at": "Estaciones o paradas en el camino donde también puede subir o bajar: una cercana, un transbordo. Cada servicio aparece una sola vez, desde la primera donde se puede subir hasta la última donde se puede bajar; un servicio que termina en una de ellas, antes de su llegada, se conserva y lo indica."
         }
       },

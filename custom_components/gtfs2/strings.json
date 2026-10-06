@@ -395,10 +395,8 @@
           "refresh_interval": "Data refresh interval (in minutes)",
           "offset": "Offset in minutes",
           "max_local_stops": "Limit #stops to avoid possible performance impact. \nIncrease at your own risk",
-          "source_timezone_correction": "Correct source gtfs timezone (in hours)",
           "local_stop_refresh_interval": "Data refresh interval (in minutes)",
           "timerange": "Checking for departures in future from 'now' (in minutes: between 15 and 120)",
-          "check_source_dates": "experimental: avoid using new zip/source contain having no current information",
           "radius": "Radius to search for stops (in meters between 50 and 5000)",
           "also_at": "Also get on or off at"
         },
@@ -409,8 +407,6 @@
           "timerange": "How far ahead to look for departures, in minutes.",
           "radius": "How far around the person or zone to look for stops, in metres.",
           "max_local_stops": "Above this many stops the sensor gets slow. Raise it at your own risk.",
-          "source_timezone_correction": "Only if the source publishes times in another timezone, in hours.",
-          "check_source_dates": "Experimental: refuse a new file whose dates are all in the future.",
           "also_at": "Stations or stops on the way where you can get on or off as well: a nearby one, a connection. Each run shows once, from the first of these where you can board to the last where you can get off; one that ends there, short of your arrival, is kept and says so."
         }
       },

@@ -398,8 +398,6 @@
           "local_stop_refresh_interval": "Intervalle d'actualisation en minutes",
           "timerange": "Période dans la future pour départs depuis 'maintenant' (en minutes entre 15 et 120)",
           "radius": "Radius pour la recherche des stops (en metres entre 50 et 5000)",
-          "source_timezone_correction": "Corriger le fuseau horaire de la source (en heures)",
-          "check_source_dates": "Expérimental : refuser un nouveau fichier sans données actuelles",
           "also_at": "Monter ou descendre aussi à"
         },
         "data_description": {
@@ -409,8 +407,6 @@
           "timerange": "Jusqu'où chercher les départs à venir, en minutes.",
           "radius": "Distance de recherche des arrêts autour de la personne ou de la zone, en mètres.",
           "max_local_stops": "Au-delà de ce nombre d'arrêts le capteur devient lent. À augmenter à vos risques.",
-          "source_timezone_correction": "Seulement si la source publie ses heures dans un autre fuseau, en heures.",
-          "check_source_dates": "Expérimental : refuse un nouveau fichier dont toutes les dates sont dans le futur.",
           "also_at": "Gares ou arrêts sur le chemin où vous pouvez aussi monter ou descendre : un arrêt voisin, une correspondance. Chaque passage n'apparaît qu'une fois, du premier où l'on peut monter au dernier où l'on peut descendre ; un passage qui s'arrête à l'un d'eux, avant votre arrivée, est gardé et l'indique."
         }
       },
