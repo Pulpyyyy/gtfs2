@@ -231,10 +231,9 @@ prune_datasource:
   name: Prune Datasource
   description: >-
     Removes the trips and stop_times of routes that no entry is configured for.
-    pygtfs loads the whole feed, so a datasource holds every route of the network;
-    pruning typically reclaims most of the file. Schema and routes are left intact,
-    so the config flow still lists every route. Re-run "update_gtfs" to restore the
-    full feed from the local zip.
+    Schema and routes are left intact, so the config flow still lists every
+    route. A refresh of the source ("update_gtfs", its button or its update
+    entity) rebuilds it from the feed with the routes the sensors read.
   fields:
     file:
       name: Datasources
@@ -266,8 +265,8 @@ intern_datasource:
   description: >-
     Replaces the long trip_id/stop_id strings of stop_times by integer keys and
     re-exposes stop_times as a view, so queries keep working unchanged. Run this
-    after "prune_datasource". Not reversible in place: re-run "update_gtfs" to
-    rebuild the full datasource from the local zip.
+    after "prune_datasource". Every refresh of the source interns its database
+    again.
   fields:
     file:
       name: Datasources

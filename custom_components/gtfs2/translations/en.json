@@ -640,7 +640,7 @@
     },
     "prune_datasource": {
       "name": "Trim a data source to the routes in use",
-      "description": "Removes the timetables of routes no sensor reads, then reclaims the space. Routes stay listed, so the config flow still shows them all. Run update_gtfs to restore the full feed.",
+      "description": "Removes the timetables of routes no sensor reads, then reclaims the space. Routes stay listed, so the config flow still shows them all. A refresh of the source (update_gtfs, its button or its update entity) rebuilds it from the feed with the lines the sensors read.",
       "fields": {
         "file": {
           "name": "Data source",
@@ -654,7 +654,7 @@
     },
     "intern_datasource": {
       "name": "Shrink a data source",
-      "description": "Replaces the long identifiers repeated on every row by short keys. Run it after trimming. Not reversible in place: run update_gtfs to rebuild from the local zip.",
+      "description": "Replaces the long identifiers repeated on every row by short keys. Run it after trimming. The sensors read the database the same way, and every refresh of the source shrinks it again.",
       "fields": {
         "file": {
           "name": "Data source",

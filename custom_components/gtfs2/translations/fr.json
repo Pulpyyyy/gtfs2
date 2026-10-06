@@ -640,7 +640,7 @@
     },
     "prune_datasource": {
       "name": "Réduire une source aux lignes utilisées",
-      "description": "Supprime les horaires des lignes qu'aucun capteur ne lit, puis récupère l'espace. Les lignes restent listées, le config flow les montre donc toutes. Lancez update_gtfs pour rétablir la source complète.",
+      "description": "Supprime les horaires des lignes qu'aucun capteur ne lit, puis récupère l'espace. Les lignes restent listées, le config flow les montre donc toutes. Un rafraîchissement de la source (update_gtfs, son bouton ou son entité de mise à jour) la reconstruit depuis le flux avec les lignes que lisent les capteurs.",
       "fields": {
         "file": {
           "name": "Source de données",
@@ -654,7 +654,7 @@
     },
     "intern_datasource": {
       "name": "Compacter une source de données",
-      "description": "Remplace les longs identifiants répétés à chaque ligne par des clés courtes. À lancer après la réduction. Non réversible sur place : lancez update_gtfs pour reconstruire depuis le zip local.",
+      "description": "Remplace les longs identifiants répétés à chaque ligne par des clés courtes. À lancer après la réduction. Les capteurs lisent la base de la même façon, et chaque rafraîchissement de la source la réduit à nouveau.",
       "fields": {
         "file": {
           "name": "Source de données",

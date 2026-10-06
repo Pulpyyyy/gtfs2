@@ -640,7 +640,7 @@
     },
     "prune_datasource": {
       "name": "Reducir una fuente a las líneas en uso",
-      "description": "Elimina los horarios de las líneas que ningún sensor lee y recupera el espacio. Las líneas siguen listadas, así que el asistente las muestra todas. Ejecute update_gtfs para restaurar la fuente completa.",
+      "description": "Elimina los horarios de las líneas que ningún sensor lee y recupera el espacio. Las líneas siguen listadas, así que el asistente las muestra todas. Una actualización de la fuente (update_gtfs, su botón o su entidad de actualización) la reconstruye desde el feed con las líneas que leen los sensores.",
       "fields": {
         "file": {
           "name": "Fuente de datos",
@@ -654,7 +654,7 @@
     },
     "intern_datasource": {
       "name": "Compactar una fuente de datos",
-      "description": "Sustituye los identificadores largos repetidos en cada fila por claves cortas. Ejecútelo después de reducir. No reversible in situ: ejecute update_gtfs para reconstruir desde el zip local.",
+      "description": "Sustituye los identificadores largos repetidos en cada fila por claves cortas. Ejecútelo después de reducir. Los sensores leen la base igual, y cada actualización de la fuente la vuelve a reducir.",
       "fields": {
         "file": {
           "name": "Fuente de datos",
