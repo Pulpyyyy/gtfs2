@@ -25,7 +25,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 from sqlalchemy.exc import SQLAlchemyError
 
-from .const import (
+from ..const import (
     ALSO_AT,
     stations_of_both_ends,
     CONF_ADD_RETURN,
@@ -53,11 +53,11 @@ from .const import (
     id_of,
     stop_name_of,
 )
-from .data.map_files import name_in_use
-from .feed.source_entries import datasource_unique_id, journey_entry_data
-from .data.source_refresh import source_zip_url
-from .data.pair_direction import get_direction_labels, get_pair_direction, has_trip_between
-from .data.places import get_destination_stop_list, get_stop_list, get_stops_between, get_towards
+from ..data.map_files import name_in_use
+from ..feed.source_entries import datasource_unique_id, journey_entry_data
+from ..data.source_refresh import source_zip_url
+from ..data.pair_direction import get_direction_labels, get_pair_direction, has_trip_between
+from ..data.places import get_destination_stop_list, get_stop_list, get_stops_between, get_towards
 
 if TYPE_CHECKING:
     # for the annotations only

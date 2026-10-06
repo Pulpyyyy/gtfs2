@@ -17,7 +17,7 @@ const = ha_stub.load("const")
 source_entries = ha_stub.load("feed.source_entries")
 freshness = ha_stub.load("feed.freshness")
 key_mask = ha_stub.load("key_mask")
-flow_source = ha_stub.load("flow_source")
+sources = ha_stub.load("flow.sources")
 
 KEY = "d00dfeed-0000-4000-8000-000000000001"
 BASIC = {"api_key_location": "basic", "api_key": KEY, "api_key_name": "ignored"}
@@ -55,7 +55,7 @@ def test_the_encoded_key_is_masked_in_the_logs():
 
 
 def test_the_key_screen_offers_it_and_keeps_it():
-    schema = flow_source._source_key_schema({"api_key_location": "basic", "api_key": KEY})
+    schema = sources._source_key_schema({"api_key_location": "basic", "api_key": KEY})
     location = next(m for m in schema if str(m) == "api_key_location")
     assert location.default() == "basic"
     assert "basic" in schema[location].config["options"]

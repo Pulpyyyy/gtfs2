@@ -19,7 +19,7 @@ import ha_stub
 ha_stub.install()
 
 config_flow = ha_stub.load("config_flow")
-flow_reload = ha_stub.load("flow_reload")
+reload = ha_stub.load("flow.reload")
 
 ZIP_RECORD = {"sha256": "5a0f00c1d2e3f4a5", "size": 12, "url": "https://tao/gtfs.zip",
               "downloaded_at": "2026-10-06T10:30:00+00:00"}
@@ -56,9 +56,9 @@ def _imported(tmp_path, monkeypatch, database_before):
         return None
 
     told = []
-    monkeypatch.setattr(flow_reload, "import_routes", import_routes)
-    monkeypatch.setattr(flow_reload, "async_notify_import", notify)
-    monkeypatch.setattr(flow_reload, "async_dispatcher_send", lambda hass, signal: told.append(signal))
+    monkeypatch.setattr(reload, "import_routes", import_routes)
+    monkeypatch.setattr(reload, "async_notify_import", notify)
+    monkeypatch.setattr(reload, "async_dispatcher_send", lambda hass, signal: told.append(signal))
 
     async def run():
         flow = _flow(tmp_path)
@@ -73,7 +73,7 @@ def test_a_new_source_records_the_zip_its_database_was_built_from(tmp_path, monk
     record, told = _imported(tmp_path, monkeypatch, database_before=False)
     assert record["sha256"] == ZIP_RECORD["sha256"] and record["built_at"]
     # its update entity read its versions before the import: told to again
-    assert told == [flow_reload.SIGNAL_SOURCE_REFRESH.format("src")]
+    assert told == [reload.SIGNAL_SOURCE_REFRESH.format("src")]
 
 
 def test_lines_added_to_a_database_leave_its_record(tmp_path, monkeypatch):

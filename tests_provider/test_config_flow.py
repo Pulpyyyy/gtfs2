@@ -117,7 +117,7 @@ from homeassistant import config_entries, data_entry_flow  # noqa: E402
 const = ha_stub.load("const")
 config_flow = ha_stub.load("config_flow")
 notifications = ha_stub.load("notifications")
-flow_reload = ha_stub.load("flow_reload")
+reload = ha_stub.load("flow.reload")
 source_entries = ha_stub.load("feed.source_entries")
 files = ha_stub.load("feed.files")
 # the import into a scratch database has a module of its own here, gtfs_db
@@ -1355,8 +1355,8 @@ def test_a_new_source_imports_only_the_lines_picked(world, monkeypatch):
         [flow] = hass.config_entries.flow._progress.values()
         held = flow._pygtfs
         let_go = []
-        close = flow_reload.close_schedule
-        monkeypatch.setattr(flow_reload, "close_schedule",
+        close = reload.close_schedule
+        monkeypatch.setattr(reload, "close_schedule",
                             lambda schedule: (let_go.append(schedule), close(schedule)))
         result = await submit(hass, alone)
         assert hasattr(held, "session") and held in let_go
@@ -1705,7 +1705,7 @@ def test_the_flow_waits_for_an_unpacking_and_goes_on_with_what_was_typed(world, 
 
     # the wait polls the files every five seconds: what is walked here is
     # the order of the screens, not the pace of the poll
-    monkeypatch.setattr(flow_reload, "asyncio", types.SimpleNamespace(
+    monkeypatch.setattr(reload, "asyncio", types.SimpleNamespace(
         sleep=a_moment, wait=asyncio.wait))
 
     async def scenario(hass):
@@ -1733,7 +1733,7 @@ def test_a_second_flow_for_the_same_tracker_is_told_why_it_stops(world, monkeypa
     async def a_moment(delay):
         await real_sleep(0.01)
 
-    monkeypatch.setattr(flow_reload, "asyncio", types.SimpleNamespace(
+    monkeypatch.setattr(reload, "asyncio", types.SimpleNamespace(
         sleep=a_moment, wait=asyncio.wait))
 
     async def scenario(hass):

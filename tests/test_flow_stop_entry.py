@@ -17,20 +17,20 @@ import ha_stub
 ha_stub.install()
 
 config_flow = ha_stub.load("config_flow")
-flow_journey = ha_stub.load("flow_journey")
+journey_mod = ha_stub.load("flow.journey")
 
 KALAS = "000000008CTA: A28: Kala's (East Bound) (5)"
 
 
 def test_a_name_holding_a_colon_reads_whole():
-    assert flow_journey.stop_name_of(KALAS) == "A28: Kala's (East Bound)"
-    assert flow_journey.stop_name_of("IDFM:123: Gare (2)") == "Gare"
+    assert journey_mod.stop_name_of(KALAS) == "A28: Kala's (East Bound)"
+    assert journey_mod.stop_name_of("IDFM:123: Gare (2)") == "Gare"
 
 
 def test_the_destinations_are_asked_with_the_origin_s_id(monkeypatch):
     asked = []
-    monkeypatch.setattr(flow_journey, "get_towards", lambda schedule, route, origin: [])
-    monkeypatch.setattr(flow_journey, "get_destination_stop_list",
+    monkeypatch.setattr(journey_mod, "get_towards", lambda schedule, route, origin: [])
+    monkeypatch.setattr(journey_mod, "get_destination_stop_list",
                         lambda schedule, route, _, origin, towards: asked.append(origin) or [])
 
     async def job(fn, *args):

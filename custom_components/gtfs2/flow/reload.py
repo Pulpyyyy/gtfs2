@@ -25,7 +25,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from .const import (
+from ..const import (
     id_of,
     CONF_AGENCY,
     CONF_ALSO_RELOAD,
@@ -34,16 +34,16 @@ from .const import (
     DEFAULT_PATH,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
-from .data.db_build import import_routes, on_a_copy, optimise_datasource
-from .data.shrink import async_train_routes
-from .feed.files import close_schedule, real_path, routes_in, scratch_path
-from .flow_journey import _Step
-from .notifications import async_notify_import
-from .domain.line_list import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
-from .feed.source_entries import source_readers
-from .data.source_refresh import SIGNAL_SOURCE_REFRESH, record_installed, source_lock
-from .data.datasource import check_datasource_index, check_extracting, open_datasource
-from .data.source_zip import build_scratch_database
+from ..data.db_build import import_routes, on_a_copy, optimise_datasource
+from ..data.shrink import async_train_routes
+from ..feed.files import close_schedule, real_path, routes_in, scratch_path
+from .journey import _Step
+from ..notifications import async_notify_import
+from ..domain.line_list import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
+from ..feed.source_entries import source_readers
+from ..data.source_refresh import SIGNAL_SOURCE_REFRESH, record_installed, source_lock
+from ..data.datasource import check_datasource_index, check_extracting, open_datasource
+from ..data.source_zip import build_scratch_database
 
 if TYPE_CHECKING:
     # for the annotations only

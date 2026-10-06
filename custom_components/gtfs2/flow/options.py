@@ -4,7 +4,7 @@ A datasource entry carries the realtime feeds and the refresh of its
 source for every sensor of the source: the menu that leads to them, the
 key screen of the realtime feeds, and the static refresh screens (how
 often to ask the host whether the zip changed, and with which key). The
-schemas come from flow_source, the same fields as when the source was
+schemas come from sources, the same fields as when the source was
 created. Mixed in GTFSOptionsFlowHandler, and in ConfigFlow for the main
 menu's way to them, which names the source and saves it its own way
 (_source, _save_source).
@@ -22,7 +22,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
-from .const import (
+from ..const import (
     CONF_API_KEY,
     CONF_NEEDS_API_KEY,
     CONF_STATIC_CHECK_INTERVAL,
@@ -35,13 +35,13 @@ from .const import (
     STATIC_REFRESH_OFF,
     TRANSLATION_DESCRIPTION_PLACEHOLDERS,
 )
-from .flow_source import (
+from .sources import (
     rt_url_errors,
     valid_feed_url,
     _collect_source_rt_options, _source_key_schema, _source_rt_key_schema, _source_rt_schema,
     _typed_key,
 )
-from .feed.source_entries import STATIC_KEY_KEYS, static_feed_config, static_key_fields
+from ..feed.source_entries import STATIC_KEY_KEYS, static_feed_config, static_key_fields
 
 _LOGGER = logging.getLogger(__name__)
 

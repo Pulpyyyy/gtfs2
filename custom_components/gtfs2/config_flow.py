@@ -60,12 +60,12 @@ from .feed.source_entries import (
     journey_entry_data,
 )
 from .const import ALSO_AT, TRANSLATION_DESCRIPTION_PLACEHOLDERS
-from .flow_train import ALL_TRAINS, TrainScreens, kept_train_stations, train_station_fields, train_stations_between
+from .flow.train import ALL_TRAINS, TrainScreens, kept_train_stations, train_station_fields, train_stations_between
 from .data.stop_rules import RAIL_ROUTE_TYPES
-from .flow_reload import ReloadScreens
-from .flow_source import SourceScreens
-from .flow_options import OptionsScreens
-from .flow_journey import JourneyScreens, kept_stops, stop_fields
+from .flow.reload import ReloadScreens
+from .flow.sources import SourceScreens
+from .flow.options import OptionsScreens
+from .flow.journey import JourneyScreens, kept_stops, stop_fields
 from .data.places import get_stops_between
 
 if TYPE_CHECKING:

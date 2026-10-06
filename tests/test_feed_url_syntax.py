@@ -14,7 +14,7 @@ import ha_stub
 
 ha_stub.install()
 
-flow_source = ha_stub.load("flow_source")
+sources = ha_stub.load("flow.sources")
 
 
 @pytest.mark.parametrize("url", [
@@ -28,7 +28,7 @@ flow_source = ha_stub.load("flow_source")
     "  https://h/feed.zip  ",
 ])
 def test_a_feed_address_is_valid(url):
-    assert flow_source.valid_feed_url(url)
+    assert sources.valid_feed_url(url)
 
 
 @pytest.mark.parametrize("url", [
@@ -44,4 +44,4 @@ def test_a_feed_address_is_valid(url):
     "file://",
 ])
 def test_a_feed_address_is_refused(url):
-    assert not flow_source.valid_feed_url(url)
+    assert not sources.valid_feed_url(url)

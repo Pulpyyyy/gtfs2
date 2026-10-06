@@ -14,7 +14,7 @@ containers =
     custom_components.gtfs2
 layers =
     coordinator : sensor : update : button : switch : datasource_services : departure_services : repairs
-    config_flow : flow_source : flow_reload : flow_journey : flow_train : flow_options
+    config_flow : flow
     domain
     data
     feed
@@ -27,3 +27,4 @@ ancestors =
     custom_components.gtfs2.feed
     custom_components.gtfs2.data
     custom_components.gtfs2.domain
+    custom_components.gtfs2.flow

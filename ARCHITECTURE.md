@@ -165,7 +165,7 @@ When a block the fork added there has a single responsibility, it moves to
 a module the fork owns, and the upstream method calls it in one line where
 the block stood. That is how `alerts.py`, `attributes.py`,
 `line_list.py`, `notifications.py`, `map_files.py`,
-`source_zip.py`, `stations.py` and the `flow_*.py` screens were born.
+`source_zip.py`, `stations.py` and the screens of `flow/` were born.
 
 **Constraint.** A move changes no behaviour:
 
@@ -376,11 +376,11 @@ repairs.py         the fixes Settings > Repairs offers for gtfs2's issues
 
 ```
 config_flow.py     the flow itself, composed of the screen classes below, and the options of a journey or local stops entry
-flow_source.py     SourceScreens: where the timetable comes from
-flow_reload.py     ReloadScreens: load lines into a datasource, shrink it, wait for another writer
-flow_journey.py    JourneyScreens: stops, more stops to get on or off at, direction, sensor name, mirror journey
-flow_train.py      TrainScreens: departure and arrival stations, options (stations and lines), a sensor per line ticked
-flow_options.py    OptionsScreens: realtime feeds and static refresh of a source
+flow/sources.py    SourceScreens: where the timetable comes from
+flow/reload.py     ReloadScreens: load lines into a datasource, shrink it, wait for another writer
+flow/journey.py    JourneyScreens: stops, more stops to get on or off at, direction, sensor name, mirror journey
+flow/train.py      TrainScreens: departure and arrival stations, options (stations and lines), a sensor per line ticked
+flow/options.py    OptionsScreens: realtime feeds and static refresh of a source
 ```
 
 Collects input, creates datasource and journey entries, starts imports. An

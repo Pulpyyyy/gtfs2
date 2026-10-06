@@ -17,7 +17,7 @@ import ha_stub
 ha_stub.install()
 
 config_flow = ha_stub.load("config_flow")
-flow_reload = ha_stub.load("flow_reload")
+reload = ha_stub.load("flow.reload")
 
 
 def _flow(tmp_path, monkeypatch, opened):
@@ -32,9 +32,9 @@ def _flow(tmp_path, monkeypatch, opened):
         opened.append(file)
         return types.SimpleNamespace(engine=f"schedule {len(opened)}")
 
-    monkeypatch.setattr(flow_reload, "open_datasource", open_datasource)
-    monkeypatch.setattr(flow_reload, "check_datasource_index", lambda *args: None)
-    monkeypatch.setattr(flow_reload, "close_schedule", lambda schedule: None)
+    monkeypatch.setattr(reload, "open_datasource", open_datasource)
+    monkeypatch.setattr(reload, "check_datasource_index", lambda *args: None)
+    monkeypatch.setattr(reload, "close_schedule", lambda schedule: None)
     flow = config_flow.ConfigFlow()
     flow.hass = types.SimpleNamespace(
         config=types.SimpleNamespace(path=lambda *parts: str(tmp_path.joinpath(*parts))),
@@ -64,9 +64,9 @@ def test_the_next_import_reopens_it_again(tmp_path, monkeypatch):
         flow = _flow(tmp_path, monkeypatch, opened)
         await flow.async_step_reload_done()
         flow._import_routes = ["R1"]
-        monkeypatch.setattr(flow_reload, "import_routes", lambda *args: {"R1": 3})
+        monkeypatch.setattr(reload, "import_routes", lambda *args: {"R1": 3})
         flow.hass.async_create_background_task = lambda coro, name: asyncio.get_running_loop().create_task(coro)
-        monkeypatch.setattr(flow_reload, "async_notify_import", lambda *args: asyncio.sleep(0))
+        monkeypatch.setattr(reload, "async_notify_import", lambda *args: asyncio.sleep(0))
         await flow.async_step_importing()
         await flow._import_job
         await flow.async_step_reload_done()
