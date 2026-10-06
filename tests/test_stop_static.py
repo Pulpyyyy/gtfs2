@@ -49,7 +49,7 @@ import homeassistant.util.dt as dt_util  # noqa: E402
 
 # Loaded on their own rather than through the package, whose __init__
 # pulls in the platforms and with them the rest of Home Assistant.
-local_stops = ha_stub.load("local_stops")
+local_stops = ha_stub.load("domain.local_stops")
 coordinator_mod = ha_stub.load("coordinator")
 
 CASE_ROOT = Path(__file__).parent / "case_stop"

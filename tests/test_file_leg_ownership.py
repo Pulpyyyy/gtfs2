@@ -10,7 +10,7 @@ from __future__ import annotations
 import ha_stub
 
 leg_mod = ha_stub.load("data.leg_file")
-exports_mod = ha_stub.load("exports")
+exports_mod = ha_stub.load("domain.exports")
 
 
 def test_a_name_that_ends_like_another_is_not_it():

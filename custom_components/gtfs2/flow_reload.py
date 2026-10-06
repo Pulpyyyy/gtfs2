@@ -39,7 +39,7 @@ from .data.shrink import async_train_routes
 from .feed.files import close_schedule, real_path, routes_in, scratch_path
 from .flow_journey import _Step
 from .notifications import async_notify_import
-from .route_names import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
+from .domain.line_list import get_route_labels, get_route_labels_from_zip, get_routes_in_zip, routes_in_zip_for_agency
 from .feed.source_entries import source_readers
 from .data.source_refresh import SIGNAL_SOURCE_REFRESH, record_installed, source_lock
 from .data.datasource import check_datasource_index, check_extracting, open_datasource

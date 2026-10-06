@@ -11,14 +11,14 @@ from sqlalchemy.sql import text as sql_text
 
 _LOGGER = logging.getLogger(__name__)
 
-from .const import (
+from ..const import (
     ATTR_NEXT_RT,
     ATTR_NEXT_RT_DELAYS,
     ATTR_NEXT_RT_TRIPS,
 )
 from .alerts import journey_alerts
-from .data.clocks import agency_zone
-from .feed.rt_feed import (
+from ..data.clocks import agency_zone
+from ..feed.rt_feed import (
     CANCELLED_TRIP, NO_DATA_STOP, SKIPPED_STOP, FeedEntities, _Coordinator, _read_feed, _same_route,
     delay_of, stop_relationship, stop_update_clock,
     trip_relationship,
@@ -26,7 +26,7 @@ from .feed.rt_feed import (
 
 if TYPE_CHECKING:
     # for the annotations only
-    from .coordinator import GTFSUpdateCoordinator
+    from ..coordinator import GTFSUpdateCoordinator
 
 # the departures, delays and trips listed at one stop, in the same order
 type _Slot = dict[str, list[Any]]

@@ -17,7 +17,7 @@ import ast
 import ha_stub
 
 const = ha_stub.load("const")
-departure_attributes = ha_stub.load("departure_attributes")
+attributes = ha_stub.load("domain.attributes")
 
 SENSOR = ha_stub.COMPONENT / "sensor.py"
 
@@ -39,7 +39,7 @@ def _unrecorded(class_name):
 
 def test_the_realtime_trips_stay_out():
     written = {}
-    departure_attributes.realtime_trips(written, {
+    attributes.realtime_trips(written, {
         const.ATTR_NEXT_RT_TRIPS: ["T1"], const.ATTR_RT_CANCELLED: ["T2"],
         const.ATTR_RT_SKIPPED: ["T3"]})
     assert written

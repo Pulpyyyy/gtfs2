@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-route_names = ha_stub.load("route_names")
+line_list = ha_stub.load("domain.line_list")
 
 
 def _schedule(tmp_path):
@@ -36,14 +36,14 @@ def _ids(routes):
 
 
 def test_an_agency_id_with_a_quote(tmp_path):
-    routes = route_names.get_route_list(
+    routes = line_list.get_route_list(
         _schedule(tmp_path), {"agency": "L'Autocar: L'Autocar", "route_type": "99", "file": "src"},
         gtfs_dir=str(tmp_path))
     assert _ids(routes) == ["R1"]
 
 
 def test_every_agency_and_one_route_type(tmp_path):
-    routes = route_names.get_route_list(
+    routes = line_list.get_route_list(
         _schedule(tmp_path), {"agency": "0: ALL", "route_type": "0", "file": "src"},
         gtfs_dir=str(tmp_path))
     assert _ids(routes) == ["R3"]
@@ -55,5 +55,5 @@ def test_the_count_is_the_list_length(tmp_path):
     for agency in ("0: ALL", "TAO: TAO", "L'Autocar: L'Autocar"):
         for route_type in ("99", "3", "0"):
             data = {"agency": agency, "route_type": route_type, "file": "src"}
-            assert route_names.get_route_count(schedule, data) == len(
-                route_names.get_route_list(schedule, data)), data
+            assert line_list.get_route_count(schedule, data) == len(
+                line_list.get_route_list(schedule, data)), data

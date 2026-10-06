@@ -1,6 +1,6 @@
 """What a service alert means for one sensor.
 
-get_rt_alerts in gtfs_rt_helper reads the alert feed; everything here says
+get_rt_alerts in realtime reads the alert feed; everything here says
 what to make of one alert for the entry at hand: what kind of message it is
 (_alert_kind), whether it concerns this sensor's route, trip or stops
 (_scope_of, with the stop's siblings and the whole ride from _stop_aliases
@@ -19,15 +19,15 @@ import homeassistant.util.dt as dt_util
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text as sql_text
 
-from .feed.files import file_edition
-from .feed.rt_feed import FeedEntities, _same_route
+from ..feed.files import file_edition
+from ..feed.rt_feed import FeedEntities, _same_route
 
 if TYPE_CHECKING:
     # for the annotations only
     from google.transit import gtfs_realtime_pb2
     from homeassistant.core import HomeAssistant
 
-    from .coordinator import GTFSUpdateCoordinator
+    from ..coordinator import GTFSUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

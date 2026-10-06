@@ -16,7 +16,7 @@ import ha_stub
 
 validity = ha_stub.load("data.validity")
 zip_filter = ha_stub.load("data.zip_filter")
-line_ends = ha_stub.load("line_ends")
+line_ends = ha_stub.load("domain.line_ends")
 
 WIDTH = 80
 FEED = {

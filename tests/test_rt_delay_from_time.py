@@ -16,7 +16,7 @@ from freezegun import freeze_time
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 
 UTC = datetime.timezone.utc
 NOW = datetime.datetime(2026, 9, 27, 11, 30, tzinfo=UTC)
@@ -38,7 +38,7 @@ def _delays(departure, on_board=True):
         "trip": {"trip_id": "T1", "route_id": "R1"},
         "stop_time_update": [{"stop_id": "S1", "stop_sequence": 3, "departure": departure}]}}]
     with freeze_time(NOW):
-        found = gtfs_rt_helper.get_rt_route_trip_statuses(_context(on_board), feed)
+        found = realtime.get_rt_route_trip_statuses(_context(on_board), feed)
     return found["R1"]["0"]["S1"]["delays"]
 
 

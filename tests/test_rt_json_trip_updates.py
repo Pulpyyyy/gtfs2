@@ -15,7 +15,7 @@ from freezegun import freeze_time
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 rt_feed = ha_stub.load("feed.rt_feed")
 rt_window = ha_stub.load("data.rt_window")
 
@@ -33,7 +33,7 @@ def _context():
 
 def _departures(feed):
     with freeze_time(NOW):
-        found = gtfs_rt_helper.get_rt_route_trip_statuses(_context(), feed)
+        found = realtime.get_rt_route_trip_statuses(_context(), feed)
     return found.get("R1", {}).get("0", {}).get("S1", {})
 
 
@@ -83,7 +83,7 @@ def test_a_delay_without_a_time_is_laid_on_the_timetable():
         "trip": {"trip_id": "T1"},
         "stop_time_update": [{"stop_id": "S1", "departure": {"delay": 60}}]}}]
     with freeze_time(NOW):
-        got = gtfs_rt_helper.get_rt_route_trip_statuses(me, feed)["R1"]["0"]["S1"]
+        got = realtime.get_rt_route_trip_statuses(me, feed)["R1"]["0"]["S1"]
     assert got["departures"][0].timestamp() == IN_TEN + 60 and got["delays"] == [60]
 
 
@@ -101,9 +101,9 @@ def test_no_trip_update_feed_reads_nothing():
     me = _context()
     me._trip_update_url, me._vehicle_position_url = None, "http://feed.invalid/vp"
     me._feed_entities = "stale"
-    assert gtfs_rt_helper.get_rt_route_trip_statuses(me) == {}
+    assert realtime.get_rt_route_trip_statuses(me) == {}
     assert me._feed_entities is None
-    assert not hasattr(gtfs_rt_helper, "get_rt_vehicle_positions")
+    assert not hasattr(realtime, "get_rt_vehicle_positions")
 
 
 def _trip_feed(relationship):
@@ -138,6 +138,6 @@ def test_a_json_direction_written_as_a_number_reaches_the_sensor():
         "trip": {"trip_id": "T9", "route_id": "R1", "direction_id": 0},
         "stop_time_update": [{"stop_id": "S1", "departure": {"time": IN_TEN}}]}}]
     with freeze_time(NOW):
-        found = gtfs_rt_helper.get_rt_route_trip_statuses(me, feed)
+        found = realtime.get_rt_route_trip_statuses(me, feed)
     assert list(found["R1"]) == ["0"]
     assert found["R1"]["0"]["S1"]["trips"] == ["T9"]

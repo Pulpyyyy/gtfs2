@@ -20,7 +20,7 @@ ha_stub.install()
 
 import homeassistant.util.dt as dt_util  # noqa: E402
 
-local_stops = ha_stub.load("local_stops")
+local_stops = ha_stub.load("domain.local_stops")
 
 FEED = {
     "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,UTC\n",

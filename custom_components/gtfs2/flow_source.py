@@ -156,7 +156,7 @@ def _source_rt_key_schema(opts: Mapping[str, Any]) -> dict[vol.Marker, Any]:
     """The realtime api key screen, shown only when the source needs one."""
     return {
         **_source_key_schema(opts),
-        # gtfs_rt_helper only sends this when the key is in a header
+        # domain.realtime only sends this when the key is in a header
         vol.Optional(
             CONF_ACCEPT_HEADER_PB,
             default=opts.get(CONF_ACCEPT_HEADER_PB, False),

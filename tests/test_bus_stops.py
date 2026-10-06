@@ -90,12 +90,12 @@ def test_a_run_is_listed_once_where_it_is_last_left(schedule):
 def test_the_sensor_names_every_stop_of_each_end():
     # by their names, as a train's stations: a card cuts the leg on them;
     # the flow's " #n" told two places of one name apart, not the rider
-    departure_attributes = ha_stub.load("departure_attributes")
+    attributes = ha_stub.load("domain.attributes")
     listed: dict = {}
-    departure_attributes.station_attributes(listed, {}, None, None, None, "3", {
+    attributes.station_attributes(listed, {}, None, None, None, "3", {
         "origin_stations": ["HA: Home A (1)", "HB: Home B #2 (2)"], "destination_stations": ["W: Work (4)"]})
     assert (listed["origin_stations"], listed["destination_stations"]) == (["Home A", "Home B"], ["Work"])
     # an entry made before lists none, and its sensor says none
     before: dict = {}
-    departure_attributes.station_attributes(before, {}, None, None, None, "3", {"origin": HA})
+    attributes.station_attributes(before, {}, None, None, None, "3", {"origin": HA})
     assert "origin_stations" not in before

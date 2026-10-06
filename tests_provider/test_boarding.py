@@ -69,7 +69,7 @@ try:
 except FileNotFoundError:  # a tree that lists a line's places in gtfs_helper
     places = departures
 try:
-    local_stops = ha_stub.load("local_stops")
+    local_stops = ha_stub.load("domain.local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
     local_stops = departures
 try:
@@ -81,7 +81,7 @@ try:
 except FileNotFoundError:  # a tree without the fork's leg file
     leg_mod = None
 try:
-    stations = ha_stub.load("stations")
+    stations = ha_stub.load("domain.stations")
 except FileNotFoundError:  # a tree without the fork's train screens
     stations = None
 try:

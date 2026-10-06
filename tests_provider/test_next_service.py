@@ -74,7 +74,7 @@ service_days = (ha_stub.load("service_days") if (ha_stub.COMPONENT / "service_da
 # with --component that keeps them in a module of their own is read there
 refresh_steps = (ha_stub.load("refresh_steps") if (ha_stub.COMPONENT / "refresh_steps.py").is_file()
                  else ha_stub.load("coordinator"))
-departure_attributes = ha_stub.load("departure_attributes")
+attributes_mod = ha_stub.load("domain.attributes")
 
 TAO = Path(__file__).parent / "fixtures" / "tao-journeys"
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
@@ -376,7 +376,7 @@ def test_each_outcome_down_the_sensors_path(tao, outcome, route_id, origin, dest
                 _hass(), schedule, data, data["offset"]))
             assert next_service == found
         written = {}
-        departure_attributes.next_service_info(written, state, next_service, data["offset"])
+        attributes_mod.next_service_info(written, state, next_service, data["offset"])
     assert written == attributes
 
 
@@ -402,5 +402,5 @@ def test_a_date_and_no_departure_in_hand(tao, outcome, route_id, now, asked_from
     instant = datetime.datetime.fromisoformat(now).replace(tzinfo=PARIS)
     with freeze_time(instant.astimezone(datetime.timezone.utc)):
         written = {}
-        departure_attributes.next_service_info(written, None, found, 0)
+        attributes_mod.next_service_info(written, None, found, 0)
     assert written == attributes

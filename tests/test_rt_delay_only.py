@@ -19,7 +19,7 @@ from google.transit import gtfs_realtime_pb2
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 rt_feed = ha_stub.load("feed.rt_feed")
 
 UTC = datetime.timezone.utc
@@ -44,7 +44,7 @@ def _read(arrival, departure=None):
     feed = [{"id": "e1", "trip_update": {"trip": {"trip_id": "T1", "route_id": "R1"},
                                           "stop_time_update": [update]}}]
     with freeze_time(NOW):
-        found = gtfs_rt_helper.get_rt_route_trip_statuses(_context(), feed)
+        found = realtime.get_rt_route_trip_statuses(_context(), feed)
     return found.get("R1", {}).get("0", {}).get("S1", {})
 
 
@@ -111,7 +111,7 @@ def test_the_converter_keeps_a_sequence_the_feed_does_not_give_apart():
 def test_a_local_stop_lays_the_delay_on_its_own_row():
     # a local stops departure is no listed departure of a journey: its
     # timetable time is the row it is built from, the only one it knows
-    local_stops = ha_stub.load("local_stops")
+    local_stops = ha_stub.load("domain.local_stops")
     paris = datetime.timezone(datetime.timedelta(hours=2))
     row = {"trip_id": "T1", "direction_id": 0, "trip_short_name": None,
            "route_id": "R1", "stop_id": "S1", "stop_sequence": 3,

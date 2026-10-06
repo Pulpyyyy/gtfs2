@@ -16,7 +16,7 @@ from freezegun import freeze_time
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 leg_mod = ha_stub.load("data.leg_file")
 rt_feed = ha_stub.load("feed.rt_feed")
 
@@ -44,7 +44,7 @@ def _sensor_delays(update):
     feed = [{"id": "e1", "trip_update": {"trip": {"trip_id": "T1", "route_id": "R1"},
                                          "stop_time_update": [update]}}]
     with freeze_time(NOW):
-        found = gtfs_rt_helper.get_rt_route_trip_statuses(_context(), feed)
+        found = realtime.get_rt_route_trip_statuses(_context(), feed)
     return found["R1"]["0"]["S1"]["delays"]
 
 

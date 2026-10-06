@@ -81,10 +81,10 @@ sensor = ha_stub.load("sensor")
 const = ha_stub.load("const")
 gtfs_helper = ha_stub.load("data.departures")
 try:
-    local_stops = ha_stub.load("local_stops")
+    local_stops = ha_stub.load("domain.local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
     local_stops = gtfs_helper
-departure_attributes = ha_stub.load("departure_attributes")
+attributes_mod = ha_stub.load("domain.attributes")
 # the two steps of the refresh sit in the coordinator here; a checkout run
 # with --component that keeps them in a module of their own is read there
 refresh_steps = (ha_stub.load("refresh_steps") if (ha_stub.COMPONENT / "refresh_steps.py").is_file()
@@ -189,7 +189,7 @@ def realtime():
 
 def _with_records(data):
     """The coordinator's last step: the rows the sensor describes with."""
-    return {**data, "records": departure_attributes.departure_records(data["schedule"], data)}
+    return {**data, "records": attributes_mod.departure_records(data["schedule"], data)}
 
 
 def made_up():

@@ -21,7 +21,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 
 UTC = datetime.timezone.utc
 NOW = datetime.datetime(2026, 9, 29, 19, 0, tzinfo=UTC)
@@ -65,7 +65,7 @@ def _delays(schedule, updates, now=NOW):
                               "departure": {"time": when, "delay": 0}}]}}
         for trip, (when, start) in updates.items()]
     with freeze_time(now):
-        slot = gtfs_rt_helper.get_rt_route_trip_statuses(_context(schedule), feed)["R1"]["0"]["S1"]
+        slot = realtime.get_rt_route_trip_statuses(_context(schedule), feed)["R1"]["0"]["S1"]
     return dict(zip(slot["trips"], slot["delays"]))
 
 
@@ -110,7 +110,7 @@ def _delay_only(schedule, delays, now=NOW):
                               "departure": {"time": 0, "delay": delay}}]}}
         for trip, delay in delays.items()]
     with freeze_time(now):
-        found = gtfs_rt_helper.get_rt_route_trip_statuses(_context(schedule), feed)
+        found = realtime.get_rt_route_trip_statuses(_context(schedule), feed)
     slot = found.get("R1", {}).get("0", {}).get("S1", {"departures": [], "delays": [], "trips": []})
     return [(trip, int(when.timestamp()), delay)
             for trip, when, delay in zip(slot["trips"], slot["departures"], slot["delays"])]
@@ -149,5 +149,5 @@ def test_with_the_board_empty_the_timetable_is_read_on_the_network_s_clocks(sche
     context = _context(schedule)
     context._data["next_departure"] = {}
     with freeze_time(datetime.datetime(2026, 9, 29, 22, 50, tzinfo=UTC)):
-        slot = gtfs_rt_helper.get_rt_route_trip_statuses(context, feed)["R1"]["0"]["S1"]
+        slot = realtime.get_rt_route_trip_statuses(context, feed)["R1"]["0"]["S1"]
     assert [int(when.timestamp()) for when in slot["departures"]] == [_epoch(23, 0, 36)]

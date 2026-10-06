@@ -13,7 +13,7 @@ import pygtfs
 
 import ha_stub
 
-stations = ha_stub.load("stations")
+stations = ha_stub.load("domain.stations")
 
 FEED = Path(__file__).parents[1] / "tests_provider" / "fixtures" / "sncf" / "static.zip"
 

@@ -15,7 +15,7 @@ import threading
 
 import ha_stub
 
-alerts = ha_stub.load("alerts")
+alerts = ha_stub.load("domain.alerts")
 
 
 def test_emptying_while_filling(monkeypatch):

@@ -10,7 +10,7 @@ import types
 
 import ha_stub
 
-local_stops = ha_stub.load("local_stops")
+local_stops = ha_stub.load("domain.local_stops")
 
 
 def _hass(state):

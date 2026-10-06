@@ -62,7 +62,7 @@ Non-goals:
   fed and what is kept from it (`feed/files.py`: "pygtfs is a loader, not a
   database layer").
 - Querying the whole network from a database. Line lists and headsigns of
-  lines never imported are read from the zip (`route_names.py`,
+  lines never imported are read from the zip (`line_list.py`,
   `line_ends.py`, `feed/remote_zip.py`), not imported to be read. The trains of a
   feed, which the station screens search before any line is imported, are
   read from the zip too, into an index kept beside it (`stations.py`).
@@ -156,14 +156,15 @@ data/departures.py                          upstream's gtfs_helper, "a file upst
                                             owns"; five lots collided there (ea56837)
 coordinator.py  _async_update_data          upstream's method (e843433)
 sensor.py       _update_attrs               upstream's method (3f01c10)
-gtfs_rt_helper.py                           upstream's realtime reader (52bbe62)
+domain/realtime.py                          upstream's gtfs_rt_helper, its realtime
+                                            reader (52bbe62)
 config_flow.py                              upstream's flow, split in screens
 ```
 
 When a block the fork added there has a single responsibility, it moves to
 a module the fork owns, and the upstream method calls it in one line where
-the block stood. That is how `alerts.py`, `departure_attributes.py`,
-`route_names.py`, `notifications.py`, `map_files.py`,
+the block stood. That is how `alerts.py`, `attributes.py`,
+`line_list.py`, `notifications.py`, `map_files.py`,
 `source_zip.py`, `stations.py` and the `flow_*.py` screens were born.
 
 **Constraint.** A move changes no behaviour:
@@ -367,7 +368,7 @@ repairs.py         the fixes Settings > Repairs offers for gtfs2's issues
   holds only what the sources share: locks, probe states, check timers, the
   bootstrap flag (b960969).
 - The coordinator holds no SQL: it reads the timetable through `data/departures.py`
-  and the realtime through `gtfs_rt_helper`, has `vehicles.py` write the
+  and the realtime through `domain/realtime.py`, has `vehicles.py` write the
   vehicle file, and hands the route, timetable and leg files to
   `exports.py`.
 
@@ -391,19 +392,19 @@ which asks which source first and saves on it.
 ### 3. Domain services layer
 
 ```
-alerts.py                what a service alert means for one sensor
-departure_attributes.py  the departure sensor's attributes, group by group
-route_names.py           the lines a feed declares, labelled for the flow
-line_labels.py           what the user reads for a line: number, where it goes, mode, look-alikes told apart
-line_ends.py             where a line goes: its trips' destinations, its two ends
-stations.py              train entries: stations instead of stops, read before any line is imported from the trains of the zip (the rail index, <file>.zip.rail)
-exports.py               which map files a refresh writes, and when
-local_stops.py           the departures around a person or zone, timetable and realtime
-gtfs_rt_helper.py        the realtime of one sensor: the feed trips it follows, next services, delays, alerts
-vehicles.py              the vehicles of a journey, written as the map card's file
+domain/alerts.py         what a service alert means for one sensor
+domain/attributes.py     the departure sensor's attributes, group by group
+domain/line_list.py      the lines a feed declares, labelled for the flow
+domain/line_labels.py    what the user reads for a line: number, where it goes, mode, look-alikes told apart
+domain/line_ends.py      where a line goes: its trips' destinations, its two ends
+domain/stations.py       train entries: stations instead of stops, read before any line is imported from the trains of the zip (the rail index, <file>.zip.rail)
+domain/exports.py        which map files a refresh writes, and when
+domain/local_stops.py    the departures around a person or zone, timetable and realtime
+domain/realtime.py       the realtime of one sensor: the feed trips it follows, next services, delays, alerts
+domain/vehicles.py       the vehicles of a journey, written as the map card's file
 ```
 
-Functions here take values, not entities: `departure_attributes` takes the
+Functions here take values, not entities: `attributes.py` takes the
 attributes dict and what it reads, "nothing of the entity" (3f01c10).
 
 ### 4. Data management layer
@@ -618,7 +619,7 @@ off the event loop, matched by stop_id and stop_sequence (d15f022).
 
 What the route screen shows decides which line a sensor follows, so the
 labels are built to tell lines apart, and read from the zip when the
-database holds no timetable for them (`route_names.py`; the label itself in
+database holds no timetable for them (`line_list.py`; the label itself in
 `line_labels.py` with how look-alike lines are set apart, where a line goes
 in `line_ends.py`).
 
@@ -745,7 +746,7 @@ rt_window.py            rt_window_gate: is this a time the feeds are read?
         ↓
 feed/rt_feed.py         get_gtfs_feed_entities: one download per publication
         ↓
-gtfs_rt_helper.py       get_next_services, get_rt_alerts
+domain/realtime.py      get_next_services, get_rt_alerts
         ↓
 alerts.py
         ↓
@@ -771,7 +772,7 @@ while it lasts, and its recovery once at info (be807b9): every entry of a
 source reads the feeds every minute, and used to log the same error each
 time.
 
-`gtfs_rt_helper.py` reads the alert feed, `alerts.py` decides what one
+`domain/realtime.py` reads the alert feed, `alerts.py` decides what one
 alert means for the entry.
 
 ### What realtime changes on a sensor
@@ -1289,7 +1290,7 @@ What the code does not follow yet from the design above: none. A gap is
 closed when the rule it breaks can be checked by a test.
 
 The last three closed on 2026-09-29 (e03e4f8f). `data/departures.py` and
-`gtfs_rt_helper.py`, upstream's two files that every layer imported, sat
+`domain/realtime.py`, upstream's two files that every layer imported, sat
 outside the layers while the fork's code left them (the stops around a
 person, the places of a line, the timetable services, the flow's lists,
 the sources on disk); what stayed is a data layer module (the departure

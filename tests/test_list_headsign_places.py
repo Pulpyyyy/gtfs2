@@ -11,7 +11,7 @@ import zipfile
 
 import ha_stub
 
-line_ends = ha_stub.load("line_ends")
+line_ends = ha_stub.load("domain.line_ends")
 
 STOPS = ("stop_id,stop_name,stop_lat,stop_lon\n"
          "S1,Nice Ville,0,0\nS2,Marseille Saint-Charles,0,0\nS3,Pau,0,0\nS4,Bordeaux,0,0\n")

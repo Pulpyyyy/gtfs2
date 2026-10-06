@@ -49,20 +49,20 @@ import test_journeys as tj  # noqa: E402
 
 departures = ha_stub.load("data.departures")
 try:
-    local_stops = ha_stub.load("local_stops")
+    local_stops = ha_stub.load("domain.local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
     local_stops = departures
 try:
     leg_mod = ha_stub.load("data.leg_file")
 except FileNotFoundError:  # a tree without the fork's leg file
     leg_mod = None
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime_mod = ha_stub.load("domain.realtime")
 try:
     rt_feed = ha_stub.load("feed.rt_feed")
 except FileNotFoundError:  # a tree that reads its feeds in gtfs_rt_helper
-    rt_feed = gtfs_rt_helper
+    rt_feed = realtime_mod
 # the service day rule, where the tree keeps it
-on_service_day = getattr(rt_feed, "on_service_day", None) or gtfs_rt_helper.on_service_day
+on_service_day = getattr(rt_feed, "on_service_day", None) or realtime_mod.on_service_day
 
 
 def _read_once(url, headers, label):
@@ -146,14 +146,14 @@ def _struck_days(me):
     """What the feed struck out, days sorted: a strike lasts more than a
     day and the reading holds every day it names, as a set."""
     return {trip: sorted(str(day) for day in days)
-            for trip, days in gtfs_rt_helper.struck_trips(me).items()}
+            for trip, days in realtime_mod.struck_trips(me).items()}
 
 
 def test_struck_trips_give_no_departure(record_property, entities):
     check = Check()
     cancelled = _trip_id(entities, "OCESA86017F5111")
     me = _follower(C3, 1, cancelled, GRASSE)
-    statuses = gtfs_rt_helper.get_rt_route_trip_statuses(me, entities)
+    statuses = realtime_mod.get_rt_route_trip_statuses(me, entities)
     slot = statuses.get(C3, {}).get("1", {}).get(GRASSE, {})
     check.same(slot.get("departures", []), [], "departures of the cancelled trip at Grasse")
     check.same(_struck_days(me), {cancelled: ["20260826"]},
@@ -161,7 +161,7 @@ def test_struck_trips_give_no_departure(record_property, entities):
     # the P9 runs but does not call at Béziers that morning
     p9 = _trip_id(entities, "OCESN878950F1187")
     me = _follower(P9, 1, p9, BEZIERS)
-    statuses = gtfs_rt_helper.get_rt_route_trip_statuses(me, entities)
+    statuses = realtime_mod.get_rt_route_trip_statuses(me, entities)
     check.same(statuses.get(P9, {}).get("1", {}).get(BEZIERS, {}).get("departures", []), [],
                "departures of the P9 at Béziers, skipped")
     check.same(_struck_days(me), {p9: ["20260826"]},
@@ -170,7 +170,7 @@ def test_struck_trips_give_no_departure(record_property, entities):
     # named beside the time; asked before that, a call gone by is not listed
     me = _follower(P9, 1, p9, BEDARIEUX)
     with freeze_time(DAY.replace(hour=7, minute=30).astimezone(UTC)):
-        statuses = gtfs_rt_helper.get_rt_route_trip_statuses(me, entities)
+        statuses = realtime_mod.get_rt_route_trip_statuses(me, entities)
     slot = statuses.get(P9, {}).get("1", {}).get(BEDARIEUX, {})
     check.same(slot.get("delays"), [2100], "the P9's delay at Bédarieux")
     check.same(slot.get("trips"), [p9], "the trip behind the departure at Bédarieux")
@@ -183,7 +183,7 @@ def test_struck_trips_give_no_departure(record_property, entities):
                 s["schedule_relationship"] = "NO_DATA"
                 s["arrival"] = s["departure"] = {"time": 0, "delay": 0}
     with freeze_time(DAY.replace(hour=7, minute=30).astimezone(UTC)):
-        statuses = gtfs_rt_helper.get_rt_route_trip_statuses(me, without)
+        statuses = realtime_mod.get_rt_route_trip_statuses(me, without)
     check.same(statuses.get(P9, {}).get("1", {}).get(BEDARIEUX, {}).get("departures", []), [],
                "departures at Bédarieux when the feed has no data there")
     check.same(_struck_days(me), {}, "no data is not a strike")

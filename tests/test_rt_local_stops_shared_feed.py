@@ -17,7 +17,7 @@ from google.transit import gtfs_realtime_pb2
 
 import ha_stub
 
-local_stops = ha_stub.load("local_stops")
+local_stops = ha_stub.load("domain.local_stops")
 rt_feed = sys.modules[local_stops._read_feed.__module__]
 rt_window = ha_stub.load("data.rt_window")
 

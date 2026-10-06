@@ -66,7 +66,7 @@ feed_clocks = (ha_stub.load("data.clocks") if (ha_stub.COMPONENT / "data/clocks.
 stop_rules = (ha_stub.load("data.stop_rules") if (ha_stub.COMPONENT / "data/stop_rules.py").is_file()
               else departures)
 try:
-    local_stops = ha_stub.load("local_stops")
+    local_stops = ha_stub.load("domain.local_stops")
 except FileNotFoundError:  # a tree that reads the stops around a person in gtfs_helper
     local_stops = departures
 try:

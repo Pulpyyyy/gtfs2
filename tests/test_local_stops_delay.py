@@ -4,7 +4,7 @@ IDFM's gateway writes a zero delay beside the realtime time of a bus two
 minutes late. The line sensors read the delay as the gap to the
 timetable then (b50e267); the local stops kept the feed's zero, shown as
 "-", and the gap only in delay_realtime_derived, as text. Both now go
-through gtfs_rt_helper.delay_of: the feed's delay, else the gap, in
+through realtime.delay_of: the feed's delay, else the gap, in
 seconds.
 """
 from __future__ import annotations
@@ -19,8 +19,8 @@ import ha_stub
 
 ha_stub.install()
 
-local_stops = ha_stub.load("local_stops")
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+local_stops = ha_stub.load("domain.local_stops")
+realtime_mod = ha_stub.load("domain.realtime")
 
 PARIS = zoneinfo.ZoneInfo("Europe/Paris")
 NOW = datetime.datetime(2026, 9, 29, 8, 0, tzinfo=PARIS)
@@ -67,9 +67,9 @@ def test_on_time_or_no_realtime_says_no_delay(monkeypatch, realtime):
 
 
 def test_one_rule_for_the_line_sensors_and_the_local_stops():
-    assert gtfs_rt_helper.delay_of(0, 1_000_120, 1_000_000) == 120
-    assert gtfs_rt_helper.delay_of(None, 1_000_120, 1_000_000) == 120
-    assert gtfs_rt_helper.delay_of(90, 1_000_120, 1_000_000) == 90
+    assert realtime_mod.delay_of(0, 1_000_120, 1_000_000) == 120
+    assert realtime_mod.delay_of(None, 1_000_120, 1_000_000) == 120
+    assert realtime_mod.delay_of(90, 1_000_120, 1_000_000) == 90
     # nothing to measure the gap against: the feed's word stands
-    assert gtfs_rt_helper.delay_of(0, None, 1_000_000) == 0
-    assert gtfs_rt_helper.delay_of(0, 1_000_120, None) == 0
+    assert realtime_mod.delay_of(0, None, 1_000_000) == 0
+    assert realtime_mod.delay_of(0, 1_000_120, None) == 0

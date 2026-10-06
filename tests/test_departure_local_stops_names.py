@@ -16,7 +16,7 @@ import ha_stub
 
 ha_stub.install()
 
-local_stops = ha_stub.load("local_stops")
+local_stops = ha_stub.load("domain.local_stops")
 
 UTC = datetime.timezone.utc
 NOW = datetime.datetime(2026, 9, 24, 9, 30, tzinfo=UTC)

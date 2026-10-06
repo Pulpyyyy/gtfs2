@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import ha_stub
 
-route_names = ha_stub.load("route_names")
-line_labels = ha_stub.load("line_labels")
-line_ends = ha_stub.load("line_ends")
+line_list = ha_stub.load("domain.line_list")
+line_labels = ha_stub.load("domain.line_labels")
+line_ends = ha_stub.load("domain.line_ends")
 
 
 def test_a_long_name_that_repeats_the_number_is_dropped():
@@ -254,7 +254,7 @@ def test_the_route_list_of_a_feed_cut_by_period(tmp_path):
                         "OLD,1,1,1,1,1,1,1,20000101,20000131\n"
                         "NEXT,1,1,1,1,1,1,1,20990101,20990630\n",
         "calendar_dates.txt": "service_id,date,exception_type\nONE,20990701,1\n"})
-    assert route_names.get_route_options_from_zip(gtfs_dir, "feed") == [
+    assert line_list.get_route_options_from_zip(gtfs_dir, "feed") == [
         "2##AIR-2##AIR · 2099-01-01 → 2099-06-30##pruned",
         "2##AIR-3##AIR · 2099-07-01##pruned",
         "2##GC-1##GC##pruned"]

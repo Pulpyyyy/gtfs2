@@ -62,15 +62,15 @@ import homeassistant.util.dt as dt_util  # noqa: E402
 # pulls in the platforms and with them the rest of Home Assistant.
 departures = ha_stub.load("data.departures")
 coordinator_mod = ha_stub.load("coordinator")
-# coordinator.py's own `from .gtfs_rt_helper import ...` resolves this
+# coordinator.py's own `from .domain.realtime import ...` resolves this
 # as a real submodule of the same synthetic package -- already loaded
 # as a side effect of loading coordinator_mod, found here to patch the
 # one function inside it that touches the network.
 import sys  # noqa: E402
-gtfs_rt_helper_mod = sys.modules["gtfs2_under_test.gtfs_rt_helper"]
+realtime_mod = sys.modules["gtfs2_under_test.domain.realtime"]
 rt_feed_mod = sys.modules["gtfs2_under_test.feed.rt_feed"]
 # and the file exports the refresh calls, whose writers are patched out
-exports_mod = sys.modules["gtfs2_under_test.exports"]
+exports_mod = sys.modules["gtfs2_under_test.domain.exports"]
 
 _interpret_departure_rows = departures._interpret_departure_rows
 

@@ -17,7 +17,7 @@ from freezegun import freeze_time
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 coordinator = ha_stub.load("coordinator")
 
 UTC = datetime.timezone.utc
@@ -48,7 +48,7 @@ def _skipped(feed):
                                              "stop_time_update": updates}}
                 for trip, updates in feed.items()]
     with freeze_time(NOW):
-        gtfs_rt_helper.get_rt_route_trip_statuses(me, entities)
+        realtime.get_rt_route_trip_statuses(me, entities)
     return set(me._rt_skipped)
 
 

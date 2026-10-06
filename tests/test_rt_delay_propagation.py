@@ -17,7 +17,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 
 UTC = datetime.timezone.utc
 NOW = datetime.datetime(2026, 10, 4, 18, 0, tzinfo=UTC)
@@ -56,7 +56,7 @@ def _read(schedule, trip, updates):
     feed = [{"id": trip, "trip_update": {"trip": {"trip_id": trip, "route_id": "R1", "direction_id": "0"},
                                           "stop_time_update": updates}}]
     with freeze_time(NOW):
-        slot = gtfs_rt_helper.get_rt_route_trip_statuses(me, feed).get("R1", {}).get("0", {}).get("S1", {})
+        slot = realtime.get_rt_route_trip_statuses(me, feed).get("R1", {}).get("0", {}).get("S1", {})
     return slot.get("departures", []), slot.get("delays", [])
 
 

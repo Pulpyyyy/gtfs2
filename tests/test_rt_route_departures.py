@@ -27,7 +27,7 @@ from freezegun import freeze_time
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 rt_feed = sys.modules["gtfs2_under_test.feed.rt_feed"]
 const = sys.modules["gtfs2_under_test.const"]
 
@@ -66,7 +66,7 @@ def services(feed, me=None):
     me = me or sensor()
     with freeze_time(NOW), patch.object(rt_feed, "get_gtfs_feed_entities",
                                         lambda **_kw: feed):
-        return gtfs_rt_helper.get_next_services(me)
+        return realtime.get_next_services(me)
 
 
 def trips(attrs):
@@ -120,10 +120,10 @@ def test_a_feed_naming_no_line_is_read_by_trip():
 
 
 def test_names_trip_reads_whole_ids_between_separators():
-    assert gtfs_rt_helper._names_trip("T1", "T1")
-    assert gtfs_rt_helper._names_trip("100", "OP:100")
-    assert gtfs_rt_helper._names_trip("100", "100-20260927")
-    assert not gtfs_rt_helper._names_trip("100", "2100")
-    assert not gtfs_rt_helper._names_trip("100", "1005")
-    assert not gtfs_rt_helper._names_trip("", "100")
-    assert not gtfs_rt_helper._names_trip(None, "100")
+    assert realtime._names_trip("T1", "T1")
+    assert realtime._names_trip("100", "OP:100")
+    assert realtime._names_trip("100", "100-20260927")
+    assert not realtime._names_trip("100", "2100")
+    assert not realtime._names_trip("100", "1005")
+    assert not realtime._names_trip("", "100")
+    assert not realtime._names_trip(None, "100")

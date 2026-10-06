@@ -22,7 +22,7 @@ import ha_stub
 ha_stub.install()
 
 const = ha_stub.load("const")
-local_stops = ha_stub.load("local_stops")
+local_stops = ha_stub.load("domain.local_stops")
 
 NEW_YORK = zoneinfo.ZoneInfo("America/New_York")
 LOS_ANGELES = zoneinfo.ZoneInfo("America/Los_Angeles")

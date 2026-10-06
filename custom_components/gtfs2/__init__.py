@@ -16,10 +16,10 @@ from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAUL
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
 from .departure_services import get_route_departures, get_route_arrivals, get_trip_stops
-from .local_stops import update_gtfs_local_stops
+from .domain.local_stops import update_gtfs_local_stops
 from .notifications import (async_notify_line_orphaned, async_notify_source_unused,
                             clear_line_orphaned, clear_source_unused)
-from .exports import remove_entry_geojson
+from .domain.exports import remove_entry_geojson
 from .datasource_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
 from .data.shrink import async_train_routes
 from .feed.files import real_path, routes_in, route_name_in, get_datasources, close_schedule
@@ -41,7 +41,7 @@ from .data.source_refresh import (
     async_disarm_source_check,
     async_rearm_source_check,
 )
-from .stations import refresh_rail_index
+from .domain.stations import refresh_rail_index
 
 _LOGGER = logging.getLogger(__name__)
 

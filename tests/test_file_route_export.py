@@ -22,7 +22,7 @@ import ha_stub
 ha_stub.install()
 coordinator_mod = ha_stub.load("coordinator")
 import sys  # noqa: E402
-exports_mod = sys.modules["gtfs2_under_test.exports"]
+exports_mod = sys.modules["gtfs2_under_test.domain.exports"]
 
 ROUTE, DIRECTION, TRIP = "IDFM:C01374", "1", "T4-29"
 

@@ -11,16 +11,16 @@ import types
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 
 
 def _alerts(monkeypatch, url):
     read = []
-    monkeypatch.setattr(gtfs_rt_helper, "_read_feed",
+    monkeypatch.setattr(realtime, "_read_feed",
                         lambda me, feed_url, label: read.append((feed_url, label)) or ["entity"])
-    monkeypatch.setattr(gtfs_rt_helper, "journey_alerts",
+    monkeypatch.setattr(realtime, "journey_alerts",
                         lambda me, entities: {"origin": entities})
-    got = gtfs_rt_helper.get_rt_alerts(types.SimpleNamespace(_alerts_url=url))
+    got = realtime.get_rt_alerts(types.SimpleNamespace(_alerts_url=url))
     return got, read
 
 

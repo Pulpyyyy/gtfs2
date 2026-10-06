@@ -14,8 +14,8 @@ from google.transit import gtfs_realtime_pb2
 
 import ha_stub
 
-alerts = ha_stub.load("alerts")
-ha_stub.load("gtfs_rt_helper")
+alerts = ha_stub.load("domain.alerts")
+ha_stub.load("domain.realtime")
 
 
 def _feed(*alerts_given):

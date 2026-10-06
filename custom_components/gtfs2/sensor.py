@@ -30,12 +30,12 @@ from .const import (
     CONF_RT_ENABLED,
 )
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
-from .local_stops import local_stops_nearby
+from .domain.local_stops import local_stops_nearby
 from .feed.source_entries import has_rt_feed, source_device
 from .data.rt_window import SIGNAL_RT_WINDOW, window_state
 from .data.validity import read_feed_window, timetable_state
 from .data.source_refresh import SIGNAL_SOURCE_REFRESH, source_zip_path
-from .departure_attributes import (
+from .domain.attributes import (
     alert_details, departure_times, map_files, next_departure_attributes, next_departure_lists,
     next_service_info, realtime_attributes, route_and_trip_attributes,
     station_attributes, stop_time_attributes,

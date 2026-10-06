@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.util import slugify
 import homeassistant.util.dt as dt_util
 
-from .const import (
+from ..const import (
     base_name_of,
     id_of,
     CONF_DESTINATION_STATIONS,

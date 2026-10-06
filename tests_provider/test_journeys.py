@@ -108,7 +108,7 @@ except FileNotFoundError:  # a tree that lists a line's places in gtfs_helper
 # the station queries have a module of their own here; a checkout run with
 # --component that keeps them in gtfs_helper is read there, and a function
 # it lacks fails the cases that need it
-stations = (ha_stub.load("stations") if (ha_stub.COMPONENT / "stations.py").is_file()
+stations = (ha_stub.load("domain.stations") if (ha_stub.COMPONENT / "domain/stations.py").is_file()
             else gtfs_helper)
 # the riding order of a line's places, the same way: read in places where
 # a checkout keeps it there

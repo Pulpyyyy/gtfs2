@@ -10,7 +10,7 @@ import zipfile
 
 import ha_stub
 
-route_names = ha_stub.load("route_names")
+line_list = ha_stub.load("domain.line_list")
 
 ROUTES = ('﻿route_id,route_short_name,route_long_name,route_type\r\n'
           'R1,1,"Gare\r\nLac",3\r\n'
@@ -20,8 +20,8 @@ ROUTES = ('﻿route_id,route_short_name,route_long_name,route_type\r\n'
 def test_every_line_of_the_zip(tmp_path):
     with zipfile.ZipFile(tmp_path / "src.zip", "w") as zout:
         zout.writestr("routes.txt", ROUTES.encode("utf-8"))
-    assert route_names.get_routes_in_zip(str(tmp_path), "src") == {"R1", "R2"}
+    assert line_list.get_routes_in_zip(str(tmp_path), "src") == {"R1", "R2"}
 
 
 def test_no_zip_cannot_tell(tmp_path):
-    assert route_names.get_routes_in_zip(str(tmp_path), "src") == set()
+    assert line_list.get_routes_in_zip(str(tmp_path), "src") == set()

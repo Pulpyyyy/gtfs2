@@ -13,7 +13,7 @@ import ha_stub
 
 ha_stub.install()
 
-stations = ha_stub.load("stations")
+stations = ha_stub.load("domain.stations")
 
 TRAIN = "StopPoint:OCETrain TER-87543009"
 COACH = "StopPoint:OCECar TER-87543009"

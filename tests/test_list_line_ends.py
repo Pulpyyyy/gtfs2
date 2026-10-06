@@ -12,7 +12,7 @@ from __future__ import annotations
 import feed_db
 import ha_stub
 
-line_ends = ha_stub.load("line_ends")
+line_ends = ha_stub.load("domain.line_ends")
 
 STOPS = {"A": "Gare", "B": "Centre", "C": "Lac"}
 

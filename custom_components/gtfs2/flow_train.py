@@ -42,9 +42,9 @@ from .data.datasource import check_datasource_index, get_gtfs
 from .flow_journey import _Step
 from .data.map_files import name_in_use
 from .feed.files import close_schedule, feed_zip, real_path, routes_in
-from .line_labels import _names_nothing
+from .domain.line_labels import _names_nothing
 from .notifications import _async_text
-from .stations import (
+from .domain.stations import (
     RailIndex,
     get_line_code,
     get_station_list,

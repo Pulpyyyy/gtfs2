@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-vehicles = ha_stub.load("vehicles")
+vehicles = ha_stub.load("domain.vehicles")
 rt_feed = ha_stub.load("feed.rt_feed")
 const = ha_stub.load("const")
 

@@ -16,7 +16,7 @@ import types
 import ha_stub
 
 integration = ha_stub.load("__init__")
-exports_mod = ha_stub.load("exports")
+exports_mod = ha_stub.load("domain.exports")
 switch = ha_stub.load("switch")
 coordinator_mod = ha_stub.load("coordinator")
 
@@ -89,7 +89,7 @@ def test_two_networks_numbering_a_line_alike_write_files_of_their_own(tmp_path):
 def test_the_vehicles_are_written_and_cleared_under_both_names(tmp_path):
     # the source's name for the card, the one before for a geo_json_events
     # feed set up on its url
-    vehicles = ha_stub.load("vehicles")
+    vehicles = ha_stub.load("domain.vehicles")
     map_files = ha_stub.load("data.map_files")
     hass = _Hass(tmp_path)
     folder = _files(tmp_path, [])

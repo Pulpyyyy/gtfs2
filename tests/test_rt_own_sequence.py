@@ -19,7 +19,7 @@ from sqlalchemy import create_engine, text
 
 import ha_stub
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 
 UTC = datetime.timezone.utc
 NOW = datetime.datetime(2026, 10, 3, 19, 0, tzinfo=UTC)
@@ -71,7 +71,7 @@ def _delays(schedule, delays):
                              for sequence, delay in calls.items()]}}
         for trip, calls in delays.items()]
     with freeze_time(NOW):
-        found = gtfs_rt_helper.get_rt_route_trip_statuses(_context(schedule), feed)
+        found = realtime.get_rt_route_trip_statuses(_context(schedule), feed)
     slot = found.get("R1", {}).get("0", {}).get("S1", {})
     return dict(zip(slot.get("trips", []), slot.get("delays", [])))
 

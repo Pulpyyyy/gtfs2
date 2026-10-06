@@ -33,7 +33,7 @@ ha_stub.install()
 
 const = ha_stub.load("const")
 departures = ha_stub.load("data.departures")
-stations = ha_stub.load("stations")
+stations = ha_stub.load("domain.stations")
 stop_rules = ha_stub.load("data.stop_rules")
 
 O, A, P = "Orleans", "Les Aubrais", "Paris Austerlitz"
@@ -179,17 +179,17 @@ def test_the_stations_between_follow_the_ride_not_the_alphabet():
 def test_the_sensor_names_every_station_of_each_end():
     # the departure's own ends are the next train's alone; a card cuts the
     # leg from the first station to the last
-    departure_attributes = ha_stub.load("departure_attributes")
+    attributes = ha_stub.load("domain.attributes")
     departure = {"origin_stop_name": A, "origin_stop_id": "SA", "destination_stop_name": P,
                  "destination_stop_id": "SP"}
     listed: dict = {}
-    departure_attributes.station_attributes(listed, departure, None, None, None, "2",
+    attributes.station_attributes(listed, departure, None, None, None, "2",
                                             {"origin_stations": [O, A], "destination_stations": [P]})
     assert (listed["origin_stations"], listed["destination_stations"]) == ([O, A], [P])
     assert listed["origin_station_stop_name"] == A
     # an entry made before lists none, and its sensor says none
     before: dict = {}
-    departure_attributes.station_attributes(before, departure, None, None, None, "2", {"origin": O})
+    attributes.station_attributes(before, departure, None, None, None, "2", {"origin": O})
     assert "origin_stations" not in before and "destination_stations" not in before
 
 

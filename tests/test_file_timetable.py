@@ -100,7 +100,7 @@ def test_the_refresh_does_not_wait_for_the_timetable(tmp_path, monkeypatch):
     import sys
 
     coordinator_mod = ha_stub.load("coordinator")
-    exports_mod = sys.modules[coordinator_mod.__name__.rsplit(".", 1)[0] + ".exports"]
+    exports_mod = sys.modules[coordinator_mod.__name__.rsplit(".", 1)[0] + ".domain.exports"]
     written, started, updates = [], [], []
 
     def write(hass, data, today, zip_path):
@@ -157,7 +157,7 @@ def test_a_rebuilt_database_writes_the_timetable_again(tmp_path, monkeypatch, ca
     import sys
 
     coordinator_mod = ha_stub.load("coordinator")
-    exports_mod = sys.modules[coordinator_mod.__name__.rsplit(".", 1)[0] + ".exports"]
+    exports_mod = sys.modules[coordinator_mod.__name__.rsplit(".", 1)[0] + ".domain.exports"]
     written = []
     monkeypatch.setattr(exports_mod, "write_timetable_file",
                         lambda hass, data, today, zip_path: written.append(data["name"]))

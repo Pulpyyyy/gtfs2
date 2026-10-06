@@ -28,9 +28,9 @@ ha_stub.install()
 import fixture_db  # noqa: E402
 import test_journeys as tj  # noqa: E402
 
-gtfs_rt_helper = ha_stub.load("gtfs_rt_helper")
+realtime = ha_stub.load("domain.realtime")
 rt_feed = ha_stub.load("feed.rt_feed")
-alerts_mod = ha_stub.load("alerts")
+alerts_mod = ha_stub.load("domain.alerts")
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sncf"
 # the capture's alerts say when they apply, and most of them ran out at the
@@ -74,16 +74,16 @@ def test_alerts_reach_the_listed_trips(record_property, monkeypatch):
 
     with freeze_time(CAPTURED):
         # the quiet trip alone: nothing
-        got = gtfs_rt_helper.get_rt_alerts(follower(quiet, []))
+        got = realtime.get_rt_alerts(follower(quiet, []))
         check.same(got.get("origin_stop_alerts"), None, "alerts on the quiet trip alone")
         # the named trip as the next departure: found, hung on it
-        got = gtfs_rt_helper.get_rt_alerts(follower(named, []))
+        got = realtime.get_rt_alerts(follower(named, []))
         items = got.get("origin_stop_alerts") or []
         check.same(len(items), 1, "alerts on the named trip as the next departure")
         check.same([i.get("trips") for i in items], [[named]], "the alert names that trip")
         check.same([i.get("later_only") for i in items], [None], "it concerns the next departure")
         # the named trip listed behind the quiet one: found too, marked as later
-        got = gtfs_rt_helper.get_rt_alerts(follower(quiet, [named]))
+        got = realtime.get_rt_alerts(follower(quiet, [named]))
         items = got.get("origin_stop_alerts") or []
         check.same(len(items), 1, "alerts with the named trip listed second")
         check.same([i.get("trips") for i in items], [[named]], "the alert names the listed trip")
@@ -95,13 +95,13 @@ def test_alerts_reach_the_listed_trips(record_property, monkeypatch):
     # the same feed read a year later: every period is over, and an alert
     # that applied last summer is not published as if it were current
     with freeze_time(CAPTURED + datetime.timedelta(days=365)):
-        got = gtfs_rt_helper.get_rt_alerts(follower(named, []))
+        got = realtime.get_rt_alerts(follower(named, []))
         check.same(got.get("origin_stop_alerts"), None, "the same alert once its period is over")
     # announced for a day ahead: kept, but never ahead of what runs now.
     # A year earlier, since the capture's alerts were published weeks
     # before they applied and a month back is already inside their period
     with freeze_time(CAPTURED - datetime.timedelta(days=365)):
-        got = gtfs_rt_helper.get_rt_alerts(follower(named, []))
+        got = realtime.get_rt_alerts(follower(named, []))
         items = got.get("origin_stop_alerts") or []
         # its start says it: later_only is for a later departure only
         check.same([i.get("later_only") for i in items] or None, [None],
@@ -163,19 +163,19 @@ def test_alerts_name_their_stops(record_property, monkeypatch):
     # Versigny, passed on the way, named by its station as IDFM does
     monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                         lambda **_kw: [works("StopArea:OCE87296608")])
-    got = gtfs_rt_helper.get_rt_alerts(follower())
+    got = realtime.get_rt_alerts(follower())
     items = got.get("origin_stop_alerts") or []
     check.same([i.get("stops") for i in items], [["Versigny"]], "the station passed is named")
     check.same(got.get("origin_stop_alert"), "Travaux", "the sentence stays the feed's")
     # the departure itself, named by its platform: the station's name
     monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                         lambda **_kw: [works("StopPoint:OCECar TER-87296442")])
-    items = gtfs_rt_helper.get_rt_alerts(follower()).get("origin_stop_alerts") or []
+    items = realtime.get_rt_alerts(follower()).get("origin_stop_alerts") or []
     check.same([i.get("stops") for i in items], [["Tergnier"]], "the departure is named")
     # a station off the journey: no alert at all, as before
     monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                         lambda **_kw: [works("StopArea:OCE99999999")])
-    check.same(gtfs_rt_helper.get_rt_alerts(follower()).get("origin_stop_alerts"), None,
+    check.same(realtime.get_rt_alerts(follower()).get("origin_stop_alerts"), None,
                "a station off the journey")
     # the same sentence at two stations is two alerts
     two = [{"text": "Travaux", "stops": ["A"]}, {"text": "Travaux", "stops": ["B"]}]
@@ -240,7 +240,7 @@ def test_alerts_to_come_say_when(record_property, monkeypatch):
         # only alerts to come: listed, dated, and nothing current is said
         monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                             lambda **_kw: [works, police])
-        got = gtfs_rt_helper.get_rt_alerts(follower())
+        got = realtime.get_rt_alerts(follower())
         items = got.get("origin_stop_alerts") or []
         check.same([i["text"] for i in items],
                    ["Travaux de modernisation - Trafic interrompu",
@@ -258,7 +258,7 @@ def test_alerts_to_come_say_when(record_property, monkeypatch):
         # with a slowdown now: it takes the sentence, the effect and the head
         monkeypatch.setattr(rt_feed, "get_gtfs_feed_entities",
                             lambda **_kw: [works, police, delay])
-        got = gtfs_rt_helper.get_rt_alerts(follower())
+        got = realtime.get_rt_alerts(follower())
         items = got.get("origin_stop_alerts") or []
         check.same([i["text"] for i in items][:1], ["Trafic ralenti"], "what applies now comes first")
         check.same((items[0].get("later_only"), items[0].get("periods")),

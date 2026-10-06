@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql import text
 
-from .data.validity import runs_some_day
-from .feed.files import feed_zip, file_edition
-from .data.zip_filter import _member, table_reader, table_rows
+from ..data.validity import runs_some_day
+from ..feed.files import feed_zip, file_edition
+from ..data.zip_filter import _member, table_reader, table_rows
 
 if TYPE_CHECKING:
     # for the annotations only
