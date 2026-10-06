@@ -90,7 +90,7 @@
         "data_description": {
           "url": "Desde dónde se descarga el zip. Cámbiela cuando el proveedor mueva o renumere sus direcciones; el nombre y todo lo construido a partir del feed se conservan.",
           "needs_api_key": "Marque esto si el proveedor le dio una clave para descargar el archivo. Desmárquelo para eliminar una clave que la fuente ya no necesita.",
-          "static_refresh_mode": "Desactivado no cambia nada para esta fuente.",
+          "static_refresh_mode": "**No hacer nada** nunca comprueba: el botón de actualizar sigue actualizando la fuente cuando lo pida.",
           "static_check_interval": "En horas: 24 es diario, 360 es cada 15 días. El momento exacto se elige por usted, de noche para los ritmos diarios y más lentos, y escalonado por fuente para repartir las actualizaciones."
         }
       },
@@ -466,7 +466,7 @@
         "data_description": {
           "url": "Desde dónde se descarga el zip. Cámbiela cuando el proveedor mueva o renumere sus direcciones; el nombre y todo lo construido a partir del feed se conservan.",
           "needs_api_key": "Marque esto si el proveedor le dio una clave para descargar el archivo. Desmárquelo para eliminar una clave que la fuente ya no necesita.",
-          "static_refresh_mode": "Desactivado no cambia nada para esta fuente.",
+          "static_refresh_mode": "**No hacer nada** nunca comprueba: el botón de actualizar sigue actualizando la fuente cuando lo pida.",
           "static_check_interval": "En horas: 24 es diario, 360 es cada 15 días. El momento exacto se elige por usted, de noche para los ritmos diarios y más lentos, y escalonado por fuente para repartir las actualizaciones."
         }
       },

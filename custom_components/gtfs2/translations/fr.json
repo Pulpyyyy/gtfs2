@@ -90,7 +90,7 @@
         "data_description": {
           "url": "D'où le zip est téléchargé. À changer quand l'hébergeur déménage ou renumérote ses adresses ; le nom et tout ce qui est construit depuis le fichier restent.",
           "needs_api_key": "Cochez si le fournisseur vous a remis une clé pour télécharger le fichier. Décochez pour retirer une clé dont la source n'a plus besoin.",
-          "static_refresh_mode": "Ne rien faire : rien ne change pour cette source.",
+          "static_refresh_mode": "**Ne rien faire** ne vérifie jamais : le bouton de rafraîchissement rafraîchit toujours la source à la demande.",
           "static_check_interval": "En heures : 24 pour tous les jours, 360 pour tous les 15 jours. Le moment exact est choisi pour vous, la nuit pour les rythmes quotidiens et plus lents, et étalé par source pour lisser les mises à jour."
         }
       },
@@ -466,7 +466,7 @@
         "data_description": {
           "url": "D'où le zip est téléchargé. À changer quand l'hébergeur déménage ou renumérote ses adresses ; le nom et tout ce qui est construit depuis le fichier restent.",
           "needs_api_key": "Cochez si le fournisseur vous a remis une clé pour télécharger le fichier. Décochez pour retirer une clé dont la source n'a plus besoin.",
-          "static_refresh_mode": "Ne rien faire : rien ne change pour cette source.",
+          "static_refresh_mode": "**Ne rien faire** ne vérifie jamais : le bouton de rafraîchissement rafraîchit toujours la source à la demande.",
           "static_check_interval": "En heures : 24 pour tous les jours, 360 pour tous les 15 jours. Le moment exact est choisi pour vous, la nuit pour les rythmes quotidiens et plus lents, et étalé par source pour lisser les mises à jour."
         }
       },

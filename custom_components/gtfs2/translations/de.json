@@ -90,7 +90,7 @@
         "data_description": {
           "url": "Von wo die ZIP-Datei heruntergeladen wird. Ändern Sie sie, wenn der Anbieter seine Adressen verschiebt oder neu nummeriert; der Name und alles aus dem Feed Aufgebaute bleiben erhalten.",
           "needs_api_key": "Aktivieren, wenn der Anbieter Ihnen einen Schlüssel zum Herunterladen der Datei gegeben hat. Deaktivieren, um einen Schlüssel zu entfernen, den die Quelle nicht mehr braucht.",
-          "static_refresh_mode": "Aus ändert für diese Quelle nichts.",
+          "static_refresh_mode": "**Nichts tun** prüft nie: der Aktualisierungsknopf aktualisiert die Quelle weiterhin auf Wunsch.",
           "static_check_interval": "In Stunden: 24 ist täglich, 360 alle 15 Tage. Der genaue Zeitpunkt wird für Sie gewählt, nachts bei täglichen und langsameren Rhythmen, und je Quelle versetzt, damit sich die Aktualisierungen verteilen."
         }
       },
@@ -466,7 +466,7 @@
         "data_description": {
           "url": "Von wo die ZIP-Datei heruntergeladen wird. Ändern Sie sie, wenn der Anbieter seine Adressen verschiebt oder neu nummeriert; der Name und alles aus dem Feed Aufgebaute bleiben erhalten.",
           "needs_api_key": "Aktivieren, wenn der Anbieter Ihnen einen Schlüssel zum Herunterladen der Datei gegeben hat. Deaktivieren, um einen Schlüssel zu entfernen, den die Quelle nicht mehr braucht.",
-          "static_refresh_mode": "Aus ändert für diese Quelle nichts.",
+          "static_refresh_mode": "**Nichts tun** prüft nie: der Aktualisierungsknopf aktualisiert die Quelle weiterhin auf Wunsch.",
           "static_check_interval": "In Stunden: 24 ist täglich, 360 alle 15 Tage. Der genaue Zeitpunkt wird für Sie gewählt, nachts bei täglichen und langsameren Rhythmen, und je Quelle versetzt, damit sich die Aktualisierungen verteilen."
         }
       },

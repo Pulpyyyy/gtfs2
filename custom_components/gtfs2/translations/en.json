@@ -90,7 +90,7 @@
         "data_description": {
           "url": "Where the zip is downloaded from. Change it when the provider moves or renumbers its urls; the name and everything built from the feed stay.",
           "needs_api_key": "Tick this if the provider gave you a key to download the file. Untick it to drop a key the source no longer needs.",
-          "static_refresh_mode": "Off changes nothing for this source.",
+          "static_refresh_mode": "**Do nothing** never checks: the refresh button still refreshes the source on demand.",
           "static_check_interval": "In hours: 24 is daily, 360 is every 15 days. The exact moment is chosen for you, at night for daily and slower rhythms, and staggered per source so updates spread out."
         }
       },
@@ -466,7 +466,7 @@
         "data_description": {
           "url": "Where the zip is downloaded from. Change it when the provider moves or renumbers its urls; the name and everything built from the feed stay.",
           "needs_api_key": "Tick this if the provider gave you a key to download the file. Untick it to drop a key the source no longer needs.",
-          "static_refresh_mode": "Off changes nothing for this source.",
+          "static_refresh_mode": "**Do nothing** never checks: the refresh button still refreshes the source on demand.",
           "static_check_interval": "In hours: 24 is daily, 360 is every 15 days. The exact moment is chosen for you, at night for daily and slower rhythms, and staggered per source so updates spread out."
         }
       },
