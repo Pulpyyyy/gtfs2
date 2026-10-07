@@ -275,14 +275,18 @@ def _is_rail_type(value: str | None) -> bool:
 
 
 def get_train_routes_between(schedule: Schedule | RailIndex, origin_name: str, destination_name: str,
-                             board_also: list[str], alight_also: list[str]) -> list[str]:
+                             board_also: list[str], alight_also: list[str],
+                             line: str | list[str] | None = None) -> list[str]:
     """The route ids of the rail trips riding from the departure or a
     station on the way to the arrival or a station on the way, the real
     departure or arrival at one end at least: the lines a journey on every
-    line imports, those it may hold to on its options screen."""
+    line imports, those it may hold to on its options screen. Held to the
+    line codes given, every rail line when none."""
     origin_in, params = station_names_in("origin", [origin_name, *board_also])
     dest_in, dest_params = station_names_in("dest", [destination_name, *alight_also])
     params.update(dest_params)
+    line_where, line_params = line_codes_where("r.route_short_name", line)
+    params.update(line_params)
     sql = f"""
     SELECT distinct t.route_id
     from trips t
@@ -297,6 +301,7 @@ def get_train_routes_between(schedule: Schedule | RailIndex, origin_name: str, d
       and sd.stop_name in {dest_in}
       and (so.stop_name = :origin or sd.stop_name = :destination)
       and {_boards("o")} and {_alights("d")}
+      {line_where}
     order by t.route_id
     """  # noqa: S608
     with schedule.engine.connect() as conn:
@@ -306,10 +311,12 @@ def get_train_routes_between(schedule: Schedule | RailIndex, origin_name: str, d
 
 
 def train_routes_both_ways(schedule: Schedule | RailIndex, origin_name: str,
-                           destination_name: str) -> list[str]:
+                           destination_name: str,
+                           line: str | list[str] | None = None) -> list[str]:
     """The route ids the trains between two stations picked first ride,
     either way round, any station between boarded or got off at: what its
-    source has to hold before the options screen and the return read it.
+    source has to hold for the sensors of the lines ticked (line, every
+    rail line when none) and their returns to read.
 
     Both ways, since the return is the journey's mirror and a line may run
     one way only under its code (SNCF: K8+ out, P8 back). The ones riding
@@ -319,7 +326,7 @@ def train_routes_both_ways(schedule: Schedule | RailIndex, origin_name: str,
     wanted: list[str] = []
     for start, end in ((origin_name, destination_name), (destination_name, origin_name)):
         between = get_train_stations_between(schedule, start, end)
-        for route_id in get_train_routes_between(schedule, start, end, between, between):
+        for route_id in get_train_routes_between(schedule, start, end, between, between, line):
             if route_id not in wanted:
                 wanted.append(route_id)
     return wanted
@@ -653,7 +660,7 @@ def _trip_ends(schedule: Schedule | RailIndex, trip_ids: set[Any]) -> list[str]:
     return [f"{a} ↔ {b}" for a, b in sorted(pairs)]
 
 
-def train_line_ends(schedule: Schedule, origin_names: list[str], destination_names: list[str],
+def train_line_ends(schedule: Schedule | RailIndex, origin_names: list[str], destination_names: list[str],
                     line: str | list[str] | None) -> tuple[list[str], list[str]]:
     """(the departure stations, the arrival stations) one line serves of
     those asked, in the order asked: where a train of it takes riders on

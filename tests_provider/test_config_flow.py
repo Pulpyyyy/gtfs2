@@ -1114,32 +1114,56 @@ def test_a_line_ticked_keeps_only_the_stations_it_serves(world, tmp_path):
     walk(world, scenario)
 
 
+def held_routes(hass, file):
+    """The route ids a source's database holds; none before it has one.
+    Looked at without opening it: a connection would make the file."""
+    if not (gtfs_dir(hass) / f"{file}.sqlite").exists():
+        return set()
+    if not rows(hass, file, "select 1 from sqlite_master where type = 'table' and name = 'trips'"):
+        return set()
+    return {r for (r,) in rows(hass, file, "select distinct route_id from trips")}
+
+
+async def fresh_rail_options(hass):
+    """A fresh source of sncf-journeys, the stations first, Orleans to
+    Paris Austerlitz: the options screen."""
+    drop_zip(hass, "sncf-journeys", "sncf")
+    where = await choose(hass, await start(hass), "source")
+    folder = await choose(hass, where, "source_zip")
+    # past the realtime screen, left empty
+    return await rail_options(hass, shown(await submit(hass, await submit(hass, folder, file="sncf")),
+                                          FORM, "route"))
+
+
+async def rail_options(hass, lines):
+    """From the line screen, the stations first, Orleans to Paris
+    Austerlitz: the options screen."""
+    first = offered(lines, "route")[0]
+    assert first.split("##")[:2] == ["2", "train"]
+    stations = shown(await submit(hass, lines, route=first), FORM, "stops_train")
+    # the feed's stations, Jura and Camargue lines included
+    assert {"Orléans", "Paris Austerlitz", "Saint-Claude"} <= set(offered(stations, "origin"))
+    arrivals = shown(await submit(hass, stations, origin="Orléans"), FORM, "destination_train")
+    return shown(await submit(hass, arrivals, destination="Paris Austerlitz"),
+                 FORM, "options_train")
+
+
+K8 = "FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:"
+P8_ORLEANS = "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"
+
+
 def test_a_train_journey_from_the_stations_first_imports_the_lines_it_rides(world):
     # a source holds the lines asked for, not the network: on a fresh one
-    # the stations come from the zip, and the lines riding between the
-    # two picked, either way, are imported before the options screen
+    # the stations and the lines come from the zip, and the lines ticked
+    # are imported once ticked, either way round
     async def scenario(hass):
-        drop_zip(hass, "sncf-journeys", "sncf")
-        where = await choose(hass, await start(hass), "source")
-        folder = await choose(hass, where, "source_zip")
-        # past the realtime screen, left empty
-        lines = shown(await submit(hass, await submit(hass, folder, file="sncf")), FORM, "route")
-        first = offered(lines, "route")[0]
-        assert first.split("##")[:2] == ["2", "train"]
-        stations = shown(await submit(hass, lines, route=first), FORM, "stops_train")
-        # the feed's stations, Jura and Camargue lines included
-        assert {"Orléans", "Paris Austerlitz", "Saint-Claude"} <= set(offered(stations, "origin"))
-        arrivals = shown(await submit(hass, stations, origin="Orléans"), FORM, "destination_train")
-        options = shown(await submit(hass, arrivals, destination="Paris Austerlitz"),
-                        FORM, "options_train")
+        options = await fresh_rail_options(hass)
         assert "import_partial" not in (options.get("errors") or {}).values()
-        loaded = {r for (r,) in rows(hass, "sncf", "select distinct route_id from trips")}
-        # K8+ and the P8 of Paris - Orleans, not the P8 of the Jura or of Nimes
-        assert loaded == {"FR:Line::1BF2D66F-09EF-4CB8-A003-1417C1EA6532:",
-                          "FR:Line::89BD9468-3499-4B6B-B3CB-50073CDD3F95:"}
         assert {"K8+", "P8"} <= set(offered(options, "lines"))
         sensors = shown(await submit(hass, options, also_at=["Les Aubrais"],
                                      lines=["K8+", "P8"]), FORM, "sensors_train")
+        # K8+ and the P8 of Paris - Orleans, not the P8 of the Jura or of Nimes
+        assert held_routes(hass, "sncf") == {K8, P8_ORLEANS}
         shown(await submit(hass, sensors, add_return=True), MENU, "finished")
         made = {entry.data["name"]: entry.data for entry in hass.journeys()}
         assert len(made) == 4
@@ -1149,6 +1173,24 @@ def test_a_train_journey_from_the_stations_first_imports_the_lines_it_rides(worl
         ride_back = made["sncf P8 Paris Austerlitz → Orléans"]
         assert ride_back["destination_stations"] == ["Orléans", "Les Aubrais"]
         assert (ride_back["lines"], ride_back["line"]) == (["P8"], "P8")
+    walk(world, scenario)
+
+
+def test_a_train_journey_imports_only_the_lines_ticked(world):
+    # every line riding between the two stations was imported as the
+    # arrival was picked: a flow closed on the options screen kept them all
+    # (.239: nineteen lines for Paris Austerlitz -> Bordeaux, none ticked)
+    async def scenario(hass):
+        options = await fresh_rail_options(hass)
+        hass.config_entries.flow.async_abort(options["flow_id"])
+        assert held_routes(hass, "sncf") == set()
+        options = await rail_options(hass, shown(await to_lines(hass, "sncf"), FORM, "route"))
+        naming = shown(await submit(hass, options, also_at=[], lines=["K8+"]),
+                       FORM, "sensor_train")
+        assert held_routes(hass, "sncf") == {K8}
+        shown(await submit(hass, naming, name=default(naming, "name"), add_return=True),
+              MENU, "finished")
+        assert sorted(entry.data["line"] for entry in hass.journeys()) == ["K8+", "K8+"]
     walk(world, scenario)
 
 

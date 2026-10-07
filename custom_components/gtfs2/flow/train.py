@@ -12,7 +12,7 @@ reads and writes the flow's own state (self).
 from __future__ import annotations
 
 import logging
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -186,17 +186,20 @@ class TrainScreens:
             self._rail = (file, index)
         return self._rail[1] or self._pygtfs
 
-    async def _train_lines_missing(self, origin: str, destination: str) -> list[str]:
+    async def _train_lines_missing(self, origin: str, destination: str,
+                                   lines: Sequence[str | None] | None = None) -> list[str]:
         """The lines riding between the two stations picked first, either
-        way, that the source does not hold yet: imported before the options screen reads
-        them. [] when nothing is missing, or nothing can tell (no index,
+        way, that the source does not hold yet: those of the codes ticked
+        on the options screen, imported once ticked; every one when no code
+        is given. [] when nothing is missing, or nothing can tell (no index,
         a database that would not answer): the screens then read the
         source as it stands."""
         index = self._rail[1] if self._rail else None
         if index is None:
             return []
+        codes = [str(line) for line in lines or [] if line]
         wanted = await self.hass.async_add_executor_job(
-            train_routes_both_ways, index, origin, destination)
+            train_routes_both_ways, index, origin, destination, codes or None)
         loaded = await self.hass.async_add_executor_job(
             routes_in, real_path(self.hass.config.path(DEFAULT_PATH), self._user_inputs.get(CONF_FILE, "")))
         if loaded is None:
@@ -341,19 +344,20 @@ class TrainScreens:
             # the picked line's code: the departures hold to that line
             "line": line,
         }
-        # from the stations first, they came from the feed: the lines riding
-        # between them, either way, that the source lacks are imported
-        # first, and the options screen then reads them from the source
-        # (ReloadScreens._reopen_after_import). A fresh source lacks them all
+        # from the stations first, they came from the feed: when the source
+        # lacks lines riding between them, either way, the options screen
+        # reads them from the zip, and only the lines ticked there are
+        # imported. A fresh source lacks them all. They were imported here,
+        # every one: a flow left on the options screen kept nineteen lines
+        # for none ticked (.239, Paris Austerlitz -> Bordeaux, sncf 1.4 to
+        # 6.3 MB), and nothing drops them on its own
         missing = await self._train_lines_missing(origin, destination) if route_id is None else []
+        self._train_import = bool(missing)
         if missing:
             self._user_inputs.update(data)
             self._user_inputs[CONF_DIRECTION] = "0"
             self._user_inputs[CONF_ROUTE] = ALL_TRAINS
-            self._import_routes = missing
-            self._train_import = True
-            _LOGGER.debug("Lines to import for %s -> %s: %s", origin, destination, missing)
-            return await self.async_step_importing()
+            return await self.async_step_options_train()
         check_config = await self._check_config(data)
         if check_config == "extracting":
             # the datasource is being unpacked: nothing to correct here, the
@@ -390,11 +394,14 @@ class TrainScreens:
         origin = self._user_inputs.get(CONF_ORIGIN, "")
         destination = self._user_inputs.get(CONF_DESTINATION, "")
         picked = self._user_inputs.get("line")
+        # the zip's trains while the source lacks lines to offer, the source
+        # once it holds them all (async_step_destination_train)
+        source = self._rail[1] if self._train_import and self._rail else self._pygtfs
         try:
             between = await self.hass.async_add_executor_job(
-                get_train_stations_between, self._pygtfs, origin, destination)
+                get_train_stations_between, source, origin, destination)
             lines = await self.hass.async_add_executor_job(
-                get_train_lines_between, self._pygtfs, origin, destination, between, between)
+                get_train_lines_between, source, origin, destination, between, between)
         except Exception as ex:  # pylint: disable=broad-except
             _LOGGER.exception("Error reading the options from %s to %s: %s", origin, destination, ex)
             return self.async_abort(reason="no_stops_read")
@@ -428,16 +435,50 @@ class TrainScreens:
         if lines and not chosen:
             # a line the feed gives no code offers none, and holds to none
             return _show({"base": "no_line_ticked"}, user_input)
-        self._train_plans = await self._line_plans(origins, destinations, chosen or [None], picked)
+        self._train_plans = await self._line_plans(source, origins, destinations,
+                                                   chosen or [None], picked)
         if not self._train_plans:
             # no train of the lines ticked rides from one end to the other
             return _show({"base": "no_train_between"}, user_input)
+        if self._train_import:
+            return await self._lines_in_then_named(
+                chosen, lambda error: _show({"base": error}, user_input))
+        return await self._name_train_plans()
+
+    async def _lines_in_then_named(self, chosen: list[str],
+                                   refused: Callable[[str], FlowResult]) -> FlowResult:
+        """The lines ticked the source lacks come in, and the sensors are
+        named once they are there (ReloadScreens._reopen_after_import);
+        refused shows the options again with the error the source gave."""
+        origin = self._user_inputs.get(CONF_ORIGIN, "")
+        destination = self._user_inputs.get(CONF_DESTINATION, "")
+        missing = await self._train_lines_missing(origin, destination, chosen)
+        if missing:
+            self._import_routes = missing
+            _LOGGER.debug("Lines to import for %s -> %s: %s", origin, destination, missing)
+            return await self.async_step_importing()
+        # every line ticked is there already: the source is opened and
+        # checked as the arrival screen does when nothing is missing
+        check_config = await self._check_config(self._user_inputs)
+        if check_config == "extracting":
+            return await self.async_step_extracting()
+        if check_config:
+            return refused(check_config)
+        return await self._name_train_plans()
+
+    async def _name_train_plans(self) -> FlowResult:
+        """The naming screen of the lines ticked: one sensor's, or the list
+        of several."""
+        # the lines are in: an import later in this flow (another journey
+        # on the same line) is not this one's
+        self._train_import = False
         if len(self._train_plans) == 1:
             self._take_plan(self._train_plans[0])
             return await self.async_step_sensor_train()
         return await self.async_step_sensors_train()
 
-    async def _line_plans(self, origins: list[str], destinations: list[str],
+    async def _line_plans(self, source: Schedule | RailIndex | str | None,
+                          origins: list[str], destinations: list[str],
                           chosen: list[str | None], picked: str | None) -> list[dict]:
         """The entry of each line ticked, and its return: the stations of
         each end its trains serve, of those ticked, and its name.
@@ -455,7 +496,7 @@ class TrainScreens:
         plans = []
         for line in chosen:
             ons, offs = await self.hass.async_add_executor_job(
-                train_line_ends, self._pygtfs, origins, destinations, line)
+                train_line_ends, source, origins, destinations, line)
             if not ons or not offs:
                 continue
             start = origin if origin in ons else ons[0]
@@ -475,7 +516,7 @@ class TrainScreens:
                 "return": {},
             }
             back_ons, back_offs = await self.hass.async_add_executor_job(
-                train_line_ends, self._pygtfs, destinations, origins, line)
+                train_line_ends, source, destinations, origins, line)
             if back_ons and back_offs:
                 back_start = end if end in back_ons else back_ons[0]
                 back_end = start if start in back_offs else back_offs[0]

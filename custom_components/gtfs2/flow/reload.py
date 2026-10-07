@@ -106,6 +106,7 @@ class ReloadScreens:
     async_step_route: _Step
     async_step_direction: _Step
     async_step_options_train: _Step
+    _name_train_plans: _Step
     _train_import: bool
 
     async def async_step_route_reload_only(self, user_input: dict | None = None) -> FlowResult:
@@ -336,11 +337,12 @@ class ReloadScreens:
             check_datasource_index, self.hass, self._pygtfs, DEFAULT_PATH,
             self._user_inputs[CONF_FILE])
         if self._train_import:
-            # the lines riding between the two stations picked first,
-            # imported once they were picked: on to its options, which read them, and
-            # say which did not come in
-            self._train_import = False
-            return await self.async_step_options_train()
+            # the lines ticked on the options screen of a train journey from
+            # the stations first: on to naming their sensors, or back to the
+            # options, which say which did not come in
+            if self._import_missing:
+                return await self.async_step_options_train()
+            return await self._name_train_plans()
         if self._import_missing:
             # not every line asked for came in: the departure screen, the
             # next the rider reads, says which did not
