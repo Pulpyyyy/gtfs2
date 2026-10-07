@@ -1201,6 +1201,52 @@ def test_a_train_line_with_no_short_name_leads_somewhere(world, tmp_path):
     walk(world, scenario)
 
 
+def _as_suburban_rail(name, text):
+    """routes.txt with every rail route filed under 109, suburban railway,
+    the extended type Helsinki and Leipzig give their commuter trains."""
+    if name.rsplit("/", 1)[-1] != "routes.txt":
+        return None
+    header, *lines = text.splitlines()
+    at = header.split(",").index("route_type")
+    moved = [",".join("109" if i == at and cell == "2" else cell for i, cell in enumerate(line.split(",")))
+             for line in lines]
+    return "\n".join([header, *moved]) + "\n"
+
+
+def test_a_line_of_an_extended_rail_type_takes_the_train_screens(world, tmp_path):
+    # a 109 line picked alone went through the bus screens (stop by quay,
+    # a direction to pick), while the stations first choice took it as a
+    # train: one line, two ways to set it up
+    feed = tmp_path / "suburban"
+    feed.mkdir()
+    rewritten_zip("sncf-journeys", feed / "static.zip", _as_suburban_rail)
+
+    async def scenario(hass):
+        shutil.copyfile(feed / "static.zip", gtfs_dir(hass) / "rail.zip")
+        built = sqlite3.connect(fixture_db.build(str(feed)).engine.url.database)
+        copy = sqlite3.connect(gtfs_dir(hass) / "rail.sqlite")
+        try:
+            built.backup(copy)
+        finally:
+            copy.close()
+            built.close()
+        await rt_source.async_ensure_datasource_entry(
+            hass, "rail", api={})
+        lines = shown(await to_lines(hass, "rail"), FORM, "route")
+        (route,) = [r for r in offered(lines, "route") if "Dole - St Claude" in r.split("##")[2]]
+        assert route.split("##")[0] == "109"
+        stations = shown(await submit(hass, lines, route=route), FORM, "stops_train")
+        origin = offered(stations, "origin")[0]
+        arrivals = shown(await submit(hass, stations, origin=origin), FORM, "destination_train")
+        destination = offered(arrivals, "destination")[0]
+        options = await submit(hass, arrivals, destination=destination)
+        naming = shown(await through_options(hass, options), FORM, "sensor_train")
+        await submit(hass, naming, name=default(naming, "name"), add_return=False)
+        (journey,) = hass.journeys()
+        assert journey.data["route_type"] == "2"
+    walk(world, scenario)
+
+
 def test_a_station_no_train_leaves_sends_the_rider_back_to_the_departures(world):
     async def scenario(hass):
         await install_source(hass, "sncf-journeys", "sncf")

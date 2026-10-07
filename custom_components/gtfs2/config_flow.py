@@ -525,7 +525,10 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
             # read the stops of nothing. The list comes back, saying so
             self._pending_error = "route_not_listed"
             return await self.async_step_route()
-        user_input[CONF_ROUTE_TYPE] = _picked[0]
+        # every rail type is a train, the extended ones too (109 suburban
+        # railway in Helsinki and Leipzig): "2" is what sends the entry
+        # down the station screens and its departures through the train query
+        user_input[CONF_ROUTE_TYPE] = "2" if _is_rail(user_input[CONF_ROUTE]) else _picked[0]
         user_input[CONF_ROUTE] = _picked[1]
         # the readable part is only used to suggest a sensor name; every
         # train line names none
