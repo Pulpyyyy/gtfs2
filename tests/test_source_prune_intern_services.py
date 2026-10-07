@@ -18,7 +18,7 @@ import types
 
 import ha_stub
 
-services = ha_stub.load("datasource_services")
+services = ha_stub.load("source_services")
 source_refresh = ha_stub.load("data.source_refresh")
 
 

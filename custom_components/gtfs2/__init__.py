@@ -20,7 +20,7 @@ from .domain.local_stops import update_gtfs_local_stops
 from .notifications import (async_notify_line_orphaned, async_notify_source_unused,
                             clear_line_orphaned, clear_source_unused)
 from .domain.exports import remove_entry_geojson
-from .datasource_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
+from .source_services import async_intern_datasources, async_prune_datasources, async_update_gtfs
 from .data.shrink import async_train_routes
 from .feed.files import real_path, routes_in, route_name_in, get_datasources, close_schedule
 from .feed.rt_local import get_gtfs_rt

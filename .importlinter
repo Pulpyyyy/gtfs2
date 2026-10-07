@@ -13,7 +13,7 @@ type = layers
 containers =
     custom_components.gtfs2
 layers =
-    coordinator : sensor : update : button : switch : datasource_services : departure_services : repairs
+    coordinator : sensor : update : button : switch : source_services : departure_services : repairs
     config_flow : flow
     domain
     data

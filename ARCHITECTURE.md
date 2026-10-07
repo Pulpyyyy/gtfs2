@@ -356,7 +356,7 @@ sensor.py          departure sensors, and the two diagnostic sensors of a source
 update.py          update entity of a source
 button.py          refresh button of a source
 switch.py          realtime switch of a datasource
-datasource_services.py  the update, prune and intern services, and the repair that drops one line
+source_services.py      the update, prune and intern services, and the repair that drops one line
 departure_services.py   the departures, arrivals and trip stops services
 repairs.py         the fixes Settings > Repairs offers for gtfs2's issues
 ```

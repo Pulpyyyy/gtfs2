@@ -15,7 +15,7 @@ import types
 import ha_stub
 
 repairs = ha_stub.load("repairs")
-services = ha_stub.load("datasource_services")
+services = ha_stub.load("source_services")
 
 
 class _Hass:

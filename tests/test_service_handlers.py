@@ -24,7 +24,7 @@ import types
 import ha_stub
 
 integration = ha_stub.load("__init__")
-services = ha_stub.load("datasource_services")
+services = ha_stub.load("source_services")
 
 
 def _handlers(hass=None):

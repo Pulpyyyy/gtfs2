@@ -14,7 +14,7 @@ from homeassistant.components.repairs import ConfirmRepairFlow, RepairsFlow
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 
-from .datasource_services import async_prune_line
+from .source_services import async_prune_line
 from .feed.source_entries import datasource_entry
 from .data.source_refresh import async_rebuild_source
 
