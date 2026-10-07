@@ -38,17 +38,17 @@ TRIPS = {
 DAY = "2026-10-05"
 
 
-def _feed(route_type):
+def _feed(route_type, trips=TRIPS, stops="ACDE"):
     return {
         "agency.txt": "agency_id,agency_name,agency_url,agency_timezone\nT,Town,http://t,UTC\n",
         "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\n" + "".join(
-            f"{s},Stop {s},45.0{n},5.0\n" for n, s in enumerate("ACDE")),
+            f"{s},Stop {s},45.0{n},5.0\n" for n, s in enumerate(stops)),
         "routes.txt": f"route_id,agency_id,route_short_name,route_type\nL,T,L,{route_type}\n",
         "trips.txt": "route_id,service_id,trip_id,direction_id\n" + "".join(
-            f"L,D,{trip},0\n" for trip in TRIPS),
+            f"L,D,{trip},0\n" for trip in trips),
         "stop_times.txt": "trip_id,arrival_time,departure_time,stop_id,stop_sequence\n" + "".join(
             f"{trip},{t}:00,{t}:00,{stop},{n}\n"
-            for trip, calls in TRIPS.items() for n, (stop, t) in enumerate(calls, 1)),
+            for trip, calls in trips.items() for n, (stop, t) in enumerate(calls, 1)),
         "calendar.txt": ("service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,"
                          "start_date,end_date\nD,1,1,1,1,1,1,1,20260901,20261231\n"),
     }
@@ -122,3 +122,37 @@ def test_each_run_says_where_it_sets_the_rider_down(bus):
     lists = departures._next_departure_lists([(at, row) for row in rows], datetime.timezone.utc)
     assert lists["next_departures_origin_stop_id"] == ["A", "C", "A", "C", "A"]
     assert lists["next_departures_destination_stop_id"] == ["D", "D", "C", "D", "D"]
+
+
+# Two connections, B and C, on the way from A to D. A run the other way
+# rides from C to B, both at each end: listed in the journey A -> D until
+# 2026-10-07 (Palm Bus 2, Gare SNCF de Cannes to Meridien by Hotel de Ville
+# and Les Pins, listed the runs back from Les Pins to Hotel de Ville)
+WAYS = {
+    "W1": [("A", "08:00"), ("B", "08:10"), ("C", "08:20"), ("D", "08:30")],
+    "W2": [("D", "09:00"), ("C", "09:10"), ("B", "09:20"), ("A", "09:30")],
+    "W3": [("B", "10:00"), ("C", "10:10")],
+    "W4": [("C", "11:00"), ("B", "11:10")],
+}
+BOTH_WAYS = [("W1", "Stop A", "08:00", "Stop D"),   # A to D, once
+             ("W3", "Stop B", "10:00", "Stop C"),   # between the connections, the journey's way
+             # between them the other way, at neither end: nothing in the
+             # run tells its way, still listed
+             ("W4", "Stop C", "11:00", "Stop B")]   # W2 passes D before C: not a ride
+
+
+@pytest.mark.parametrize("route_type", ["3", "2"])
+def test_a_run_the_other_way_between_two_connections_is_no_ride(tmp_path, route_type):
+    built = feed_db.build(tmp_path, _feed(int(route_type), WAYS, "ABCD"))
+    try:
+        if route_type == "3":
+            a, b, c, d = "A: Stop A", "B: Stop B", "C: Stop C", "D: Stop D"
+            data = {"route": "L: L", "route_type": "3", "origin": a, "destination": d,
+                    "origin_stations": [a, b, c], "destination_stations": [d, b, c]}
+        else:
+            data = {"route": "train", "route_type": "2", "origin": "Stop A", "destination": "Stop D",
+                    "origin_stations": ["Stop A", "Stop B", "Stop C"],
+                    "destination_stations": ["Stop D", "Stop B", "Stop C"]}
+        assert _rides(built, route_type, data) == BOTH_WAYS
+    finally:
+        built.engine.dispose()

@@ -168,6 +168,45 @@ def _feed_now(schedule: Schedule, route: str | None = None, offset: int = 0) -> 
     return moment.replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
 
 
+def _not_the_other_way(at_destination: list[str], at_origin: list[str]) -> str:
+    """The SQL holding a ride between connections to the journey's way: no
+    call at a place of the destination's alone before the rider gets on,
+    none at a place of the origin's alone after they get off. Each place is
+    an "IN (...)" list of stop ids.
+
+    Two stops at both ends ride either way: Palm Bus 2 from Gare SNCF de
+    Cannes to Meridien, connecting at Hotel de Ville and Les Pins, listed
+    the runs back to the station, from Les Pins to Hotel de Ville, which
+    pass Meridien first. A run between the two connections that calls at
+    neither end tells no way and is still listed."""
+    calls = [f"(passed.stop_sequence < origin_stop_time.stop_sequence AND passed.stop_id IN {place})"
+             for place in at_destination]
+    calls += [f"(passed.stop_sequence > destination_stop_time.stop_sequence AND passed.stop_id IN {place})"
+              for place in at_origin]
+    if not calls:
+        return ""
+    return f"""
+              AND NOT EXISTS (
+                SELECT 1 FROM stop_times passed
+                WHERE passed.trip_id = trip.trip_id
+                  AND ({" OR ".join(calls)}))"""
+
+
+def _stations_alone(origin_names: list[str], destination_names: list[str],
+                    ) -> tuple[list[str], list[str], dict[str, str]]:
+    """(the stations of the destination's alone, of the origin's alone, as
+    "IN (...)" lists of stop ids, and their parameters) of a train entry
+    whose two ends share a station: what _not_the_other_way holds to."""
+    places: dict[str, list[str]] = {}
+    params: dict[str, str] = {}
+    for prefix, names in (("dest_alone", [n for n in destination_names if n not in origin_names]),
+                          ("origin_alone", [n for n in origin_names if n not in destination_names])):
+        names_in, names_params = station_names_in(prefix, names)
+        params.update(names_params)
+        places[prefix] = [f"(select stop_id from stops where stop_name IN {names_in})"] if names else []
+    return places["dest_alone"], places["origin_alone"], params
+
+
 def _several_stops(origin_ids: list[str], destination_ids: list[str]) -> tuple[str, str, str, dict[str, str]]:
     """(origin where, destination where, ride where, their parameters) of a
     bus or tram entry getting on, or off, at more than one stop: every place
@@ -212,7 +251,9 @@ def _several_stops(origin_ids: list[str], destination_ids: list[str]) -> tuple[s
                       AND taken_on.stop_sequence < later.stop_sequence
                       AND taken_on.stop_id IN {origins} AND {_boards("taken_on")})"""
         same_ends = f"""
-              AND NOT {same_place("origin_stop_time", "destination_stop_time", origin_places)}"""
+              AND NOT {same_place("origin_stop_time", "destination_stop_time", origin_places)}""" + _not_the_other_way(
+            [p for p, stop in zip(end_places, destination_ids) if stop not in origin_ids],
+            [p for p, stop in zip(origin_places, origin_ids) if stop not in destination_ids])
     ride = f"""AND NOT EXISTS (
                 SELECT 1 FROM stop_times between_stop
                 WHERE between_stop.trip_id = trip.trip_id
@@ -295,6 +336,9 @@ def _departure_candidates(route_type: str, origin: str, destination: str,
             shortest_ride_where += """
               AND (select stop_name from stops where stop_id = origin_stop_time.stop_id)
                   <> (select stop_name from stops where stop_id = destination_stop_time.stop_id)"""
+            at_destination, at_origin, alone_params = _stations_alone(origin_names, destination_names)
+            name_params.update(alone_params)
+            shortest_ride_where += _not_the_other_way(at_destination, at_origin)
         if len(set(origin_names)) > 1:
             shortest_ride_where += f"""
               AND NOT EXISTS (
