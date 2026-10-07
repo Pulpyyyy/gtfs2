@@ -2,7 +2,7 @@
   "domain": "gtfs2",
   "name": "GTFS 2 (General Transit Feed Specification)",
   "codeowners": [
-    "@vingerha"
+    "@Pulpyyyy"
   ],
   "config_flow": true,
   "dependencies": [
