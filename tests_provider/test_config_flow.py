@@ -1243,6 +1243,62 @@ def test_a_train_line_with_no_short_name_leads_somewhere(world, tmp_path):
     walk(world, scenario)
 
 
+def _k8_filed_as_unknown(name, text):
+    """routes.txt with the K8+ filed the way SNCF files its night trains:
+    code INCONNU, long name " -"."""
+    if name.rsplit("/", 1)[-1] != "routes.txt":
+        return None
+    header, *lines = text.splitlines()
+    columns = header.split(",")
+    short, long_name = columns.index("route_short_name"), columns.index("route_long_name")
+    renamed = []
+    for line in lines:
+        cells = line.split(",")
+        if cells[short] == "K8+":
+            cells[short], cells[long_name] = "INCONNU", " -"
+        renamed.append(",".join(cells))
+    return "\n".join([header, *renamed]) + "\n"
+
+
+def test_a_line_the_feed_names_nothing_does_not_name_the_sensor(world, tmp_path):
+    # the options screen named INCONNU by its ends, the sensor was still
+    # offered as "sncf INCONNU Paris Austerlitz -> Bordeaux Saint-Jean"
+    # (.239, 2026-10-07)
+    feed = tmp_path / "unknown"
+    feed.mkdir()
+    rewritten_zip("sncf-journeys", feed / "static.zip", _k8_filed_as_unknown)
+
+    async def scenario(hass):
+        shutil.copyfile(feed / "static.zip", gtfs_dir(hass) / "rail.zip")
+        built = sqlite3.connect(fixture_db.build(str(feed)).engine.url.database)
+        copy = sqlite3.connect(gtfs_dir(hass) / "rail.sqlite")
+        try:
+            built.backup(copy)
+        finally:
+            copy.close()
+            built.close()
+        await source_entries.async_ensure_datasource_entry(hass, "rail", api={})
+
+        async def options():
+            lines = shown(await to_lines(hass, "rail"), FORM, "route")
+            stations = shown(await submit(hass, lines, route=offered(lines, "route")[0]),
+                             FORM, "stops_train")
+            arrivals = shown(await submit(hass, stations, origin="Orléans"), FORM, "destination_train")
+            return shown(await submit(hass, arrivals, destination="Paris Austerlitz"),
+                         FORM, "options_train")
+
+        first = await options()
+        assert "Orléans ↔ Paris Austerlitz" in labels(first, "lines")["INCONNU"]
+        naming = shown(await submit(hass, first, also_at=[], lines=["INCONNU"]),
+                       FORM, "sensor_train")
+        assert default(naming, "name") == "rail Orléans → Paris Austerlitz"
+        sensors = shown(await submit(hass, await options(), also_at=[], lines=["INCONNU", "P8"]),
+                        FORM, "sensors_train")
+        assert sensors["description_placeholders"]["sensors"] == (
+            "- rail Orléans → Paris Austerlitz\n- rail P8 Orléans → Paris Austerlitz")
+    walk(world, scenario)
+
+
 def _as_suburban_rail(name, text):
     """routes.txt with every rail route filed under 109, suburban railway,
     the extended type Helsinki and Leipzig give their commuter trains."""

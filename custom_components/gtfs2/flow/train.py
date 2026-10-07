@@ -502,8 +502,11 @@ class TrainScreens:
             start = origin if origin in ons else ons[0]
             end = destination if destination in offs else offs[0]
             # the line picked on the route screen keeps that screen's label,
-            # a line with no code included; a line ticked, its code
-            label = self._route_label if line == picked else str(line or "")
+            # a line with no code included; a line ticked, its code, unless
+            # the code only says the line has none (SNCF "INCONNU"): the
+            # stations name the sensor then
+            label = (self._route_label if line == picked
+                     else "" if _names_nothing(line) else str(line or ""))
             plan: dict[str, Any] = {
                 "label": label,
                 "line": line,
