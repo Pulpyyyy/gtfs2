@@ -4,18 +4,18 @@ Departure times of your bus, tram, metro, ferry and train networks in Home Assis
 
 ![Trams A and B and bus 40 at Gare d'Orléans, shown by the GTFS2 Live Card](https://raw.githubusercontent.com/Pulpyyyy/gtfs2-live-card/main/images/hero-light.png)
 
-**[Documentation: the wiki](https://github.com/Pulpyyyy/gtfs2/wiki)**
+**[Documentation: the wiki](https://github.com/Pulpyyyy/gtfs2/wiki)**: [Installation](https://github.com/Pulpyyyy/gtfs2/wiki/Installation), [Data sources](https://github.com/Pulpyyyy/gtfs2/wiki/Data-sources), [Sensors](https://github.com/Pulpyyyy/gtfs2/wiki/Sensors), [Troubleshooting](https://github.com/Pulpyyyy/gtfs2/wiki/Troubleshooting)
 
 ## Features
 
-- **Journeys**: the next departures of one line between two stops, with the arrival time and the ride time; several stops at each end, a stop on the way as a connection; the return journey made at the same time.
-- **Trains**: pick the departure and arrival stations, then the lines; one sensor a line.
-- **Local stops**: the departures of every stop around a zone or a person.
-- **Only the lines you follow are imported**: a few lines of a national network stay small and fast to set up.
-- **Timetables kept up to date**: a check each night, an update entity with an Update button, a refresh button; a refresh never breaks what works. Repairs say when an update failed or a followed line disappeared.
-- **Realtime**: delays, cancelled trips and skipped stops, vehicle positions and service alerts with their cause and effect; set once per source, downloaded once for all its sensors, read only while its lines run.
-- **Map files** for cards: the line drawn with its stops, the vehicles, the full ride of each listed departure, the timetable over three days.
-- **Actions** to list the departures, the arrivals or the stops of a trip, and to refresh or shrink a source.
+- **[Journeys](https://github.com/Pulpyyyy/gtfs2/wiki/Journeys)**: the next departures of one line between two stops, with the arrival time and the ride time; several stops at each end, a stop on the way as a connection; the return journey made at the same time.
+- **[Trains](https://github.com/Pulpyyyy/gtfs2/wiki/Train-journeys)**: pick the departure and arrival stations, then the lines; one sensor a line.
+- **[Local stops](https://github.com/Pulpyyyy/gtfs2/wiki/Local-stops)**: the departures of every stop around a zone or a person.
+- **[Only the lines you follow are imported](https://github.com/Pulpyyyy/gtfs2/wiki/Data-sources#importing-only-the-lines-you-follow)**: a few lines of a national network stay small and fast to set up.
+- **[Timetables kept up to date](https://github.com/Pulpyyyy/gtfs2/wiki/Data-sources#keeping-the-timetable-up-to-date)**: a check each night, an update entity with an Update button, a refresh button; a refresh never breaks what works. Repairs say when an update failed or a followed line disappeared.
+- **[Realtime](https://github.com/Pulpyyyy/gtfs2/wiki/Data-sources#realtime-feeds)**: delays, cancelled trips and skipped stops, vehicle positions and service alerts with their cause and effect; set once per source, downloaded once for all its sensors, read only while its lines run.
+- **[Map files](https://github.com/Pulpyyyy/gtfs2/wiki/Maps-and-files)** for cards: the line drawn with its stops, the vehicles, the full ride of each listed departure, the timetable over three days.
+- **[Actions](https://github.com/Pulpyyyy/gtfs2/wiki/Actions)** to list the departures, the arrivals or the stops of a trip, and to refresh or shrink a source.
 - Translations: English, French, German, Spanish, Portuguese.
 
 ## The card
