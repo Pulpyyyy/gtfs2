@@ -2,8 +2,9 @@
 
 check_datasource_index runs before every refresh of every sensor. It
 creates the indexes the queries lean on when they are missing and gives
-routes with no agency_id the feed's agency; a database file already
-checked is not read again until it changes.
+routes with no agency_id the feed's agency, when the agency table has an
+id to give; a database file already checked is not read again until it
+changes.
 """
 from __future__ import annotations
 
@@ -125,3 +126,43 @@ def test_an_import_fills_stop_times_before_indexing_it(tmp_path):
     assert conn.execute("select count(*) from stop_times").fetchone() == (2,)
     conn.close()
     schedule.engine.dispose()
+
+
+def _agency_feed(agency):
+    """FEED with agency.txt as given and a routes.txt without agency_id,
+    which a single-agency feed may leave out."""
+    return {**FEED, "agency.txt": agency,
+            "routes.txt": "route_id,route_short_name,route_type\nR1,1,3\n"}
+
+
+def _check_imported(tmp_path, tables):
+    """check_datasource_index run on the tables imported by pygtfs, as a
+    refresh runs it; the statements it sent and the routes' agency_id after."""
+    gtfs_dir = tmp_path / "gtfs2"
+    gtfs_dir.mkdir()
+    schedule = feed_db.build(gtfs_dir, tables)
+    sent = []
+    event.listen(schedule.engine, "before_cursor_execute",
+                 lambda _conn, _cursor, statement, *_a: sent.append(statement))
+    datasource._INDEX_CHECKED.clear()
+    datasource.check_datasource_index(ha_stub.config_at(tmp_path), schedule, "gtfs2", "feed")
+    schedule.engine.dispose()
+    return sent, feed_db.rows(gtfs_dir / "feed.sqlite", "select agency_id from routes")
+
+
+def test_a_feed_without_any_agency_id_is_left_as_it_is(tmp_path):
+    # agency.txt without agency_id either (TAO, Translink SEQ): pygtfs
+    # stores 'None' in both tables, which already agree; copying the
+    # agency's 'None' over the routes' changed nothing and, the check
+    # finding them again, rewrote every route at every refresh
+    sent, routes = _check_imported(tmp_path, _agency_feed(
+        "agency_name,agency_url,agency_timezone\nA,http://a,Europe/Paris\n"))
+    assert not [s for s in sent if s.lstrip().lower().startswith("update")]
+    assert routes == [("None",)]
+
+
+def test_routes_without_the_id_their_agency_carries_get_it(tmp_path):
+    sent, routes = _check_imported(tmp_path, _agency_feed(
+        "agency_id,agency_name,agency_url,agency_timezone\nA,A,http://a,Europe/Paris\n"))
+    assert [s for s in sent if s.lstrip().lower().startswith("update")]
+    assert routes == [("A",)]
