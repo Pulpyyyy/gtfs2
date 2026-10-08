@@ -26,7 +26,7 @@ The [GTFS2 Live Card](https://github.com/Pulpyyyy/gtfs2-live-card) is made for t
 
 Home Assistant 2026.3 or newer.
 
-- **With HACS**: **HACS > three dots > Custom repositories**, add `https://github.com/Pulpyyyy/gtfs2` as an *Integration*, download it and restart. Releases are pre-releases for now: allow pre-releases for this repository in HACS.
+- **With HACS**: [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Pulpyyyy&repository=gtfs2&category=integration) or **HACS > three dots > Custom repositories**, add `https://github.com/Pulpyyyy/gtfs2` as an *Integration*; download it and restart. Releases are pre-releases for now: allow pre-releases for this repository in HACS.
 - **By hand**: download `gtfs2.zip` from the latest [release](https://github.com/Pulpyyyy/gtfs2/releases), unzip it into `custom_components/gtfs2` of your configuration and restart.
 
 Then **Settings > Devices & services > Add integration > GTFS 2**. Details, and what each screen asks: [Installation](https://github.com/Pulpyyyy/gtfs2/wiki/Installation).
