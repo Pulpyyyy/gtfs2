@@ -24,7 +24,22 @@ The [GTFS2 Live Card](https://github.com/Pulpyyyy/gtfs2-live-card) is made for t
 
 ## Installation
 
-Home Assistant 2026.3 or newer. Copy `custom_components/gtfs2` of branch `refactor/architecture` into the `custom_components` folder of your configuration and restart. Then **Settings > Devices & services > Add integration > GTFS 2**. Details, and what each screen asks: [Installation](https://github.com/Pulpyyyy/gtfs2/wiki/Installation).
+Home Assistant 2026.3 or newer.
+
+- **With HACS**: **HACS > three dots > Custom repositories**, add `https://github.com/Pulpyyyy/gtfs2` as an *Integration*, download it and restart. Releases are pre-releases for now: allow pre-releases for this repository in HACS.
+- **By hand**: download `gtfs2.zip` from the latest [release](https://github.com/Pulpyyyy/gtfs2/releases), unzip it into `custom_components/gtfs2` of your configuration and restart.
+
+Then **Settings > Devices & services > Add integration > GTFS 2**. Details, and what each screen asks: [Installation](https://github.com/Pulpyyyy/gtfs2/wiki/Installation).
+
+### Coming from vingerha/gtfs2
+
+Both install into the same folder, `custom_components/gtfs2`, so only one of them can be installed. This one takes over your existing GTFS2 entries and sensors and migrates them in place: nothing to set up again.
+
+1. In HACS, remove vingerha/gtfs2 (*Remove*). Your entries in **Devices & services** stay.
+2. Add this repository and download it as above.
+3. Restart Home Assistant.
+
+The migration is one way: going back to vingerha/gtfs2 afterwards is not supported.
 
 ## About this fork
 
