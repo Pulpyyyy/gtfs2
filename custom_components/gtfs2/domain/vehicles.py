@@ -64,21 +64,24 @@ def _trip_destinations(schedule: Schedule | str | None, trip_ids: Iterable[str])
     return found
 
 
-def _trip_directions(schedule: Schedule | str | None, trip_ids: Iterable[str]) -> dict[str, str]:
-    """{trip_id: direction_id} as the database has them, repairs included."""
+def _static_trips(schedule: Schedule | str | None,
+                  trip_ids: Iterable[str]) -> dict[str, tuple[str, str | None]]:
+    """{trip_id: (route_id, direction_id)} as the database has them,
+    repairs included. A trip of a line not imported has no row."""
     trip_ids = sorted({str(t) for t in trip_ids if t})
     if not trip_ids or schedule is None or isinstance(schedule, str):
         return {}
     try:
         with schedule.engine.connect() as conn:
             rows = conn.execute(
-                sql_text("SELECT trip_id, direction_id FROM trips "
+                sql_text("SELECT trip_id, route_id, direction_id FROM trips "
                          "WHERE trip_id IN (SELECT value FROM json_each(:trips))"),
                 {"trips": json.dumps(trip_ids)}).fetchall()
     except SQLAlchemyError as ex:
-        _LOGGER.debug("Could not read the directions of the vehicles' trips: %s", ex)
+        _LOGGER.debug("Could not read the vehicles' trips: %s", ex)
         return {}
-    return {str(trip): str(direction) for trip, direction in rows if direction is not None}
+    return {str(trip): (str(route or ""), None if direction is None else str(direction))
+            for trip, route, direction in rows}
 
 
 def _left_standing(vehicle: Mapping[str, Any], max_age: int, now: float) -> bool:
@@ -96,7 +99,7 @@ def _left_standing(vehicle: Mapping[str, Any], max_age: int, now: float) -> bool
 
 
 def _vehicle_way(vehicle: Mapping[str, Any], route_id: str, trip_id: str, direction: str,
-                 board: set[str], static_direction: Mapping[str, str]) -> tuple[str | int | None, bool]:
+                 board: set[str], static: Mapping[str, tuple[str, str | None]]) -> tuple[str | int | None, bool]:
     """(the direction the vehicle is seen on, whether it goes on this map).
 
     The database's direction for its trip first, see get_rt_vehicle_positions,
@@ -105,13 +108,18 @@ def _vehicle_way(vehicle: Mapping[str, Any], route_id: str, trip_id: str, direct
     names no direction is placed by its trip, one of the board's, rather than
     on whichever map 0 happens to be. A trip of the board needs no route:
     some feeds name none on their vehicles (Krakow's trams, Renfe's
-    Cercanias), and only the next departure's vehicle was then shown.
+    Cercanias), and only the next departure's vehicle was then shown. Such
+    a vehicle takes its trip's line from the database: once past the stop,
+    the vehicle a rider is on leaves the board, and the card follows it
+    until the arrival.
     """
     trip = str(vehicle["trip"]["trip_id"])
-    seen = static_direction.get(trip, vehicle["trip"].get("direction_id"))
+    static_route, static_way = static.get(trip, ("", None))
+    seen = static_way if static_way is not None else vehicle["trip"].get("direction_id")
+    line = vehicle["trip"]["route_id"] or static_route
     on_this_way = trip in board if seen is None else str(direction) == str(seen)
     wanted = trip == str(trip_id) or trip in board or (
-        _same_route(route_id, vehicle["trip"]["route_id"]) and on_this_way)
+        _same_route(route_id, line) and on_this_way)
     return seen, wanted
 
 
@@ -161,10 +169,12 @@ def marker_ids(route_id: str) -> re.Pattern[str]:
 
 def _candidate_trips(feed_entities: FeedEntities, board: set[str], route_id: str) -> list[str]:
     """The trips of the vehicles that may be this entry's: listed on its
-    board, or on its line."""
+    board, on its line, or on a line the feed does not name, which the
+    database tells."""
     return [e["vehicle"]["trip"]["trip_id"] for e in feed_entities
             if e["vehicle"]["trip"]["trip_id"]
             and (str(e["vehicle"]["trip"]["trip_id"]) in board
+                 or not e["vehicle"]["trip"]["route_id"]
                  or _same_route(route_id, e["vehicle"]["trip"]["route_id"]))]
 
 
@@ -208,12 +218,13 @@ def get_rt_vehicle_positions(self: GTFSUpdateCoordinator) -> list[dict[str, Any]
     # the direction each candidate's trip has in the database: the import
     # repairs direction_id where the provider mixed its trips up (80 trips
     # of four GVB trams), and the vehicle feed still carries the provider's,
-    # which put those vehicles on the other direction's map
+    # which put those vehicles on the other direction's map. Its line too,
+    # for a feed that names none
     board = {str(t) for t in self._trip_list}
     max_age = self._vehicle_max_age
     now = time.time()
     schedule = self._data.get("schedule")
-    static_direction = _trip_directions(
+    static = _static_trips(
         schedule, _candidate_trips(feed_entities, board, self._route_id))
     for entity in feed_entities:
         vehicle = entity["vehicle"]
@@ -224,7 +235,7 @@ def get_rt_vehicle_positions(self: GTFSUpdateCoordinator) -> list[dict[str, Any]
             # at the terminus among the ones still running
             continue
         seen, wanted = _vehicle_way(vehicle, self._route_id, self._trip_id,
-                                    self._direction, board, static_direction)
+                                    self._direction, board, static)
         if not wanted:
             continue
         _LOGGER.debug("Found vehicle on route with attributes: %s", vehicle)
