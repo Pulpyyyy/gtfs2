@@ -100,16 +100,18 @@ def _vehicle_way(vehicle: Mapping[str, Any], route_id: str, trip_id: str, direct
     """(the direction the vehicle is seen on, whether it goes on this map).
 
     The database's direction for its trip first, see get_rt_vehicle_positions,
-    the feed's otherwise. On the map: the trip of the next departure, or a
-    vehicle of the line going this way; one whose feed names no direction
-    is placed by its trip, one of the board's, rather than on whichever map
-    0 happens to be.
+    the feed's otherwise. On the map: the trip of the next departure, a trip
+    of the board, or a vehicle of the line going this way; one whose feed
+    names no direction is placed by its trip, one of the board's, rather than
+    on whichever map 0 happens to be. A trip of the board needs no route:
+    some feeds name none on their vehicles (Krakow's trams, Renfe's
+    Cercanias), and only the next departure's vehicle was then shown.
     """
     trip = str(vehicle["trip"]["trip_id"])
     seen = static_direction.get(trip, vehicle["trip"].get("direction_id"))
     on_this_way = trip in board if seen is None else str(direction) == str(seen)
-    wanted = trip == str(trip_id) or (_same_route(route_id, vehicle["trip"]["route_id"])
-                                      and on_this_way)
+    wanted = trip == str(trip_id) or trip in board or (
+        _same_route(route_id, vehicle["trip"]["route_id"]) and on_this_way)
     return seen, wanted
 
 
