@@ -106,9 +106,17 @@ class _Writer:
 
     zipfile buffers nothing on an open("w") handle, so even the national
     stop_times never sits in memory: rows go straight through.
+
+    A row longer than the header is cut to it. Riga's stop_times names 7
+    columns and every row carries 8, a timepoint the header forgot: pygtfs
+    reads each row into the header's columns and stopped the whole import
+    on the first one. A cell without a column name is one nobody can read.
     """
 
     def __init__(self, zout: zipfile.ZipFile, name: str, header: list[str]) -> None:
+        self._name = name
+        self._width = len(header)
+        self._cut = 0
         self._handle = zout.open(name, "w")
         self._wrapper = io.TextIOWrapper(
             self._handle, encoding="utf-8", newline="")
@@ -116,9 +124,15 @@ class _Writer:
         self._csv.writerow(header)
 
     def row(self, row: list[str]) -> None:
+        if len(row) > self._width:
+            row = row[:self._width]
+            self._cut += 1
         self._csv.writerow(row)
 
     def close(self) -> None:
+        if self._cut:
+            _LOGGER.warning("%s rows of %s carry more cells than its header names, "
+                            "the extra cells are left out", self._cut, self._name)
         self._wrapper.flush()
         self._wrapper.detach()
         self._handle.close()
