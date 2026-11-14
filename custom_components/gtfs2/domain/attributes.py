@@ -353,9 +353,12 @@ def route_and_trip_attributes(attributes: dict[str, Any], route: Route | None, t
     """The line and the trip the departure rides."""
     if route:
         append_keys(attributes, dict_for_table(route), "Route")
-        attributes[ATTR_ROUTE_TYPE] = ROUTE_TYPE_OPTIONS[
-            route.route_type
-        ]
+        # a type the table does not name keeps its number: looked up
+        # strictly, Riga's trolleybuses (11) raised on every refresh and
+        # their sensors never showed a departure
+        attributes[ATTR_ROUTE_TYPE] = ROUTE_TYPE_OPTIONS.get(
+            route.route_type, str(route.route_type)
+        )
     if trip:
         append_keys(attributes, dict_for_table(trip), "Trip")
         attributes[ATTR_BICYCLE] = BICYCLE_ALLOWED_OPTIONS.get(
