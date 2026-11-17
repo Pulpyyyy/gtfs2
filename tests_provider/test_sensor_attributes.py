@@ -382,7 +382,9 @@ def _clock(now):
 
 
 def _coordinator(data, name):
-    return types.SimpleNamespace(data=data, config_entry=types.SimpleNamespace(data={"name": name}))
+    # the entry's id: a local stop sensor's unique_id begins with it
+    return types.SimpleNamespace(data=data, config_entry=types.SimpleNamespace(
+        entry_id="fixture", data={"name": name}))
 
 
 def _build(variant):

@@ -2101,7 +2101,7 @@
       "icon": null,
       "name": "A_local_stop_person.rider",
       "state": "Gare (07:30)",
-      "unique_id": "A_local_stop_person.rider"
+      "unique_id": "fixture_A_local_stop_person.rider"
     },
     "local stop / Gare, source extracting": {
       "attributes": {
@@ -2125,7 +2125,7 @@
       "icon": null,
       "name": "A_local_stop_person.rider",
       "state": null,
-      "unique_id": "A_local_stop_person.rider"
+      "unique_id": "fixture_A_local_stop_person.rider"
     },
     "local stop / Gare, the next hour": {
       "attributes": {
@@ -2172,7 +2172,7 @@
       "icon": null,
       "name": "A_local_stop_person.rider",
       "state": "Gare (07:30)",
-      "unique_id": "A_local_stop_person.rider"
+      "unique_id": "fixture_A_local_stop_person.rider"
     },
     "restore / before its first refresh": {
       "attributes": {},
