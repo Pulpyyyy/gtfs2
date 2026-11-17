@@ -101,7 +101,8 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
     VERSION = 10
     # 2: a datasource entry's unique_id is gtfs2-source-<file>
     # 3: a source made from a zip has the file:// url of its kept zip, not "na"
-    MINOR_VERSION = 3
+    # 4: a local stop sensor's unique_id begins with its entry's id
+    MINOR_VERSION = 4
 
     def __init__(self) -> None:
         """Init ConfigFlow."""

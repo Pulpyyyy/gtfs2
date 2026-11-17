@@ -1,7 +1,7 @@
-"""An entry of every version async_migrate_entry has a rule for reaches 10.3.
+"""An entry of every version async_migrate_entry has a rule for reaches 10.4.
 
 Home Assistant calls async_migrate_entry for an entry older than the
-flow's VERSION, 10, or its MINOR_VERSION, 3, and keeps what the function
+flow's VERSION, 10, or its MINOR_VERSION, 4, and keeps what the function
 hands async_update_entry: the data, the options, the unique_id and the
 versions, which it sets on the entry before the next rule reads it. The
 rules, as __init__ writes them:
@@ -26,7 +26,11 @@ rules, as __init__ writes them:
              drops extract_from, its url says where its feed comes from;
              an http url stays. Every entry brought to 10.2 goes through
              this one too
-    10.3     left as it is
+    10.3     a local stops entry's sensors take the entry's id at the head
+             of their unique_id, in the registry, their entity_id kept; any
+             other entry has nothing to rename. Every entry brought to 10.3
+             goes through this one too
+    10.4     left as it is
 
 What the entry holds besides is carried through untouched. A version
 below 4 has no rule, and is not checked here.
@@ -89,7 +93,7 @@ def _zip_url(file):
     return source_refresh.source_zip_url(_hass(None), file)
 
 
-# the journey once it reaches 10.3: fetched from its source's kept zip
+# the journey once it reaches 10.3 and on: fetched from its source's kept zip
 JOURNEY_FED = {**JOURNEY, "url": _zip_url("tao")}
 
 
@@ -101,7 +105,7 @@ def _migrated(version, data, options):
         data=types.MappingProxyType(dict(data)), options=types.MappingProxyType(dict(options)))
     hass = _hass(_Entries())
     assert asyncio.run(integration.async_migrate_entry(hass, entry)) is True
-    assert (entry.minor_version, entry.unique_id) == (3, "gtfs-to work")
+    assert (entry.minor_version, entry.unique_id) == (4, "gtfs-to work")
     return entry.version, dict(entry.data), dict(entry.options)
 
 
@@ -152,9 +156,15 @@ def _at_10(minor_version, data, unique_id):
             dict(entry.options), entries.updates)
 
 
-def test_version_10_3_is_left_as_it_is():
+def test_version_10_4_is_left_as_it_is():
+    assert _at_10(4, JOURNEY, "gtfs-to work") == (
+        10, 4, "gtfs-to work", JOURNEY, {"api_key": "k"}, 0)
+
+
+def test_version_10_3_has_nothing_to_rename_for_a_journey():
+    # a journey's entry is not a local stops one: the registry is not read
     assert _at_10(3, JOURNEY, "gtfs-to work") == (
-        10, 3, "gtfs-to work", JOURNEY, {"api_key": "k"}, 0)
+        10, 4, "gtfs-to work", JOURNEY, {"api_key": "k"}, 1)
 
 
 SOURCE = {"kind": "datasource", "file": "gtfs-home", "url": "na", "extract_from": "zip"}
@@ -163,9 +173,9 @@ SOURCE_FED = {"kind": "datasource", "file": "gtfs-home", "url": _zip_url("gtfs-h
 
 def test_version_10_2_gives_a_zip_source_and_its_journeys_the_url_of_its_kept_zip():
     assert _at_10(2, JOURNEY, "gtfs-to work") == (
-        10, 3, "gtfs-to work", JOURNEY_FED, {"api_key": "k"}, 1)
+        10, 4, "gtfs-to work", JOURNEY_FED, {"api_key": "k"}, 2)
     assert _at_10(2, SOURCE, "gtfs2-source-gtfs-home") == (
-        10, 3, "gtfs2-source-gtfs-home", SOURCE_FED, {"api_key": "k"}, 1)
+        10, 4, "gtfs2-source-gtfs-home", SOURCE_FED, {"api_key": "k"}, 2)
 
 
 def test_version_10_2_keeps_an_http_url_and_drops_a_datasource_s_extract_from():
@@ -180,9 +190,43 @@ def test_version_10_2_keeps_an_http_url_and_drops_a_datasource_s_extract_from():
 def test_version_10_1_gives_a_datasource_entry_its_prefix():
     # a source named gtfs-home held the unique_id a journey named home is given
     assert _at_10(1, SOURCE, "gtfs-home") == (
-        10, 3, "gtfs2-source-gtfs-home", SOURCE_FED, {"api_key": "k"}, 2)
+        10, 4, "gtfs2-source-gtfs-home", SOURCE_FED, {"api_key": "k"}, 3)
 
 
 def test_version_10_1_keeps_any_other_entry_s_unique_id():
     assert _at_10(1, JOURNEY, "gtfs-to work") == (
-        10, 3, "gtfs-to work", JOURNEY_FED, {"api_key": "k"}, 2)
+        10, 4, "gtfs-to work", JOURNEY_FED, {"api_key": "k"}, 3)
+
+
+class _Registry:
+    """The entity registry as the migration reads it: entries held by their
+    config entry, a unique_id changed by entity id."""
+
+    def __init__(self, entries):
+        self.entries = {e.entity_id: e for e in entries}
+
+    def async_update_entity(self, entity_id, *, new_unique_id):
+        self.entries[entity_id].unique_id = new_unique_id
+
+
+def _registered(entry_id, unique_id, domain="sensor"):
+    return types.SimpleNamespace(domain=domain, config_entry_id=entry_id, unique_id=unique_id,
+                                 entity_id=f"{domain}.{entry_id}_{unique_id.split('_')[0].lower()}")
+
+
+def test_version_10_3_puts_the_entry_in_its_local_stop_sensors_unique_id(monkeypatch):
+    # the user's entity_id stays: only the unique_id is changed, and only
+    # the entry's own, another entry's sensor at the same stop for the
+    # same person waits for that entry's migration
+    mine = _registered("e1", "S1_local_stop_person.me")
+    theirs = _registered("e2", "S1_local_stop_person.me")
+    registry = _Registry([mine, theirs])
+    monkeypatch.setattr(integration, "er", types.SimpleNamespace(
+        async_get=lambda hass: registry,
+        async_entries_for_config_entry=lambda reg, entry_id: [
+            e for e in list(reg.entries.values()) if e.config_entry_id == entry_id]))
+    around = {"device_tracker_id": "person.me", "file": "tao", "name": "around me",
+              "url": _zip_url("tao")}
+    assert _at_10(3, around, None)[:3] == (10, 4, None)
+    assert (mine.entity_id, mine.unique_id) == ("sensor.e1_s1", "e1_S1_local_stop_person.me")
+    assert theirs.unique_id == "S1_local_stop_person.me"

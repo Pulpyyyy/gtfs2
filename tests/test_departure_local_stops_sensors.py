@@ -55,7 +55,7 @@ def _registered(entry_id, unique_id):
                                  entity_id="sensor." + unique_id.lower().replace(".", "_"))
 
 
-def _setup(tmp_path, registered=(), position=(47.0002, 1.0002)):
+def _setup(tmp_path, registered=(), position=(47.0002, 1.0002), entry_id="me"):
     """The platform set up for a local stops entry: (sensors added, the
     refreshes handed to a background task, none of them run), and the
     registry it left when it held `registered` before."""
@@ -90,9 +90,10 @@ def _setup(tmp_path, registered=(), position=(47.0002, 1.0002)):
         background.append(name)
         coro.close()
 
-    entry = types.SimpleNamespace(entry_id="me", data={"device_tracker_id": "person.me", "file": "src"},
+    entry = types.SimpleNamespace(entry_id=entry_id, data={"device_tracker_id": "person.me", "file": "src"},
                                   runtime_data=coordinator, title="around me",
                                   async_create_background_task=in_background)
+    coordinator.config_entry = entry
     added = []
     try:
         asyncio.run(sensor.async_setup_entry(
@@ -120,8 +121,8 @@ def test_the_sensors_are_made_before_the_departures_are_read(tmp_path):
 def test_a_reload_elsewhere_takes_out_the_stops_left_behind(tmp_path):
     # every reload away from a stop left its sensor in the registry,
     # unavailable: hundreds in a city for one person
-    left = _registered("me", "FAR_local_stop_person.me")
-    kept = _registered("me", "S1_local_stop_person.me")
+    left = _registered("me", "me_FAR_local_stop_person.me")
+    kept = _registered("me", "me_S1_local_stop_person.me")
     _added, _background, registry = _setup(tmp_path, [left, kept])
     assert sorted(registry.entries) == [kept.entity_id]
 
@@ -129,24 +130,41 @@ def test_a_reload_elsewhere_takes_out_the_stops_left_behind(tmp_path):
 def test_another_persons_sensors_are_left_alone(tmp_path):
     # each person followed has their own entry: one entry's reload never
     # reads the others', at the same stop or far away
-    same_stop = _registered("other", "S1_local_stop_person.other")
-    far = _registered("other", "FAR_local_stop_person.other")
+    same_stop = _registered("other", "other_S1_local_stop_person.other")
+    far = _registered("other", "other_FAR_local_stop_person.other")
     _added, _background, registry = _setup(tmp_path, [same_stop, far])
     assert sorted(registry.entries) == sorted([same_stop.entity_id, far.entity_id])
 
 
 def test_a_tracker_without_a_position_keeps_every_sensor(tmp_path):
     # no stop is found around nowhere: that is not a move away from them
-    left = _registered("me", "FAR_local_stop_person.me")
+    left = _registered("me", "me_FAR_local_stop_person.me")
     added, _background, registry = _setup(tmp_path, [left], position=(None, None))
     assert added == []
     assert list(registry.entries) == [left.entity_id]
 
 
+def test_two_entries_following_one_person_each_get_their_sensor_at_a_stop(tmp_path):
+    # the stop and the person alone made the same unique_id for both, two
+    # imports of one feed for one: Home Assistant refused the second
+    # entry's sensor, and its departures were shown nowhere
+    (tmp_path / "home").mkdir()
+    (tmp_path / "work").mkdir()
+    mine, _background, _registry = _setup(tmp_path / "home", entry_id="home")
+    theirs, _background, registry = _setup(
+        tmp_path / "work", [_registered("home", "home_S1_local_stop_person.me")], entry_id="work")
+    assert [s._attr_unique_id for s in mine] == ["home_S1_local_stop_person.me",
+                                                 "home_S2_local_stop_person.me"]
+    assert [s._attr_unique_id for s in theirs] == ["work_S1_local_stop_person.me",
+                                                   "work_S2_local_stop_person.me"]
+    # the other entry's reload leaves the first one's sensor where it is
+    assert list(registry.entries) == ["sensor.home_s1_local_stop_person_me"]
+
+
 def test_a_place_with_no_stop_around_takes_out_the_stops_left_behind(tmp_path):
     # the position is known and the stops were read: there are none here,
     # and the sensors of the stops left behind went unavailable for good
-    left = _registered("me", "FAR_local_stop_person.me")
+    left = _registered("me", "me_FAR_local_stop_person.me")
     added, _background, registry = _setup(tmp_path, [left], position=(10.0, 10.0))
     assert added == []
     assert registry.entries == {}

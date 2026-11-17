@@ -31,7 +31,7 @@ from .const import (
     CONF_RT_ENABLED,
 )
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
-from .domain.local_stops import local_stops_nearby
+from .domain.local_stops import local_stop_unique_id, local_stops_nearby
 from .feed.source_entries import has_rt_feed, source_device
 from .data.rt_window import SIGNAL_RT_WINDOW, window_state
 from .data.validity import read_feed_window, timetable_state
@@ -493,7 +493,7 @@ class GTFSLocalStopSensor(CoordinatorEntity, SensorEntity):
         self._name = self._stop["stop_id"] + "_local_stop_" + self.coordinator.data['device_tracker_id']
         self._attributes: dict[str, Any] = {}
 
-        self._attr_unique_id = self._name
+        self._attr_unique_id = local_stop_unique_id(coordinator.config_entry.entry_id, self._name)
         self._attr_device_info = _entry_device(name)
         # same as the departures sensor: keep the dict when the first update
         # returns early because the source is still extracting

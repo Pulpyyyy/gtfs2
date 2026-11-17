@@ -40,6 +40,17 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
+def local_stop_unique_id(entry_id: str, name: str) -> str:
+    """The unique_id of the sensor named <stop_id>_local_stop_<tracker>.
+
+    The stop and the tracker alone were the same for two entries following
+    one person around the same stop, two imports of one feed for one: the
+    second entry's sensor was refused, its departures shown nowhere, and
+    which one won changed with the order the entries loaded.
+    """
+    return f"{entry_id}_{name}"
+
+
 def _tracker_position(hass: HomeAssistant, entity_id: str) -> tuple[float | None, float | None]:
     """Where a person or zone is, (latitude, longitude), or (None, None).
 

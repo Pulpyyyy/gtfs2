@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers import entity_registry as er
 
 from datetime import timedelta
 
@@ -16,7 +17,7 @@ from .const import DOMAIN, PLATFORMS, DATASOURCE_PLATFORMS, DEFAULT_PATH, DEFAUL
 from .coordinator import GTFSUpdateCoordinator, GTFSLocalStopUpdateCoordinator
 import voluptuous as vol
 from .departure_services import get_route_departures, get_route_arrivals, get_trip_stops
-from .domain.local_stops import update_gtfs_local_stops
+from .domain.local_stops import local_stop_unique_id, update_gtfs_local_stops
 from .notifications import (async_notify_line_orphaned, async_notify_source_unused,
                             clear_line_orphaned, clear_source_unused)
 from .domain.exports import remove_entry_geojson
@@ -69,6 +70,18 @@ def _data_at_1_3(hass: HomeAssistant, config_entry: ConfigEntry) -> dict:
     return data
 
 
+def _local_stop_sensors_at_1_4(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    """A local stops entry's sensors take the entry in their unique_id,
+    in the registry where they stand: their entity_id, and whatever the
+    user gave them, stay with them."""
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, config_entry.entry_id):
+        if entity.domain == "sensor" and "_local_stop_" in entity.unique_id:
+            registry.async_update_entity(
+                entity.entity_id,
+                new_unique_id=local_stop_unique_id(config_entry.entry_id, entity.unique_id))
+
+
 def _migrate_minor(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     """The minor versions of version 10, in turn."""
     if config_entry.minor_version < 2:
@@ -84,6 +97,13 @@ def _migrate_minor(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         # zip is where it lies
         hass.config_entries.async_update_entry(
             config_entry, data=_data_at_1_3(hass, config_entry), minor_version=3)
+    if config_entry.minor_version < 4:
+        # two entries following one person around the same stop made the
+        # same sensor: its unique_id takes the entry. A minor version, so
+        # an install going back to upstream still loads the entry
+        if config_entry.data.get("device_tracker_id"):
+            _local_stop_sensors_at_1_4(hass, config_entry)
+        hass.config_entries.async_update_entry(config_entry, minor_version=4)
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
