@@ -26,8 +26,8 @@ from ..feed.freshness import _REQUIRED_TABLES, download_feed, keep_download, sou
 from .db_build import import_routes, optimise_datasource, swap_in
 from ..feed.files import feed_zip, real_path, remove_database, remove_files, routes_in, staging_name
 from ..feed.remote_zip import extract_member, inner_zips, inner_zips_in_file
-from .zip_filter import (feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
-                          zip_only_future_dates)
+from .zip_filter import (cut_gtfs_zip, feed_info_unreadable, filter_gtfs_zip, read_zip_routes,
+                          table_wider_than_header, zip_only_future_dates)
 from .datasource import IMPORT_IGNORED, drop_import_indexes
 from .stop_rules import rail_line_of
 
@@ -36,6 +36,25 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _cut_copy(feed_file: str, file: str, scratch_file: str, ignored: tuple[str, ...]) -> str | None:
+    """The copy of the whole feed cut to its headers, beside the scratch
+    file, when a row of it carries more cells than its header names; None
+    when none does, or the copy could not be written.
+
+    pygtfs stops the whole import on such a row (Riga's stop_times, every
+    row a cell wider): the filter cuts them as it copies, and the whole
+    feed, read from the kept zip itself, has to be copied for it. A feed
+    whose rows fit pays one reading pass, 7.6 s for TriMet's 3.5 M rows.
+    """
+    wide = table_wider_than_header(feed_file, ignored)
+    if wide is None:
+        return None
+    _LOGGER.warning("Rows of %s in %s carry more cells than its header names, "
+                    "importing a copy without the extra cells", wide, file)
+    candidate = scratch_file + ".zip"
+    return candidate if cut_gtfs_zip(feed_file, candidate, ignored) else None
 
 
 def build_scratch_database(gtfs_dir: str, file: str, scratch_file: str, clean_feed_info: bool = False,
@@ -55,7 +74,8 @@ def build_scratch_database(gtfs_dir: str, file: str, scratch_file: str, clean_fe
     imported as before: only slower, never wrong. Neither path writes to
     the source zip: the filter writes its cut beside it, and the whole
     feed is read from it with the tables it leaves out skipped
-    (IMPORT_IGNORED).
+    (IMPORT_IGNORED), or from a copy beside it cut to the headers when a
+    row carries more cells than its header names.
 
     Returns True when the scratch file holds a feed.
     """
@@ -79,6 +99,10 @@ def build_scratch_database(gtfs_dir: str, file: str, scratch_file: str, clean_fe
         # the whole feed, read from the kept zip itself: pygtfs skips what
         # the filter would have left out, and the zip stays as it came
         ignored = IMPORT_IGNORED + (("feed_info.txt",) if clean_feed_info else ())
+        # unless a row is wider than its header: a copy cut to the headers
+        # then, removed as the filter's cut is
+        if cut := _cut_copy(feed_file, file, scratch_file, ignored):
+            filtered = feed_file = cut
 
     # same connection arguments as the real database, so the scratch one
     # behaves identically under a timeout

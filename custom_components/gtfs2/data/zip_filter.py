@@ -301,6 +301,57 @@ def filter_gtfs_zip(src: str, dst: str, route_ids: Iterable[str],
     return stats
 
 
+def _tables_read(zin: zipfile.ZipFile, ignored: Container[str]) -> Iterator[tuple[str, str]]:
+    """(member, table name) of every table an import reads from the feed."""
+    for member in zin.namelist():
+        name = member.rsplit("/", 1)[-1]
+        if name.endswith(".txt") and name not in ignored:
+            yield member, name
+
+
+def table_wider_than_header(zip_path: str, ignored: Container[str] = ()) -> str | None:
+    """The first table of the feed with a row carrying more cells than its
+    header names, or None.
+
+    The whole feed goes to pygtfs from the zip itself, and pygtfs stops the
+    whole import on such a row, as on Riga's stop_times (_Writer). One
+    streaming pass, ended at the first one found.
+    """
+    try:
+        with zipfile.ZipFile(zip_path) as zin:
+            for member, name in _tables_read(zin, ignored):
+                rows = _rows(zin, member)
+                width = len(next(rows, ()))
+                if any(len(row) > width for row in rows):
+                    return name
+    except (OSError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
+        _LOGGER.warning("Could not read the tables of %s: %s", zip_path, ex)
+    return None
+
+
+def cut_gtfs_zip(src: str, dst: str, ignored: Container[str] = ()) -> bool:
+    """Write to dst every table of src an import reads, its rows cut to the
+    header (_Writer). False, dst removed, when src cannot be read."""
+    try:
+        with zipfile.ZipFile(src) as zin, \
+                zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zout:
+            for member, name in _tables_read(zin, ignored):
+                rows = _rows(zin, member)
+                header = next(rows, None)
+                if header is None:
+                    # an empty table stays one: pygtfs makes of it what it made before
+                    zout.writestr(name, zin.read(member))
+                    continue
+                with _Writer(zout, name, [column.strip() for column in header]) as out:
+                    for row in rows:
+                        out.row(row)
+    except (OSError, ValueError, zipfile.BadZipFile, csv.Error) as ex:
+        _LOGGER.exception("Could not cut the rows of %s to their headers: %s", src, ex)
+        remove_files(dst)
+        return False
+    return True
+
+
 def feed_info_unreadable(zip_path: str) -> bool:
     """Whether pygtfs would stop the whole import on feed_info.txt.
 
