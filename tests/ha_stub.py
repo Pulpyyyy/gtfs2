@@ -987,7 +987,9 @@ def install() -> None:
             removed=_cv_removed)
     _module("homeassistant.helpers.entity", Entity=object)
     _module("homeassistant.helpers.entity_registry",
-            async_get=_Unreached("entity_registry.async_get"))
+            async_get=_Unreached("entity_registry.async_get"),
+            async_entries_for_config_entry=_Unreached(
+                "entity_registry.async_entries_for_config_entry"))
     _module("homeassistant.helpers.update_coordinator",
             DataUpdateCoordinator=_DataUpdateCoordinator,
             UpdateFailed=_UpdateFailed)

@@ -77,17 +77,20 @@ def get_local_stop_list(hass: HomeAssistant, schedule: Schedule, data: Mapping[s
     return int(rowcount)
 
 
-def local_stops_nearby(hass: HomeAssistant, data: Mapping[str, Any]) -> list[dict[str, Any]]:
+def local_stops_nearby(hass: HomeAssistant, data: Mapping[str, Any]) -> list[dict[str, Any]] | None:
     """The stops a local stops entry follows: every stop within its radius
     a trip calls at, whether or not a departure falls in the window now.
     The sensors were made from the stops with a departure in the window:
-    an entry made in the evening, after the last bus, got none."""
+    an entry made in the evening, after the last bus, got none.
+
+    None when it cannot tell: no schedule, no position, a reading that
+    failed. An empty list is a place with no stop around."""
     schedule = data.get("schedule")
     if schedule is None or isinstance(schedule, str):
-        return []
+        return None
     latitude, longitude = _tracker_position(hass, data["device_tracker_id"])
     if not latitude or not longitude:
-        return []
+        return None
     # the stops within the radius first, then their calls, as the
     # departures are read (_fetch_local_stop_rows)
     sql_query = f"""
@@ -107,7 +110,7 @@ def local_stops_nearby(hass: HomeAssistant, data: Mapping[str, Any]) -> list[dic
     except SQLAlchemyError as ex:
         # the stops with a departure now are still there to make sensors of
         _LOGGER.warning("Could not read the stops around %s: %s", data["device_tracker_id"], ex)
-        return []
+        return None
     return [{"stop_id": row[0], "stop_name": row[1]} for row in rows]
 
 

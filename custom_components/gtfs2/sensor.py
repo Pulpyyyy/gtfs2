@@ -8,6 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -77,7 +78,8 @@ async def async_setup_entry(
                 f"Datasource {coordinator.data.get('file')} is still being unpacked")
         # every stop served around, not only those with a departure in the
         # window now: an entry made after the last bus got no sensor at all
-        stops = await hass.async_add_executor_job(local_stops_nearby, hass, coordinator.data)
+        around = await hass.async_add_executor_job(local_stops_nearby, hass, coordinator.data)
+        stops = list(around or [])
         nearby = {stop["stop_id"] for stop in stops}
         stops += [stop for stop in coordinator.data["local_stops_next_departures"]
                   if stop["stop_id"] not in nearby]
@@ -85,6 +87,11 @@ async def async_setup_entry(
             sensors.append(
                     GTFSLocalStopSensor(stop, coordinator, coordinator.data.get("name", "No Name"))
                 )
+        if around is not None:
+            # only once the stops around were read, none at all where there
+            # are none: a tracker without a position, or a reading that
+            # failed, tells nothing and would take every sensor away
+            _drop_stops_left_behind(hass, config_entry, {s._attr_unique_id for s in sensors})
         config_entry.async_create_background_task(
             hass, coordinator.async_refresh(), f"gtfs2 first refresh {config_entry.title}")
         
@@ -103,6 +110,25 @@ async def async_setup_entry(
         ]
 
     async_add_entities(sensors, False)
+
+
+def _drop_stops_left_behind(hass: HomeAssistant, entry: ConfigEntry, kept: set[str]) -> None:
+    """Take out of the registry this entry's stop sensors no longer around.
+
+    The sensors are made from the stops around the tracker when the entry
+    loads, and a reload elsewhere made new ones while the old stayed in the
+    registry, unavailable: every stop ever passed by, hundreds in a city
+    for one person. Only this entry's own are looked at, so a person
+    followed by another entry keeps theirs; a stop met again is registered
+    afresh.
+    """
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if (entity.domain == "sensor" and "_local_stop_" in entity.unique_id
+                and entity.unique_id not in kept):
+            _LOGGER.info("Removing local stop sensor %s, its stop is no longer around",
+                         entity.entity_id)
+            registry.async_remove(entity.entity_id)
 
 
 class GTFSDatasourceRTSensor(SensorEntity):
