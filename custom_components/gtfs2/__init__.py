@@ -234,6 +234,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if entry.data.get('device_tracker_id',None):
         coordinator = GTFSLocalStopUpdateCoordinator(hass, entry)
+        entry.async_on_unload(coordinator.async_follow_tracker())
     else:
         coordinator = GTFSUpdateCoordinator(hass, entry)
 

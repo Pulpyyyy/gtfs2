@@ -9,8 +9,11 @@ gets its sensor; one with nothing coming lists nothing until it has.
 
 The sensors then follow the tracker at every reading of the coordinator:
 a stop come around gets its sensor, a stop missing from two readings in
-a row loses it, and a reading that cannot tell the stops around takes
-nothing away.
+a row loses it (the entry's readings_away option), and a reading that
+cannot tell the stops around takes nothing away. Where the radius holds
+more stops than the entry's max_local_stops, the nearest ones are kept:
+the options screen refuses such a radius where the tracker stands then,
+but a person walks on into a denser part of town.
 """
 from __future__ import annotations
 
@@ -23,6 +26,7 @@ import ha_stub
 ha_stub.install()
 
 sensor = ha_stub.load("sensor")
+local_stops = ha_stub.load("domain.local_stops")
 real_er = sensor.er
 
 FEED = {
@@ -67,7 +71,8 @@ FAR = (47.1, 1.1)
 NOWHERE = (None, None)
 
 
-def _setup(tmp_path, registered=(), position=HERE, entry_id="me", readings=()):
+def _setup(tmp_path, registered=(), position=HERE, entry_id="me", readings=(), options=None,
+           most=None):
     """The platform set up for a local stops entry: (sensors added, the
     refreshes handed to a background task, none of them run), and the
     registry it left when it held `registered` before. A sensor added is
@@ -121,6 +126,7 @@ def _setup(tmp_path, registered=(), position=HERE, entry_id="me", readings=()):
         coro.close()
 
     entry = types.SimpleNamespace(entry_id=entry_id, data={"device_tracker_id": "person.me", "file": "src"},
+                                  options={**(options or {}), **({"max_local_stops": most} if most else {})},
                                   runtime_data=coordinator, title="around me",
                                   async_create_background_task=in_background,
                                   async_on_unload=lambda unsubscribe: None)
@@ -266,3 +272,31 @@ def test_a_departure_gone_between_two_readings_is_no_reading(tmp_path):
     # the same reading, which must not count twice against a stop
     _added, _background, registry = _setup(tmp_path, readings=[FAR, None, None])
     assert _stops(registry) == ["F", "S1", "S2"]
+
+
+def test_the_readings_a_stop_may_miss_are_the_entry_s_option(tmp_path):
+    # 1: gone at the first reading without it
+    _added, _background, registry = _setup(tmp_path, readings=[FAR], options={"readings_away": 1})
+    assert _stops(registry) == ["F"]
+    # 3: still there after two
+    _added, _background, registry = _setup(tmp_path, readings=[FAR, FAR], options={"readings_away": 3})
+    assert _stops(registry) == ["F", "S1", "S2"]
+
+
+def test_the_nearest_stops_are_kept_where_the_radius_holds_more_than_allowed(tmp_path):
+    # S1 lies 0.0002 degree from the tracker, S2 0.0003
+    added, _background, _registry = _setup(tmp_path, most=1)
+    assert [s._stop["stop_id"] for s in added] == ["S1"]
+
+
+def test_the_departures_are_read_within_the_stops_kept(tmp_path):
+    schedule = feed_db.build(tmp_path, FEED)
+    try:
+        whole = local_stops._radius_kept(schedule, *HERE, {"radius": 200}, 2)
+        cut = local_stops._radius_kept(schedule, *HERE, {"radius": 200}, 1)
+    finally:
+        schedule.engine.dispose()
+    # no more stops than allowed: the entry's radius, 200 m in degrees
+    assert whole == 200 / 111111
+    # one too many: just past S1, short of S2
+    assert 0.0002 < cut < 0.0003

@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 import datetime
 import logging
+import math
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -17,6 +18,7 @@ import homeassistant.util.dt as dt_util
 
 from ..const import (
     DEFAULT_LOCAL_STOP_RADIUS,
+    DEFAULT_MAX_LOCAL_STOPS,
     DEFAULT_LOCAL_STOP_TIMERANGE,
     DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY,
     DOMAIN,
@@ -74,6 +76,31 @@ def _radius_degrees(data: Mapping[str, Any]) -> float:
     return float(data.get("radius", DEFAULT_LOCAL_STOP_RADIUS)) / 111111
 
 
+def tracker_moved_away(hass: HomeAssistant, data: Mapping[str, Any],
+                       read_from: tuple[float, float] | None) -> bool:
+    """Whether the tracker now stands more than half the entry's radius
+    from where its stops were last read, either way of its latitude or
+    its longitude: half the stops around it may be other ones. False when
+    either position is unknown."""
+    latitude, longitude = _tracker_position(hass, data["device_tracker_id"])
+    if read_from is None or not latitude or not longitude:
+        return False
+    half = _radius_degrees(data) / 2
+    return abs(latitude - read_from[0]) > half or abs(longitude - read_from[1]) > half
+
+
+def tracker_metres_from(hass: HomeAssistant, data: Mapping[str, Any],
+                        position: tuple[float, float] | None) -> float | None:
+    """How far the tracker now stands from a position, in metres as the
+    crow flies, or None when either is unknown."""
+    latitude, longitude = _tracker_position(hass, data["device_tracker_id"])
+    if position is None or not latitude or not longitude:
+        return None
+    north = (latitude - position[0]) * 111111
+    east = (longitude - position[1]) * 111111 * math.cos(math.radians(latitude))
+    return math.hypot(north, east)
+
+
 def get_local_stop_list(hass: HomeAssistant, schedule: Schedule, data: Mapping[str, Any]) -> int:
     _LOGGER.debug("Getting local stops list with data: %s", data)
     latitude, longitude = _tracker_position(hass, data['device_tracker_id'])
@@ -88,9 +115,57 @@ def get_local_stop_list(hass: HomeAssistant, schedule: Schedule, data: Mapping[s
     return int(rowcount)
 
 
-def local_stops_nearby(hass: HomeAssistant, data: Mapping[str, Any]) -> list[dict[str, Any]] | None:
+def _nearest_served(schedule: Schedule, latitude: float, longitude: float,
+                    data: Mapping[str, Any], most: int) -> list[tuple[str, str, float]]:
+    """(stop_id, stop_name, how far) of the stops within the entry's radius
+    a trip calls at, the nearest first, no more than `most`.
+
+    How far is told as the radius is: in degrees, the larger of the two
+    ways, so the stops kept are those of a smaller radius.
+    """
+    # the stops within the radius first, then their calls, as the
+    # departures are read (_fetch_local_stop_rows)
+    sql_query = f"""
+        WITH nearby AS MATERIALIZED (
+            SELECT stop_id, stop_name,
+                   max(abs(stop_lat - :latitude), abs(stop_lon - :longitude)) AS away
+            FROM stops WHERE {_NEARBY}
+        )
+        SELECT DISTINCT nearby.stop_id, nearby.stop_name, nearby.away
+        FROM nearby
+        CROSS JOIN stop_times st ON st.stop_id = nearby.stop_id
+        ORDER BY nearby.away, nearby.stop_id
+        LIMIT :most
+        """  # noqa: S608
+    with schedule.engine.connect() as conn:
+        rows = conn.execute(text(sql_query), {
+            "latitude": latitude, "longitude": longitude, "radius": _radius_degrees(data),
+            "most": most}).fetchall()
+    return [(row[0], row[1], row[2]) for row in rows]
+
+
+def _radius_kept(schedule: Schedule, latitude: float, longitude: float,
+                 data: Mapping[str, Any], most: int) -> float:
+    """The radius the departures are read within, in degrees: the entry's,
+    or just past the last stop kept where it holds more than
+    max_local_stops. The options screen refuses such a radius where the
+    tracker stands then, but a person walks on into a denser part of
+    town, and the reading grew with every stop of it."""
+    radius = _radius_degrees(data)
+    # one more than kept: whether there is one too many
+    nearest = _nearest_served(schedule, latitude, longitude, data, most + 1)
+    if len(nearest) <= most:
+        return radius
+    # _NEARBY keeps what is strictly within
+    return min(radius, nearest[most - 1][2] * (1 + 1e-9) + 1e-12)
+
+
+def local_stops_nearby(hass: HomeAssistant, data: Mapping[str, Any],
+                       most: int = DEFAULT_MAX_LOCAL_STOPS) -> list[dict[str, Any]] | None:
     """The stops a local stops entry follows: every stop within its radius
-    a trip calls at, whether or not a departure falls in the window now.
+    a trip calls at, whether or not a departure falls in the window now,
+    the nearest `most` of them, the entry's max_local_stops, where there
+    are more.
     The sensors were made from the stops with a departure in the window:
     an entry made in the evening, after the last bus, got none.
 
@@ -102,27 +177,14 @@ def local_stops_nearby(hass: HomeAssistant, data: Mapping[str, Any]) -> list[dic
     latitude, longitude = _tracker_position(hass, data["device_tracker_id"])
     if not latitude or not longitude:
         return None
-    # the stops within the radius first, then their calls, as the
-    # departures are read (_fetch_local_stop_rows)
-    sql_query = f"""
-        WITH nearby AS MATERIALIZED (
-            SELECT stop_id, stop_name FROM stops WHERE {_NEARBY}
-        )
-        SELECT DISTINCT nearby.stop_id, nearby.stop_name
-        FROM nearby
-        CROSS JOIN stop_times st ON st.stop_id = nearby.stop_id
-        ORDER BY nearby.stop_id
-        """
-    radius = _radius_degrees(data)
     try:
-        with schedule.engine.connect() as conn:
-            rows = conn.execute(text(sql_query), {"latitude": latitude, "longitude": longitude,
-                                                  "radius": radius}).fetchall()
+        nearest = _nearest_served(schedule, latitude, longitude, data, most)
     except SQLAlchemyError as ex:
         # the stops with a departure now are still there to make sensors of
         _LOGGER.warning("Could not read the stops around %s: %s", data["device_tracker_id"], ex)
         return None
-    return [{"stop_id": row[0], "stop_name": row[1]} for row in rows]
+    return sorted(({"stop_id": stop_id, "stop_name": name} for stop_id, name, _away in nearest),
+                  key=lambda stop: stop["stop_id"])
 
 
 def local_departure_leaves(scheduled: datetime.datetime, realtime: datetime.datetime | str,
@@ -460,10 +522,16 @@ def get_local_stops_next_departures(self: GTFSLocalStopUpdateCoordinator) -> lis
     latitude, longitude= _tracker_position(self.hass, self._data['device_tracker_id'])
     time_range= str('+' + str(self._data.get("timerange", DEFAULT_LOCAL_STOP_TIMERANGE)) + ' minute')
     time_range_history = str('-' + str(self._data.get("timerange_history", DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY)) + ' minute')
-    radius = _radius_degrees(self._data)
     if not latitude or not longitude:
         _LOGGER.error("No latitude and/or longitude for : %s", self._data['device_tracker_id'])
         return []
+    # the entry's max_local_stops, which the coordinator holds beside its
+    # data: the data is what the sensors are handed
+    radius = _radius_kept(schedule, latitude, longitude, self._data,
+                          getattr(self, "_most_stops", DEFAULT_MAX_LOCAL_STOPS))
+    # where this reading is taken from: the tracker moving away from it
+    # asks for the next one (async_follow_tracker)
+    self._read_from = (latitude, longitude)
 
     # the stored stop times are the network's wall clock: now is read on
     # it, as the journey sensor reads it, not on Home Assistant's

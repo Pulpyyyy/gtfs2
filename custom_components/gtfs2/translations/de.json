@@ -395,6 +395,9 @@
           "refresh_interval": "Datenaktualisierungsintervall (in Minuten)",
           "offset": "Offset in Minuten",
           "max_local_stops": "Limite der #Stopps, um mögliche Auswirkungen auf die Leistung zu vermeiden. \nErhöhung auf eigenes Risiko",
+          "follow_up_to": "Bewegungen bis zu dieser Geschwindigkeit folgen (km/h)",
+          "away_for": "Minuten Entfernung, bevor die Haltestellen neu gelesen werden",
+          "readings_away": "Lesungen ohne eine Haltestelle, bevor ihr Sensor entfernt wird",
           "local_stop_refresh_interval": "Datenaktualisierungsintervall (in Minuten)",
           "timerange": "Prüfung auf zukünftige Abfahrten ab ‚jetzt‘ (in Minuten: zwischen 15 und 120)",
           "radius": "Radius für die Suche nach Haltestellen (in Metern zwischen 50 und 5000)",
@@ -406,7 +409,10 @@
           "offset": "Blendet Abfahrten aus, die Sie nicht erreichen: die Gehzeit zur Haltestelle, in Minuten.",
           "timerange": "Wie weit voraus nach Abfahrten gesucht wird, in Minuten.",
           "radius": "Suchradius für Haltestellen um die Person oder Zone, in Metern.",
-          "max_local_stops": "Ab dieser Anzahl Haltestellen wird der Sensor langsam. Erhöhung auf eigenes Risiko.",
+          "max_local_stops": "Ab dieser Anzahl Haltestellen wird der Sensor langsam. Erhöhung auf eigenes Risiko. Unterwegs bleiben nur die nächstgelegenen.",
+          "follow_up_to": "Die Haltestellen werden neu gelesen, sobald sich die Person bewegt hat, solange sie nicht schneller ist: zu Fuß, nicht im Fahrzeug, wo die Haltestellen vorbeiziehen. 0, um sie nur im Aktualisierungsintervall zu lesen.",
+          "away_for": "Wie lange die Person mehr als den halben Radius von der letzten Lesung entfernt bleiben muss, bevor die Haltestellen neu gelesen werden. Lang genug, um einen Positionssprung des Telefons abzufangen.",
+          "readings_away": "Eine Haltestelle, die nicht mehr in der Nähe ist, verliert ihren Sensor nach so vielen Lesungen in Folge ohne sie. 2 fängt einen Positionssprung des Telefons ab; 1 entfernt ihn bei der ersten.",
           "also_at": "Bahnhöfe oder Haltestellen auf dem Weg, an denen Sie ebenfalls ein- oder aussteigen können: eine nahe, ein Umstieg. Jede Fahrt erscheint nur einmal, von der ersten, an der man einsteigen kann, bis zur letzten, an der man aussteigen kann; eine Fahrt, die dort vor Ihrem Ziel endet, wird behalten und zeigt es an."
         }
       },

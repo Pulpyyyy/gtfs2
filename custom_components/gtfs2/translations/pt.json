@@ -395,6 +395,9 @@
           "refresh_interval": "Intervalo de atualização de dados (em minutos)",
           "offset": "Desvio em minutos",
           "max_local_stops": "Limite #stops para evitar possíveis impactos no desempenho. \nAumente por sua conta e risco",
+          "follow_up_to": "Seguir as deslocações até esta velocidade (km/h)",
+          "away_for": "Minutos de afastamento antes de ler de novo as paragens",
+          "readings_away": "Leituras sem uma paragem antes de remover o seu sensor",
           "local_stop_refresh_interval": "Intervalo de atualização de dados (em minutos)",
           "timerange": "Verificação de partidas no futuro a partir de 'agora' (em minutos: entre 15 e 120)",
           "radius": "Raio para procurar paragens (em metros entre 50 e 5000)",
@@ -406,7 +409,10 @@
           "offset": "Oculta as partidas que não conseguiria apanhar: o tempo a pé até à paragem, em minutos.",
           "timerange": "Até onde procurar as próximas partidas, em minutos.",
           "radius": "Distância de procura de paragens em redor da pessoa ou zona, em metros.",
-          "max_local_stops": "Acima deste número de paragens o sensor fica lento. Aumente por sua conta e risco.",
+          "max_local_stops": "Acima deste número de paragens o sensor fica lento. Aumente por sua conta e risco. Em deslocação, só as mais próximas são mantidas.",
+          "follow_up_to": "As paragens são lidas de novo assim que a pessoa se deslocou, desde que não vá mais depressa: a pé, não num veículo, onde as paragens passam. 0 para as ler apenas no intervalo de atualização.",
+          "away_for": "O tempo que a pessoa tem de ficar a mais de meio raio da última leitura antes de as paragens serem lidas de novo. Longo o suficiente para absorver um salto de posição do telefone.",
+          "readings_away": "Uma paragem que já não está por perto perde o seu sensor após este número de leituras seguidas sem ela. 2 absorve um salto de posição do telefone; 1 remove-o à primeira.",
           "also_at": "Estações ou paragens no caminho onde também pode embarcar ou desembarcar: uma próxima, uma correspondência. Cada serviço aparece uma só vez, da primeira onde se pode embarcar à última onde se pode desembarcar; um serviço que termina numa delas, antes da sua chegada, é mantido e indica-o."
         }
       },

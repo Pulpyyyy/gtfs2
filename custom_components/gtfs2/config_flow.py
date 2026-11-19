@@ -42,6 +42,12 @@ from .const import (
     ENTRY_KIND_DATASOURCE,
     DEFAULT_MAX_LOCAL_STOPS,
     CONF_MAX_LOCAL_STOPS,
+    CONF_FOLLOW_UP_TO,
+    DEFAULT_FOLLOW_UP_TO,
+    CONF_READINGS_AWAY,
+    DEFAULT_READINGS_AWAY,
+    CONF_AWAY_FOR,
+    DEFAULT_AWAY_FOR,
 )
 
 from .data.datasource import get_gtfs, check_datasource_index
@@ -624,6 +630,9 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
                 vol.Optional(CONF_TIMERANGE, default=self.config_entry.options.get(CONF_TIMERANGE, DEFAULT_LOCAL_STOP_TIMERANGE)): vol.All(vol.Coerce(int), vol.Range(min=15, max=120)),
                 vol.Optional(CONF_OFFSET, default=self.config_entry.options.get(CONF_OFFSET, DEFAULT_OFFSET)): int,
                 vol.Required(CONF_MAX_LOCAL_STOPS, default=self.config_entry.options.get(CONF_MAX_LOCAL_STOPS, DEFAULT_MAX_LOCAL_STOPS)): int,
+                vol.Optional(CONF_FOLLOW_UP_TO, default=self.config_entry.options.get(CONF_FOLLOW_UP_TO, DEFAULT_FOLLOW_UP_TO)): vol.All(vol.Coerce(int), vol.Range(min=0, max=50)),
+                vol.Optional(CONF_AWAY_FOR, default=self.config_entry.options.get(CONF_AWAY_FOR, DEFAULT_AWAY_FOR)): vol.All(vol.Coerce(int), vol.Range(min=1, max=30)),
+                vol.Optional(CONF_READINGS_AWAY, default=self.config_entry.options.get(CONF_READINGS_AWAY, DEFAULT_READINGS_AWAY)): vol.All(vol.Coerce(int), vol.Range(min=1, max=10)),
             }
         return self.async_show_form(
             step_id="init",

@@ -395,6 +395,9 @@
           "refresh_interval": "Intervalo de actualización de datos (en minutos)",
           "offset": "Offset en minutos",
           "max_local_stops": "Limite las #paradas para evitar un posible impacto en el rendimiento. \nAumentar bajo su propia responsabilidad",
+          "follow_up_to": "Seguir los desplazamientos hasta esta velocidad (km/h)",
+          "away_for": "Minutos de alejamiento antes de volver a leer las paradas",
+          "readings_away": "Lecturas sin una parada antes de eliminar su sensor",
           "local_stop_refresh_interval": "Intervalo de actualización de datos (en minutos)",
           "timerange": "Comprobación de salidas en el futuro a partir de 'ahora' (en minutos: entre 15 y 120)",
           "radius": "Radio de búsqueda de paradas (en metros entre 50 y 5000)",
@@ -406,7 +409,10 @@
           "offset": "Oculta las salidas que no podría alcanzar: el tiempo a pie hasta la parada, en minutos.",
           "timerange": "Hasta dónde buscar las próximas salidas, en minutos.",
           "radius": "Distancia de búsqueda de paradas alrededor de la persona o zona, en metros.",
-          "max_local_stops": "Por encima de este número de paradas el sensor se vuelve lento. Auméntelo bajo su responsabilidad.",
+          "max_local_stops": "Por encima de este número de paradas el sensor se vuelve lento. Auméntelo bajo su responsabilidad. En movimiento, solo se conservan las más cercanas.",
+          "follow_up_to": "Las paradas se vuelven a leer en cuanto la persona se ha desplazado, mientras no vaya más rápido: a pie, no en un vehículo, donde las paradas pasan de largo. 0 para leerlas solo en el intervalo de actualización.",
+          "away_for": "El tiempo que la persona debe permanecer a más de medio radio de la última lectura antes de que se vuelvan a leer las paradas. Lo bastante largo para absorber un salto de posición del teléfono.",
+          "readings_away": "Una parada que ya no está cerca pierde su sensor tras este número de lecturas seguidas sin ella. 2 absorbe un salto de posición del teléfono; 1 lo elimina a la primera.",
           "also_at": "Estaciones o paradas en el camino donde también puede subir o bajar: una cercana, un transbordo. Cada servicio aparece una sola vez, desde la primera donde se puede subir hasta la última donde se puede bajar; un servicio que termina en una de ellas, antes de su llegada, se conserva y lo indica."
         }
       },

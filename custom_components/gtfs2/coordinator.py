@@ -10,13 +10,20 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 import homeassistant.util.dt as dt_util
 from sqlalchemy.exc import SQLAlchemyError
 
 from .const import (
+    CONF_AWAY_FOR,
+    CONF_FOLLOW_UP_TO,
+    CONF_MAX_LOCAL_STOPS,
+    DEFAULT_AWAY_FOR,
+    DEFAULT_FOLLOW_UP_TO,
+    DEFAULT_MAX_LOCAL_STOPS,
     id_of,
     DEFAULT_PATH,
     DEFAULT_REFRESH_INTERVAL, 
@@ -40,7 +47,8 @@ from .feed.files import close_schedule, file_edition, real_path
 from .data.datasource import check_datasource_index, check_extracting, get_gtfs
 from .data.departures import (departure_query_args, drop_departure_trips, get_next_departure,
                           get_next_service_date, journey_data, shown_ends)
-from .domain.local_stops import get_local_stops_next_departures, drop_gone_local_departures
+from .domain.local_stops import (get_local_stops_next_departures, drop_gone_local_departures,
+                                 tracker_metres_from, tracker_moved_away, _tracker_position)
 from .data.map_files import clear_vehicle_file, vehicle_positions_name
 from .domain.realtime import _names_trip, get_next_services, get_rt_alerts, merge_struck
 from .feed.source_entries import rt_feed_config, rt_headers, with_query_key
@@ -577,6 +585,13 @@ class GTFSUpdateCoordinator(DataUpdateCoordinator):
                 )
                 registry.async_remove(entry.entity_id)
 
+# the least time between two positions of a tracker for the pace between
+# them to be told, in seconds, and the least distance, in metres: the 20 m
+# a phone is off by are no move
+PACE_OVER = 30
+PACE_FROM = 50
+
+
 class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
     """Data update coordinator for getting local stops."""
 
@@ -605,11 +620,186 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
         # what the database file was when the schedule was opened (see schedule_for)
         self._pygtfs_edition: tuple[int, int, int] | None = None
         self._data: dict[str, Any] = {}
+        # where the tracker stood at the last reading of its stops, and
+        # whether it has moved away from there since (async_follow_tracker)
+        self._read_from: tuple[float, float] | None = None
+        self._moved_away = False
+        # the wait under way since the tracker was seen away, and where
+        # it stood when the wait began
+        self._waiting: CALLBACK_TYPE | None = None
+        self._seen_at: tuple[float, float] | None = None
+        # the position the tracker gave before, and when; and whether it
+        # came faster than a walk to one given during the wait under way
+        self._fix: tuple[float, float, datetime.datetime] | None = None
+        self._rode = False
+
+    @callback
+    def async_follow_tracker(self) -> CALLBACK_TYPE:
+        """Read the stops again once the tracker has moved away, and return
+        what stops the following.
+
+        The stops were read at the entry's pace only, 15 minutes by
+        default: a person off a bus waited that long for the stops of
+        where they got off. A tracker more than half the radius from the
+        last reading for the entry's away_for, two minutes unless its
+        options say otherwise, asks for one at once. For that
+        long, not at the first position seen there: a phone jumps a few
+        hundred metres away and back within minutes, and a reading taken
+        there lists stops the person is not at. A zone never moves, and
+        never asks.
+
+        Nor while the tracker rides: gone further over that time than the
+        entry's walking pace covers, it is in a bus or a car, the stops
+        file past and none can be boarded. A reading every two minutes of
+        a ride was a load for nothing; the wait starts again from where
+        it is, and the reading comes once it walks or stands. The entry's
+        own pace goes on meanwhile. A pace of 0 follows no move at all.
+
+        The pace is also told between two positions the tracker gave and
+        the times it gave them at (_rode_here): a phone giving one every
+        five minutes stood where it was through a whole wait, a bus ride
+        read as standing.
+        """
+        unlisten = async_track_state_change_event(
+            self.hass, [self.config_entry.data["device_tracker_id"]], self._tracker_moved)
+
+        @callback
+        def _unfollow() -> None:
+            unlisten()
+            self._wait_over()
+
+        return _unfollow
+
+    @callback
+    def _tracker_moved(self, _event: Event[Any]) -> None:
+        """The tracker seen somewhere: start the wait when it is away from
+        where the stops were read, end it when it is back."""
+        if self._too_vague():
+            return
+        if self._first_position():
+            return
+        rode = self._rode_here()
+        if not self._walking_pace() or not tracker_moved_away(
+                self.hass, self._data, self._read_from):
+            # back where the stops were read: a jump, or a detour
+            self._wait_over()
+        elif self._waiting is None:
+            self._wait()
+        if rode:
+            # for the wait under way only: off the bus the phone gives no
+            # position while it stands, and the last pace known stayed a
+            # ride for good
+            self._rode = True
+
+    @callback
+    def _wait(self) -> None:
+        """Wait the entry's away_for from where the tracker stands now."""
+        latitude, longitude = _tracker_position(
+            self.hass, self.config_entry.data["device_tracker_id"])
+        self._seen_at = (latitude, longitude) if latitude and longitude else None
+        self._rode = False
+        self._waiting = async_call_later(self.hass, self._away_for(), self._waited)
+
+    @callback
+    def _wait_over(self) -> None:
+        if self._waiting is not None:
+            self._waiting()
+            self._waiting = None
+
+    async def _waited(self, _now: datetime.datetime) -> None:
+        """The wait is over: read when the tracker is still away, and not
+        riding."""
+        self._waiting = None
+        if not tracker_moved_away(self.hass, self._data, self._read_from):
+            return
+        if self._rode or self._riding_from(self._seen_at):
+            self._wait()
+            return
+        self._moved_away = True
+        await self.async_request_refresh()
+
+    def _too_vague(self) -> bool:
+        """Whether the position the tracker gives is too vague to follow:
+        off by more than half the entry's radius, by its own gps_accuracy.
+        The jumps of a phone are such positions, and there is no telling
+        from one which stops are around. A zone gives none, and is exact.
+        """
+        state = self.hass.states.get(self.config_entry.data["device_tracker_id"])
+        accuracy = state.attributes.get("gps_accuracy") if state is not None else None
+        if not isinstance(accuracy, (int, float)):
+            return False
+        return accuracy > float(self._data.get("radius", DEFAULT_LOCAL_STOP_RADIUS)) / 2
+
+    def _first_position(self) -> bool:
+        """Ask for a reading when the tracker gives a position and the stops
+        were never read from one: a phone not heard of yet when Home
+        Assistant starts left the entry without a stop until its next
+        reading, a quarter of an hour later."""
+        if self._read_from is not None or not self._walking_pace() or not (
+                self.data or {}).get("gtfs_updated_at"):
+            # read from somewhere already; or not read at all yet, the
+            # first reading is on its way
+            return False
+        latitude, longitude = _tracker_position(
+            self.hass, self.config_entry.data["device_tracker_id"])
+        if not latitude or not longitude:
+            return False
+        self._moved_away = True
+        self.config_entry.async_create_background_task(
+            self.hass, self.async_request_refresh(),
+            f"gtfs2 local stops first position {self.config_entry.title}")
+        return True
+
+    def _rode_here(self) -> bool:
+        """Whether the tracker came to where it now stands faster than a
+        walk, from the position it gave before: the distance between the
+        two over the time between them.
+
+        Positions less than PACE_OVER apart in time, or PACE_FROM in
+        distance, are not compared, the earlier one kept: the 20 m a
+        phone is off by are no move, and over ten seconds read as 7 km/h.
+        """
+        state = self.hass.states.get(self.config_entry.data["device_tracker_id"])
+        at = getattr(state, "last_updated", None)
+        if state is None or at is None:
+            return False
+        latitude = state.attributes.get("latitude")
+        longitude = state.attributes.get("longitude")
+        if not latitude or not longitude:
+            return False
+        before, self._fix = self._fix, (latitude, longitude, at)
+        if before is None:
+            return False
+        seconds = (at - before[2]).total_seconds()
+        gone = tracker_metres_from(self.hass, self._data, (before[0], before[1]))
+        if seconds < PACE_OVER or gone is None or gone < PACE_FROM:
+            self._fix = before
+            return False
+        return gone / seconds > self._walking_pace()
+
+    def _away_for(self) -> float:
+        """How long the tracker has to stay away before its stops are read
+        again, in seconds; the option is in minutes."""
+        return float(self.config_entry.options.get(CONF_AWAY_FOR, DEFAULT_AWAY_FOR)) * 60
+
+    def _walking_pace(self) -> float:
+        """The pace up to which the entry follows its tracker, in metres a
+        second; the option is in km/h."""
+        return float(self.config_entry.options.get(
+            CONF_FOLLOW_UP_TO, DEFAULT_FOLLOW_UP_TO)) / 3.6
+
+    def _riding_from(self, seen_at: tuple[float, float] | None) -> bool:
+        """Whether the tracker has gone further from seen_at, over the
+        wait, than a walk covers."""
+        gone = tracker_metres_from(self.hass, self._data, seen_at)
+        return gone is not None and gone > self._walking_pace() * self._away_for()
 
     def _read_lately(self, previous_data: dict[str, Any], options: Mapping[str, Any]) -> bool:
         """Whether the stops were read from this very database within the
         entry's pace, and nothing is being written."""
         if not previous_data.get("gtfs_updated_at") or previous_data.get("extracting"):
+            return False
+        if self._moved_away:
             return False
         if previous_data.get("schedule") is not self._pygtfs:
             # a database swapped in or reopened: read it at once
@@ -643,6 +833,8 @@ class GTFSLocalStopUpdateCoordinator(DataUpdateCoordinator):
 
         self._data = self._base_data()
         self._data["gtfs_updated_at"] = dt_util.utcnow().isoformat()
+        self._moved_away = False
+        self._most_stops = int(options.get(CONF_MAX_LOCAL_STOPS) or DEFAULT_MAX_LOCAL_STOPS)
 
         
         if await _still_unpacking(self, previous_data):

@@ -89,7 +89,9 @@ def _quiet_setup(monkeypatch):
             self.entry = entry
 
     class LocalStopCoordinator(Coordinator):
-        pass
+        def async_follow_tracker(self):
+            # what stops the following, handed to the entry's unload
+            return lambda: None
 
     monkeypatch.setattr(integration, "async_bootstrap_datasource_entries", bootstrap)
     monkeypatch.setattr(integration, "async_arm_source_check",

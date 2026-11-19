@@ -15,6 +15,15 @@ DEFAULT_LOCAL_STOP_TIMERANGE = 30
 DEFAULT_LOCAL_STOP_TIMERANGE_HISTORY = 15
 DEFAULT_LOCAL_STOP_RADIUS = 200
 DEFAULT_MAX_LOCAL_STOPS = 15
+# the pace up to which a local stops entry follows its tracker, in km/h:
+# a brisk walk. Faster, it rides, and its stops wait until it walks again
+DEFAULT_FOLLOW_UP_TO = 7
+# the readings in a row a stop has to be missing from before its sensor
+# goes: one reading taken where a phone jumped must not take them all
+DEFAULT_READINGS_AWAY = 2
+# how long the tracker has to stay away from where its stops were read
+# before they are read again, in minutes
+DEFAULT_AWAY_FOR = 2
 
 DEFAULT_NAME = "GTFS Sensor2"
 DEFAULT_PATH = "gtfs2"
@@ -323,6 +332,9 @@ CONF_TIMERANGE = "timerange"
 CONF_REFRESH_INTERVAL = "refresh_interval"
 CONF_REAL_TIME = "real_time"
 CONF_MAX_LOCAL_STOPS = "max_local_stops"
+CONF_FOLLOW_UP_TO = "follow_up_to"
+CONF_READINGS_AWAY = "readings_away"
+CONF_AWAY_FOR = "away_for"
 
 # gtfs_rt specific
 CONF_API_KEY = "api_key"

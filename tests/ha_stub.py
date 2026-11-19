@@ -1009,6 +1009,7 @@ def install() -> None:
     _module("homeassistant.helpers.restore_state", RestoreEntity=type("RestoreEntity", (), {}))
     _module("homeassistant.helpers.event",
             async_call_later=_Unreached("async_call_later"),
+            async_track_state_change_event=_Unreached("async_track_state_change_event"),
             async_track_time_change=_Unreached("async_track_time_change"))
     _module("homeassistant.components")
     _module("homeassistant.components.sensor",
@@ -1024,6 +1025,7 @@ def install() -> None:
         async_dismiss=_Unreached("persistent_notification.async_dismiss"),
             create=_Unreached("persistent_notification.create"))
     _module("homeassistant.core", HomeAssistant=object, ServiceCall=object,
+            CALLBACK_TYPE=object, Event=object,
             SupportsResponse=_Unreached("SupportsResponse"),
             callback=_callback)
     _module("homeassistant.config_entries", ConfigEntry=object,

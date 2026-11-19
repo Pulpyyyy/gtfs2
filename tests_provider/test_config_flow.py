@@ -2065,7 +2065,10 @@ def test_local_stops_options_refuse_a_radius_holding_more_stops_than_allowed(wor
             "local_stop_refresh_interval": const.DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
             "radius": const.DEFAULT_LOCAL_STOP_RADIUS,
             "timerange": const.DEFAULT_LOCAL_STOP_TIMERANGE,
-            "offset": const.DEFAULT_OFFSET, "max_local_stops": const.DEFAULT_MAX_LOCAL_STOPS}
+            "offset": const.DEFAULT_OFFSET, "max_local_stops": const.DEFAULT_MAX_LOCAL_STOPS,
+            "follow_up_to": const.DEFAULT_FOLLOW_UP_TO,
+            "away_for": const.DEFAULT_AWAY_FOR,
+            "readings_away": const.DEFAULT_READINGS_AWAY}
         with pytest.raises(vol.Invalid):
             await submit(hass, form, options, radius=40)
         refused = shown(await submit(hass, form, options, radius=5000, max_local_stops=1), ABORT)
@@ -2076,7 +2079,10 @@ def test_local_stops_options_refuse_a_radius_holding_more_stops_than_allowed(wor
         assert dict(entry.options) == {
             "local_stop_refresh_interval": const.DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
             "radius": 50, "timerange": const.DEFAULT_LOCAL_STOP_TIMERANGE,
-            "offset": const.DEFAULT_OFFSET, "max_local_stops": const.DEFAULT_MAX_LOCAL_STOPS}
+            "offset": const.DEFAULT_OFFSET, "max_local_stops": const.DEFAULT_MAX_LOCAL_STOPS,
+            "follow_up_to": const.DEFAULT_FOLLOW_UP_TO,
+            "away_for": const.DEFAULT_AWAY_FOR,
+            "readings_away": const.DEFAULT_READINGS_AWAY}
     walk(world, scenario)
 
 
