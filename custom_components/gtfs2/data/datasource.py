@@ -111,6 +111,10 @@ DATASOURCE_INDEXES = (
     ("stops", "stop_name", "gtfs2_stops_stop_name"),
     ("routes", "route_type", "gtfs2_routes_route_type"),
     ("trips", "route_id", "gtfs2_trips_route_id"),
+    # the services added on a day: without it SQLite built an index of its
+    # own over the whole table at every reading of the stops around, 3 s
+    # of the 3.1 a reading took on a feed of 529 000 dates (Sofia)
+    ("calendar_dates", "date", "gtfs2_calendar_dates_date"),
 )
 
 
@@ -186,10 +190,16 @@ def check_datasource_index(hass: HomeAssistant, schedule: Schedule | str | None,
         views = {name for kind, name, _table in master if kind == "view"}
         indexed = [(table, name) for kind, name, table in master if kind == "index"]
         for table, column, index_name in DATASOURCE_INDEXES:
-            if table in views or any(t == table and column in (n or "") for t, n in indexed):
+            # the column looked for in the name past the table's: every
+            # index of calendar_dates has "date" in its name
+            if table in views or any(t == table and column in (n or "").replace(table, "")
+                                     for t, n in indexed):
                 continue
             _LOGGER.info("Adding index %s to improve performance", index_name)
-            conn.execute(text(f"create index {index_name} on {table}({column})"))  # noqa: S608
+            # if not exists: the entries of a source check it at the same
+            # time when Home Assistant starts, each on its own thread, and
+            # the second to make a new index failed its first reading
+            conn.execute(text(f"create index if not exists {index_name} on {table}({column})"))  # noqa: S608
         if conn.execute(text(sql_check_route_agency)).scalar():
             _LOGGER.info("Fix missing agency_id in routes table")
             conn.execute(text(sql_fix_route_agency))

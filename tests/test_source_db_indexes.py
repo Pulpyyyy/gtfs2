@@ -39,6 +39,7 @@ def _datasource(tmp_path, interned=False):
     conn.execute("create table routes (route_id varchar, agency_id varchar, route_type integer)")
     conn.execute("create table trips (trip_id varchar, route_id varchar)")
     conn.execute("create table shapes (shape_id varchar)")
+    conn.execute("create table calendar_dates (service_id varchar, date date, exception_type integer)")
     conn.execute("create table agency (agency_id varchar)")
     conn.execute("insert into agency values ('A')")
     conn.execute("insert into routes values ('R1', null, 3)")
