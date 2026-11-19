@@ -2053,7 +2053,7 @@ def test_a_train_journey_s_options_get_on_or_off_at_more_stations(world):
     walk(world, scenario)
 
 
-def test_local_stops_options_refuse_a_radius_holding_more_stops_than_allowed(world):
+def test_local_stops_options_take_a_radius_holding_more_stops_than_allowed(world):
     async def scenario(hass):
         options = hass.config_entries.options
         await install_source(hass, "tao-journeys", "tao")
@@ -2061,27 +2061,34 @@ def test_local_stops_options_refuse_a_radius_holding_more_stops_than_allowed(wor
         entry = await imported(hass, {"file": "tao", "device_tracker_id": "person.me",
                                       "name": "around me", "url": "na", "extract_from": "zip"})
         form = shown(await options_of(hass, entry), FORM, "init")
-        assert {key: default(form, key) for key in fields(form)} == {
+        following = fields(form).pop("advanced")
+        assert {key: default(form, key) for key in fields(form) if key != "advanced"} == {
             "local_stop_refresh_interval": const.DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
             "radius": const.DEFAULT_LOCAL_STOP_RADIUS,
             "timerange": const.DEFAULT_LOCAL_STOP_TIMERANGE,
-            "offset": const.DEFAULT_OFFSET, "max_local_stops": const.DEFAULT_MAX_LOCAL_STOPS,
+            "offset": const.DEFAULT_OFFSET, "max_local_stops": const.DEFAULT_MAX_LOCAL_STOPS}
+        # how the stops follow the person, in a section of its own, folded
+        assert following.options == {"collapsed": True}
+        assert following.schema({}) == {
             "follow_up_to": const.DEFAULT_FOLLOW_UP_TO,
             "away_for": const.DEFAULT_AWAY_FOR,
             "readings_away": const.DEFAULT_READINGS_AWAY}
         with pytest.raises(vol.Invalid):
-            await submit(hass, form, options, radius=40)
-        refused = shown(await submit(hass, form, options, radius=5000, max_local_stops=1), ABORT)
-        assert refused["reason"] == "stop_limit_reached"
-        assert dict(entry.options) == {}
+            await submit(hass, form, options, radius=40, advanced={})
+        # refused as stop_limit_reached while the limit only stood at this
+        # screen: each reading now keeps the nearest stops, and it is taken
+        shown(await submit(hass, form, options, radius=5000, max_local_stops=1, advanced={}), CREATE)
+        assert (entry.options["radius"], entry.options["max_local_stops"]) == (5000, 1)
         form = await options_of(hass, entry)
-        shown(await submit(hass, form, options, radius=50), CREATE)
+        shown(await submit(hass, form, options, radius=50,
+                           max_local_stops=const.DEFAULT_MAX_LOCAL_STOPS,
+                           advanced={"away_for": 3}), CREATE)
         assert dict(entry.options) == {
             "local_stop_refresh_interval": const.DEFAULT_LOCAL_STOP_REFRESH_INTERVAL,
             "radius": 50, "timerange": const.DEFAULT_LOCAL_STOP_TIMERANGE,
             "offset": const.DEFAULT_OFFSET, "max_local_stops": const.DEFAULT_MAX_LOCAL_STOPS,
             "follow_up_to": const.DEFAULT_FOLLOW_UP_TO,
-            "away_for": const.DEFAULT_AWAY_FOR,
+            "away_for": 3,
             "readings_away": const.DEFAULT_READINGS_AWAY}
     walk(world, scenario)
 

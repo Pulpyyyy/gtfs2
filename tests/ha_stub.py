@@ -248,6 +248,18 @@ def _async_dispatcher_connect(hass, signal, target):
     return _disconnect
 
 
+class _Section:
+    """data_entry_flow.section: a folded part of a form, its own schema
+    validating what was typed in it."""
+
+    def __init__(self, schema, options=None) -> None:
+        self.schema = schema
+        self.options = options or {}
+
+    def __call__(self, value):
+        return self.schema(value)
+
+
 class _Unreached:
     """Stands in for a symbol no test is expected to reach."""
 
@@ -882,7 +894,7 @@ def _install_config_flow() -> None:
     entries.OptionsFlow = _OptionsFlow
     entries.HANDLERS = _HANDLERS
     entries.SOURCE_USER = "user"
-    _module("homeassistant.data_entry_flow", FlowResult=dict,
+    _module("homeassistant.data_entry_flow", FlowResult=dict, section=_Section,
             FlowResultType=_FlowResultType, AbortFlow=_AbortFlow)
     # the config dicts are TypedDicts in Home Assistant: calling one makes a dict
     _module("homeassistant.helpers.selector",

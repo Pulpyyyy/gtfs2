@@ -372,7 +372,6 @@
       "files_deleted": "Datenquelle gelöscht, dies kann sich auf bestehende Routen auswirken",
       "generic_failure": "Gesamtfehler, Protokolle prüfen",
       "no_stops": "Problem bei der Datenerfassung: wahrscheinlich keine Stops für die gewählte Route",
-      "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern",
       "no_zip_in_folder": "Keine .zip-Datei in {folder} gefunden. Legen Sie dort Ihre GTFS-Zip-Datei ab und beginnen Sie erneut.",
       "no_routes_with_trips": "Keine Linie dieser Datenquelle hat einen Fahrplan geladen. Führen Sie den Dienst update_gtfs aus, um sie neu zu laden.",
       "no_stops_read": "Die Haltestellen dieser Linie konnten nicht gelesen werden. Prüfen Sie die Protokolle: die Datenquelle ist möglicherweise belegt oder wird neu aufgebaut.",
@@ -394,10 +393,7 @@
         "data": {
           "refresh_interval": "Datenaktualisierungsintervall (in Minuten)",
           "offset": "Offset in Minuten",
-          "max_local_stops": "Limite der #Stopps, um mögliche Auswirkungen auf die Leistung zu vermeiden. \nErhöhung auf eigenes Risiko",
-          "follow_up_to": "Bewegungen bis zu dieser Geschwindigkeit folgen (km/h)",
-          "away_for": "Minuten Entfernung, bevor die Haltestellen neu gelesen werden",
-          "readings_away": "Lesungen ohne eine Haltestelle, bevor ihr Sensor entfernt wird",
+          "max_local_stops": "Höchstens so viele Haltestellen behalten, die nächstgelegenen",
           "local_stop_refresh_interval": "Datenaktualisierungsintervall (in Minuten)",
           "timerange": "Prüfung auf zukünftige Abfahrten ab ‚jetzt‘ (in Minuten: zwischen 15 und 120)",
           "radius": "Radius für die Suche nach Haltestellen (in Metern zwischen 50 und 5000)",
@@ -409,11 +405,23 @@
           "offset": "Blendet Abfahrten aus, die Sie nicht erreichen: die Gehzeit zur Haltestelle, in Minuten.",
           "timerange": "Wie weit voraus nach Abfahrten gesucht wird, in Minuten.",
           "radius": "Suchradius für Haltestellen um die Person oder Zone, in Metern.",
-          "max_local_stops": "Ab dieser Anzahl Haltestellen wird der Sensor langsam. Erhöhung auf eigenes Risiko. Unterwegs bleiben nur die nächstgelegenen.",
-          "follow_up_to": "Die Haltestellen werden neu gelesen, sobald sich die Person bewegt hat, solange sie nicht schneller ist: zu Fuß, nicht im Fahrzeug, wo die Haltestellen vorbeiziehen. 0, um sie nur im Aktualisierungsintervall zu lesen.",
-          "away_for": "Wie lange die Person mehr als den halben Radius von der letzten Lesung entfernt bleiben muss, bevor die Haltestellen neu gelesen werden. Lang genug, um einen Positionssprung des Telefons abzufangen.",
-          "readings_away": "Eine Haltestelle, die nicht mehr in der Nähe ist, verliert ihren Sensor nach so vielen Lesungen in Folge ohne sie. 2 fängt einen Positionssprung des Telefons ab; 1 entfernt ihn bei der ersten.",
+          "max_local_stops": "Enthält der Radius mehr Haltestellen, bekommen nur die nächstgelegenen einen Sensor und werden gelesen. Jede weitere Haltestelle ist ein Sensor mehr und eine längere Lesung.",
           "also_at": "Bahnhöfe oder Haltestellen auf dem Weg, an denen Sie ebenfalls ein- oder aussteigen können: eine nahe, ein Umstieg. Jede Fahrt erscheint nur einmal, von der ersten, an der man einsteigen kann, bis zur letzten, an der man aussteigen kann; eine Fahrt, die dort vor Ihrem Ziel endet, wird behalten und zeigt es an."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Der Person folgen",
+            "data": {
+              "follow_up_to": "Bewegungen bis zu dieser Geschwindigkeit folgen (km/h)",
+              "away_for": "Minuten Entfernung, bevor die Haltestellen neu gelesen werden",
+              "readings_away": "Lesungen ohne eine Haltestelle, bevor ihr Sensor entfernt wird"
+            },
+            "data_description": {
+              "follow_up_to": "Die Haltestellen werden neu gelesen, sobald sich die Person bewegt hat, solange sie nicht schneller ist: zu Fuß, nicht im Fahrzeug, wo die Haltestellen vorbeiziehen. 0, um sie nur im Aktualisierungsintervall zu lesen.",
+              "away_for": "Wie lange die Person mehr als den halben Radius von der letzten Lesung entfernt bleiben muss, bevor die Haltestellen neu gelesen werden. Lang genug, um einen Positionssprung des Telefons abzufangen.",
+              "readings_away": "Eine Haltestelle, die nicht mehr in der Nähe ist, verliert ihren Sensor nach so vielen Lesungen in Folge ohne sie. 2 fängt einen Positionssprung des Telefons ab; 1 entfernt ihn bei der ersten."
+            }
+          }
         }
       },
       "real_time": {
@@ -486,9 +494,6 @@
           "api_key_location": "In der Web-Adresse, im Anfrage-Header oder als HTTP-Basic-Anmeldung (sein Name wird dann nicht verwendet)."
         }
       }
-    },
-    "abort": {
-      "stop_limit_reached": "Es wurde eine hohe Anzahl von Stopps für diesen Umkreis festgestellt. \n Es besteht die Gefahr einer Beeinträchtigung der Systemleistung. \n Sie können die Limite auf eigenes Risiko ändern, bevor Sie den Umkreis ändern"
     },
     "error": {
       "invalid_source_url": "Diese Adresse ist nicht gültig (http://, https:// oder file://)",
@@ -598,7 +603,7 @@
     },
     "update_gtfs_local_stops": {
       "name": "Lokale GTFS-Stopps aktualisieren",
-      "description": "z. B. zum Bewegen von ‚Person‘, für jede Person/Zone zu definieren",
+      "description": "Liest die Haltestellen um eine Person oder Zone sofort neu. Die Sensoren folgen einer Person, die sich bewegt, von selbst: dies dient einer Lesung ohne Warten.",
       "fields": {
         "entity_id": {
           "name": "Entität, die mit lokalen Haltestellen verbunden ist",

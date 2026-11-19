@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.data_entry_flow import FlowResult
+from homeassistant.data_entry_flow import FlowResult, section
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
@@ -54,7 +54,6 @@ from .data.datasource import get_gtfs, check_datasource_index
 from .data.map_files import name_in_use
 from .feed.files import remove_datasource, close_schedule
 from .domain.line_list import get_agency_list, get_route_count, get_route_list
-from .domain.local_stops import get_local_stop_list
 from .domain.line_list import get_route_options_from_zip, get_agencies_in_zip
 from .domain.line_labels import LINE_MODES, line_number, with_modes
 from .notifications import _async_text
@@ -590,6 +589,10 @@ class ConfigFlow(JourneyScreens, SourceScreens, ReloadScreens, TrainScreens, Opt
         return GTFSOptionsFlowHandler(config_entry)
 
 
+# the folded part of the local stops options screen
+SECTION_FOLLOWING = "advanced"
+
+
 class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
@@ -612,14 +615,13 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
             return await self._journey_options(user_input)
         # the stops around a person or a zone
         if user_input is not None:
-            # a copy: the entry's data is only needed for the check,
-            # and written into user_input it ended up in the options
-            _data = {**user_input,
-                     "file": self.config_entry.data["file"],
-                     "device_tracker_id": self.config_entry.data["device_tracker_id"]}
-            stop_limit = await _check_stop_list(self, _data)
-            if stop_limit :
-                return self.async_abort(reason=stop_limit)
+            # a radius holding more stops than max_local_stops was refused
+            # here, where the tracker stood then: each reading now keeps
+            # the nearest ones, wherever it stands
+            # the section's fields are options as the others are
+            following = user_input.get(SECTION_FOLLOWING, {})
+            user_input = {key: value for key, value in user_input.items()
+                          if key != SECTION_FOLLOWING} | following
             self._user_inputs.update(user_input)
             _LOGGER.debug(f"UserInputs Options Init: {self._user_inputs}")
             return self.async_create_entry(title="", data=self._user_inputs)
@@ -630,9 +632,12 @@ class GTFSOptionsFlowHandler(OptionsScreens, config_entries.OptionsFlow):
                 vol.Optional(CONF_TIMERANGE, default=self.config_entry.options.get(CONF_TIMERANGE, DEFAULT_LOCAL_STOP_TIMERANGE)): vol.All(vol.Coerce(int), vol.Range(min=15, max=120)),
                 vol.Optional(CONF_OFFSET, default=self.config_entry.options.get(CONF_OFFSET, DEFAULT_OFFSET)): int,
                 vol.Required(CONF_MAX_LOCAL_STOPS, default=self.config_entry.options.get(CONF_MAX_LOCAL_STOPS, DEFAULT_MAX_LOCAL_STOPS)): int,
-                vol.Optional(CONF_FOLLOW_UP_TO, default=self.config_entry.options.get(CONF_FOLLOW_UP_TO, DEFAULT_FOLLOW_UP_TO)): vol.All(vol.Coerce(int), vol.Range(min=0, max=50)),
-                vol.Optional(CONF_AWAY_FOR, default=self.config_entry.options.get(CONF_AWAY_FOR, DEFAULT_AWAY_FOR)): vol.All(vol.Coerce(int), vol.Range(min=1, max=30)),
-                vol.Optional(CONF_READINGS_AWAY, default=self.config_entry.options.get(CONF_READINGS_AWAY, DEFAULT_READINGS_AWAY)): vol.All(vol.Coerce(int), vol.Range(min=1, max=10)),
+                # how the stops follow the person, folded: few will touch it
+                vol.Required(SECTION_FOLLOWING): section(vol.Schema({
+                    vol.Optional(CONF_FOLLOW_UP_TO, default=self.config_entry.options.get(CONF_FOLLOW_UP_TO, DEFAULT_FOLLOW_UP_TO)): vol.All(vol.Coerce(int), vol.Range(min=0, max=50)),
+                    vol.Optional(CONF_AWAY_FOR, default=self.config_entry.options.get(CONF_AWAY_FOR, DEFAULT_AWAY_FOR)): vol.All(vol.Coerce(int), vol.Range(min=1, max=30)),
+                    vol.Optional(CONF_READINGS_AWAY, default=self.config_entry.options.get(CONF_READINGS_AWAY, DEFAULT_READINGS_AWAY)): vol.All(vol.Coerce(int), vol.Range(min=1, max=10)),
+                }), {"collapsed": True}),
             }
         return self.async_show_form(
             step_id="init",
@@ -726,23 +731,3 @@ async def _reopen_schedule(self: ConfigFlow | GTFSOptionsFlowHandler, data: dict
     self._pygtfs = await self.hass.async_add_executor_job(
         get_gtfs, self.hass, DEFAULT_PATH, data
     )
-
-
-async def _check_stop_list(self: GTFSOptionsFlowHandler, data: dict) -> str | None:
-    _LOGGER.debug("Checkstops option with data: %s", data)
-    await _reopen_schedule(self, data)
-    if isinstance(self._pygtfs, str):
-        # no database to count in, or one being written: the options are
-        # kept as they are, the count is what the sensor meets next time.
-        # Handed to the query, the answer string raised
-        _LOGGER.debug("Checkstops skipped, datasource answers %s", self._pygtfs)
-        return None
-    count_stops = await self.hass.async_add_executor_job(
-                get_local_stop_list, self.hass, self._pygtfs, data
-            )  
-    # the limit the user just set on this screen, which the refusal tells
-    # them to raise: compared with the default, raising it changed nothing
-    if count_stops > int(data.get(CONF_MAX_LOCAL_STOPS) or DEFAULT_MAX_LOCAL_STOPS):
-        _LOGGER.debug("Checkstops limit reached with: %s", count_stops)
-        return "stop_limit_reached"
-    return None         

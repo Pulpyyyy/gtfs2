@@ -372,7 +372,6 @@
       "files_deleted": "Source de données supprimée, cela peut affecter les itinéraires existants",
       "generic_failure": "Échec global, vérifiez les logs d'erreur",
       "no_stops": "Problème de collecte de données : probablement pas des stops pour la route sélectionné",
-      "stop_limit_reached": "Un nombre élevé d'arrêts a été détecté pour ce rayon, \nrisque d'impact sur les performances du système. \n Vous pouvez modifier la limite à votre propre risque avant de modifier le rayon",
       "no_zip_in_folder": "Aucun fichier .zip trouvé dans {folder}. Déposez-y votre fichier GTFS, puis recommencez.",
       "no_routes_with_trips": "Aucune ligne de cette source n'a d'horaires chargés. Lancez le service update_gtfs pour la recharger depuis la source.",
       "no_stops_read": "Impossible de lire les arrêts de cette ligne. Consultez les journaux : la source est peut-être occupée ou en cours de reconstruction.",
@@ -394,10 +393,7 @@
         "data": {
           "refresh_interval": "Intervalle d'actualisation en minutes",
           "offset": "Décalage en minutes",
-          "max_local_stops": "Limite du nombre d'arrêts pour éviter un éventuel impact sur les performances. \nAugmentation à votre propre risque",
-          "follow_up_to": "Suivre les déplacements jusqu'à cette vitesse (km/h)",
-          "away_for": "Minutes d'éloignement avant de relire les arrêts",
-          "readings_away": "Lectures sans un arrêt avant de supprimer son capteur",
+          "max_local_stops": "Garder au plus ce nombre d'arrêts, les plus proches",
           "local_stop_refresh_interval": "Intervalle d'actualisation en minutes",
           "timerange": "Période dans la future pour départs depuis 'maintenant' (en minutes entre 15 et 120)",
           "radius": "Radius pour la recherche des stops (en metres entre 50 et 5000)",
@@ -409,11 +405,23 @@
           "offset": "Masque les départs que vous ne pourriez pas attraper : le temps de marche jusqu'à l'arrêt, en minutes.",
           "timerange": "Jusqu'où chercher les départs à venir, en minutes.",
           "radius": "Distance de recherche des arrêts autour de la personne ou de la zone, en mètres.",
-          "max_local_stops": "Au-delà de ce nombre d'arrêts le capteur devient lent. À augmenter à vos risques. En déplacement, seuls les plus proches sont gardés.",
-          "follow_up_to": "Les arrêts sont relus dès que la personne s'est déplacée, tant qu'elle ne va pas plus vite : à pied, pas dans un véhicule, où les arrêts défilent. 0 pour ne les relire qu'à l'intervalle d'actualisation.",
-          "away_for": "Le temps pendant lequel la personne doit rester à plus d'un demi-rayon de la dernière lecture avant que les arrêts soient relus. Assez long pour absorber un saut de position du téléphone.",
-          "readings_away": "Un arrêt qui n'est plus autour perd son capteur après ce nombre de lectures de suite sans lui. 2 absorbe un saut de position du téléphone ; 1 le supprime dès la première.",
+          "max_local_stops": "Quand le rayon contient plus d'arrêts que cela, seuls les plus proches ont un capteur et sont lus. Chaque arrêt de plus est un capteur de plus, et une lecture plus longue.",
           "also_at": "Gares ou arrêts sur le chemin où vous pouvez aussi monter ou descendre : un arrêt voisin, une correspondance. Chaque passage n'apparaît qu'une fois, du premier où l'on peut monter au dernier où l'on peut descendre ; un passage qui s'arrête à l'un d'eux, avant votre arrivée, est gardé et l'indique."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Suivi de la personne",
+            "data": {
+              "follow_up_to": "Suivre les déplacements jusqu'à cette vitesse (km/h)",
+              "away_for": "Minutes d'éloignement avant de relire les arrêts",
+              "readings_away": "Lectures sans un arrêt avant de supprimer son capteur"
+            },
+            "data_description": {
+              "follow_up_to": "Les arrêts sont relus dès que la personne s'est déplacée, tant qu'elle ne va pas plus vite : à pied, pas dans un véhicule, où les arrêts défilent. 0 pour ne les relire qu'à l'intervalle d'actualisation.",
+              "away_for": "Le temps pendant lequel la personne doit rester à plus d'un demi-rayon de la dernière lecture avant que les arrêts soient relus. Assez long pour absorber un saut de position du téléphone.",
+              "readings_away": "Un arrêt qui n'est plus autour perd son capteur après ce nombre de lectures de suite sans lui. 2 absorbe un saut de position du téléphone ; 1 le supprime dès la première."
+            }
+          }
         }
       },
       "source_menu": {
@@ -486,9 +494,6 @@
           "api_key_location": "Dans l'adresse web, dans l'en-tête de la requête, ou en identifiant HTTP Basic (son nom ne sert alors pas)."
         }
       }
-    },
-    "abort": {
-      "stop_limit_reached": "Un nombre élevé d'arrêts a été détecté pour ce rayon, \nrisque d'impact sur les performances du système. \n Vous pouvez modifier la limite à votre propre risque avant de modifier le rayon"
     },
     "error": {
       "invalid_source_url": "Cette adresse n'est pas valide (http://, https:// ou file://)",
@@ -598,7 +603,7 @@
     },
     "update_gtfs_local_stops": {
       "name": "Mise 1a jour les stops locals",
-      "description": "p.e. pour des 'person' qui bougent, à définier pour chaque person/zone",
+      "description": "Relit tout de suite les arrêts autour d'une personne ou d'une zone. Les capteurs suivent d'eux-mêmes une personne qui se déplace : ceci sert à lire sans attendre.",
       "fields": {
         "entity_id": {
           "name": "Entity lié avec les stops locaux",

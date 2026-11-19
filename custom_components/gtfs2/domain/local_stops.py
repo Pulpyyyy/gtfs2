@@ -101,20 +101,6 @@ def tracker_metres_from(hass: HomeAssistant, data: Mapping[str, Any],
     return math.hypot(north, east)
 
 
-def get_local_stop_list(hass: HomeAssistant, schedule: Schedule, data: Mapping[str, Any]) -> int:
-    _LOGGER.debug("Getting local stops list with data: %s", data)
-    latitude, longitude = _tracker_position(hass, data['device_tracker_id'])
-    if not latitude or not longitude:
-        # nowhere to look around: no stop is near
-        return 0
-    radius = _radius_degrees(data)
-    sql_query = f"SELECT count(*) FROM stops WHERE {_NEARBY}"
-    with schedule.engine.connect() as conn:
-        rowcount = conn.execute(text(sql_query), {"latitude": latitude, "longitude": longitude, "radius": radius}).scalar() or 0
-    _LOGGER.debug("Local stops list output: %s", rowcount)
-    return int(rowcount)
-
-
 def _nearest_served(schedule: Schedule, latitude: float, longitude: float,
                     data: Mapping[str, Any], most: int) -> list[tuple[str, str, float]]:
     """(stop_id, stop_name, how far) of the stops within the entry's radius

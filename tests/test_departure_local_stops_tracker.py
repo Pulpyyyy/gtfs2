@@ -28,8 +28,12 @@ def test_position_of_a_tracker():
 
 
 def test_no_stop_is_near_a_missing_tracker():
-    # never reaches the database: there is nowhere to look around
-    assert local_stops.get_local_stop_list(_hass(None), None, {"device_tracker_id": "person.gone"}) == 0
+    # never reaches the database: there is nowhere to look around. The
+    # options screen counted the stops there, 0 for such a tracker, to
+    # refuse a radius holding too many; it no longer does, and the stops
+    # the sensors follow cannot be told
+    assert local_stops.local_stops_nearby(
+        _hass(None), {"schedule": object(), "device_tracker_id": "person.gone"}) is None
 
 
 def test_the_refresh_lists_nothing_for_a_missing_tracker(monkeypatch):

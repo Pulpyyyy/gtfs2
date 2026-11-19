@@ -372,7 +372,6 @@
       "files_deleted": "Datasource deleted, this may affect existing routes",
       "generic_failure": "Overall failure, check logs",
       "no_stops": "Data collection issue: probably no stops for the selected route",
-      "stop_limit_reached": "Detected a high number of stops for this radius, \npossibly impacting system performance. \n You can change the limit at your own risk before changing the radius.",
       "no_zip_in_folder": "No .zip file found in {folder}. Place your GTFS zip file there, then start again.",
       "no_routes_with_trips": "No route in this datasource has a timetable loaded. Run the update_gtfs service to reload it from the source.",
       "no_stops_read": "Could not read the stops of this route. Check the logs: the datasource may be busy or being rebuilt.",
@@ -394,10 +393,7 @@
         "data": {
           "refresh_interval": "Data refresh interval (in minutes)",
           "offset": "Offset in minutes",
-          "max_local_stops": "Limit #stops to avoid possible performance impact. \nIncrease at your own risk",
-          "follow_up_to": "Follow moves up to this speed (km/h)",
-          "away_for": "Minutes away before the stops are read again",
-          "readings_away": "Readings a stop may miss before its sensor is removed",
+          "max_local_stops": "Keep at most this many stops, the nearest",
           "local_stop_refresh_interval": "Data refresh interval (in minutes)",
           "timerange": "Checking for departures in future from 'now' (in minutes: between 15 and 120)",
           "radius": "Radius to search for stops (in meters between 50 and 5000)",
@@ -409,11 +405,23 @@
           "offset": "Hide departures you could not catch: the walking time to the stop, in minutes.",
           "timerange": "How far ahead to look for departures, in minutes.",
           "radius": "How far around the person or zone to look for stops, in metres.",
-          "max_local_stops": "Above this many stops the sensor gets slow. Raise it at your own risk. On the move, only the nearest ones are kept.",
-          "follow_up_to": "The stops are read again as soon as the person has moved, as long as they go no faster than this: a walk, not a ride, where the stops file past. 0 to read them at the refresh interval only.",
-          "away_for": "How long the person has to stay more than half the radius from where the stops were last read before they are read again. Long enough to ride out a phone jumping away and back.",
-          "readings_away": "A stop no longer around loses its sensor once this many readings in a row have missed it. 2 rides out a phone jumping away and back; 1 removes it at the first.",
+          "max_local_stops": "Where the radius holds more stops than this, only the nearest ones get a sensor and are read. Each stop more is a sensor more, and a longer reading.",
           "also_at": "Stations or stops on the way where you can get on or off as well: a nearby one, a connection. Each run shows once, from the first of these where you can board to the last where you can get off; one that ends there, short of your arrival, is kept and says so."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Following the person",
+            "data": {
+              "follow_up_to": "Follow moves up to this speed (km/h)",
+              "away_for": "Minutes away before the stops are read again",
+              "readings_away": "Readings a stop may miss before its sensor is removed"
+            },
+            "data_description": {
+              "follow_up_to": "The stops are read again as soon as the person has moved, as long as they go no faster than this: a walk, not a ride, where the stops file past. 0 to read them at the refresh interval only.",
+              "away_for": "How long the person has to stay more than half the radius from where the stops were last read before they are read again. Long enough to ride out a phone jumping away and back.",
+              "readings_away": "A stop no longer around loses its sensor once this many readings in a row have missed it. 2 rides out a phone jumping away and back; 1 removes it at the first."
+            }
+          }
         }
       },
       "source_menu": {
@@ -486,9 +494,6 @@
           "api_key_location": "In the web address, in the request header, or as an HTTP Basic login (its name is then not used)."
         }
       }
-    },
-    "abort": {
-      "stop_limit_reached": "Detected a high number of stops for this radius, \npossibly impacting system performance. \n You can change the limit at your own risk before changing the radius"
     },
     "error": {
       "invalid_source_url": "This is not a valid address (http://, https:// or file://)",
@@ -598,7 +603,7 @@
     },
     "update_gtfs_local_stops": {
       "name": "Update GTFS local stops",
-      "description": "e.g. for moving 'person', to be defined for each person / zone",
+      "description": "Reads the stops around a person or zone again at once. The sensors follow a person who moves by themselves: this is for a reading without waiting.",
       "fields": {
         "entity_id": {
           "name": "Entity that is connected to local stops",

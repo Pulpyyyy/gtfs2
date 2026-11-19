@@ -372,7 +372,6 @@
       "files_deleted": "Fuente de datos eliminada, esto puede afectar a las rutas existentes",
       "generic_failure": "Fallo general, compruebe los registros",
       "no_stops": "Problema de recogida de datos: probablemente no hay paradas en la ruta seleccionada",
-      "stop_limit_reached": "Se detectó una gran cantidad de paradas para este radio, \nlo que posiblemente afecte el rendimiento del sistema. \nPuedes cambiar el límite bajo tu propia responsabilidad antes de cambiar el radio",
       "no_zip_in_folder": "No se encontró ningún archivo .zip en {folder}. Coloque allí su archivo GTFS y vuelva a empezar.",
       "no_routes_with_trips": "Ninguna línea de esta fuente tiene horarios cargados. Ejecute el servicio update_gtfs para recargarla.",
       "no_stops_read": "No se han podido leer las paradas de esta línea. Consulte los registros: la fuente puede estar ocupada o reconstruyéndose.",
@@ -394,10 +393,7 @@
         "data": {
           "refresh_interval": "Intervalo de actualización de datos (en minutos)",
           "offset": "Offset en minutos",
-          "max_local_stops": "Limite las #paradas para evitar un posible impacto en el rendimiento. \nAumentar bajo su propia responsabilidad",
-          "follow_up_to": "Seguir los desplazamientos hasta esta velocidad (km/h)",
-          "away_for": "Minutos de alejamiento antes de volver a leer las paradas",
-          "readings_away": "Lecturas sin una parada antes de eliminar su sensor",
+          "max_local_stops": "Conservar como máximo este número de paradas, las más cercanas",
           "local_stop_refresh_interval": "Intervalo de actualización de datos (en minutos)",
           "timerange": "Comprobación de salidas en el futuro a partir de 'ahora' (en minutos: entre 15 y 120)",
           "radius": "Radio de búsqueda de paradas (en metros entre 50 y 5000)",
@@ -409,11 +405,23 @@
           "offset": "Oculta las salidas que no podría alcanzar: el tiempo a pie hasta la parada, en minutos.",
           "timerange": "Hasta dónde buscar las próximas salidas, en minutos.",
           "radius": "Distancia de búsqueda de paradas alrededor de la persona o zona, en metros.",
-          "max_local_stops": "Por encima de este número de paradas el sensor se vuelve lento. Auméntelo bajo su responsabilidad. En movimiento, solo se conservan las más cercanas.",
-          "follow_up_to": "Las paradas se vuelven a leer en cuanto la persona se ha desplazado, mientras no vaya más rápido: a pie, no en un vehículo, donde las paradas pasan de largo. 0 para leerlas solo en el intervalo de actualización.",
-          "away_for": "El tiempo que la persona debe permanecer a más de medio radio de la última lectura antes de que se vuelvan a leer las paradas. Lo bastante largo para absorber un salto de posición del teléfono.",
-          "readings_away": "Una parada que ya no está cerca pierde su sensor tras este número de lecturas seguidas sin ella. 2 absorbe un salto de posición del teléfono; 1 lo elimina a la primera.",
+          "max_local_stops": "Cuando el radio contiene más paradas, solo las más cercanas tienen sensor y se leen. Cada parada más es un sensor más y una lectura más larga.",
           "also_at": "Estaciones o paradas en el camino donde también puede subir o bajar: una cercana, un transbordo. Cada servicio aparece una sola vez, desde la primera donde se puede subir hasta la última donde se puede bajar; un servicio que termina en una de ellas, antes de su llegada, se conserva y lo indica."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Seguimiento de la persona",
+            "data": {
+              "follow_up_to": "Seguir los desplazamientos hasta esta velocidad (km/h)",
+              "away_for": "Minutos de alejamiento antes de volver a leer las paradas",
+              "readings_away": "Lecturas sin una parada antes de eliminar su sensor"
+            },
+            "data_description": {
+              "follow_up_to": "Las paradas se vuelven a leer en cuanto la persona se ha desplazado, mientras no vaya más rápido: a pie, no en un vehículo, donde las paradas pasan de largo. 0 para leerlas solo en el intervalo de actualización.",
+              "away_for": "El tiempo que la persona debe permanecer a más de medio radio de la última lectura antes de que se vuelvan a leer las paradas. Lo bastante largo para absorber un salto de posición del teléfono.",
+              "readings_away": "Una parada que ya no está cerca pierde su sensor tras este número de lecturas seguidas sin ella. 2 absorbe un salto de posición del teléfono; 1 lo elimina a la primera."
+            }
+          }
         }
       },
       "real_time": {
@@ -486,9 +494,6 @@
           "api_key_location": "En la dirección web, en la cabecera de la petición, o como inicio de sesión HTTP Basic (su nombre no se usa entonces)."
         }
       }
-    },
-    "abort": {
-      "stop_limit_reached": "Se detectó una gran cantidad de paradas para este radio, \nlo que posiblemente afecte el rendimiento del sistema. \nPuedes cambiar el límite bajo tu propia responsabilidad antes de cambiar el radio"
     },
     "error": {
       "invalid_source_url": "Esta dirección no es válida (http://, https:// o file://)",
@@ -598,7 +603,7 @@
     },
     "update_gtfs_local_stops": {
       "name": "Actualizar paradas locales GTFS",
-      "description": "por ejemplo, para 'personas' en movimiento, que se definirá para cada persona / zona",
+      "description": "Vuelve a leer enseguida las paradas alrededor de una persona o zona. Los sensores siguen por sí solos a una persona que se mueve: esto sirve para leer sin esperar.",
       "fields": {
         "entity_id": {
           "name": "Entidad que está conectada a paradas locales.",

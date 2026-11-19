@@ -159,7 +159,7 @@ update_gtfs_rt_local:
         
 update_gtfs_local_stops: 
   name: Update GTFS local stops
-  description: Updates local stops based on location entity
+  description: Reads the stops around a person or zone again at once
   fields:       
     entity_id:
       name: Entity
