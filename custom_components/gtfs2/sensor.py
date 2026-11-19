@@ -61,7 +61,6 @@ async def async_setup_entry(
         async_add_entities([GTFSDatasourceRTSensor(config_entry), timetable])
         return
     if config_entry.data.get('device_tracker_id',None):
-        sensors = []
         coordinator: GTFSLocalStopUpdateCoordinator = config_entry.runtime_data
         # the sensors are made from the stops around, and the departures
         # read once they are added, as for a journey: waiting for them held
@@ -76,25 +75,10 @@ async def async_setup_entry(
             # that says it is not ready yet
             raise PlatformNotReady(
                 f"Datasource {coordinator.data.get('file')} is still being unpacked")
-        # every stop served around, not only those with a departure in the
-        # window now: an entry made after the last bus got no sensor at all
-        around = await hass.async_add_executor_job(local_stops_nearby, hass, coordinator.data)
-        stops = list(around or [])
-        nearby = {stop["stop_id"] for stop in stops}
-        stops += [stop for stop in coordinator.data["local_stops_next_departures"]
-                  if stop["stop_id"] not in nearby]
-        for stop in stops:
-            sensors.append(
-                    GTFSLocalStopSensor(stop, coordinator, coordinator.data.get("name", "No Name"))
-                )
-        if around is not None:
-            # only once the stops around were read, none at all where there
-            # are none: a tracker without a position, or a reading that
-            # failed, tells nothing and would take every sensor away
-            _drop_stops_left_behind(hass, config_entry, {s._attr_unique_id for s in sensors})
+        await _follow_local_stops(hass, config_entry, coordinator, async_add_entities)
         config_entry.async_create_background_task(
             hass, coordinator.async_refresh(), f"gtfs2 first refresh {config_entry.title}")
-        
+        return
     else:
         journey_coordinator: GTFSUpdateCoordinator = config_entry.runtime_data
         # The first refresh reads the departures, and at startup every entry
@@ -112,6 +96,73 @@ async def async_setup_entry(
     async_add_entities(sensors, False)
 
 
+# the readings in a row a stop has to be missing from before its sensor goes
+_READINGS_AWAY = 2
+
+
+async def _follow_local_stops(hass: HomeAssistant, config_entry: ConfigEntry,
+                              coordinator: GTFSLocalStopUpdateCoordinator,
+                              async_add_entities: AddEntitiesCallback) -> None:
+    """Keep the entry's stop sensors in line with the stops around its
+    tracker, now and at every reading of the coordinator.
+
+    The sensors were made once, when the entry loaded: a person moving
+    kept the stops of where that was, emptied, until the entry was
+    reloaded (the update_gtfs_local_stops service, called by an
+    automation). At each reading:
+    - a stop come around gets its sensor: every stop served, not only
+      those with a departure in the window now, or an entry made after
+      the last bus got no sensor at all;
+    - a stop missing from two readings in a row loses its sensor: a phone
+      jumps a few hundred metres away and back within minutes, and one
+      reading taken there would take every sensor away until the next;
+    - nothing is taken away when the stops around could not be told (a
+      tracker without a position, a reading that failed).
+    """
+    known: dict[str, GTFSLocalStopSensor] = {}
+    away: dict[str, int] = {}
+    read_at: Any = None
+
+    async def _sync(data: dict[str, Any]) -> None:
+        around = await hass.async_add_executor_job(local_stops_nearby, hass, data)
+        stops = list(around or [])
+        nearby = {stop["stop_id"] for stop in stops}
+        stops += [stop for stop in data.get("local_stops_next_departures") or []
+                  if stop["stop_id"] not in nearby]
+        new = []
+        for stop in stops:
+            away.pop(stop["stop_id"], None)
+            if stop["stop_id"] not in known:
+                known[stop["stop_id"]] = GTFSLocalStopSensor(
+                    stop, coordinator, data.get("name", "No Name"))
+                new.append(known[stop["stop_id"]])
+        if new:
+            async_add_entities(new, False)
+        if around is None:
+            return
+        listed = {stop["stop_id"] for stop in stops}
+        for stop_id in [s for s in known if s not in listed]:
+            away[stop_id] = away.get(stop_id, 0) + 1
+            if away[stop_id] >= _READINGS_AWAY:
+                del known[stop_id], away[stop_id]
+        _drop_stops_left_behind(hass, config_entry, {s._attr_unique_id for s in known.values()})
+
+    @callback
+    def _heard() -> None:
+        nonlocal read_at
+        data = coordinator.data
+        if not data or data.get("extracting") or data.get("gtfs_updated_at") == read_at:
+            # the same reading as before, a departure gone from it since
+            return
+        read_at = data.get("gtfs_updated_at")
+        config_entry.async_create_background_task(
+            hass, _sync(data), f"gtfs2 local stops {config_entry.title}")
+
+    read_at = coordinator.data.get("gtfs_updated_at")
+    await _sync(coordinator.data)
+    config_entry.async_on_unload(coordinator.async_add_listener(_heard))
+
+
 def _drop_stops_left_behind(hass: HomeAssistant, entry: ConfigEntry, kept: set[str]) -> None:
     """Take out of the registry this entry's stop sensors no longer around.
 
@@ -120,7 +171,8 @@ def _drop_stops_left_behind(hass: HomeAssistant, entry: ConfigEntry, kept: set[s
     registry, unavailable: every stop ever passed by, hundreds in a city
     for one person. Only this entry's own are looked at, so a person
     followed by another entry keeps theirs; a stop met again is registered
-    afresh.
+    afresh. Removed from the registry, a sensor still running is taken
+    down by Home Assistant.
     """
     registry = er.async_get(hass)
     for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
